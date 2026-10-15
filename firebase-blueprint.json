@@ -1,7 +1,9 @@
 {
   "entities": {
     "groupRooms": {
+      "title": "GroupRoom",
       "description": "Real-time collaborative rooms for student research groups (15 students per group)",
+      "type": "object",
       "properties": {
         "groupId": { "type": "string" },
         "activeLevel": { "type": "number" },
@@ -15,7 +17,9 @@
       "required": ["groupId", "activeLevel"]
     },
     "studentsProgress": {
+      "title": "StudentProgress",
       "description": "Individual student progress, scores, badges, and avatars",
+      "type": "object",
       "properties": {
         "username": { "type": "string" },
         "avatarId": { "type": "string" },
@@ -26,6 +30,61 @@
         "lastActiveAt": { "type": "string" }
       },
       "required": ["username", "currentLevel", "totalScore"]
+    },
+    "globalSettings": {
+      "title": "GlobalSetting",
+      "description": "Global test question banks, level data, site instructions, splash screen, and supervisors board synced via Firebase",
+      "type": "object",
+      "properties": {
+        "settingType": { "type": "string" },
+        "data": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["settingType"]
+    },
+    "adminSettings": {
+      "title": "AdminSetting",
+      "description": "Administrative preferences and configurations",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "string" }
+      },
+      "required": ["key"]
+    },
+    "activityLogs": {
+      "title": "ActivityLog",
+      "description": "System event and activity logs for admin audit",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "message": { "type": "string" },
+        "username": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "message"]
+    }
+  },
+  "firestore": {
+    "/groupRooms/{groupId}": {
+      "schema": "groupRooms",
+      "description": "Collaborative student group rooms"
+    },
+    "/studentsProgress/{username}": {
+      "schema": "studentsProgress",
+      "description": "Student gamified progress and scores"
+    },
+    "/globalSettings/{settingId}": {
+      "schema": "globalSettings",
+      "description": "Global test question banks and app configurations"
+    },
+    "/adminSettings/{settingId}": {
+      "schema": "adminSettings",
+      "description": "Admin configurations"
+    },
+    "/activityLogs/{logId}": {
+      "schema": "activityLogs",
+      "description": "Activity logs"
     }
   }
 }

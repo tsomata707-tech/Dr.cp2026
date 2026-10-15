@@ -680,6 +680,9 @@ export function getPreTestQuestions(): PreTestQuestion[] {
 export function savePreTestQuestions(questions: PreTestQuestion[], syncRemote: boolean = true): void {
   try {
     localStorage.setItem(PRETEST_QUESTIONS_KEY, JSON.stringify(questions));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('pretest-questions-updated', { detail: questions }));
+    }
   } catch (e) {
     console.warn('localStorage savePreTestQuestions error:', e);
   }
@@ -778,6 +781,9 @@ export function getPostTestQuestions(): PreTestQuestion[] {
 export function savePostTestQuestions(questions: PreTestQuestion[], syncRemote: boolean = true): void {
   try {
     localStorage.setItem(POSTTEST_QUESTIONS_KEY, JSON.stringify(questions));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('posttest-questions-updated', { detail: questions }));
+    }
   } catch (e) {
     console.warn('localStorage savePostTestQuestions error:', e);
   }

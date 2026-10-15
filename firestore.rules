@@ -9,11 +9,19 @@ service cloud.firestore {
     match /studentsProgress/{username} {
       allow read, write: if true;
     }
-    // Admin settings and activity logs
+    // Global test question banks, level configurations, and site settings
+    match /globalSettings/{settingId} {
+      allow read, write: if true;
+    }
+    // Admin settings and audit logs
     match /adminSettings/{settingId} {
       allow read, write: if true;
     }
     match /activityLogs/{logId} {
+      allow read, write: if true;
+    }
+    // Catch-all
+    match /{document=**} {
       allow read, write: if true;
     }
   }

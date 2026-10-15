@@ -264,6 +264,16 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     return mode === 'post' ? getPostTestQuestions() : getPreTestQuestions();
   });
 
+  // Keep questions synced in real-time if updated by admin via Firebase
+  useEffect(() => {
+    const handleUpdate = () => {
+      setQuestions(mode === 'post' ? getPostTestQuestions() : getPreTestQuestions());
+    };
+    const eventName = mode === 'post' ? 'posttest-questions-updated' : 'pretest-questions-updated';
+    window.addEventListener(eventName, handleUpdate);
+    return () => window.removeEventListener(eventName, handleUpdate);
+  }, [mode]);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [chosenAnswers, setChosenAnswers] = useState<Record<string, number>>({});
   const [selectedStationIndex, setSelectedStationIndex] = useState<number | null>(null);

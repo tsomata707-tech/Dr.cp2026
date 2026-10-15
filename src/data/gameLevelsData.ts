@@ -602,6 +602,9 @@ export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean
         found.questions = customLvl.questions;
       }
     });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('game-levels-updated', { detail: levels }));
+    }
     if (syncRemote) {
       syncGlobalQuestionsAndLevels('levels', levels).catch(() => {});
     }
@@ -620,6 +623,9 @@ export function resetGameLevelsToDefault(): GameLevelDef[] {
       }
     });
     const defaultCopy = JSON.parse(JSON.stringify(DEFAULT_GAME_LEVELS_DATA));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('game-levels-updated', { detail: defaultCopy }));
+    }
     syncGlobalQuestionsAndLevels('levels', defaultCopy).catch(() => {});
     return defaultCopy;
   } catch {
