@@ -111,12 +111,19 @@ export const subscribeToFirebaseOnlineStatus = (
 ): (() => void) => {
   try {
     const connectedRef = ref(rtdb, '.info/connected');
-    const unsubscribe = onValue(connectedRef, (snap) => {
-      onStatusChange(!!snap.val());
-    });
+    const unsubscribe = onValue(
+      connectedRef,
+      (snap) => {
+        onStatusChange(!!snap.val());
+      },
+      (err) => {
+        console.warn('Firebase connection listener warning:', err);
+        onStatusChange(false);
+      }
+    );
     return unsubscribe;
   } catch {
-    onStatusChange(true);
+    onStatusChange(false);
     return () => {};
   }
 };
@@ -418,13 +425,24 @@ export function subscribeToGlobalData(
 ): () => void {
   try {
     const dataRef = ref(rtdb, `globalSettings/${type}`);
-    const unsubscribe = onValue(dataRef, (snapshot) => {
-      if (snapshot.exists()) {
-        onUpdate(snapshot.val());
+    const unsubscribe = onValue(
+      dataRef,
+      (snapshot) => {
+        try {
+          if (snapshot.exists()) {
+            onUpdate(snapshot.val());
+          }
+        } catch (err) {
+          console.warn(`Error handling globalSettings/${type} update:`, err);
+        }
+      },
+      (error) => {
+        console.warn(`RTDB globalSettings/${type} subscription notice:`, error);
       }
-    });
+    );
     return unsubscribe;
-  } catch {
+  } catch (err) {
+    console.warn(`Failed to initialize subscription to globalSettings/${type}:`, err);
     return () => {};
   }
 }

@@ -120,34 +120,40 @@ export function getSupervisorsBoardConfig(): SupervisorsHonorBoardConfig {
 
 const ARABIC_ORDINALS = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر'];
 
-export function saveSupervisorsBoardConfig(config: SupervisorsHonorBoardConfig): void {
-  // Ensure cards have standardized auto-aligned labels if empty or standard pattern: المشرف الأول, المشرف الثاني...
-  const normalizedSupervisors = config.supervisors.map((s, idx) => {
-    const ordinal = ARABIC_ORDINALS[idx] || `${idx + 1}`;
-    const autoLabel =
-      !s.cardLabel || s.cardLabel.startsWith('المشرف') || s.cardLabel.startsWith('البطاقة')
-        ? `المشرف ${ordinal}`
-        : s.cardLabel.trim();
+export function saveSupervisorsBoardConfig(config: SupervisorsHonorBoardConfig, syncRemote: boolean = true): void {
+  try {
+    // Ensure cards have standardized auto-aligned labels if empty or standard pattern: المشرف الأول, المشرف الثاني...
+    const normalizedSupervisors = config.supervisors.map((s, idx) => {
+      const ordinal = ARABIC_ORDINALS[idx] || `${idx + 1}`;
+      const autoLabel =
+        !s.cardLabel || s.cardLabel.startsWith('المشرف') || s.cardLabel.startsWith('البطاقة')
+          ? `المشرف ${ordinal}`
+          : s.cardLabel.trim();
 
-    return {
-      ...s,
-      cardIndex: idx + 1,
-      cardLabel: autoLabel,
+      return {
+        ...s,
+        cardIndex: idx + 1,
+        cardLabel: autoLabel,
+      };
+    });
+
+    const updatedConfig: SupervisorsHonorBoardConfig = {
+      ...config,
+      researcherInfo: config.researcherInfo || INITIAL_RESEARCHER_INFO,
+      supervisors: normalizedSupervisors,
+      updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
     };
-  });
 
-  const updatedConfig: SupervisorsHonorBoardConfig = {
-    ...config,
-    researcherInfo: config.researcherInfo || INITIAL_RESEARCHER_INFO,
-    supervisors: normalizedSupervisors,
-    updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-  };
+    localStorage.setItem(SUPERVISORS_STORAGE_KEY, JSON.stringify(updatedConfig));
+    if (syncRemote) {
+      syncGlobalQuestionsAndLevels('supervisors', updatedConfig).catch(() => {});
+    }
 
-  localStorage.setItem(SUPERVISORS_STORAGE_KEY, JSON.stringify(updatedConfig));
-  syncGlobalQuestionsAndLevels('supervisors', updatedConfig).catch(() => {});
-
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('supervisors-honor-board-updated', { detail: updatedConfig }));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('supervisors-honor-board-updated', { detail: updatedConfig }));
+    }
+  } catch (e) {
+    console.warn('saveSupervisorsBoardConfig error:', e);
   }
 }
 

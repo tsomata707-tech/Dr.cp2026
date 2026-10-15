@@ -141,10 +141,16 @@ export function getSiteInstructionsConfig(): SiteInstructionsConfig {
   }
 }
 
-export function saveSiteInstructionsConfig(config: SiteInstructionsConfig): void {
-  config.updatedAt = new Date().toISOString();
-  localStorage.setItem(INSTRUCTIONS_STORAGE_KEY, JSON.stringify(config));
-  syncGlobalQuestionsAndLevels('instructions', config).catch(() => {});
+export function saveSiteInstructionsConfig(config: SiteInstructionsConfig, syncRemote: boolean = true): void {
+  try {
+    config.updatedAt = new Date().toISOString();
+    localStorage.setItem(INSTRUCTIONS_STORAGE_KEY, JSON.stringify(config));
+    if (syncRemote) {
+      syncGlobalQuestionsAndLevels('instructions', config).catch(() => {});
+    }
+  } catch (e) {
+    console.warn('Failed to save instructions config:', e);
+  }
 }
 
 export function resetSiteInstructionsToDefault(): SiteInstructionsConfig {

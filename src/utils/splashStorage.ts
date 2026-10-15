@@ -43,15 +43,21 @@ export function getSplashImageUrl(): string {
   return defaultSplashImg;
 }
 
-export function saveSplashImageUrl(url: string): void {
+export function saveSplashImageUrl(url: string, syncRemote: boolean = true): void {
   try {
     const cleanUrl = url && url.trim() ? url.trim() : '';
+    const current = localStorage.getItem(SPLASH_IMAGE_KEY) || '';
+    if (cleanUrl === current && !syncRemote) {
+      return; // Already matched, no need to dispatch or save
+    }
     if (!cleanUrl) {
       localStorage.removeItem(SPLASH_IMAGE_KEY);
     } else {
       localStorage.setItem(SPLASH_IMAGE_KEY, cleanUrl);
     }
-    syncGlobalQuestionsAndLevels('splash', { url: cleanUrl }).catch(() => {});
+    if (syncRemote) {
+      syncGlobalQuestionsAndLevels('splash', { url: cleanUrl }).catch(() => {});
+    }
     window.dispatchEvent(new CustomEvent('cp_splash_image_updated', { detail: cleanUrl }));
   } catch {
     // Ignore error

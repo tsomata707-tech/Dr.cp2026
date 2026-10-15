@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { CpLogo } from './CpLogo';
-import { ShieldCheck, Sparkles, LogOut, User, KeyRound, Lock, Home, Database } from 'lucide-react';
+import { ShieldCheck, Sparkles, LogOut, User, KeyRound, Lock, Home } from 'lucide-react';
 import { getStudentProgress } from '../utils/gameStorage';
 import { CARTOON_AVATARS } from '../data/gameLevelsData';
 import { getGroupByUsername } from '../data/studentAccounts';
-import { FirebaseStatusModal } from './FirebaseStatusModal';
-import { subscribeToFirebaseOnlineStatus } from '../utils/realtimeService';
 
 interface NavbarProps {
   isLoggedIn?: boolean;
@@ -25,16 +23,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onExitAdmin,
 }) => {
   const [profile, setProfile] = useState(() => (username ? getStudentProgress(username) : null));
-  const [showFirebaseModal, setShowFirebaseModal] = useState<boolean>(false);
-  const [isFirebaseOnline, setIsFirebaseOnline] = useState<boolean>(true);
   const groupMeta = username ? getGroupByUsername(username) : null;
-
-  useEffect(() => {
-    const unsub = subscribeToFirebaseOnlineStatus((online) => {
-      setIsFirebaseOnline(online);
-    });
-    return () => unsub();
-  }, []);
 
   useEffect(() => {
     if (username) {
@@ -130,23 +119,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="sm:hidden">🏠</span>
             </button>
 
-            {/* Firebase Live Status Button */}
-            <button
-              type="button"
-              onClick={() => setShowFirebaseModal(true)}
-              id="btn-navbar-firebase-status"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-500/50 text-emerald-300 text-xs font-bold transition-all cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.25)]"
-              title="فحص اتصال قاعدة بيانات الفايربيس الحية أونلاين"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden lg:inline">فايربيس متصل</span>
-              <span className="text-[10px] text-emerald-300 font-mono">Online</span>
-            </button>
-
             <button
               type="button"
               onClick={onLogout}
@@ -159,21 +131,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            {/* Firebase Live Status Button for Guest / Splash / Login */}
-            <button
-              type="button"
-              onClick={() => setShowFirebaseModal(true)}
-              id="btn-navbar-guest-firebase-status"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-500/50 text-emerald-300 text-xs font-bold transition-all cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.25)]"
-              title="فحص اتصال قاعدة بيانات الفايربيس الحية أونلاين"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">فايربيس أونلاين</span>
-            </button>
 
             <button
               type="button"
@@ -188,12 +145,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         )}
       </div>
-
-      {/* Real-time Firebase Diagnostics Modal */}
-      <FirebaseStatusModal
-        isOpen={showFirebaseModal}
-        onClose={() => setShowFirebaseModal(false)}
-      />
     </header>
   );
 };

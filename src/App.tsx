@@ -39,32 +39,32 @@ export default function App() {
   useEffect(() => {
     const unsubPre = subscribeToGlobalData('pretest', (data) => {
       if (Array.isArray(data) && data.length > 0) {
-        savePreTestQuestions(data);
+        savePreTestQuestions(data, false);
       }
     });
     const unsubPost = subscribeToGlobalData('posttest', (data) => {
       if (Array.isArray(data) && data.length > 0) {
-        savePostTestQuestions(data);
+        savePostTestQuestions(data, false);
       }
     });
     const unsubLevels = subscribeToGlobalData('levels', (data) => {
       if (Array.isArray(data) && data.length > 0) {
-        saveCustomGameLevels(data);
+        saveCustomGameLevels(data, false);
       }
     });
     const unsubInstructions = subscribeToGlobalData('instructions', (data) => {
       if (data && typeof data === 'object') {
-        saveSiteInstructionsConfig(data);
+        saveSiteInstructionsConfig(data, false);
       }
     });
     const unsubSplash = subscribeToGlobalData('splash', (data) => {
       if (data && typeof data.url === 'string') {
-        saveSplashImageUrl(data.url);
+        saveSplashImageUrl(data.url, false);
       }
     });
     const unsubSupervisors = subscribeToGlobalData('supervisors', (data) => {
       if (data && typeof data === 'object') {
-        saveSupervisorsBoardConfig(data);
+        saveSupervisorsBoardConfig(data, false);
       }
     });
 

@@ -45,7 +45,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             </div>
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-medium mb-1">
-                <span>لوحة التحكم السيادية للأدمن (مع مزامنة Firebase الفورية للجميع)</span>
+                <span>لوحة التحكم السيادية للأدمن</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                 إدارة النظام والاختبارات والمحتوى التفاعلي
@@ -130,7 +130,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
       </div>
 
       {/* Main Tab Content */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur-md">
+      <div className="bg-[#0b0e1e] border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
         {activeTab === 'tests_settings' && <AdminTestsSettingsManager />}
         {activeTab === 'instructions_standards' && <AdminInstructionsManager />}
         {activeTab === 'videos' && <AdminVideoManager />}

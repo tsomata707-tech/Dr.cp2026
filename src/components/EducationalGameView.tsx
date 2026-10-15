@@ -499,7 +499,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ userna
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black text-emerald-300 font-['Tajawal'] flex items-center gap-1.5">
                   <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-                  التزامن اللحظي المباشر عبر Firebase Cloud Firestore
+                  التزامن اللحظي المباشر للجلسة التفاعلية
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 text-[10px] font-bold border border-purple-400/30">
                   غرفة {userGroupMeta ? userGroupMeta.name : groupCode}

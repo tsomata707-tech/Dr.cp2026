@@ -8,7 +8,6 @@ import {
   RotateCcw,
   Sliders,
   Monitor,
-  MousePointer,
   HelpCircle,
   Award,
 } from 'lucide-react';
@@ -84,7 +83,7 @@ export const DesignChallengeView: React.FC<DesignChallengeViewProps> = ({
 
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
-  const [activeTool, setActiveTool] = useState<'select' | 'shape' | 'text' | 'timeline'>('select');
+  const [activeTool, setActiveTool] = useState<'shape' | 'timeline'>('shape');
 
   const handleConfirm = () => {
     if (selectedOption === null) {
@@ -134,16 +133,6 @@ export const DesignChallengeView: React.FC<DesignChallengeViewProps> = ({
             <span className="text-[11px] font-bold text-amber-300 font-mono px-2 py-1 rounded bg-slate-900 border border-slate-800">
               Captivate 2019 Tools:
             </span>
-            <button
-              type="button"
-              onClick={() => setActiveTool('select')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${
-                activeTool === 'select' ? 'bg-[#ffd700] text-slate-950' : 'bg-slate-900 text-slate-300 hover:text-white'
-              }`}
-            >
-              <MousePointer className="w-3.5 h-3.5" />
-              <span>مؤشر التحديد (Pointer)</span>
-            </button>
             <button
               type="button"
               onClick={() => setActiveTool('shape')}

@@ -677,13 +677,19 @@ export function getPreTestQuestions(): PreTestQuestion[] {
   }
 }
 
-export function savePreTestQuestions(questions: PreTestQuestion[]): void {
-  localStorage.setItem(PRETEST_QUESTIONS_KEY, JSON.stringify(questions));
-  syncGlobalQuestionsAndLevels('pretest', questions).catch(() => {});
+export function savePreTestQuestions(questions: PreTestQuestion[], syncRemote: boolean = true): void {
+  try {
+    localStorage.setItem(PRETEST_QUESTIONS_KEY, JSON.stringify(questions));
+  } catch (e) {
+    console.warn('localStorage savePreTestQuestions error:', e);
+  }
+  if (syncRemote) {
+    syncGlobalQuestionsAndLevels('pretest', questions).catch(() => {});
+  }
 }
 
 export function resetPreTestQuestionsToDefault(): PreTestQuestion[] {
-  savePreTestQuestions(DEFAULT_PRETEST_QUESTIONS);
+  savePreTestQuestions(DEFAULT_PRETEST_QUESTIONS, true);
   return DEFAULT_PRETEST_QUESTIONS;
 }
 
@@ -755,12 +761,12 @@ export function getPostTestQuestions(): PreTestQuestion[] {
   try {
     const raw = localStorage.getItem(POSTTEST_QUESTIONS_KEY);
     if (!raw) {
-      savePostTestQuestions(DEFAULT_PRETEST_QUESTIONS);
+      savePostTestQuestions(DEFAULT_PRETEST_QUESTIONS, false);
       return DEFAULT_PRETEST_QUESTIONS;
     }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      savePostTestQuestions(DEFAULT_PRETEST_QUESTIONS);
+      savePostTestQuestions(DEFAULT_PRETEST_QUESTIONS, false);
       return DEFAULT_PRETEST_QUESTIONS;
     }
     return parsed;
@@ -769,9 +775,15 @@ export function getPostTestQuestions(): PreTestQuestion[] {
   }
 }
 
-export function savePostTestQuestions(questions: PreTestQuestion[]): void {
-  localStorage.setItem(POSTTEST_QUESTIONS_KEY, JSON.stringify(questions));
-  syncGlobalQuestionsAndLevels('posttest', questions).catch(() => {});
+export function savePostTestQuestions(questions: PreTestQuestion[], syncRemote: boolean = true): void {
+  try {
+    localStorage.setItem(POSTTEST_QUESTIONS_KEY, JSON.stringify(questions));
+  } catch (e) {
+    console.warn('localStorage savePostTestQuestions error:', e);
+  }
+  if (syncRemote) {
+    syncGlobalQuestionsAndLevels('posttest', questions).catch(() => {});
+  }
 }
 
 export function resetPostTestQuestionsToDefault(): PreTestQuestion[] {

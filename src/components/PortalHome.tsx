@@ -19,7 +19,6 @@ import { DesignChallengeView } from './DesignChallengeView';
 import { SupervisorsHonorBoard } from './SupervisorsHonorBoard';
 import { PreTestGameView } from './PreTestGameView';
 import { StudentWelcomeFloatingCard } from './StudentWelcomeFloatingCard';
-import { FirebaseStatusModal } from './FirebaseStatusModal';
 import { getSupervisorsBoardConfig } from '../utils/supervisorsStorage';
 import { getGroupByUsername } from '../data/studentAccounts';
 import { getStudentProgress, getAllStudentsProgress, saveAllStudentsProgress } from '../utils/gameStorage';
@@ -93,9 +92,6 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
     total: number;
     message: string;
   } | null>(null);
-
-  // Modal to check live Firebase connection
-  const [showFirebaseModal, setShowFirebaseModal] = useState<boolean>(false);
 
   // Selected Research Group defaults strictly to student's assigned group
   const [selectedGroupId, setSelectedGroupId] = useState<string>(
@@ -283,20 +279,6 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-950/70 border border-emerald-500/50 text-emerald-300 text-xs font-bold font-['Cairo']">
                   جلسة تعليمية نشطة
                 </span>
-                {/* Firebase Online Live Badge */}
-                <button
-                  type="button"
-                  onClick={() => setShowFirebaseModal(true)}
-                  className="px-2.5 py-0.5 rounded-full bg-emerald-950/80 hover:bg-emerald-900/80 border border-emerald-500/60 text-emerald-300 text-xs font-bold font-['Cairo'] flex items-center gap-1.5 transition cursor-pointer shadow-sm"
-                  title="التحقق من اتصال قاعدة بيانات الفايربيس الحية"
-                >
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                  </span>
-                  <Database className="w-3 h-3 text-emerald-400" />
-                  <span>فايربيس متصل أونلاين 🟢</span>
-                </button>
                 {userGroupMeta ? (
                   <span className="px-2.5 py-0.5 rounded-full bg-blue-950/80 border border-blue-400/50 text-blue-300 text-xs font-bold font-['Cairo']">
                     {userGroupMeta.name}
@@ -756,12 +738,6 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
           <span>تسجيل الخروج والعودة لصفحة البداية</span>
         </button>
       </div>
-
-      {/* Real-time Firebase Diagnostics Modal */}
-      <FirebaseStatusModal
-        isOpen={showFirebaseModal}
-        onClose={() => setShowFirebaseModal(false)}
-      />
     </div>
   );
 };

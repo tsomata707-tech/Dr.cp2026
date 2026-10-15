@@ -593,7 +593,7 @@ export function getCustomGameLevels(): GameLevelDef[] {
   }
 }
 
-export function saveCustomGameLevels(levels: GameLevelDef[]): void {
+export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean = true): void {
   try {
     localStorage.setItem(GAME_LEVELS_STORAGE_KEY, JSON.stringify(levels));
     levels.forEach((customLvl: GameLevelDef) => {
@@ -602,7 +602,9 @@ export function saveCustomGameLevels(levels: GameLevelDef[]): void {
         found.questions = customLvl.questions;
       }
     });
-    syncGlobalQuestionsAndLevels('levels', levels).catch(() => {});
+    if (syncRemote) {
+      syncGlobalQuestionsAndLevels('levels', levels).catch(() => {});
+    }
   } catch (err) {
     console.error('Failed to save custom game levels:', err);
   }
