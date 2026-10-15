@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Collaborative research groups real-time rooms
+    match /groupRooms/{groupId} {
+      allow read, write: if true;
+    }
+    // Student individual progress and level completions
+    match /studentsProgress/{username} {
+      allow read, write: if true;
+    }
+    // Admin settings and activity logs
+    match /adminSettings/{settingId} {
+      allow read, write: if true;
+    }
+    match /activityLogs/{logId} {
+      allow read, write: if true;
+    }
+  }
+}

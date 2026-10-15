@@ -1,0 +1,31 @@
+{
+  "entities": {
+    "groupRooms": {
+      "description": "Real-time collaborative rooms for student research groups (15 students per group)",
+      "properties": {
+        "groupId": { "type": "string" },
+        "activeLevel": { "type": "number" },
+        "currentAnswers": { "type": "object" },
+        "activeStudents": { "type": "object" },
+        "votes": { "type": "object" },
+        "completedLevels": { "type": "object" },
+        "liveEvents": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["groupId", "activeLevel"]
+    },
+    "studentsProgress": {
+      "description": "Individual student progress, scores, badges, and avatars",
+      "properties": {
+        "username": { "type": "string" },
+        "avatarId": { "type": "string" },
+        "currentLevel": { "type": "number" },
+        "completedLevels": { "type": "object" },
+        "totalScore": { "type": "number" },
+        "badges": { "type": "array" },
+        "lastActiveAt": { "type": "string" }
+      },
+      "required": ["username", "currentLevel", "totalScore"]
+    }
+  }
+}
