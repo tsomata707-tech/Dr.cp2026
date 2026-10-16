@@ -9,6 +9,10 @@ service cloud.firestore {
     match /studentsProgress/{username} {
       allow read, write: if true;
     }
+    // Student real logins and sessions audit
+    match /studentsLoginsAudit/{username} {
+      allow read, write: if true;
+    }
     // Global test question banks, level configurations, and site settings
     match /globalSettings/{settingId} {
       allow read, write: if true;

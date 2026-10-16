@@ -31,6 +31,19 @@
       },
       "required": ["username", "currentLevel", "totalScore"]
     },
+    "studentsLoginsAudit": {
+      "title": "StudentLoginAudit",
+      "description": "Real student login timestamps, sessions history, and device info",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "firstLogin": { "type": "string" },
+        "lastLogin": { "type": "string" },
+        "totalLogins": { "type": "number" },
+        "sessions": { "type": "array" }
+      },
+      "required": ["username", "totalLogins"]
+    },
     "globalSettings": {
       "title": "GlobalSetting",
       "description": "Global test question banks, level data, site instructions, splash screen, and supervisors board synced via Firebase",
@@ -73,6 +86,10 @@
     "/studentsProgress/{username}": {
       "schema": "studentsProgress",
       "description": "Student gamified progress and scores"
+    },
+    "/studentsLoginsAudit/{username}": {
+      "schema": "studentsLoginsAudit",
+      "description": "Real-time student login sessions audit and history"
     },
     "/globalSettings/{settingId}": {
       "schema": "globalSettings",

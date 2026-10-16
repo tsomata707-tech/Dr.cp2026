@@ -11,9 +11,11 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { AdminInstructionsManager } from './AdminInstructionsManager';
 import { AdminTestsSettingsManager } from './AdminTestsSettingsManager';
+import { AdminStudentsAuditManager } from './AdminStudentsAuditManager';
 import { AdminVideoManager } from './AdminVideoManager';
 import { AdminSplashManager } from './AdminSplashManager';
 import { AdminSupervisorsHonorManager } from './AdminSupervisorsHonorManager';
@@ -24,8 +26,9 @@ interface AdminPanelProps {
 }
 
 type AdminTab =
-  | 'instructions_standards'
   | 'tests_settings'
+  | 'students_audit'
+  | 'instructions_standards'
   | 'videos'
   | 'splash'
   | 'supervisors';
@@ -77,6 +80,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
           >
             <Settings className={`w-4 h-4 ${activeTab === 'tests_settings' ? 'animate-spin' : ''}`} />
             <span>إعدادات الاختبارات</span>
+          </button>
+
+          {/* TAB 2: سجل الدخول والنتائج الحقيقية والشيتات (المطلوب) */}
+          <button
+            onClick={() => setActiveTab('students_audit')}
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+              activeTab === 'students_audit'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 shadow-lg shadow-emerald-500/20 font-black'
+                : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
+            }`}
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <span>سجل الدخول والنتائج والشيتات</span>
           </button>
 
           <button
@@ -132,6 +148,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
       {/* Main Tab Content */}
       <div className="bg-[#0b0e1e] border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
         {activeTab === 'tests_settings' && <AdminTestsSettingsManager />}
+        {activeTab === 'students_audit' && <AdminStudentsAuditManager />}
         {activeTab === 'instructions_standards' && <AdminInstructionsManager />}
         {activeTab === 'videos' && <AdminVideoManager />}
         {activeTab === 'splash' && <AdminSplashManager />}

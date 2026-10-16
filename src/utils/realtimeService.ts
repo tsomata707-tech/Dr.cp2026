@@ -446,3 +446,46 @@ export function subscribeToGlobalData(
     return () => {};
   }
 }
+
+/**
+ * Sync student real login audit record to Firebase Realtime Database
+ */
+export async function syncStudentLoginAuditToRTDB(username: string, record: any): Promise<void> {
+  try {
+    await rtdbSet(ref(rtdb, `studentsLoginsAudit/${username}`), record);
+  } catch (err) {
+    console.warn(`Failed to sync student login audit for ${username} to RTDB:`, err);
+  }
+}
+
+/**
+ * Real-time listener for students real logins audit
+ */
+export function subscribeToStudentsLoginsAudit(
+  onUpdate: (map: Record<string, any>) => void
+): () => void {
+  try {
+    const auditRef = ref(rtdb, 'studentsLoginsAudit');
+    const unsubscribe = onValue(
+      auditRef,
+      (snapshot) => {
+        try {
+          if (snapshot.exists()) {
+            onUpdate(snapshot.val() || {});
+          } else {
+            onUpdate({});
+          }
+        } catch (err) {
+          console.warn('Error handling studentsLoginsAudit update:', err);
+        }
+      },
+      (error) => {
+        console.warn('RTDB studentsLoginsAudit notice:', error);
+      }
+    );
+    return unsubscribe;
+  } catch (err) {
+    console.warn('Failed to initialize subscription to studentsLoginsAudit:', err);
+    return () => {};
+  }
+}

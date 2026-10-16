@@ -15,6 +15,7 @@ import { saveCustomGameLevels } from './data/gameLevelsData';
 import { saveSiteInstructionsConfig } from './utils/instructionsStorage';
 import { saveSplashImageUrl } from './utils/splashStorage';
 import { saveSupervisorsBoardConfig } from './utils/supervisorsStorage';
+import { recordStudentLogin } from './utils/studentAuditStorage';
 
 const SESSION_KEY = 'cp_active_session_username_v1';
 
@@ -91,6 +92,7 @@ export default function App() {
     } catch {
       // Ignore
     }
+    recordStudentLogin(username);
     setCurrentUser(username);
   };
 

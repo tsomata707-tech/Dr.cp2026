@@ -23,6 +23,8 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Loader2,
+  Clock,
 } from 'lucide-react';
 import { PreTestQuestion, LevelQuestion } from '../types';
 import {
@@ -75,6 +77,11 @@ export const AdminTestsSettingsManager: React.FC = () => {
   const [formPoints, setFormPoints] = useState<number>(50);
   const [formImageUrl, setFormImageUrl] = useState<string>('');
 
+  // Loading Spinners states for enhanced UX
+  const [isSavingModal, setIsSavingModal] = useState<boolean>(false);
+  const [savingCardId, setSavingCardId] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
+
   // Inline editing ID for cards (guaranteed zero black screen!)
   const [inlineEditingCardId, setInlineEditingCardId] = useState<string | null>(null);
 
@@ -120,8 +127,9 @@ export const AdminTestsSettingsManager: React.FC = () => {
     setTimeout(() => setFeedbackMsg(null), 4000);
   };
 
-  // Helper: compress image file to standard optimal dataURL
+  // Helper: compress image file to standard optimal lightweight dataURL
   const compressImage = (file: File, callback: (dataUrl: string) => void) => {
+    setIsUploadingImage(true);
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
@@ -145,11 +153,16 @@ export const AdminTestsSettingsManager: React.FC = () => {
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          setIsUploadingImage(false);
           callback(dataUrl);
+        } else {
+          setIsUploadingImage(false);
         }
       };
+      img.onerror = () => setIsUploadingImage(false);
       img.src = event.target?.result as string;
     };
+    reader.onerror = () => setIsUploadingImage(false);
     reader.readAsDataURL(file);
   };
 
@@ -160,7 +173,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
 
     compressImage(file, (dataUrl) => {
       setFormImageUrl(dataUrl);
-      showNotification('تم رفع ومعالجة صورة السؤال بنجاح');
+      showNotification('✓ تم رفع ومعالجة صورة السؤال بنجاح');
     });
     e.target.value = '';
   };
@@ -179,6 +192,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file || !directUploadTarget) return;
 
+    setSavingCardId(directUploadTarget.questionId);
     compressImage(file, (dataUrl) => {
       if (directUploadTarget.type === 'pretest') {
         const updated = preTestQuestions.map((q) =>
@@ -186,14 +200,14 @@ export const AdminTestsSettingsManager: React.FC = () => {
         );
         setPreTestQuestions(updated);
         savePreTestQuestions(updated, true);
-        showNotification('تم رفع وتثبيت صورة السؤال في الاختبار القبلي ومزامنته للجميع عبر فايربيس');
+        showNotification('✓ تم رفع صورة السؤال في الاختبار القبلي ومزامنتها للجميع عبر فايربيس');
       } else if (directUploadTarget.type === 'posttest') {
         const updated = postTestQuestions.map((q) =>
           q.id === directUploadTarget.questionId ? { ...q, imageUrl: dataUrl } : q
         );
         setPostTestQuestions(updated);
         savePostTestQuestions(updated, true);
-        showNotification('تم رفع وتثبيت صورة السؤال في الاختبار البعدي ومزامنته للجميع عبر فايربيس');
+        showNotification('✓ تم رفع صورة السؤال في الاختبار البعدي ومزامنتها للجميع عبر فايربيس');
       } else if (directUploadTarget.type === 'levels' && directUploadTarget.levelNum !== undefined) {
         const updatedLevels = gameLevels.map((lvl) => {
           if (lvl.levelNumber !== directUploadTarget.levelNum) return lvl;
@@ -206,8 +220,9 @@ export const AdminTestsSettingsManager: React.FC = () => {
         });
         setGameLevels(updatedLevels);
         saveCustomGameLevels(updatedLevels, true);
-        showNotification(`تم رفع وتثبيت صورة السؤال في المستوى ${directUploadTarget.levelNum} ومزامنته للجميع عبر فايربيس`);
+        showNotification(`✓ تم رفع صورة السؤال في المستوى ${directUploadTarget.levelNum} ومزامنتها للجميع عبر فايربيس`);
       }
+      setSavingCardId(null);
       setDirectUploadTarget(null);
     });
     e.target.value = '';
@@ -215,20 +230,21 @@ export const AdminTestsSettingsManager: React.FC = () => {
 
   // Direct card set URL link
   const handleDirectSetImageUrl = (type: ActiveTestTab, questionId: string, cleanUrl: string, levelNum?: number) => {
+    setSavingCardId(questionId);
     if (type === 'pretest') {
       const updated = preTestQuestions.map((q) =>
         q.id === questionId ? { ...q, imageUrl: cleanUrl || undefined } : q
       );
       setPreTestQuestions(updated);
       savePreTestQuestions(updated, true);
-      showNotification(cleanUrl ? 'تم تحديث رابط صورة السؤال ومزامنته للجميع' : 'تم حذف صورة السؤال');
+      showNotification(cleanUrl ? '✓ تم تحديث رابط صورة السؤال ومزامنته للجميع' : '✓ تم حذف صورة السؤال');
     } else if (type === 'posttest') {
       const updated = postTestQuestions.map((q) =>
         q.id === questionId ? { ...q, imageUrl: cleanUrl || undefined } : q
       );
       setPostTestQuestions(updated);
       savePostTestQuestions(updated, true);
-      showNotification(cleanUrl ? 'تم تحديث رابط صورة السؤال ومزامنته للجميع' : 'تم حذف صورة السؤال');
+      showNotification(cleanUrl ? '✓ تم تحديث رابط صورة السؤال ومزامنته للجميع' : '✓ تم حذف صورة السؤال');
     } else if (type === 'levels' && levelNum !== undefined) {
       const updatedLevels = gameLevels.map((lvl) => {
         if (lvl.levelNumber !== levelNum) return lvl;
@@ -241,26 +257,28 @@ export const AdminTestsSettingsManager: React.FC = () => {
       });
       setGameLevels(updatedLevels);
       saveCustomGameLevels(updatedLevels, true);
-      showNotification(cleanUrl ? 'تم تحديث رابط صورة السؤال ومزامنته للجميع' : 'تم حذف صورة السؤال');
+      showNotification(cleanUrl ? '✓ تم تحديث رابط صورة السؤال ومزامنته للجميع' : '✓ تم حذف صورة السؤال');
     }
+    setTimeout(() => setSavingCardId(null), 300);
   };
 
   // Direct card remove image
   const handleDirectRemoveImage = (type: ActiveTestTab, questionId: string, levelNum?: number) => {
+    setSavingCardId(questionId);
     if (type === 'pretest') {
       const updated = preTestQuestions.map((q) =>
         q.id === questionId ? { ...q, imageUrl: undefined } : q
       );
       setPreTestQuestions(updated);
       savePreTestQuestions(updated, true);
-      showNotification('تم حذف صورة السؤال بنجاح ومزامنة التحديث');
+      showNotification('✓ تم حذف صورة السؤال بنجاح ومزامنة التحديث');
     } else if (type === 'posttest') {
       const updated = postTestQuestions.map((q) =>
         q.id === questionId ? { ...q, imageUrl: undefined } : q
       );
       setPostTestQuestions(updated);
       savePostTestQuestions(updated, true);
-      showNotification('تم حذف صورة السؤال بنجاح ومزامنة التحديث');
+      showNotification('✓ تم حذف صورة السؤال بنجاح ومزامنة التحديث');
     } else if (type === 'levels' && levelNum !== undefined) {
       const updatedLevels = gameLevels.map((lvl) => {
         if (lvl.levelNumber !== levelNum) return lvl;
@@ -273,8 +291,9 @@ export const AdminTestsSettingsManager: React.FC = () => {
       });
       setGameLevels(updatedLevels);
       saveCustomGameLevels(updatedLevels, true);
-      showNotification('تم حذف صورة السؤال بنجاح ومزامنة التحديث');
+      showNotification('✓ تم حذف صورة السؤال بنجاح ومزامنة التحديث');
     }
+    setTimeout(() => setSavingCardId(null), 300);
   };
 
   // Open Add Modal with position (top or bottom)
@@ -319,8 +338,36 @@ export const AdminTestsSettingsManager: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // Save Modal Form
-  const handleSaveQuestion = () => {
+  // Modal option handlers (Add / Remove / Change)
+  const handleOptionChange = (idx: number, val: string) => {
+    const updated = [...formOptions];
+    updated[idx] = val;
+    setFormOptions(updated);
+  };
+
+  const handleAddOption = () => {
+    if (formOptions.length >= 8) {
+      showNotification('الحد الأقصى للخيارات هو 8 خيارات', 'error');
+      return;
+    }
+    setFormOptions([...formOptions, '']);
+  };
+
+  const handleRemoveOption = (idx: number) => {
+    if (formOptions.length <= 2) {
+      showNotification('يجب أن يحتوي السؤال على خيارين على الأقل', 'error');
+      return;
+    }
+    const updated = formOptions.filter((_, i) => i !== idx);
+    setFormOptions(updated);
+    if (formCorrectIndex >= updated.length) {
+      setFormCorrectIndex(updated.length - 1);
+    }
+    showNotification('تم حذف نقطة الإجابة، يمكنك إكمال التعديل وحفظ السؤال');
+  };
+
+  // Save Modal Form with Loading Spinner
+  const handleSaveQuestion = async () => {
     if (!formQuestionText.trim()) {
       showNotification('يرجى كتابة نص السؤال أولاً', 'error');
       return;
@@ -332,81 +379,13 @@ export const AdminTestsSettingsManager: React.FC = () => {
     }
     const safeCorrectIndex = formCorrectIndex >= cleanOptions.length ? 0 : formCorrectIndex;
 
-    if (editingQuestionType === 'pretest') {
-      let updated: PreTestQuestion[];
-      if (editingQuestionId) {
-        // Edit existing
-        updated = preTestQuestions.map((q) =>
-          q.id === editingQuestionId
-            ? {
-                ...q,
-                question: formQuestionText.trim(),
-                options: cleanOptions,
-                correctIndex: safeCorrectIndex,
-                explanation: formExplanation.trim(),
-                points: Number(formPoints) || 50,
-                imageUrl: formImageUrl.trim() || undefined,
-              }
-            : q
-        );
-      } else {
-        // Add new (top or bottom)
-        const newQ: PreTestQuestion = {
-          id: `pt-custom-${Date.now()}`,
-          question: formQuestionText.trim(),
-          options: cleanOptions,
-          correctIndex: safeCorrectIndex,
-          explanation: formExplanation.trim(),
-          points: Number(formPoints) || 50,
-          imageUrl: formImageUrl.trim() || undefined,
-        };
-        updated = addPosition === 'top' ? [newQ, ...preTestQuestions] : [...preTestQuestions, newQ];
-      }
-      setPreTestQuestions(updated);
-      savePreTestQuestions(updated, true);
-      showNotification('تم حفظ السؤال في الاختبار القبلي ومزامنته للجميع عبر فايربيس بنجاح');
-    } else if (editingQuestionType === 'posttest') {
-      let updated: PreTestQuestion[];
-      if (editingQuestionId) {
-        // Edit existing
-        updated = postTestQuestions.map((q) =>
-          q.id === editingQuestionId
-            ? {
-                ...q,
-                question: formQuestionText.trim(),
-                options: cleanOptions,
-                correctIndex: safeCorrectIndex,
-                explanation: formExplanation.trim(),
-                points: Number(formPoints) || 50,
-                imageUrl: formImageUrl.trim() || undefined,
-              }
-            : q
-        );
-      } else {
-        // Add new (top or bottom)
-        const newQ: PreTestQuestion = {
-          id: `post-custom-${Date.now()}`,
-          question: formQuestionText.trim(),
-          options: cleanOptions,
-          correctIndex: safeCorrectIndex,
-          explanation: formExplanation.trim(),
-          points: Number(formPoints) || 50,
-          imageUrl: formImageUrl.trim() || undefined,
-        };
-        updated = addPosition === 'top' ? [newQ, ...postTestQuestions] : [...postTestQuestions, newQ];
-      }
-      setPostTestQuestions(updated);
-      savePostTestQuestions(updated, true);
-      showNotification('تم حفظ السؤال في الاختبار البعدي ومزامنته للجميع عبر فايربيس بنجاح');
-    } else {
-      // 10 Stages (levels)
-      const updatedLevels = gameLevels.map((lvl) => {
-        if (lvl.levelNumber !== editingTargetLevel) return lvl;
-
-        let updatedQuestions: LevelQuestion[];
+    setIsSavingModal(true);
+    try {
+      if (editingQuestionType === 'pretest') {
+        let updated: PreTestQuestion[];
         if (editingQuestionId) {
           // Edit existing
-          updatedQuestions = lvl.questions.map((q) =>
+          updated = preTestQuestions.map((q) =>
             q.id === editingQuestionId
               ? {
                   ...q,
@@ -414,37 +393,111 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   options: cleanOptions,
                   correctIndex: safeCorrectIndex,
                   explanation: formExplanation.trim(),
-                  points: Number(formPoints) || 34,
+                  points: Number(formPoints) || 50,
                   imageUrl: formImageUrl.trim() || undefined,
                 }
               : q
           );
         } else {
           // Add new (top or bottom)
-          const newQ: LevelQuestion = {
-            id: `q${editingTargetLevel}-custom-${Date.now()}`,
+          const newQ: PreTestQuestion = {
+            id: `pt-custom-${Date.now()}`,
             question: formQuestionText.trim(),
             options: cleanOptions,
             correctIndex: safeCorrectIndex,
             explanation: formExplanation.trim(),
-            points: Number(formPoints) || 34,
+            points: Number(formPoints) || 50,
             imageUrl: formImageUrl.trim() || undefined,
           };
-          updatedQuestions = addPosition === 'top' ? [newQ, ...lvl.questions] : [...lvl.questions, newQ];
+          updated = addPosition === 'top' ? [newQ, ...preTestQuestions] : [...preTestQuestions, newQ];
         }
-        return { ...lvl, questions: updatedQuestions };
-      });
+        setPreTestQuestions(updated);
+        savePreTestQuestions(updated, true);
+        showNotification('✓ تم حفظ السؤال والإجابات في الاختبار القبلي ومزامنته للجميع عبر فايربيس بنجاح');
+      } else if (editingQuestionType === 'posttest') {
+        let updated: PreTestQuestion[];
+        if (editingQuestionId) {
+          // Edit existing
+          updated = postTestQuestions.map((q) =>
+            q.id === editingQuestionId
+              ? {
+                  ...q,
+                  question: formQuestionText.trim(),
+                  options: cleanOptions,
+                  correctIndex: safeCorrectIndex,
+                  explanation: formExplanation.trim(),
+                  points: Number(formPoints) || 50,
+                  imageUrl: formImageUrl.trim() || undefined,
+                }
+              : q
+          );
+        } else {
+          // Add new (top or bottom)
+          const newQ: PreTestQuestion = {
+            id: `post-custom-${Date.now()}`,
+            question: formQuestionText.trim(),
+            options: cleanOptions,
+            correctIndex: safeCorrectIndex,
+            explanation: formExplanation.trim(),
+            points: Number(formPoints) || 50,
+            imageUrl: formImageUrl.trim() || undefined,
+          };
+          updated = addPosition === 'top' ? [newQ, ...postTestQuestions] : [...postTestQuestions, newQ];
+        }
+        setPostTestQuestions(updated);
+        savePostTestQuestions(updated, true);
+        showNotification('✓ تم حفظ السؤال والإجابات في الاختبار البعدي ومزامنته للجميع عبر فايربيس بنجاح');
+      } else {
+        // 10 Stages (levels)
+        const updatedLevels = gameLevels.map((lvl) => {
+          if (lvl.levelNumber !== editingTargetLevel) return lvl;
 
-      setGameLevels(updatedLevels);
-      saveCustomGameLevels(updatedLevels, true);
-      showNotification(`تم حفظ السؤال في المستوى ${editingTargetLevel} ومزامنته للجميع عبر فايربيس بنجاح`);
+          let updatedQuestions: LevelQuestion[];
+          if (editingQuestionId) {
+            // Edit existing
+            updatedQuestions = lvl.questions.map((q) =>
+              q.id === editingQuestionId
+                ? {
+                    ...q,
+                    question: formQuestionText.trim(),
+                    options: cleanOptions,
+                    correctIndex: safeCorrectIndex,
+                    explanation: formExplanation.trim(),
+                    points: Number(formPoints) || 34,
+                    imageUrl: formImageUrl.trim() || undefined,
+                  }
+                : q
+            );
+          } else {
+            // Add new (top or bottom)
+            const newQ: LevelQuestion = {
+              id: `q${editingTargetLevel}-custom-${Date.now()}`,
+              question: formQuestionText.trim(),
+              options: cleanOptions,
+              correctIndex: safeCorrectIndex,
+              explanation: formExplanation.trim(),
+              points: Number(formPoints) || 34,
+              imageUrl: formImageUrl.trim() || undefined,
+            };
+            updatedQuestions = addPosition === 'top' ? [newQ, ...lvl.questions] : [...lvl.questions, newQ];
+          }
+          return { ...lvl, questions: updatedQuestions };
+        });
+
+        setGameLevels(updatedLevels);
+        saveCustomGameLevels(updatedLevels, true);
+        showNotification(`✓ تم حفظ السؤال والإجابات في المستوى ${editingTargetLevel} ومزامنته للجميع عبر فايربيس بنجاح`);
+      }
+    } finally {
+      setTimeout(() => {
+        setIsSavingModal(false);
+        setIsModalOpen(false);
+      }, 250);
     }
-
-    setIsModalOpen(false);
   };
 
-  // Direct Inline Save from Card
-  const handleInlineSaveQuestion = (
+  // Direct Inline Save from Card with Loading Spinner
+  const handleInlineSaveQuestion = async (
     type: ActiveTestTab,
     questionId: string,
     updatedData: {
@@ -468,80 +521,87 @@ export const AdminTestsSettingsManager: React.FC = () => {
     }
     const safeCorrectIndex = updatedData.correctIndex >= cleanOptions.length ? 0 : updatedData.correctIndex;
 
-    if (type === 'pretest') {
-      const updated = preTestQuestions.map((q) =>
-        q.id === questionId
-          ? {
-              ...q,
-              question: updatedData.question.trim(),
-              options: cleanOptions,
-              correctIndex: safeCorrectIndex,
-              explanation: updatedData.explanation.trim(),
-              points: Number(updatedData.points) || 50,
-              imageUrl: updatedData.imageUrl,
-            }
-          : q
-      );
-      setPreTestQuestions(updated);
-      savePreTestQuestions(updated, true);
-      showNotification('تم حفظ وتحديث السؤال في الاختبار القبلي ومزامنته للجميع بنجاح');
-    } else if (type === 'posttest') {
-      const updated = postTestQuestions.map((q) =>
-        q.id === questionId
-          ? {
-              ...q,
-              question: updatedData.question.trim(),
-              options: cleanOptions,
-              correctIndex: safeCorrectIndex,
-              explanation: updatedData.explanation.trim(),
-              points: Number(updatedData.points) || 50,
-              imageUrl: updatedData.imageUrl,
-            }
-          : q
-      );
-      setPostTestQuestions(updated);
-      savePostTestQuestions(updated, true);
-      showNotification('تم حفظ وتحديث السؤال في الاختبار البعدي ومزامنته للجميع بنجاح');
-    } else if (type === 'levels' && levelNum !== undefined) {
-      const updatedLevels = gameLevels.map((lvl) => {
-        if (lvl.levelNumber !== levelNum) return lvl;
-        return {
-          ...lvl,
-          questions: lvl.questions.map((q) =>
-            q.id === questionId
-              ? {
-                  ...q,
-                  question: updatedData.question.trim(),
-                  options: cleanOptions,
-                  correctIndex: safeCorrectIndex,
-                  explanation: updatedData.explanation.trim(),
-                  points: Number(updatedData.points) || 34,
-                  imageUrl: updatedData.imageUrl,
-                }
-              : q
-          ),
-        };
-      });
-      setGameLevels(updatedLevels);
-      saveCustomGameLevels(updatedLevels, true);
-      showNotification(`تم حفظ وتحديث السؤال في المستوى ${levelNum} ومزامنته للجميع بنجاح`);
+    setSavingCardId(questionId);
+    try {
+      if (type === 'pretest') {
+        const updated = preTestQuestions.map((q) =>
+          q.id === questionId
+            ? {
+                ...q,
+                question: updatedData.question.trim(),
+                options: cleanOptions,
+                correctIndex: safeCorrectIndex,
+                explanation: updatedData.explanation.trim(),
+                points: Number(updatedData.points) || 50,
+                imageUrl: updatedData.imageUrl,
+              }
+            : q
+        );
+        setPreTestQuestions(updated);
+        savePreTestQuestions(updated, true);
+        showNotification('✓ تم حفظ وتحديث السؤال والإجابات في الاختبار القبلي ومزامنته فوراً للجميع');
+      } else if (type === 'posttest') {
+        const updated = postTestQuestions.map((q) =>
+          q.id === questionId
+            ? {
+                ...q,
+                question: updatedData.question.trim(),
+                options: cleanOptions,
+                correctIndex: safeCorrectIndex,
+                explanation: updatedData.explanation.trim(),
+                points: Number(updatedData.points) || 50,
+                imageUrl: updatedData.imageUrl,
+              }
+            : q
+        );
+        setPostTestQuestions(updated);
+        savePostTestQuestions(updated, true);
+        showNotification('✓ تم حفظ وتحديث السؤال والإجابات في الاختبار البعدي ومزامنته فوراً للجميع');
+      } else if (type === 'levels' && levelNum !== undefined) {
+        const updatedLevels = gameLevels.map((lvl) => {
+          if (lvl.levelNumber !== levelNum) return lvl;
+          return {
+            ...lvl,
+            questions: lvl.questions.map((q) =>
+              q.id === questionId
+                ? {
+                    ...q,
+                    question: updatedData.question.trim(),
+                    options: cleanOptions,
+                    correctIndex: safeCorrectIndex,
+                    explanation: updatedData.explanation.trim(),
+                    points: Number(updatedData.points) || 34,
+                    imageUrl: updatedData.imageUrl,
+                  }
+                : q
+            ),
+          };
+        });
+        setGameLevels(updatedLevels);
+        saveCustomGameLevels(updatedLevels, true);
+        showNotification(`✓ تم حفظ وتحديث السؤال والإجابات في المستوى ${levelNum} ومزامنته فوراً للجميع`);
+      }
+    } finally {
+      setTimeout(() => {
+        setSavingCardId(null);
+        setInlineEditingCardId(null);
+      }, 250);
     }
-
-    setInlineEditingCardId(null);
   };
 
   // Delete Question
   const handleDeleteQuestion = (type: ActiveTestTab, questionId: string, levelNum?: number) => {
+    setSavingCardId(questionId);
     if (type === 'pretest') {
       const updated = preTestQuestions.filter((q) => q.id !== questionId);
       setPreTestQuestions(updated);
       savePreTestQuestions(updated, true);
-      showNotification('تم حذف السؤال من الاختبار القبلي ومزامنة التحديث');
+      showNotification('✓ تم حذف السؤال من الاختبار القبلي ومزامنة التحديث');
     } else if (type === 'posttest') {
       const updated = postTestQuestions.filter((q) => q.id !== questionId);
       setPostTestQuestions(updated);
       savePostTestQuestions(updated, true);
-      showNotification('تم حذف السؤال من الاختبار البعدي ومزامنة التحديث');
+      showNotification('✓ تم حذف السؤال من الاختبار البعدي ومزامنة التحديث');
     } else if (type === 'levels' && levelNum !== undefined) {
       const updatedLevels = gameLevels.map((lvl) => {
         if (lvl.levelNumber !== levelNum) return lvl;
@@ -552,51 +612,25 @@ export const AdminTestsSettingsManager: React.FC = () => {
       });
       setGameLevels(updatedLevels);
       saveCustomGameLevels(updatedLevels, true);
-      showNotification(`تم حذف السؤال من المستوى ${levelNum} ومزامنة التحديث`);
+      showNotification(`✓ تم حذف السؤال من المستوى ${levelNum} ومزامنة التحديث`);
     }
+    setTimeout(() => setSavingCardId(null), 300);
   };
 
   // Reset to Defaults
   const handleResetDefaults = (type: ActiveTestTab) => {
     if (type === 'pretest') {
-      const restored = resetPreTestQuestionsToDefault();
-      setPreTestQuestions(restored);
-      showNotification('تمت استعادة أسئلة الاختبار القبلي القياسية ومزامنتها للجميع');
+      const def = resetPreTestQuestionsToDefault();
+      setPreTestQuestions([...def]);
+      showNotification('✓ تم استعادة الأسئلة الافتراضية للاختبار القبلي ومزامنتها بنجاح');
     } else if (type === 'posttest') {
-      const restored = resetPostTestQuestionsToDefault();
-      setPostTestQuestions(restored);
-      showNotification('تمت استعادة أسئلة الاختبار البعدي القياسية ومزامنتها للجميع');
+      const def = resetPostTestQuestionsToDefault();
+      setPostTestQuestions([...def]);
+      showNotification('✓ تم استعادة الأسئلة الافتراضية للاختبار البعدي ومزامنتها بنجاح');
     } else {
-      const restored = resetGameLevelsToDefault();
-      setGameLevels(restored);
-      showNotification('تمت استعادة أسئلة المراحل العشر القياسية ومزامنتها للجميع');
-    }
-  };
-
-  // Options modification in modal form
-  const handleOptionChange = (idx: number, val: string) => {
-    const updated = [...formOptions];
-    updated[idx] = val;
-    setFormOptions(updated);
-  };
-
-  const handleAddOption = () => {
-    if (formOptions.length >= 6) {
-      showNotification('الحد الأقصى للخيارات هو 6 خيارات', 'error');
-      return;
-    }
-    setFormOptions([...formOptions, '']);
-  };
-
-  const handleRemoveOption = (idx: number) => {
-    if (formOptions.length <= 2) {
-      showNotification('يجب أن يحتوي السؤال على خيارين على الأقل', 'error');
-      return;
-    }
-    const updated = formOptions.filter((_, i) => i !== idx);
-    setFormOptions(updated);
-    if (formCorrectIndex >= updated.length) {
-      setFormCorrectIndex(updated.length - 1);
+      const def = resetGameLevelsToDefault();
+      setGameLevels([...def]);
+      showNotification('✓ تم استعادة الأسئلة الافتراضية للمراحل العشر ومزامنتها بنجاح');
     }
   };
 
@@ -630,51 +664,62 @@ export const AdminTestsSettingsManager: React.FC = () => {
   // Calculate statistics
   const preWithImages = preTestQuestions.filter((q) => !!q.imageUrl).length;
   const postWithImages = postTestQuestions.filter((q) => !!q.imageUrl).length;
-  let levelsTotalQ = 0;
+  let totalLevelsQuestions = 0;
   let levelsWithImages = 0;
-  gameLevels.forEach((lvl) => {
-    levelsTotalQ += lvl.questions.length;
-    levelsWithImages += lvl.questions.filter((q) => !!q.imageUrl).length;
+  gameLevels.forEach((l) => {
+    totalLevelsQuestions += l.questions.length;
+    levelsWithImages += l.questions.filter((q) => !!q.imageUrl).length;
   });
 
   return (
-    <div className="space-y-6 font-['Cairo',_sans-serif] text-right">
-      {/* Hidden File Input for Modal Device Image Upload */}
+    <div className="space-y-6 font-['Cairo',_sans-serif] text-right" dir="rtl">
+      {/* Hidden File Input for Card-level Direct Upload */}
       <input
-        ref={modalFileInputRef}
         type="file"
-        accept="image/*"
-        onChange={handleModalImageUpload}
-        className="hidden"
-      />
-
-      {/* Hidden File Input for Direct Card Device Image Upload */}
-      <input
         ref={directFileInputRef}
-        type="file"
-        accept="image/*"
         onChange={handleDirectFileSelected}
+        accept="image/*"
         className="hidden"
       />
 
-      {/* Header Banner */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-violet-950/90 via-purple-950/60 to-slate-950 border-2 border-amber-500/50 shadow-[0_0_35px_rgba(251,191,36,0.2)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 text-slate-950 flex items-center justify-center shadow-lg shadow-amber-950/60 shrink-0 font-black">
-            <Settings className="w-7 h-7" />
+      {/* Hidden File Input for Modal Upload */}
+      <input
+        type="file"
+        ref={modalFileInputRef}
+        onChange={handleModalImageUpload}
+        accept="image/*"
+        className="hidden"
+      />
+
+      {/* Global Loading Overlay / Indicator when Uploading Image */}
+      {isUploadingImage && (
+        <div className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0b0e20] border-2 border-amber-400 p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-3">
+            <Loader2 className="w-10 h-10 text-amber-400 animate-spin" />
+            <p className="text-sm font-black text-white">جاري معالجة ورفع صورة السؤال وتثبيتها...</p>
+            <span className="text-xs text-amber-300">يتم ضغط الصورة تلقائياً لسرعة المزامنة</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-300 text-xs font-black">
-                لوحة المشرف المتقدمة • مزامنة فايربيس الحية
-              </span>
+        </div>
+      )}
+
+      {/* Header with Title and Global Add Button */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border border-amber-500/50 text-[#ffd700] shadow-[0_0_20px_rgba(255,215,0,0.25)]">
+              <Settings className="w-6 h-6" />
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal'] tracking-tight">
-              إعدادات وبنوك أسئلة الاختبارات والمراحل العشر
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1">
-              إمكانية تعديل أي سؤال مباشرة في البطاقة، إضافة أسئلة من أعلى أو أسفل كل قسم، وإرفاق الصور من جهازك مع مزامنة فورية لدى جميع الطلاب عبر فايربيس.
-            </p>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal'] tracking-tight flex items-center gap-2">
+                <span>إعدادات وضبط وتعديل بنك الأسئلة والاختبارات</span>
+                <span className="px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-xs font-bold shadow-sm">
+                  مزامنة حية عبر فايربيس
+                </span>
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                تعديل نصوص الأسئلة والإجابات، رفع الصور من الجهاز، إضافة إجابة جديدة أو حذف أي نقطة، وضبط التفسير والنقاط.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -705,7 +750,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
           <button
             type="button"
             onClick={() => setFeedbackMsg(null)}
-            className="text-xs opacity-75 hover:opacity-100 font-bold px-2 py-1 rounded bg-black/40"
+            className="text-xs opacity-75 hover:opacity-100 font-bold px-2 py-1 rounded bg-black/40 cursor-pointer"
           >
             ✕
           </button>
@@ -761,11 +806,11 @@ export const AdminTestsSettingsManager: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm sm:text-base font-black font-['Tajawal'] flex items-center gap-2">
-              <span>🏆 الاختبار البعدي (Post-Test)</span>
+              <span>🎯 الاختبار البعدي (Post-Test)</span>
             </span>
             <span
               className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold ${
-                activeTab === 'posttest' ? 'bg-slate-950 text-purple-300' : 'bg-slate-900 text-slate-300'
+                activeTab === 'posttest' ? 'bg-slate-950 text-white' : 'bg-slate-900 text-slate-300'
               }`}
             >
               {postTestQuestions.length} سؤال
@@ -793,60 +838,64 @@ export const AdminTestsSettingsManager: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm sm:text-base font-black font-['Tajawal'] flex items-center gap-2">
-              <span>🎮 المراحل العشر (10 Stages)</span>
+              <span>🎮 أسئلة المراحل الـ 10 (Levels)</span>
             </span>
             <span
               className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold ${
                 activeTab === 'levels' ? 'bg-slate-950 text-cyan-300' : 'bg-slate-900 text-slate-300'
               }`}
             >
-              {levelsTotalQ} سؤال
+              {totalLevelsQuestions} سؤال
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs opacity-90">
-            <span>10 مستويات</span>
+            <span>10 مراحل متدرجة</span>
             <span>•</span>
             <span>بصور: {levelsWithImages}</span>
           </div>
         </button>
       </div>
 
-      {/* Sub-Filters & Search Bar & Reset Defaults */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-4 rounded-2xl bg-[#090b17] border border-slate-800">
-        <div className="flex flex-1 items-center gap-3">
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث في نص السؤال، التفسير، أو الخيارات..."
-              className="w-full pr-9 pl-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 text-white text-xs outline-none transition-all placeholder:text-slate-500"
-            />
-          </div>
-
-          {/* Level Filter Dropdown if activeTab === 'levels' */}
-          {activeTab === 'levels' && (
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-cyan-400 shrink-0" />
-              <select
-                value={selectedLevelFilter}
-                onChange={(e) =>
-                  setSelectedLevelFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))
-                }
-                className="px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-cyan-300 text-xs font-bold focus:border-cyan-500 outline-none cursor-pointer"
-              >
-                <option value="all">كافة المستويات العشر (الكل)</option>
-                {gameLevels.map((lvl) => (
-                  <option key={lvl.levelNumber} value={lvl.levelNumber}>
-                    المستوى {lvl.levelNumber}: {lvl.shortTitle} ({lvl.questions.length})
-                  </option>
-                ))}
-              </select>
-            </div>
+      {/* Filter / Search Bar & Quick Controls */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0d1024] p-3 rounded-2xl border border-slate-800">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="ابحث برقم السؤال، نصه، خيارات الإجابة، أو التفسير العلمي..."
+            className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800 focus:border-amber-400 text-white text-xs sm:text-sm outline-none transition"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs cursor-pointer"
+            >
+              مسح
+            </button>
           )}
         </div>
+
+        {/* If tab is Levels, show stage selector */}
+        {activeTab === 'levels' && (
+          <div className="flex items-center gap-2 shrink-0">
+            <Filter className="w-4 h-4 text-cyan-400" />
+            <select
+              value={selectedLevelFilter}
+              onChange={(e) => setSelectedLevelFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+              className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs font-bold outline-none cursor-pointer"
+            >
+              <option value="all">جميع المراحل (10 مراحل)</option>
+              {gameLevels.map((lvl) => (
+                <option key={lvl.levelNumber} value={lvl.levelNumber}>
+                  المستوى {lvl.levelNumber}: {lvl.shortTitle} ({lvl.questions.length})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Reset to Defaults button */}
         <button
@@ -885,6 +934,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 index={idx + 1}
                 question={q}
                 isInlineEditing={inlineEditingCardId === q.id}
+                isSavingThisCard={savingCardId === q.id}
                 onToggleInlineEdit={() => setInlineEditingCardId(inlineEditingCardId === q.id ? null : q.id)}
                 onSaveInline={(updated) => handleInlineSaveQuestion('pretest', q.id, updated)}
                 onOpenModalEdit={() => handleOpenEditPrePostModal('pretest', q)}
@@ -941,6 +991,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 index={idx + 1}
                 question={q}
                 isInlineEditing={inlineEditingCardId === q.id}
+                isSavingThisCard={savingCardId === q.id}
                 onToggleInlineEdit={() => setInlineEditingCardId(inlineEditingCardId === q.id ? null : q.id)}
                 onSaveInline={(updated) => handleInlineSaveQuestion('posttest', q.id, updated)}
                 onOpenModalEdit={() => handleOpenEditPrePostModal('posttest', q)}
@@ -999,6 +1050,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 levelBadge={`المستوى ${level.levelNumber}: ${level.shortTitle}`}
                 question={question}
                 isInlineEditing={inlineEditingCardId === question.id}
+                isSavingThisCard={savingCardId === question.id}
                 onToggleInlineEdit={() => setInlineEditingCardId(inlineEditingCardId === question.id ? null : question.id)}
                 onSaveInline={(updated) => handleInlineSaveQuestion('levels', question.id, updated, level.levelNumber)}
                 onOpenModalEdit={() => handleOpenEditLevelModal(level.levelNumber, question)}
@@ -1033,9 +1085,9 @@ export const AdminTestsSettingsManager: React.FC = () => {
       {/* ======================= ADD / EDIT MODAL (SOLID, HIGH CONTRAST, ZERO BLACK SCREEN) ======================= */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setIsModalOpen(false);
+            if (e.target === e.currentTarget && !isSavingModal) setIsModalOpen(false);
           }}
         >
           <div
@@ -1050,7 +1102,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-white font-['Tajawal']">
-                    {editingQuestionId ? 'تعديل السؤال وإعداداته' : `إضافة سؤال جديد (${addPosition === 'top' ? 'في البداية' : 'في النهاية'})`}
+                    {editingQuestionId ? 'تعديل السؤال وخيارات الإجابة' : `إضافة سؤال جديد (${addPosition === 'top' ? 'في البداية' : 'في النهاية'})`}
                   </h3>
                   <span className="text-xs text-amber-300 font-bold">
                     {editingQuestionType === 'pretest'
@@ -1063,6 +1115,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               </div>
               <button
                 type="button"
+                disabled={isSavingModal}
                 onClick={() => setIsModalOpen(false)}
                 className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
                 title="إغلاق النافذة"
@@ -1139,7 +1192,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-amber-300 flex items-center gap-2">
                   <ImageIcon className="w-4 h-4 text-amber-400" />
-                  <span>الصورة التوضيحية للسؤال (رفع ملف أو رابط مباشر)</span>
+                  <span>الصورة التوضيحية للسؤال (رفع ملف من الجهاز أو رابط مباشر)</span>
                 </span>
                 {formImageUrl && (
                   <button
@@ -1172,7 +1225,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   className="px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
                 >
                   <Upload className="w-4 h-4" />
-                  <span>اختر ملف من جهازك / هاتفك</span>
+                  <span>اختر ملف صورة من جهازك / هاتفك</span>
                 </button>
 
                 <div className="relative">
@@ -1188,19 +1241,19 @@ export const AdminTestsSettingsManager: React.FC = () => {
               </div>
             </div>
 
-            {/* Options List */}
+            {/* Options List with Dynamic Add and Delete Point / Option */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-200">
-                  خيارات الإجابة (حدد الإجابة الصحيحة بالدائرة الخضراء):
+                  خيارات الإجابة (حدد الإجابة الصحيحة بالدائرة الخضراء، ويمكنك إضافة أو حذف أي نقطة):
                 </label>
                 <button
                   type="button"
                   onClick={handleAddOption}
-                  className="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 hover:text-white text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>إضافة خيار</span>
+                  <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>➕ إضافة إجابة جديدة</span>
                 </button>
               </div>
 
@@ -1223,7 +1276,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                       className="w-4 h-4 text-emerald-500 accent-emerald-500 cursor-pointer shrink-0"
                     />
                     <span className="w-6 h-6 rounded-lg bg-slate-900 text-slate-300 text-xs font-mono font-bold flex items-center justify-center shrink-0">
-                      {['أ', 'ب', 'ج', 'د', 'هـ', 'و'][idx] || idx + 1}
+                      {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][idx] || idx + 1}
                     </span>
                     <input
                       type="text"
@@ -1232,15 +1285,20 @@ export const AdminTestsSettingsManager: React.FC = () => {
                       placeholder={`نص الخيار رقم ${idx + 1}...`}
                       className="flex-1 bg-transparent border-0 text-white text-xs sm:text-sm outline-none px-2 py-1"
                     />
-                    {formOptions.length > 2 && (
+                    {formOptions.length > 2 ? (
                       <button
                         type="button"
                         onClick={() => handleRemoveOption(idx)}
-                        className="text-slate-500 hover:text-red-400 p-1 cursor-pointer"
-                        title="حذف هذا الخيار"
+                        className="px-2.5 py-1 rounded-lg bg-red-950/70 hover:bg-red-900 border border-red-500/60 text-red-300 hover:text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm shrink-0"
+                        title="حذف هذه النقطة / الخيار من الإجابات"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                        <span>حذف النقطة</span>
                       </button>
+                    ) : (
+                      <span className="text-[10px] text-slate-500 px-2 py-1 font-bold shrink-0">
+                        (الحد الأدنى خيارين)
+                      </span>
                     )}
                   </div>
                 ))}
@@ -1277,10 +1335,11 @@ export const AdminTestsSettingsManager: React.FC = () => {
               </div>
             </div>
 
-            {/* Modal Actions */}
+            {/* Modal Actions with Loading Spinner */}
             <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-3">
               <button
                 type="button"
+                disabled={isSavingModal}
                 onClick={() => setIsModalOpen(false)}
                 className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold text-xs cursor-pointer"
               >
@@ -1288,11 +1347,21 @@ export const AdminTestsSettingsManager: React.FC = () => {
               </button>
               <button
                 type="button"
+                disabled={isSavingModal}
                 onClick={handleSaveQuestion}
-                className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-950/50 cursor-pointer flex items-center gap-2"
+                className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-950/50 cursor-pointer flex items-center gap-2 disabled:opacity-50 transition-all"
               >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>حفظ ومزامنة عبر فايربيس</span>
+                {isSavingModal ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    <span>جاري الحفظ والمزامنة السحابية...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>حفظ ومزامنة عبر فايربيس</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1325,12 +1394,13 @@ export const AdminTestsSettingsManager: React.FC = () => {
   );
 };
 
-// ======================= SINGLE QUESTION CARD COMPONENT WITH INLINE EDITING =======================
+// ======================= SINGLE QUESTION CARD COMPONENT WITH INLINE EDITING & LOADING SPINNERS =======================
 interface QuestionAdminCardProps {
   index: number;
   levelBadge?: string;
   question: PreTestQuestion | LevelQuestion;
   isInlineEditing: boolean;
+  isSavingThisCard?: boolean;
   onToggleInlineEdit: () => void;
   onSaveInline: (updatedData: {
     question: string;
@@ -1353,6 +1423,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
   levelBadge,
   question,
   isInlineEditing,
+  isSavingThisCard = false,
   onToggleInlineEdit,
   onSaveInline,
   onOpenModalEdit,
@@ -1404,7 +1475,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
   };
 
   const handleAddInlineOption = () => {
-    if (draftOptions.length >= 6) return;
+    if (draftOptions.length >= 8) return;
     setDraftOptions([...draftOptions, '']);
   };
 
@@ -1418,7 +1489,21 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
   };
 
   return (
-    <div className="p-5 rounded-2xl bg-[#090c1e] border-2 border-slate-800/90 hover:border-amber-500/40 transition-all space-y-4">
+    <div className={`p-5 rounded-2xl bg-[#090c1e] border-2 transition-all space-y-4 relative ${
+      isSavingThisCard
+        ? 'border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.35)]'
+        : isInlineEditing
+        ? 'border-amber-400 shadow-xl'
+        : 'border-slate-800/90 hover:border-amber-500/40'
+    }`}>
+      {/* Loading banner on the card when saving or uploading */}
+      {isSavingThisCard && (
+        <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/90 text-slate-950 font-black text-xs shadow-md animate-pulse">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <span>جاري المزامنة...</span>
+        </div>
+      )}
+
       {/* Top Header of the Question Card */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
         <div className="flex items-center gap-2.5">
@@ -1472,12 +1557,12 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             className={`px-3.5 py-1.5 rounded-xl border text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
               isInlineEditing
                 ? 'bg-amber-500 text-slate-950 border-amber-300 shadow-amber-500/30'
-                : 'bg-violet-950/70 hover:bg-violet-900 border-violet-500/60 text-violet-200 hover:text-white'
+                : 'bg-violet-950/80 hover:bg-violet-900 border-violet-500/60 text-violet-200 hover:text-white'
             }`}
-            title="تعديل هذا السؤال مباشرة في مكانه"
+            title="تعديل هذا السؤال وخيارات إجابته مباشرة في مكانه"
           >
             <Edit3 className="w-3.5 h-3.5" />
-            <span>{isInlineEditing ? 'إغلاق التعديل' : 'تعديل السؤال'}</span>
+            <span>{isInlineEditing ? 'إغلاق التعديل' : 'تعديل السؤال والإجابات'}</span>
           </button>
 
           {/* Modal Edit Question button */}
@@ -1485,7 +1570,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             type="button"
             onClick={onOpenModalEdit}
             className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white text-xs cursor-pointer"
-            title="فتح نافذة التعديل المنبثقة"
+            title="فتح نافذة التعديل المنبثقة الكاملة"
           >
             <Layers className="w-3.5 h-3.5" />
           </button>
@@ -1564,12 +1649,12 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
           <div className="flex items-center justify-between pb-2 border-b border-slate-800">
             <span className="text-xs font-black text-amber-300 flex items-center gap-1.5">
               <Edit3 className="w-4 h-4 text-amber-400" />
-              <span>تعديل السؤال مباشرة داخل البطاقة</span>
+              <span>تعديل السؤال والإجابات مباشرة داخل البطاقة</span>
             </span>
             <button
               type="button"
               onClick={onToggleInlineEdit}
-              className="text-xs text-slate-400 hover:text-white"
+              className="text-xs text-slate-400 hover:text-white cursor-pointer"
             >
               ✕ إغلاق
             </button>
@@ -1594,7 +1679,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
                 <ImageIcon className="w-4 h-4" />
-                <span>صورة السؤال</span>
+                <span>صورة السؤال (رفع من الجهاز أو رابط)</span>
               </span>
               {draftImageUrl && (
                 <button
@@ -1622,10 +1707,10 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
               <button
                 type="button"
                 onClick={onTriggerFileUpload}
-                className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>اختر ملف من جهازك</span>
+                <span>اختر ملف صورة من جهازك</span>
               </button>
               <input
                 type="url"
@@ -1637,19 +1722,19 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             </div>
           </div>
 
-          {/* Options with Radio Selection */}
+          {/* Options with Radio Selection, Dynamic Add, and Delete Point */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-200">
-                خيارات الإجابة (حدد الإجابة الصحيحة بالدائرة):
+                خيارات الإجابة (حدد الإجابة الصحيحة بالدائرة، ويمكنك إضافة أو حذف أي نقطة):
               </label>
               <button
                 type="button"
                 onClick={handleAddInlineOption}
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 hover:text-white text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>إضافة خيار</span>
+                <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                <span>➕ إضافة إجابة جديدة</span>
               </button>
             </div>
 
@@ -1657,7 +1742,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
               {draftOptions.map((opt, optIdx) => (
                 <div
                   key={optIdx}
-                  className={`flex items-center gap-2 p-2 rounded-xl border ${
+                  className={`flex items-center gap-2 p-2 rounded-xl border transition-all ${
                     draftCorrectIndex === optIdx
                       ? 'bg-emerald-950/40 border-emerald-500'
                       : 'bg-slate-950 border-slate-800'
@@ -1671,7 +1756,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                     className="w-4 h-4 text-emerald-500 accent-emerald-500 cursor-pointer shrink-0"
                   />
                   <span className="w-6 h-6 rounded-lg bg-slate-900 text-slate-300 text-xs font-mono font-bold flex items-center justify-center shrink-0">
-                    {['أ', 'ب', 'ج', 'د', 'هـ', 'و'][optIdx] || optIdx + 1}
+                    {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || optIdx + 1}
                   </span>
                   <input
                     type="text"
@@ -1684,14 +1769,20 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                     placeholder={`نص الخيار ${optIdx + 1}...`}
                     className="flex-1 bg-transparent border-0 text-white text-xs sm:text-sm outline-none px-2"
                   />
-                  {draftOptions.length > 2 && (
+                  {draftOptions.length > 2 ? (
                     <button
                       type="button"
                       onClick={() => handleRemoveInlineOption(optIdx)}
-                      className="text-slate-500 hover:text-red-400 p-1 cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-red-950/70 hover:bg-red-900 border border-red-500/60 text-red-300 hover:text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm shrink-0"
+                      title="حذف هذه النقطة / الخيار من الإجابات"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                      <span>حذف النقطة</span>
                     </button>
+                  ) : (
+                    <span className="text-[10px] text-slate-500 px-2 py-1 font-bold shrink-0">
+                      (الحد الأدنى خيارين)
+                    </span>
                   )}
                 </div>
               ))}
@@ -1725,10 +1816,11 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             </div>
           </div>
 
-          {/* Save / Cancel buttons */}
+          {/* Save / Cancel buttons with Loading Spinner */}
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
             <button
               type="button"
+              disabled={isSavingThisCard}
               onClick={onToggleInlineEdit}
               className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer"
             >
@@ -1736,11 +1828,21 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             </button>
             <button
               type="button"
+              disabled={isSavingThisCard}
               onClick={handleSaveInlineForm}
-              className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-950/50 cursor-pointer"
+              className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-950/50 cursor-pointer disabled:opacity-50 transition-all"
             >
-              <Check className="w-4 h-4" />
-              <span>✓ حفظ التعديل والمزامنة فوراً</span>
+              {isSavingThisCard ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>جاري الحفظ والمزامنة...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>✓ حفظ التعديل والمزامنة فوراً</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -1781,7 +1883,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             </div>
           )}
 
-          {/* 4 Options Grid */}
+          {/* Options Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
             {question.options.map((opt, optIdx) => {
               const isCorrect = optIdx === question.correctIndex;
@@ -1800,7 +1902,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                         isCorrect ? 'bg-emerald-500 text-slate-950' : 'bg-slate-900 text-slate-400'
                       }`}
                     >
-                      {['أ', 'ب', 'ج', 'د', 'هـ', 'و'][optIdx] || optIdx + 1}
+                      {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || optIdx + 1}
                     </span>
                     <span className="leading-relaxed">{opt}</span>
                   </div>

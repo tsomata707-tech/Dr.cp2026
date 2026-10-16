@@ -659,11 +659,11 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
         />
       )}
 
-      {/* 1. بطاقة ترحيب عائمة لمدة 10 ثوانٍ فقط مع شريط تحميل أنيق بدون عداد وبياناتك صحيحة ثم تظهر لوحة الشرف */}
+      {/* 1. بطاقة ترحيب عائمة لمدة 7 ثوانٍ فقط مع شريط تحميل أنيق بدون عداد وبياناتك صحيحة ثم تظهر لوحة الشرف */}
       {showWelcomeFloatingCard && (
         <StudentWelcomeFloatingCard
           username={username}
-          durationSeconds={10}
+          durationSeconds={7}
           onFinish={() => {
             setShowWelcomeFloatingCard(false);
             setShowSupervisorModal(true);
