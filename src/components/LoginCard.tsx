@@ -4,6 +4,7 @@ import { CpLogo } from './CpLogo';
 import { WhatsAppSupport } from './WhatsAppSupport';
 import { getPortalUsers, addActivityLog } from '../utils/adminStorage';
 import { normalizeStudentUsername, getStudentPassword } from '../data/studentAccounts';
+import { getSiteTitleConfig, SiteTitleConfig } from '../utils/siteTitleStorage';
 
 const REMEMBERED_CREDS_KEY = 'cp_remembered_credentials_v2';
 
@@ -21,6 +22,17 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [titleConfig, setTitleConfig] = useState<SiteTitleConfig>(() => getSiteTitleConfig());
+
+  // Load saved credentials on mount and subscribe to title updates
+  useEffect(() => {
+    const handleTitleUpdate = (e: any) => {
+      if (e.detail) setTitleConfig(e.detail);
+      else setTitleConfig(getSiteTitleConfig());
+    };
+    window.addEventListener('cp_site_title_updated', handleTitleUpdate);
+    return () => window.removeEventListener('cp_site_title_updated', handleTitleUpdate);
+  }, []);
 
   // Load saved credentials on mount
   useEffect(() => {
@@ -145,12 +157,17 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
           </button>
         )}
 
-        {/* Header with CP Logo */}
+        {/* Header with CP Logo & Dynamic Site Title */}
         <div className="flex flex-col items-center justify-center text-center pb-5 border-b border-slate-800">
           <CpLogo size="lg" showText={false} className="mb-2" />
-          <h1 className="text-xl sm:text-2xl font-black text-white tracking-wide font-['Tajawal']">
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-wide font-['Tajawal'] mb-1">
             تسجيل الدخول
           </h1>
+          {titleConfig.mainTitle && (
+            <p className="text-xs text-amber-300/90 font-bold max-w-sm line-clamp-2 leading-relaxed mt-1">
+              {titleConfig.mainTitle}
+            </p>
+          )}
         </div>
 
         {/* Login Form */}

@@ -660,13 +660,14 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ userna
                           </span>
                         </div>
 
-                        {/* Optional Option Image */}
+                        {/* Optional Option Image - Balanced & Layout Preserving */}
                         {q.optionImages?.[optIdx] && (
-                          <div className="w-full my-1.5 rounded-lg overflow-hidden border border-slate-700/80 bg-black/50 p-1 flex justify-center">
+                          <div className="w-full h-28 sm:h-36 my-2 rounded-xl overflow-hidden border border-slate-700/80 bg-black/60 p-2 flex justify-center items-center shadow-inner">
                             <img
                               src={q.optionImages[optIdx]!}
                               alt={`صورة الخيار`}
-                              className="max-h-24 sm:max-h-32 w-auto object-contain rounded"
+                              className="max-h-full max-w-full object-contain rounded-lg hover:scale-105 transition-transform"
+                              loading="lazy"
                             />
                           </div>
                         )}

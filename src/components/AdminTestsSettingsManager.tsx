@@ -343,6 +343,106 @@ export const AdminTestsSettingsManager: React.FC = () => {
     setTimeout(() => setSavingCardId(null), 300);
   };
 
+  // Direct card set option image with instant Firebase sync & loading spinner
+  const handleDirectSetOptionImage = (
+    type: ActiveTestTab,
+    questionId: string,
+    optIdx: number,
+    dataUrl: string,
+    levelNum?: number
+  ) => {
+    setSavingCardId(questionId);
+    if (type === 'pretest') {
+      const updated = preTestQuestions.map((q) => {
+        if (q.id !== questionId) return q;
+        const curImgs = q.optionImages && q.optionImages.length > 0 ? [...q.optionImages] : new Array(q.options.length).fill('');
+        while (curImgs.length < q.options.length) curImgs.push('');
+        curImgs[optIdx] = dataUrl;
+        return { ...q, optionImages: curImgs };
+      });
+      setPreTestQuestions(updated);
+      savePreTestQuestions(updated, true);
+      showNotification('✓ تم رفع صورة خيار الإجابة ومزامنتها للجميع فوراً');
+    } else if (type === 'posttest') {
+      const updated = postTestQuestions.map((q) => {
+        if (q.id !== questionId) return q;
+        const curImgs = q.optionImages && q.optionImages.length > 0 ? [...q.optionImages] : new Array(q.options.length).fill('');
+        while (curImgs.length < q.options.length) curImgs.push('');
+        curImgs[optIdx] = dataUrl;
+        return { ...q, optionImages: curImgs };
+      });
+      setPostTestQuestions(updated);
+      savePostTestQuestions(updated, true);
+      showNotification('✓ تم رفع صورة خيار الإجابة ومزامنتها للجميع فوراً');
+    } else if (type === 'levels' && levelNum !== undefined) {
+      const updatedLevels = gameLevels.map((lvl) => {
+        if (lvl.levelNumber !== levelNum) return lvl;
+        return {
+          ...lvl,
+          questions: lvl.questions.map((q) => {
+            if (q.id !== questionId) return q;
+            const curImgs = q.optionImages && q.optionImages.length > 0 ? [...q.optionImages] : new Array(q.options.length).fill('');
+            while (curImgs.length < q.options.length) curImgs.push('');
+            curImgs[optIdx] = dataUrl;
+            return { ...q, optionImages: curImgs };
+          }),
+        };
+      });
+      setGameLevels(updatedLevels);
+      saveCustomGameLevels(updatedLevels, true);
+      showNotification('✓ تم رفع صورة خيار الإجابة ومزامنتها للجميع فوراً');
+    }
+    setTimeout(() => setSavingCardId(null), 350);
+  };
+
+  // Direct card remove option image with instant Firebase sync
+  const handleDirectRemoveOptionImage = (
+    type: ActiveTestTab,
+    questionId: string,
+    optIdx: number,
+    levelNum?: number
+  ) => {
+    setSavingCardId(questionId);
+    if (type === 'pretest') {
+      const updated = preTestQuestions.map((q) => {
+        if (q.id !== questionId) return q;
+        const curImgs = q.optionImages && q.optionImages.length > 0 ? [...q.optionImages] : new Array(q.options.length).fill('');
+        curImgs[optIdx] = '';
+        return { ...q, optionImages: curImgs };
+      });
+      setPreTestQuestions(updated);
+      savePreTestQuestions(updated, true);
+      showNotification('✓ تم حذف صورة خيار الإجابة ومزامنة التحديث');
+    } else if (type === 'posttest') {
+      const updated = postTestQuestions.map((q) => {
+        if (q.id !== questionId) return q;
+        const curImgs = q.optionImages && q.optionImages.length > 0 ? [...q.optionImages] : new Array(q.options.length).fill('');
+        curImgs[optIdx] = '';
+        return { ...q, optionImages: curImgs };
+      });
+      setPostTestQuestions(updated);
+      savePostTestQuestions(updated, true);
+      showNotification('✓ تم حذف صورة خيار الإجابة ومزامنة التحديث');
+    } else if (type === 'levels' && levelNum !== undefined) {
+      const updatedLevels = gameLevels.map((lvl) => {
+        if (lvl.levelNumber !== levelNum) return lvl;
+        return {
+          ...lvl,
+          questions: lvl.questions.map((q) => {
+            if (q.id !== questionId) return q;
+            const curImgs = q.optionImages && q.optionImages.length > 0 ? [...q.optionImages] : new Array(q.options.length).fill('');
+            curImgs[optIdx] = '';
+            return { ...q, optionImages: curImgs };
+          }),
+        };
+      });
+      setGameLevels(updatedLevels);
+      saveCustomGameLevels(updatedLevels, true);
+      showNotification('✓ تم حذف صورة خيار الإجابة ومزامنة التحديث');
+    }
+    setTimeout(() => setSavingCardId(null), 300);
+  };
+
   // Open Add Modal with position (top or bottom)
   const handleOpenAddModal = (tab: ActiveTestTab, position: 'top' | 'bottom' = 'bottom') => {
     setEditingQuestionType(tab);
@@ -1037,6 +1137,8 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 onTriggerFileUpload={() => handleTriggerDirectUpload('pretest', q.id)}
                 onSetImageUrl={(url) => handleDirectSetImageUrl('pretest', q.id, url)}
                 onRemoveImage={() => handleDirectRemoveImage('pretest', q.id)}
+                onSetOptionImage={(optIdx, dataUrl) => handleDirectSetOptionImage('pretest', q.id, optIdx, dataUrl)}
+                onRemoveOptionImage={(optIdx) => handleDirectRemoveOptionImage('pretest', q.id, optIdx)}
               />
             ))}
             {filteredPreTest.length === 0 && (
@@ -1094,6 +1196,8 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 onTriggerFileUpload={() => handleTriggerDirectUpload('posttest', q.id)}
                 onSetImageUrl={(url) => handleDirectSetImageUrl('posttest', q.id, url)}
                 onRemoveImage={() => handleDirectRemoveImage('posttest', q.id)}
+                onSetOptionImage={(optIdx, dataUrl) => handleDirectSetOptionImage('posttest', q.id, optIdx, dataUrl)}
+                onRemoveOptionImage={(optIdx) => handleDirectRemoveOptionImage('posttest', q.id, optIdx)}
               />
             ))}
             {filteredPostTest.length === 0 && (
@@ -1153,6 +1257,8 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 onTriggerFileUpload={() => handleTriggerDirectUpload('levels', question.id, level.levelNumber)}
                 onSetImageUrl={(url) => handleDirectSetImageUrl('levels', question.id, url, level.levelNumber)}
                 onRemoveImage={() => handleDirectRemoveImage('levels', question.id, level.levelNumber)}
+                onSetOptionImage={(optIdx, dataUrl) => handleDirectSetOptionImage('levels', question.id, optIdx, dataUrl, level.levelNumber)}
+                onRemoveOptionImage={(optIdx) => handleDirectRemoveOptionImage('levels', question.id, optIdx, level.levelNumber)}
               />
             ))}
             {filteredLevelsQuestions.length === 0 && (
@@ -1583,6 +1689,8 @@ interface QuestionAdminCardProps {
   onTriggerFileUpload: () => void;
   onSetImageUrl: (url: string) => void;
   onRemoveImage: () => void;
+  onSetOptionImage: (optIdx: number, dataUrl: string) => void;
+  onRemoveOptionImage: (optIdx: number) => void;
 }
 
 const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
@@ -1599,7 +1707,28 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
   onTriggerFileUpload,
   onSetImageUrl,
   onRemoveImage,
+  onSetOptionImage,
+  onRemoveOptionImage,
 }) => {
+  // Mini state for direct card option URL input
+  const [activeOptionUrlIdx, setActiveOptionUrlIdx] = useState<number | null>(null);
+  const [optionUrlInputValue, setOptionUrlInputValue] = useState<string>('');
+
+  const handlePickDirectOptionImage = (optIdx: number) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        compressImage(file, (dataUrl) => {
+          onSetOptionImage(optIdx, dataUrl);
+        });
+      }
+    };
+    input.click();
+  };
+
   // Local state for inline editing
   const [draftQuestion, setDraftQuestion] = useState(question.question || '');
   const [draftOptions, setDraftOptions] = useState<string[]>(
@@ -2211,16 +2340,107 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                         e.stopPropagation();
                         onZoomImage(optImg);
                       }}
-                      className="relative rounded-lg overflow-hidden border border-amber-400/60 bg-black/60 p-1 cursor-pointer hover:border-amber-400 flex items-center justify-center max-h-24"
+                      className="relative rounded-xl overflow-hidden border-2 border-amber-400/70 bg-black/70 p-1 cursor-pointer hover:border-amber-400 flex items-center justify-center max-h-28 group/img shadow-inner"
                       title="انقر لتكبير صورة الخيار"
                     >
                       <img
                         src={optImg}
                         alt={`صورة الخيار ${optIdx + 1}`}
-                        className="max-h-20 w-auto object-contain rounded"
+                        className="max-h-24 w-auto object-contain rounded-lg group-hover/img:scale-105 transition-transform"
                       />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white text-[10px] font-bold gap-1 transition-opacity">
+                        <Eye className="w-3 h-3" />
+                        <span>تكبير</span>
+                      </div>
                     </div>
                   )}
+
+                  {/* Actions under EACH answer option: Upload Image, Change, Delete, or Link */}
+                  <div className="pt-2 border-t border-slate-800/80 flex flex-col gap-1.5">
+                    {optImg ? (
+                      <div className="flex items-center justify-between gap-1.5 w-full">
+                        <button
+                          type="button"
+                          onClick={() => handlePickDirectOptionImage(optIdx)}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all shadow-sm"
+                          title="تغيير صورة هذا الخيار من جهازك"
+                        >
+                          <Upload className="w-3 h-3 text-amber-400" />
+                          <span>تغيير صورة الإجابة</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onRemoveOptionImage(optIdx)}
+                          className="px-2 py-1 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-500/50 text-red-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all shadow-sm"
+                          title="حذف صورة هذا الخيار"
+                        >
+                          <Trash2 className="w-3 h-3 text-red-400" />
+                          <span>حذف</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handlePickDirectOptionImage(optIdx)}
+                            className="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-850 hover:border-amber-500/60 border border-slate-800 text-amber-300 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm group/btn"
+                            title="اختر صورة لهذا الخيار من جهازك"
+                          >
+                            <Upload className="w-3.5 h-3.5 text-amber-400 group-hover/btn:scale-110 transition-transform" />
+                            <span>📷 رفع صورة لهذه الإجابة</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveOptionUrlIdx(activeOptionUrlIdx === optIdx ? null : optIdx);
+                              setOptionUrlInputValue('');
+                            }}
+                            className="px-2 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-amber-300 text-[10px] font-bold cursor-pointer"
+                            title="إدخال رابط صورة عبر URL"
+                          >
+                            <LinkIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* URL input bar for this specific option */}
+                        {activeOptionUrlIdx === optIdx && (
+                          <div className="flex items-center gap-1 p-1 bg-slate-950 rounded-lg border border-amber-500/50 animate-fadeIn">
+                            <input
+                              type="url"
+                              placeholder="الصق رابط الصورة (https://...)..."
+                              value={optionUrlInputValue}
+                              onChange={(e) => setOptionUrlInputValue(e.target.value)}
+                              className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[10px] text-white outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (optionUrlInputValue.trim()) {
+                                  onSetOptionImage(optIdx, optionUrlInputValue.trim());
+                                }
+                                setActiveOptionUrlIdx(null);
+                                setOptionUrlInputValue('');
+                              }}
+                              className="px-2 py-1 rounded bg-amber-500 text-slate-950 font-black text-[10px] cursor-pointer"
+                            >
+                              حفظ
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveOptionUrlIdx(null);
+                                setOptionUrlInputValue('');
+                              }}
+                              className="px-1.5 py-1 rounded bg-slate-800 text-slate-400 text-[10px] cursor-pointer"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}

@@ -9,6 +9,7 @@ import {
   Award,
   Loader2,
   Building,
+  PhoneCall,
 } from 'lucide-react';
 import {
   getSiteTitleConfig,
@@ -17,6 +18,7 @@ import {
   SiteTitleConfig,
   DEFAULT_SITE_TITLE_CONFIG,
 } from '../utils/siteTitleStorage';
+import { getAdminSettings, saveAdminSettings } from '../utils/adminStorage';
 
 export const AdminSiteTitleManager: React.FC = () => {
   const [config, setConfig] = useState<SiteTitleConfig>(() => getSiteTitleConfig());
@@ -25,6 +27,7 @@ export const AdminSiteTitleManager: React.FC = () => {
   const [topBadge1, setTopBadge1] = useState<string>(config.topBadge1);
   const [topBadge2, setTopBadge2] = useState<string>(config.topBadge2);
   const [footerUniversity, setFooterUniversity] = useState<string>(config.footerUniversity);
+  const [whatsappNumber, setWhatsappNumber] = useState<string>(() => getAdminSettings().whatsappNumber || '+201091473136');
 
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -70,7 +73,15 @@ export const AdminSiteTitleManager: React.FC = () => {
         true
       );
       setConfig(updated);
-      showNotification('✓ تم حفظ وتحديث عنوان الموقع بنجاح ومزامنته للجميع عبر فايربيس فوراً');
+
+      if (whatsappNumber.trim()) {
+        saveAdminSettings({ whatsappNumber: whatsappNumber.trim() });
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('cp_settings_updated'));
+        }
+      }
+
+      showNotification('✓ تم حفظ وتحديث عنوان الموقع ورقم الواتساب بنجاح ومزامنته للجميع فوراً');
     } finally {
       setTimeout(() => {
         setIsSaving(false);
@@ -274,6 +285,25 @@ export const AdminSiteTitleManager: React.FC = () => {
             placeholder="مثال: جامعة طنطا - كلية التربية النوعية"
             className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-amber-400 text-white text-xs outline-none"
           />
+        </div>
+
+        {/* 5. WhatsApp Support Number Field */}
+        <div>
+          <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
+            <PhoneCall className="w-3.5 h-3.5 text-emerald-400" />
+            <span>رقم دعم الواتساب للطلاب والمشرفين:</span>
+          </label>
+          <input
+            type="text"
+            value={whatsappNumber}
+            onChange={(e) => setWhatsappNumber(e.target.value)}
+            placeholder="+201091473136"
+            className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-emerald-300 font-mono text-xs outline-none text-left"
+            dir="ltr"
+          />
+          <span className="text-[11px] text-slate-500 mt-1 block">
+            الرقم المخصص لتلقي رسائل المساعدة عبر واتساب: +201091473136
+          </span>
         </div>
 
         {/* Submit Actions */}

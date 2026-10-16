@@ -638,13 +638,14 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                         </div>
                       </div>
 
-                      {/* Optional Answer Image */}
+                      {/* Optional Answer Image - Balanced & Layout Preserving */}
                       {optImage && (
-                        <div className="mb-3 rounded-xl overflow-hidden border border-slate-700/80 bg-black/50 p-1.5 flex justify-center items-center shadow-inner">
+                        <div className="w-full h-32 sm:h-40 mb-3 rounded-xl overflow-hidden border border-slate-700/80 bg-black/60 p-2 flex justify-center items-center shadow-inner group-hover:border-amber-400/50 transition-colors">
                           <img
                             src={optImage}
                             alt={`صورة الخيار ${letter}`}
-                            className="max-h-28 sm:max-h-36 w-auto object-contain rounded-lg hover:scale-105 transition-transform"
+                            className="max-h-full max-w-full object-contain rounded-lg hover:scale-105 transition-transform"
+                            loading="lazy"
                           />
                         </div>
                       )}
@@ -697,13 +698,14 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                         </div>
                       </div>
 
-                      {/* Optional Answer Image */}
+                      {/* Optional Answer Image - Balanced & Layout Preserving */}
                       {optImage && (
-                        <div className="mb-3 rounded-xl overflow-hidden border border-amber-500/40 bg-black/60 p-1.5 flex justify-center items-center shadow-inner">
+                        <div className="w-full h-32 sm:h-40 mb-3 rounded-xl overflow-hidden border border-amber-500/40 bg-black/70 p-2 flex justify-center items-center shadow-inner group-hover:border-amber-400/70 transition-colors">
                           <img
                             src={optImage}
                             alt={`صورة الخيار رقم ${boxNumber}`}
-                            className="max-h-28 sm:max-h-36 w-auto object-contain rounded-lg hover:scale-105 transition-transform"
+                            className="max-h-full max-w-full object-contain rounded-lg hover:scale-105 transition-transform"
+                            loading="lazy"
                           />
                         </div>
                       )}
