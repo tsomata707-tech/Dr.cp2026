@@ -406,7 +406,7 @@ export const subscribeToAllStudentsProgress = (
 /**
  * Sync global question banks and level definitions to Firebase RTDB for instant real-time updates across all students
  */
-export type GlobalSyncType = 'pretest' | 'posttest' | 'levels' | 'instructions' | 'splash' | 'supervisors';
+export type GlobalSyncType = 'pretest' | 'posttest' | 'levels' | 'instructions' | 'splash' | 'supervisors' | 'siteTitle';
 
 export async function syncGlobalQuestionsAndLevels(type: GlobalSyncType, data: any) {
   try {

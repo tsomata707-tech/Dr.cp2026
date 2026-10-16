@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   FileSpreadsheet,
+  Type,
 } from 'lucide-react';
 import { AdminInstructionsManager } from './AdminInstructionsManager';
 import { AdminTestsSettingsManager } from './AdminTestsSettingsManager';
@@ -19,6 +20,7 @@ import { AdminStudentsAuditManager } from './AdminStudentsAuditManager';
 import { AdminVideoManager } from './AdminVideoManager';
 import { AdminSplashManager } from './AdminSplashManager';
 import { AdminSupervisorsHonorManager } from './AdminSupervisorsHonorManager';
+import { AdminSiteTitleManager } from './AdminSiteTitleManager';
 
 interface AdminPanelProps {
   onExitAdmin: () => void;
@@ -28,6 +30,7 @@ interface AdminPanelProps {
 type AdminTab =
   | 'tests_settings'
   | 'students_audit'
+  | 'site_title'
   | 'instructions_standards'
   | 'videos'
   | 'splash'
@@ -95,6 +98,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             <span>سجل الدخول والنتائج والشيتات</span>
           </button>
 
+          {/* TAB: تعديل عنوان الموقع (المطلوب) */}
+          <button
+            onClick={() => setActiveTab('site_title')}
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+              activeTab === 'site_title'
+                ? 'bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 text-slate-950 shadow-lg shadow-amber-500/25 font-black'
+                : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
+            }`}
+          >
+            <Type className="w-4 h-4 text-amber-400" />
+            <span>تعديل عنوان الموقع</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('splash')}
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all cursor-pointer ${
+              activeTab === 'splash'
+                ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 font-bold'
+                : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
+            }`}
+          >
+            <ImageIcon className="w-4 h-4" />
+            <span>شاشة البداية والصورة</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('instructions_standards')}
             className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all cursor-pointer ${
@@ -120,18 +148,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
           </button>
 
           <button
-            onClick={() => setActiveTab('splash')}
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all cursor-pointer ${
-              activeTab === 'splash'
-                ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 font-bold'
-                : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
-            }`}
-          >
-            <ImageIcon className="w-4 h-4" />
-            <span>شاشة البداية</span>
-          </button>
-
-          <button
             onClick={() => setActiveTab('supervisors')}
             className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all cursor-pointer ${
               activeTab === 'supervisors'
@@ -149,9 +165,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
       <div className="bg-[#0b0e1e] border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
         {activeTab === 'tests_settings' && <AdminTestsSettingsManager />}
         {activeTab === 'students_audit' && <AdminStudentsAuditManager />}
+        {activeTab === 'site_title' && <AdminSiteTitleManager />}
+        {activeTab === 'splash' && <AdminSplashManager />}
         {activeTab === 'instructions_standards' && <AdminInstructionsManager />}
         {activeTab === 'videos' && <AdminVideoManager />}
-        {activeTab === 'splash' && <AdminSplashManager />}
         {activeTab === 'supervisors' && <AdminSupervisorsHonorManager />}
       </div>
     </div>

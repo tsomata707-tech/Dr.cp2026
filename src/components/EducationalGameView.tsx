@@ -656,9 +656,20 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ userna
                         <div className="flex items-center justify-between gap-3 w-full">
                           <span className="leading-relaxed font-medium">{opt}</span>
                           <span className="w-5 h-5 rounded-full border border-slate-600 flex items-center justify-center shrink-0 text-[10px] font-mono">
-                            {String.fromCharCode(65 + optIdx)}
+                            {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || String.fromCharCode(65 + optIdx)}
                           </span>
                         </div>
+
+                        {/* Optional Option Image */}
+                        {q.optionImages?.[optIdx] && (
+                          <div className="w-full my-1.5 rounded-lg overflow-hidden border border-slate-700/80 bg-black/50 p-1 flex justify-center">
+                            <img
+                              src={q.optionImages[optIdx]!}
+                              alt={`صورة الخيار`}
+                              className="max-h-24 sm:max-h-32 w-auto object-contain rounded"
+                            />
+                          </div>
+                        )}
 
                         {/* Real-time Peer Choice Indicator & Live Votes */}
                         {!isLevelCompleted && (isLatestPeerChoice || votersForThisOpt.length > 0) && (

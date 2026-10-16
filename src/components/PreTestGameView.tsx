@@ -596,11 +596,12 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
 
             {/* ANSWER OPTIONS: GAME 1 (STATIONS) OR GAME 2 (BOXES 📦) */}
             {!isBoxGame ? (
-              /* GAME 1: 4 ANSWER STATIONS FOR RACING CAR (QUESTIONS 1-25) */
+              /* GAME 1: ANSWER STATIONS FOR RACING CAR (QUESTIONS 1-25) */
               <div ref={stationsContainerRef} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {currentQ.options.map((option, optIdx) => {
                   const isSelected = selectedStationIndex === optIdx;
-                  const letter = ['أ', 'ب', 'ج', 'د'][optIdx];
+                  const letter = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || optIdx + 1;
+                  const optImage = currentQ.optionImages?.[optIdx];
 
                   let stationBg = 'bg-slate-900/90 border-slate-800 text-slate-200 hover:border-slate-600 hover:bg-slate-850';
                   let bayBadge = 'bg-slate-800 text-slate-300 border-slate-700';
@@ -637,6 +638,17 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                         </div>
                       </div>
 
+                      {/* Optional Answer Image */}
+                      {optImage && (
+                        <div className="mb-3 rounded-xl overflow-hidden border border-slate-700/80 bg-black/50 p-1.5 flex justify-center items-center shadow-inner">
+                          <img
+                            src={optImage}
+                            alt={`صورة الخيار ${letter}`}
+                            className="max-h-28 sm:max-h-36 w-auto object-contain rounded-lg hover:scale-105 transition-transform"
+                          />
+                        </div>
+                      )}
+
                       <p className="text-sm font-bold text-right leading-relaxed flex-1 font-['Cairo']">
                         {option}
                       </p>
@@ -655,11 +667,12 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                 })}
               </div>
             ) : (
-              /* GAME 2: 4 MYSTERY BOXES 📦 (QUESTIONS 26+) */
+              /* GAME 2: MYSTERY BOXES 📦 (QUESTIONS 26+) */
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {currentQ.options.map((option, optIdx) => {
                   const isSelected = selectedStationIndex === optIdx;
                   const boxNumber = optIdx + 1;
+                  const optImage = currentQ.optionImages?.[optIdx];
 
                   let boxCardStyle = 'bg-gradient-to-b from-[#141022] to-[#0c0916] border-slate-800 hover:border-amber-500/60 text-slate-200';
                   if (isSelected) {
@@ -683,6 +696,17 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                           <MysteryBoxGraphic isSelected={isSelected} index={optIdx} />
                         </div>
                       </div>
+
+                      {/* Optional Answer Image */}
+                      {optImage && (
+                        <div className="mb-3 rounded-xl overflow-hidden border border-amber-500/40 bg-black/60 p-1.5 flex justify-center items-center shadow-inner">
+                          <img
+                            src={optImage}
+                            alt={`صورة الخيار رقم ${boxNumber}`}
+                            className="max-h-28 sm:max-h-36 w-auto object-contain rounded-lg hover:scale-105 transition-transform"
+                          />
+                        </div>
+                      )}
 
                       {/* Answer text displayed clearly on the box */}
                       <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-right">

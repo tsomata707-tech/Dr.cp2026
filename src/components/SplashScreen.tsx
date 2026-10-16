@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Sparkles, Shield, GraduationCap, KeyRound, Monitor, Award, ArrowLeft } from 'lucide-react';
+import { GraduationCap, KeyRound, Award, ArrowLeft } from 'lucide-react';
 import { CpLogo } from './CpLogo';
 import { getSplashImageUrl } from '../utils/splashStorage';
+import { getSiteTitleConfig, SiteTitleConfig } from '../utils/siteTitleStorage';
 
 interface SplashScreenProps {
   onEnter: () => void;
@@ -10,14 +11,29 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter, onOpenAdminLogin }) => {
   const [splashImg, setSplashImg] = useState<string>(getSplashImageUrl());
+  const [titleConfig, setTitleConfig] = useState<SiteTitleConfig>(getSiteTitleConfig());
 
   useEffect(() => {
-    const handleUpdate = () => {
+    const handleImgUpdate = () => {
       setSplashImg(getSplashImageUrl());
     };
-    window.addEventListener('cp_splash_image_updated', handleUpdate);
-    return () => window.removeEventListener('cp_splash_image_updated', handleUpdate);
+    const handleTitleUpdate = (e: any) => {
+      if (e.detail) {
+        setTitleConfig(e.detail);
+      } else {
+        setTitleConfig(getSiteTitleConfig());
+      }
+    };
+
+    window.addEventListener('cp_splash_image_updated', handleImgUpdate);
+    window.addEventListener('cp_site_title_updated', handleTitleUpdate);
+
+    return () => {
+      window.removeEventListener('cp_splash_image_updated', handleImgUpdate);
+      window.removeEventListener('cp_site_title_updated', handleTitleUpdate);
+    };
   }, []);
+
   return (
     <div className="relative w-full max-w-4xl mx-auto z-10 flex flex-col items-center justify-center py-6 px-4 text-center font-['Cairo',_sans-serif]">
       {/* Soft Ambient Glow */}
@@ -31,14 +47,18 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter, onOpenAdmin
 
         {/* Top Badges */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-6 z-10">
-          <span className="px-3.5 py-1 rounded-full bg-blue-950/70 border border-blue-400/40 text-blue-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
-            <GraduationCap className="w-4 h-4 text-blue-400" />
-            رسالة ماجستير في تكنولوجيا التعليم
-          </span>
-          <span className="px-3 py-1 rounded-full bg-amber-950/60 border border-[#ffd700]/50 text-amber-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
-            <Award className="w-3.5 h-3.5 text-[#ffd700]" />
-            Adobe Captivate 2019
-          </span>
+          {titleConfig.topBadge1 && (
+            <span className="px-3.5 py-1 rounded-full bg-blue-950/70 border border-blue-400/40 text-blue-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <GraduationCap className="w-4 h-4 text-blue-400" />
+              <span>{titleConfig.topBadge1}</span>
+            </span>
+          )}
+          {titleConfig.topBadge2 && (
+            <span className="px-3 py-1 rounded-full bg-amber-950/60 border border-[#ffd700]/50 text-amber-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <Award className="w-3.5 h-3.5 text-[#ffd700]" />
+              <span>{titleConfig.topBadge2}</span>
+            </span>
+          )}
         </div>
 
         {/* 1. Large Environment Logo (Camera + Captivate Gear) */}
@@ -49,21 +69,23 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter, onOpenAdmin
           </div>
         </div>
 
-        {/* 2. Main Title */}
+        {/* 2. Main Title (Located Above the Splash Image) */}
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white font-['Tajawal'] tracking-tight mb-3 text-center max-w-4xl leading-relaxed">
-          تصميم بيئة ألعاب تعليمية إلكترونية قائمة على التفاعل بين نمط التغذية الراجعة (فورية / مرجئة) ونمط التعلم (تعاوني / تنافسي) وأثره على تنمية مهارات إنتاج وتصميم الوسائط المتعددة والتقبل التكنولوجي لدى طلاب تكنولوجيا التعليم
+          {titleConfig.mainTitle}
         </h1>
 
         {/* 3. Subtitle / Goal Text */}
-        <p className="text-sm sm:text-base text-blue-200/90 max-w-2xl leading-relaxed mb-6 font-medium text-center">
-          جامعة طنطا - كلية التربية النوعية - قسم تكنولوجيا التعليم • بيئة تفاعلية لاكتساب مهارات Adobe Captivate 2019
-        </p>
+        {titleConfig.subtitle && (
+          <p className="text-sm sm:text-base text-blue-200/90 max-w-2xl leading-relaxed mb-6 font-medium text-center">
+            {titleConfig.subtitle}
+          </p>
+        )}
 
         {/* 4. Student Illustration with Tablet */}
         <div className="relative w-full max-w-xs sm:max-w-sm rounded-2xl overflow-hidden border-2 border-blue-400/40 shadow-[0_15px_35px_rgba(0,0,0,0.6)] mb-8 bg-[#090d1a] group">
           <img
             src={splashImg}
-            alt="تصميم بيئة ألعاب تعليمية إلكترونية قائمة على التفاعل بين نمط التغذية الراجعة ونمط التعلم"
+            alt={titleConfig.mainTitle}
             className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0b0f1e] via-transparent to-transparent opacity-70 pointer-events-none" />
@@ -95,7 +117,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter, onOpenAdmin
             <KeyRound className="w-3.5 h-3.5 text-amber-400" />
             <span>دخول الإدارة والمشرفين</span>
           </button>
-          <span className="text-[11px] text-slate-400 font-bold">جامعة طنطا - كلية التربية النوعية</span>
+          <span className="text-[11px] text-slate-400 font-bold">{titleConfig.footerUniversity}</span>
         </div>
       </div>
     </div>

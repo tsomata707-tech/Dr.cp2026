@@ -45,6 +45,50 @@ import {
 
 type ActiveTestTab = 'pretest' | 'posttest' | 'levels';
 
+// Global helper: compress image file to standard optimal lightweight dataURL
+export const compressImage = (
+  file: File,
+  callback: (dataUrl: string) => void,
+  onComplete?: () => void
+) => {
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const maxDim = 700; // Optimal lightweight size for question and answer images
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height && width > maxDim) {
+        height = Math.round((height * maxDim) / width);
+        width = maxDim;
+      } else if (height > maxDim) {
+        width = Math.round((width * maxDim) / height);
+        height = maxDim;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        callback(dataUrl);
+      }
+      if (onComplete) onComplete();
+    };
+    img.onerror = () => {
+      if (onComplete) onComplete();
+    };
+    img.src = event.target?.result as string;
+  };
+  reader.onerror = () => {
+    if (onComplete) onComplete();
+  };
+  reader.readAsDataURL(file);
+};
+
 export const AdminTestsSettingsManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTestTab>('pretest');
 
@@ -72,6 +116,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
   // Form Fields for Modal
   const [formQuestionText, setFormQuestionText] = useState('');
   const [formOptions, setFormOptions] = useState<string[]>(['', '', '', '']);
+  const [formOptionImages, setFormOptionImages] = useState<(string | null | undefined)[]>(['', '', '', '']);
   const [formCorrectIndex, setFormCorrectIndex] = useState<number>(0);
   const [formExplanation, setFormExplanation] = useState('');
   const [formPoints, setFormPoints] = useState<number>(50);
@@ -127,55 +172,52 @@ export const AdminTestsSettingsManager: React.FC = () => {
     setTimeout(() => setFeedbackMsg(null), 4000);
   };
 
-  // Helper: compress image file to standard optimal lightweight dataURL
-  const compressImage = (file: File, callback: (dataUrl: string) => void) => {
-    setIsUploadingImage(true);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxDim = 700; // Optimal lightweight size for question images
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height && width > maxDim) {
-          height = Math.round((height * maxDim) / width);
-          width = maxDim;
-        } else if (height > maxDim) {
-          width = Math.round((width * maxDim) / height);
-          height = maxDim;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          setIsUploadingImage(false);
-          callback(dataUrl);
-        } else {
-          setIsUploadingImage(false);
-        }
-      };
-      img.onerror = () => setIsUploadingImage(false);
-      img.src = event.target?.result as string;
-    };
-    reader.onerror = () => setIsUploadingImage(false);
-    reader.readAsDataURL(file);
-  };
-
-  // Upload handler for Modal file input
+  // Upload handler for Modal question image
   const handleModalImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    compressImage(file, (dataUrl) => {
-      setFormImageUrl(dataUrl);
-      showNotification('✓ تم رفع ومعالجة صورة السؤال بنجاح');
-    });
+    setIsUploadingImage(true);
+    compressImage(
+      file,
+      (dataUrl) => {
+        setFormImageUrl(dataUrl);
+        showNotification('✓ تم رفع ومعالجة صورة السؤال بنجاح');
+      },
+      () => setIsUploadingImage(false)
+    );
     e.target.value = '';
+  };
+
+  // Upload handler for Modal answer option image
+  const handleModalOptionImagePick = (optIdx: number) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        setIsUploadingImage(true);
+        compressImage(
+          file,
+          (dataUrl) => {
+            const updated = [...formOptionImages];
+            updated[optIdx] = dataUrl;
+            setFormOptionImages(updated);
+            showNotification(`✓ تم رفع وتثبيت صورة الإجابة رقم ${optIdx + 1}`);
+          },
+          () => setIsUploadingImage(false)
+        );
+      }
+    };
+    input.click();
+  };
+
+  const handleModalOptionImageRemove = (optIdx: number) => {
+    const updated = [...formOptionImages];
+    updated[optIdx] = '';
+    setFormOptionImages(updated);
+    showNotification(`✓ تم حذف صورة الإجابة رقم ${optIdx + 1}`);
   };
 
   // Trigger direct card upload
@@ -193,38 +235,43 @@ export const AdminTestsSettingsManager: React.FC = () => {
     if (!file || !directUploadTarget) return;
 
     setSavingCardId(directUploadTarget.questionId);
-    compressImage(file, (dataUrl) => {
-      if (directUploadTarget.type === 'pretest') {
-        const updated = preTestQuestions.map((q) =>
-          q.id === directUploadTarget.questionId ? { ...q, imageUrl: dataUrl } : q
-        );
-        setPreTestQuestions(updated);
-        savePreTestQuestions(updated, true);
-        showNotification('✓ تم رفع صورة السؤال في الاختبار القبلي ومزامنتها للجميع عبر فايربيس');
-      } else if (directUploadTarget.type === 'posttest') {
-        const updated = postTestQuestions.map((q) =>
-          q.id === directUploadTarget.questionId ? { ...q, imageUrl: dataUrl } : q
-        );
-        setPostTestQuestions(updated);
-        savePostTestQuestions(updated, true);
-        showNotification('✓ تم رفع صورة السؤال في الاختبار البعدي ومزامنتها للجميع عبر فايربيس');
-      } else if (directUploadTarget.type === 'levels' && directUploadTarget.levelNum !== undefined) {
-        const updatedLevels = gameLevels.map((lvl) => {
-          if (lvl.levelNumber !== directUploadTarget.levelNum) return lvl;
-          return {
-            ...lvl,
-            questions: lvl.questions.map((q) =>
-              q.id === directUploadTarget.questionId ? { ...q, imageUrl: dataUrl } : q
-            ),
-          };
-        });
-        setGameLevels(updatedLevels);
-        saveCustomGameLevels(updatedLevels, true);
-        showNotification(`✓ تم رفع صورة السؤال في المستوى ${directUploadTarget.levelNum} ومزامنتها للجميع عبر فايربيس`);
-      }
-      setSavingCardId(null);
-      setDirectUploadTarget(null);
-    });
+    setIsUploadingImage(true);
+    compressImage(
+      file,
+      (dataUrl) => {
+        if (directUploadTarget.type === 'pretest') {
+          const updated = preTestQuestions.map((q) =>
+            q.id === directUploadTarget.questionId ? { ...q, imageUrl: dataUrl } : q
+          );
+          setPreTestQuestions(updated);
+          savePreTestQuestions(updated, true);
+          showNotification('✓ تم رفع صورة السؤال في الاختبار القبلي ومزامنتها للجميع فوراً');
+        } else if (directUploadTarget.type === 'posttest') {
+          const updated = postTestQuestions.map((q) =>
+            q.id === directUploadTarget.questionId ? { ...q, imageUrl: dataUrl } : q
+          );
+          setPostTestQuestions(updated);
+          savePostTestQuestions(updated, true);
+          showNotification('✓ تم رفع صورة السؤال في الاختبار البعدي ومزامنتها للجميع فوراً');
+        } else if (directUploadTarget.type === 'levels' && directUploadTarget.levelNum !== undefined) {
+          const updatedLevels = gameLevels.map((lvl) => {
+            if (lvl.levelNumber !== directUploadTarget.levelNum) return lvl;
+            return {
+              ...lvl,
+              questions: lvl.questions.map((q) =>
+                q.id === directUploadTarget.questionId ? { ...q, imageUrl: dataUrl } : q
+              ),
+            };
+          });
+          setGameLevels(updatedLevels);
+          saveCustomGameLevels(updatedLevels, true);
+          showNotification(`✓ تم رفع صورة السؤال في المستوى ${directUploadTarget.levelNum} ومزامنتها للجميع فوراً`);
+        }
+        setSavingCardId(null);
+        setDirectUploadTarget(null);
+      },
+      () => setIsUploadingImage(false)
+    );
     e.target.value = '';
   };
 
@@ -303,6 +350,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
     setAddPosition(position);
     setFormQuestionText('');
     setFormOptions(['', '', '', '']);
+    setFormOptionImages(['', '', '', '']);
     setFormCorrectIndex(0);
     setFormExplanation('');
     setFormPoints(tab === 'levels' ? 34 : 50);
@@ -316,7 +364,13 @@ export const AdminTestsSettingsManager: React.FC = () => {
     setEditingQuestionType(tab);
     setEditingQuestionId(q.id);
     setFormQuestionText(q.question || '');
-    setFormOptions(q.options && q.options.length > 0 ? [...q.options] : ['', '']);
+    const opts = q.options && q.options.length > 0 ? [...q.options] : ['', ''];
+    setFormOptions(opts);
+    setFormOptionImages(
+      q.optionImages && q.optionImages.length > 0
+        ? [...q.optionImages]
+        : new Array(opts.length).fill('')
+    );
     setFormCorrectIndex(typeof q.correctIndex === 'number' ? q.correctIndex : 0);
     setFormExplanation(q.explanation || '');
     setFormPoints(q.points || 50);
@@ -330,7 +384,13 @@ export const AdminTestsSettingsManager: React.FC = () => {
     setEditingQuestionId(q.id);
     setEditingTargetLevel(levelNum);
     setFormQuestionText(q.question || '');
-    setFormOptions(q.options && q.options.length > 0 ? [...q.options] : ['', '']);
+    const opts = q.options && q.options.length > 0 ? [...q.options] : ['', ''];
+    setFormOptions(opts);
+    setFormOptionImages(
+      q.optionImages && q.optionImages.length > 0
+        ? [...q.optionImages]
+        : new Array(opts.length).fill('')
+    );
     setFormCorrectIndex(typeof q.correctIndex === 'number' ? q.correctIndex : 0);
     setFormExplanation(q.explanation || '');
     setFormPoints(q.points || 34);
@@ -351,6 +411,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
       return;
     }
     setFormOptions([...formOptions, '']);
+    setFormOptionImages([...formOptionImages, '']);
   };
 
   const handleRemoveOption = (idx: number) => {
@@ -358,25 +419,38 @@ export const AdminTestsSettingsManager: React.FC = () => {
       showNotification('يجب أن يحتوي السؤال على خيارين على الأقل', 'error');
       return;
     }
-    const updated = formOptions.filter((_, i) => i !== idx);
-    setFormOptions(updated);
-    if (formCorrectIndex >= updated.length) {
-      setFormCorrectIndex(updated.length - 1);
+    const updatedOpts = formOptions.filter((_, i) => i !== idx);
+    const updatedImgs = formOptionImages.filter((_, i) => i !== idx);
+    setFormOptions(updatedOpts);
+    setFormOptionImages(updatedImgs);
+    if (formCorrectIndex >= updatedOpts.length) {
+      setFormCorrectIndex(updatedOpts.length - 1);
     }
-    showNotification('تم حذف نقطة الإجابة، يمكنك إكمال التعديل وحفظ السؤال');
+    showNotification('✓ تم حذف خيار الإجابة');
   };
 
-  // Save Modal Form with Loading Spinner
+  // Save Modal Form with Loading Spinner & Option Images Support
   const handleSaveQuestion = async () => {
     if (!formQuestionText.trim()) {
       showNotification('يرجى كتابة نص السؤال أولاً', 'error');
       return;
     }
-    const cleanOptions = formOptions.map((o) => o.trim()).filter(Boolean);
-    if (cleanOptions.length < 2) {
-      showNotification('يرجى كتابة خيارين على الأقل للسؤال', 'error');
+
+    // Clean options and optionImages keeping them strictly aligned
+    const cleanPairs = formOptions
+      .map((opt, idx) => ({
+        text: opt.trim(),
+        image: formOptionImages[idx]?.trim() || undefined,
+      }))
+      .filter((pair) => pair.text || pair.image);
+
+    if (cleanPairs.length < 2) {
+      showNotification('يرجى إدخال خيارين على الأقل (نص أو صورة)', 'error');
       return;
     }
+
+    const cleanOptions = cleanPairs.map((p) => p.text);
+    const cleanOptionImages = cleanPairs.map((p) => p.image);
     const safeCorrectIndex = formCorrectIndex >= cleanOptions.length ? 0 : formCorrectIndex;
 
     setIsSavingModal(true);
@@ -391,6 +465,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   ...q,
                   question: formQuestionText.trim(),
                   options: cleanOptions,
+                  optionImages: cleanOptionImages,
                   correctIndex: safeCorrectIndex,
                   explanation: formExplanation.trim(),
                   points: Number(formPoints) || 50,
@@ -404,6 +479,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
             id: `pt-custom-${Date.now()}`,
             question: formQuestionText.trim(),
             options: cleanOptions,
+            optionImages: cleanOptionImages,
             correctIndex: safeCorrectIndex,
             explanation: formExplanation.trim(),
             points: Number(formPoints) || 50,
@@ -413,7 +489,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
         }
         setPreTestQuestions(updated);
         savePreTestQuestions(updated, true);
-        showNotification('✓ تم حفظ السؤال والإجابات في الاختبار القبلي ومزامنته للجميع عبر فايربيس بنجاح');
+        showNotification('✓ تم حفظ وتحديث السؤال والإجابات والصور في الاختبار القبلي فوراً');
       } else if (editingQuestionType === 'posttest') {
         let updated: PreTestQuestion[];
         if (editingQuestionId) {
@@ -424,6 +500,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   ...q,
                   question: formQuestionText.trim(),
                   options: cleanOptions,
+                  optionImages: cleanOptionImages,
                   correctIndex: safeCorrectIndex,
                   explanation: formExplanation.trim(),
                   points: Number(formPoints) || 50,
@@ -437,6 +514,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
             id: `post-custom-${Date.now()}`,
             question: formQuestionText.trim(),
             options: cleanOptions,
+            optionImages: cleanOptionImages,
             correctIndex: safeCorrectIndex,
             explanation: formExplanation.trim(),
             points: Number(formPoints) || 50,
@@ -446,7 +524,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
         }
         setPostTestQuestions(updated);
         savePostTestQuestions(updated, true);
-        showNotification('✓ تم حفظ السؤال والإجابات في الاختبار البعدي ومزامنته للجميع عبر فايربيس بنجاح');
+        showNotification('✓ تم حفظ وتحديث السؤال والإجابات والصور في الاختبار البعدي فوراً');
       } else {
         // 10 Stages (levels)
         const updatedLevels = gameLevels.map((lvl) => {
@@ -461,6 +539,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                     ...q,
                     question: formQuestionText.trim(),
                     options: cleanOptions,
+                    optionImages: cleanOptionImages,
                     correctIndex: safeCorrectIndex,
                     explanation: formExplanation.trim(),
                     points: Number(formPoints) || 34,
@@ -474,6 +553,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               id: `q${editingTargetLevel}-custom-${Date.now()}`,
               question: formQuestionText.trim(),
               options: cleanOptions,
+              optionImages: cleanOptionImages,
               correctIndex: safeCorrectIndex,
               explanation: formExplanation.trim(),
               points: Number(formPoints) || 34,
@@ -486,7 +566,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
 
         setGameLevels(updatedLevels);
         saveCustomGameLevels(updatedLevels, true);
-        showNotification(`✓ تم حفظ السؤال والإجابات في المستوى ${editingTargetLevel} ومزامنته للجميع عبر فايربيس بنجاح`);
+        showNotification(`✓ تم حفظ وتحديث السؤال والإجابات في المستوى ${editingTargetLevel} فوراً`);
       }
     } finally {
       setTimeout(() => {
@@ -496,13 +576,14 @@ export const AdminTestsSettingsManager: React.FC = () => {
     }
   };
 
-  // Direct Inline Save from Card with Loading Spinner
+  // Direct Inline Save from Card with Loading Spinner & Option Images Support
   const handleInlineSaveQuestion = async (
     type: ActiveTestTab,
     questionId: string,
     updatedData: {
       question: string;
       options: string[];
+      optionImages?: (string | null | undefined)[];
       correctIndex: number;
       explanation: string;
       points: number;
@@ -514,11 +595,21 @@ export const AdminTestsSettingsManager: React.FC = () => {
       showNotification('يرجى كتابة نص السؤال', 'error');
       return;
     }
-    const cleanOptions = updatedData.options.map((o) => o.trim()).filter(Boolean);
-    if (cleanOptions.length < 2) {
-      showNotification('يرجى كتابة خيارين على الأقل', 'error');
+
+    const cleanPairs = updatedData.options
+      .map((opt, idx) => ({
+        text: opt.trim(),
+        image: updatedData.optionImages?.[idx]?.trim() || undefined,
+      }))
+      .filter((pair) => pair.text || pair.image);
+
+    if (cleanPairs.length < 2) {
+      showNotification('يرجى إدخال خيارين على الأقل (نص أو صورة)', 'error');
       return;
     }
+
+    const cleanOptions = cleanPairs.map((p) => p.text);
+    const cleanOptionImages = cleanPairs.map((p) => p.image);
     const safeCorrectIndex = updatedData.correctIndex >= cleanOptions.length ? 0 : updatedData.correctIndex;
 
     setSavingCardId(questionId);
@@ -530,6 +621,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 ...q,
                 question: updatedData.question.trim(),
                 options: cleanOptions,
+                optionImages: cleanOptionImages,
                 correctIndex: safeCorrectIndex,
                 explanation: updatedData.explanation.trim(),
                 points: Number(updatedData.points) || 50,
@@ -547,6 +639,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 ...q,
                 question: updatedData.question.trim(),
                 options: cleanOptions,
+                optionImages: cleanOptionImages,
                 correctIndex: safeCorrectIndex,
                 explanation: updatedData.explanation.trim(),
                 points: Number(updatedData.points) || 50,
@@ -568,6 +661,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                     ...q,
                     question: updatedData.question.trim(),
                     options: cleanOptions,
+                    optionImages: cleanOptionImages,
                     correctIndex: safeCorrectIndex,
                     explanation: updatedData.explanation.trim(),
                     points: Number(updatedData.points) || 34,
@@ -596,12 +690,12 @@ export const AdminTestsSettingsManager: React.FC = () => {
       const updated = preTestQuestions.filter((q) => q.id !== questionId);
       setPreTestQuestions(updated);
       savePreTestQuestions(updated, true);
-      showNotification('✓ تم حذف السؤال من الاختبار القبلي ومزامنة التحديث');
+      showNotification('✓ تم حذف السؤال من الاختبار القبلي ومزامنة التحديث فوراً');
     } else if (type === 'posttest') {
       const updated = postTestQuestions.filter((q) => q.id !== questionId);
       setPostTestQuestions(updated);
       savePostTestQuestions(updated, true);
-      showNotification('✓ تم حذف السؤال من الاختبار البعدي ومزامنة التحديث');
+      showNotification('✓ تم حذف السؤال من الاختبار البعدي ومزامنة التحديث فوراً');
     } else if (type === 'levels' && levelNum !== undefined) {
       const updatedLevels = gameLevels.map((lvl) => {
         if (lvl.levelNumber !== levelNum) return lvl;
@@ -612,7 +706,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
       });
       setGameLevels(updatedLevels);
       saveCustomGameLevels(updatedLevels, true);
-      showNotification(`✓ تم حذف السؤال من المستوى ${levelNum} ومزامنة التحديث`);
+      showNotification(`✓ تم حذف السؤال من المستوى ${levelNum} ومزامنة التحديث فوراً`);
     }
     setTimeout(() => setSavingCardId(null), 300);
   };
@@ -662,13 +756,13 @@ export const AdminTestsSettingsManager: React.FC = () => {
   });
 
   // Calculate statistics
-  const preWithImages = preTestQuestions.filter((q) => !!q.imageUrl).length;
-  const postWithImages = postTestQuestions.filter((q) => !!q.imageUrl).length;
+  const preWithImages = preTestQuestions.filter((q) => !!q.imageUrl || q.optionImages?.some(Boolean)).length;
+  const postWithImages = postTestQuestions.filter((q) => !!q.imageUrl || q.optionImages?.some(Boolean)).length;
   let totalLevelsQuestions = 0;
   let levelsWithImages = 0;
   gameLevels.forEach((l) => {
     totalLevelsQuestions += l.questions.length;
-    levelsWithImages += l.questions.filter((q) => !!q.imageUrl).length;
+    levelsWithImages += l.questions.filter((q) => !!q.imageUrl || q.optionImages?.some(Boolean)).length;
   });
 
   return (
@@ -693,11 +787,11 @@ export const AdminTestsSettingsManager: React.FC = () => {
 
       {/* Global Loading Overlay / Indicator when Uploading Image */}
       {isUploadingImage && (
-        <div className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[120] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-[#0b0e20] border-2 border-amber-400 p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-3">
             <Loader2 className="w-10 h-10 text-amber-400 animate-spin" />
-            <p className="text-sm font-black text-white">جاري معالجة ورفع صورة السؤال وتثبيتها...</p>
-            <span className="text-xs text-amber-300">يتم ضغط الصورة تلقائياً لسرعة المزامنة</span>
+            <p className="text-sm font-black text-white">جاري معالجة ورفع الصورة وتثبيتها...</p>
+            <span className="text-xs text-amber-300">يتم ضغط الصورة تلقائياً لسرعة المزامنة اللحظية</span>
           </div>
         </div>
       )}
@@ -713,11 +807,11 @@ export const AdminTestsSettingsManager: React.FC = () => {
               <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal'] tracking-tight flex items-center gap-2">
                 <span>إعدادات وضبط وتعديل بنك الأسئلة والاختبارات</span>
                 <span className="px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-xs font-bold shadow-sm">
-                  مزامنة حية عبر فايربيس
+                  مزامنة لحظية مباشرة
                 </span>
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                تعديل نصوص الأسئلة والإجابات، رفع الصور من الجهاز، إضافة إجابة جديدة أو حذف أي نقطة، وضبط التفسير والنقاط.
+                صلاحية كاملة للأدمن لتعديل الأسئلة والإجابات، وضع صور في خيارات الإجابة، حذف الإجابة أو تعديلها، مع ظهور فوري للتعديلات للجميع.
               </p>
             </div>
           </div>
@@ -787,7 +881,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
           <div className="flex items-center gap-3 text-xs opacity-90">
             <span>النقاط: {preTestQuestions.reduce((a, b) => a + (b.points || 0), 0)} XP</span>
             <span>•</span>
-            <span>بصور: {preWithImages}</span>
+            <span>بصور وأسئلة: {preWithImages}</span>
           </div>
         </button>
 
@@ -819,7 +913,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
           <div className="flex items-center gap-3 text-xs opacity-90">
             <span>النقاط: {postTestQuestions.reduce((a, b) => a + (b.points || 0), 0)} XP</span>
             <span>•</span>
-            <span>بصور: {postWithImages}</span>
+            <span>بصور وأسئلة: {postWithImages}</span>
           </div>
         </button>
 
@@ -1102,7 +1196,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-white font-['Tajawal']">
-                    {editingQuestionId ? 'تعديل السؤال وخيارات الإجابة' : `إضافة سؤال جديد (${addPosition === 'top' ? 'في البداية' : 'في النهاية'})`}
+                    {editingQuestionId ? 'تعديل السؤال وخيارات الإجابة والصور' : `إضافة سؤال جديد (${addPosition === 'top' ? 'في البداية' : 'في النهاية'})`}
                   </h3>
                   <span className="text-xs text-amber-300 font-bold">
                     {editingQuestionType === 'pretest'
@@ -1187,7 +1281,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               />
             </div>
 
-            {/* IMAGE ATTACHMENT SECTION */}
+            {/* QUESTION IMAGE ATTACHMENT SECTION */}
             <div className="p-4 rounded-2xl bg-[#0a0d1f] border border-amber-500/40 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-amber-300 flex items-center gap-2">
@@ -1212,7 +1306,8 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   <img
                     src={formImageUrl}
                     alt="معاينة صورة السؤال"
-                    className="max-h-56 w-auto max-w-full rounded-xl object-contain shadow-lg"
+                    className="max-h-56 w-auto max-w-full rounded-xl object-contain shadow-lg cursor-pointer"
+                    onClick={() => setZoomedImageUrl(formImageUrl)}
                   />
                 </div>
               )}
@@ -1225,7 +1320,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   className="px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
                 >
                   <Upload className="w-4 h-4" />
-                  <span>اختر ملف صورة من جهازك / هاتفك</span>
+                  <span>اختر ملف صورة السؤال من جهازك</span>
                 </button>
 
                 <div className="relative">
@@ -1241,67 +1336,138 @@ export const AdminTestsSettingsManager: React.FC = () => {
               </div>
             </div>
 
-            {/* Options List with Dynamic Add and Delete Point / Option */}
+            {/* ANSWER OPTIONS LIST WITH DYNAMIC IMAGES, ADD & DELETE OPTION */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-200">
-                  خيارات الإجابة (حدد الإجابة الصحيحة بالدائرة الخضراء، ويمكنك إضافة أو حذف أي نقطة):
-                </label>
+                <div>
+                  <label className="text-xs font-bold text-slate-200 block">
+                    خيارات الإجابة وصورها (حدد الإجابة الصحيحة بالدائرة، ويمكنك إضافة صور لكل خيار أو حذفه):
+                  </label>
+                  <span className="text-[11px] text-amber-300/80 font-medium">
+                    يمكن وضع صورة لكل خيار إجابة بالضغط على زر 📷 صورة الخيار
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={handleAddOption}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 hover:text-white text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all"
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 hover:text-white text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all"
                 >
                   <Plus className="w-3.5 h-3.5 text-emerald-400" />
                   <span>➕ إضافة إجابة جديدة</span>
                 </button>
               </div>
 
-              <div className="space-y-2.5">
-                {formOptions.map((opt, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex items-center gap-2.5 p-2 rounded-xl border transition-all ${
-                      formCorrectIndex === idx
-                        ? 'bg-emerald-950/40 border-emerald-500/80 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-                        : 'bg-slate-950 border-slate-800'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="correct-option-group"
-                      id={`opt-radio-${idx}`}
-                      checked={formCorrectIndex === idx}
-                      onChange={() => setFormCorrectIndex(idx)}
-                      className="w-4 h-4 text-emerald-500 accent-emerald-500 cursor-pointer shrink-0"
-                    />
-                    <span className="w-6 h-6 rounded-lg bg-slate-900 text-slate-300 text-xs font-mono font-bold flex items-center justify-center shrink-0">
-                      {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][idx] || idx + 1}
-                    </span>
-                    <input
-                      type="text"
-                      value={opt}
-                      onChange={(e) => handleOptionChange(idx, e.target.value)}
-                      placeholder={`نص الخيار رقم ${idx + 1}...`}
-                      className="flex-1 bg-transparent border-0 text-white text-xs sm:text-sm outline-none px-2 py-1"
-                    />
-                    {formOptions.length > 2 ? (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveOption(idx)}
-                        className="px-2.5 py-1 rounded-lg bg-red-950/70 hover:bg-red-900 border border-red-500/60 text-red-300 hover:text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm shrink-0"
-                        title="حذف هذه النقطة / الخيار من الإجابات"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                        <span>حذف النقطة</span>
-                      </button>
-                    ) : (
-                      <span className="text-[10px] text-slate-500 px-2 py-1 font-bold shrink-0">
-                        (الحد الأدنى خيارين)
-                      </span>
-                    )}
-                  </div>
-                ))}
+              <div className="space-y-3">
+                {formOptions.map((opt, idx) => {
+                  const optImage = formOptionImages[idx];
+                  return (
+                    <div
+                      key={idx}
+                      className={`p-3 rounded-2xl border transition-all space-y-2.5 ${
+                        formCorrectIndex === idx
+                          ? 'bg-emerald-950/40 border-emerald-500/80 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                          : 'bg-slate-950 border-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <input
+                          type="radio"
+                          name="correct-option-group"
+                          id={`opt-radio-${idx}`}
+                          checked={formCorrectIndex === idx}
+                          onChange={() => setFormCorrectIndex(idx)}
+                          className="w-4 h-4 text-emerald-500 accent-emerald-500 cursor-pointer shrink-0"
+                          title="تحديد هذا الخيار كإجابة صحيحة"
+                        />
+                        <span className="w-6 h-6 rounded-lg bg-slate-900 text-slate-300 text-xs font-mono font-bold flex items-center justify-center shrink-0">
+                          {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][idx] || idx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          value={opt}
+                          onChange={(e) => handleOptionChange(idx, e.target.value)}
+                          placeholder={`نص الخيار رقم ${idx + 1}...`}
+                          className="flex-1 bg-slate-900/80 border border-slate-700/80 focus:border-amber-400 text-white text-xs sm:text-sm outline-none px-3 py-1.5 rounded-xl"
+                        />
+
+                        {/* Pick image for this option */}
+                        <button
+                          type="button"
+                          onClick={() => handleModalOptionImagePick(idx)}
+                          className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0 transition-all shadow-sm"
+                          title="رفع صورة لهذا الخيار من جهازك"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-amber-400" />
+                          <span>صورة الخيار</span>
+                        </button>
+
+                        {/* Delete this option */}
+                        {formOptions.length > 2 ? (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveOption(idx)}
+                            className="px-2.5 py-1.5 rounded-xl bg-red-950/70 hover:bg-red-900 border border-red-500/60 text-red-300 hover:text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm shrink-0"
+                            title="حذف هذا الخيار من الإجابات"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                            <span>حذف</span>
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-slate-500 px-2 py-1 font-bold shrink-0">
+                            (حد أدنى خيارين)
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Attached Option Image Preview and URL Input */}
+                      {optImage ? (
+                        <div className="flex items-center gap-3 pr-8 pt-1">
+                          <div
+                            onClick={() => setZoomedImageUrl(optImage)}
+                            className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-amber-400/80 bg-black/70 p-0.5 cursor-pointer hover:scale-105 transition-transform shrink-0 shadow"
+                            title="انقر لتكبير صورة الإجابة"
+                          >
+                            <img
+                              src={optImage}
+                              alt={`صورة الخيار ${idx + 1}`}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[11px] text-amber-300 font-bold flex items-center gap-1">
+                              <ImageIcon className="w-3 h-3" />
+                              <span>مرفق صورة مع هذا الخيار</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleModalOptionImageRemove(idx)}
+                              className="text-[11px] text-red-400 hover:text-red-300 font-bold flex items-center gap-1 cursor-pointer w-fit"
+                            >
+                              <X className="w-3 h-3" />
+                              <span>إزالة صورة الخيار</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="pr-8">
+                          <input
+                            type="url"
+                            placeholder="أو الصق رابط صورة مباشر لهذا الخيار (https://...)..."
+                            className="w-full px-3 py-1 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300 text-[11px] outline-none"
+                            onBlur={(e) => {
+                              if (e.target.value.trim()) {
+                                const updated = [...formOptionImages];
+                                updated[idx] = e.target.value.trim();
+                                setFormOptionImages(updated);
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -1372,7 +1538,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
       {zoomedImageUrl && (
         <div
           onClick={() => setZoomedImageUrl(null)}
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fadeIn cursor-pointer"
+          className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fadeIn cursor-pointer"
         >
           <div className="relative max-w-4xl max-h-[90vh] p-2 bg-[#080914] rounded-3xl border-2 border-[#ffd700] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <button
@@ -1384,7 +1550,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
             </button>
             <img
               src={zoomedImageUrl}
-              alt="تكبير صورة السؤال"
+              alt="تكبير الصورة"
               className="max-h-[82vh] w-auto max-w-full rounded-2xl object-contain mx-auto"
             />
           </div>
@@ -1405,6 +1571,7 @@ interface QuestionAdminCardProps {
   onSaveInline: (updatedData: {
     question: string;
     options: string[];
+    optionImages?: (string | null | undefined)[];
     correctIndex: number;
     explanation: string;
     points: number;
@@ -1438,6 +1605,13 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
   const [draftOptions, setDraftOptions] = useState<string[]>(
     question.options && question.options.length > 0 ? [...question.options] : ['', '']
   );
+  const [draftOptionImages, setDraftOptionImages] = useState<(string | null | undefined)[]>(
+    question.options
+      ? question.optionImages && question.optionImages.length > 0
+        ? [...question.optionImages]
+        : new Array(question.options.length).fill('')
+      : ['', '']
+  );
   const [draftCorrectIndex, setDraftCorrectIndex] = useState(
     typeof question.correctIndex === 'number' ? question.correctIndex : 0
   );
@@ -1455,7 +1629,13 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
   // Sync draft state when question prop changes
   useEffect(() => {
     setDraftQuestion(question.question || '');
-    setDraftOptions(question.options && question.options.length > 0 ? [...question.options] : ['', '']);
+    const opts = question.options && question.options.length > 0 ? [...question.options] : ['', ''];
+    setDraftOptions(opts);
+    setDraftOptionImages(
+      question.optionImages && question.optionImages.length > 0
+        ? [...question.optionImages]
+        : new Array(opts.length).fill('')
+    );
     setDraftCorrectIndex(typeof question.correctIndex === 'number' ? question.correctIndex : 0);
     setDraftExplanation(question.explanation || '');
     setDraftPoints(question.points || 50);
@@ -1467,6 +1647,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
     onSaveInline({
       question: draftQuestion,
       options: draftOptions,
+      optionImages: draftOptionImages,
       correctIndex: draftCorrectIndex,
       explanation: draftExplanation,
       points: draftPoints,
@@ -1477,30 +1658,58 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
   const handleAddInlineOption = () => {
     if (draftOptions.length >= 8) return;
     setDraftOptions([...draftOptions, '']);
+    setDraftOptionImages([...draftOptionImages, '']);
   };
 
   const handleRemoveInlineOption = (idx: number) => {
     if (draftOptions.length <= 2) return;
-    const updated = draftOptions.filter((_, i) => i !== idx);
-    setDraftOptions(updated);
-    if (draftCorrectIndex >= updated.length) {
-      setDraftCorrectIndex(updated.length - 1);
+    const updatedOpts = draftOptions.filter((_, i) => i !== idx);
+    const updatedImgs = draftOptionImages.filter((_, i) => i !== idx);
+    setDraftOptions(updatedOpts);
+    setDraftOptionImages(updatedImgs);
+    if (draftCorrectIndex >= updatedOpts.length) {
+      setDraftCorrectIndex(updatedOpts.length - 1);
     }
   };
 
+  const handlePickOptionImage = (optIdx: number) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        compressImage(file, (dataUrl) => {
+          const updated = [...draftOptionImages];
+          updated[optIdx] = dataUrl;
+          setDraftOptionImages(updated);
+        });
+      }
+    };
+    input.click();
+  };
+
+  const handleRemoveDraftOptionImage = (optIdx: number) => {
+    const updated = [...draftOptionImages];
+    updated[optIdx] = '';
+    setDraftOptionImages(updated);
+  };
+
   return (
-    <div className={`p-5 rounded-2xl bg-[#090c1e] border-2 transition-all space-y-4 relative ${
-      isSavingThisCard
-        ? 'border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.35)]'
-        : isInlineEditing
-        ? 'border-amber-400 shadow-xl'
-        : 'border-slate-800/90 hover:border-amber-500/40'
-    }`}>
+    <div
+      className={`p-5 rounded-2xl bg-[#090c1e] border-2 transition-all space-y-4 relative ${
+        isSavingThisCard
+          ? 'border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.35)]'
+          : isInlineEditing
+          ? 'border-amber-400 shadow-xl'
+          : 'border-slate-800/90 hover:border-amber-500/40'
+      }`}
+    >
       {/* Loading banner on the card when saving or uploading */}
       {isSavingThisCard && (
         <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/90 text-slate-950 font-black text-xs shadow-md animate-pulse">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          <span>جاري المزامنة...</span>
+          <span>جاري المزامنة فوراً...</span>
         </div>
       )}
 
@@ -1521,7 +1730,13 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
           {question.imageUrl && (
             <span className="px-2 py-0.5 rounded-lg bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold flex items-center gap-1">
               <ImageIcon className="w-3 h-3" />
-              <span>مرفق صورة</span>
+              <span>صورة سؤال</span>
+            </span>
+          )}
+          {question.optionImages?.some(Boolean) && (
+            <span className="px-2 py-0.5 rounded-lg bg-blue-950/70 border border-blue-500/40 text-blue-300 text-[10px] font-bold flex items-center gap-1">
+              <ImageIcon className="w-3 h-3" />
+              <span>صور بالإجابات</span>
             </span>
           )}
         </div>
@@ -1536,7 +1751,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             title="اختر ملف صورة من جهازك لهذا السؤال مباشرة"
           >
             <Upload className="w-3.5 h-3.5 text-amber-400" />
-            <span>اختر ملف صورة</span>
+            <span>اختر صورة السؤال</span>
           </button>
 
           {/* Direct Link button */}
@@ -1544,7 +1759,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             type="button"
             onClick={() => setShowUrlInputBar(!showUrlInputBar)}
             className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-all cursor-pointer flex items-center gap-1"
-            title="إضافة أو تعديل رابط الصورة المباشر"
+            title="إضافة أو تعديل رابط صورة السؤال"
           >
             <LinkIcon className="w-3.5 h-3.5" />
             <span>رابط صورة</span>
@@ -1559,7 +1774,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                 ? 'bg-amber-500 text-slate-950 border-amber-300 shadow-amber-500/30'
                 : 'bg-violet-950/80 hover:bg-violet-900 border-violet-500/60 text-violet-200 hover:text-white'
             }`}
-            title="تعديل هذا السؤال وخيارات إجابته مباشرة في مكانه"
+            title="تعديل هذا السؤال وخيارات إجابته وصورها مباشرة في مكانه"
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>{isInlineEditing ? 'إغلاق التعديل' : 'تعديل السؤال والإجابات'}</span>
@@ -1618,7 +1833,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             type="url"
             value={urlBarValue}
             onChange={(e) => setUrlBarValue(e.target.value)}
-            placeholder="الصق رابط الصورة المباشر للسؤال (https://...)..."
+            placeholder="الصق رابط صورة السؤال المباشر (https://...)..."
             className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none w-full"
           />
           <div className="flex items-center gap-2 shrink-0">
@@ -1649,7 +1864,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
           <div className="flex items-center justify-between pb-2 border-b border-slate-800">
             <span className="text-xs font-black text-amber-300 flex items-center gap-1.5">
               <Edit3 className="w-4 h-4 text-amber-400" />
-              <span>تعديل السؤال والإجابات مباشرة داخل البطاقة</span>
+              <span>تعديل السؤال والإجابات وصورها مباشرة داخل البطاقة</span>
             </span>
             <button
               type="button"
@@ -1674,7 +1889,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             />
           </div>
 
-          {/* Image Upload & Link for Inline Editor */}
+          {/* Question Image Upload & Link for Inline Editor */}
           <div className="p-3.5 rounded-xl bg-slate-950 border border-amber-500/30 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
@@ -1698,7 +1913,8 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                 <img
                   src={draftImageUrl}
                   alt="معاينة"
-                  className="max-h-48 w-auto max-w-full rounded-lg object-contain"
+                  className="max-h-48 w-auto max-w-full rounded-lg object-contain cursor-pointer"
+                  onClick={() => onZoomImage(draftImageUrl)}
                 />
               </div>
             )}
@@ -1710,24 +1926,29 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                 className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>اختر ملف صورة من جهازك</span>
+                <span>اختر ملف صورة السؤال من جهازك</span>
               </button>
               <input
                 type="url"
                 value={draftImageUrl.startsWith('data:') ? '' : draftImageUrl}
                 onChange={(e) => setDraftImageUrl(e.target.value)}
-                placeholder="أو الصق رابط صورة مباشر (URL)..."
+                placeholder="أو الصق رابط صورة السؤال (URL)..."
                 className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
               />
             </div>
           </div>
 
-          {/* Options with Radio Selection, Dynamic Add, and Delete Point */}
-          <div className="space-y-2">
+          {/* Options with Radio Selection, Dynamic Images, Add, and Delete Option */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-200">
-                خيارات الإجابة (حدد الإجابة الصحيحة بالدائرة، ويمكنك إضافة أو حذف أي نقطة):
-              </label>
+              <div>
+                <label className="text-xs font-bold text-slate-200 block">
+                  خيارات الإجابة والصور (اضغط الدائرة لتحديد الصحيحة، ويمكن وضع صور لكل خيار):
+                </label>
+                <span className="text-[11px] text-amber-300/80 font-medium">
+                  يمكن رفع صورة لكل خيار إجابة من جهازك لتظهر للطلاب في الاختبار
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={handleAddInlineOption}
@@ -1738,54 +1959,120 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
               </button>
             </div>
 
-            <div className="space-y-2">
-              {draftOptions.map((opt, optIdx) => (
-                <div
-                  key={optIdx}
-                  className={`flex items-center gap-2 p-2 rounded-xl border transition-all ${
-                    draftCorrectIndex === optIdx
-                      ? 'bg-emerald-950/40 border-emerald-500'
-                      : 'bg-slate-950 border-slate-800'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name={`inline-opt-group-${question.id}`}
-                    checked={draftCorrectIndex === optIdx}
-                    onChange={() => setDraftCorrectIndex(optIdx)}
-                    className="w-4 h-4 text-emerald-500 accent-emerald-500 cursor-pointer shrink-0"
-                  />
-                  <span className="w-6 h-6 rounded-lg bg-slate-900 text-slate-300 text-xs font-mono font-bold flex items-center justify-center shrink-0">
-                    {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || optIdx + 1}
-                  </span>
-                  <input
-                    type="text"
-                    value={opt}
-                    onChange={(e) => {
-                      const updated = [...draftOptions];
-                      updated[optIdx] = e.target.value;
-                      setDraftOptions(updated);
-                    }}
-                    placeholder={`نص الخيار ${optIdx + 1}...`}
-                    className="flex-1 bg-transparent border-0 text-white text-xs sm:text-sm outline-none px-2"
-                  />
-                  {draftOptions.length > 2 ? (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveInlineOption(optIdx)}
-                      className="px-2.5 py-1 rounded-lg bg-red-950/70 hover:bg-red-900 border border-red-500/60 text-red-300 hover:text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm shrink-0"
-                      title="حذف هذه النقطة / الخيار من الإجابات"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                      <span>حذف النقطة</span>
-                    </button>
-                  ) : (
-                    <span className="text-[10px] text-slate-500 px-2 py-1 font-bold shrink-0">
-                      (الحد الأدنى خيارين)
-                    </span>
-                  )}
-                </div>
-              ))}
+            <div className="space-y-3">
+              {draftOptions.map((opt, optIdx) => {
+                const optImage = draftOptionImages[optIdx];
+                return (
+                  <div
+                    key={optIdx}
+                    className={`p-3 rounded-2xl border transition-all space-y-2.5 ${
+                      draftCorrectIndex === optIdx
+                        ? 'bg-emerald-950/40 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                        : 'bg-slate-950 border-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name={`inline-opt-group-${question.id}`}
+                        checked={draftCorrectIndex === optIdx}
+                        onChange={() => setDraftCorrectIndex(optIdx)}
+                        className="w-4 h-4 text-emerald-500 accent-emerald-500 cursor-pointer shrink-0"
+                        title="تحديد هذا الخيار كإجابة صحيحة"
+                      />
+                      <span className="w-6 h-6 rounded-lg bg-slate-900 text-slate-300 text-xs font-mono font-bold flex items-center justify-center shrink-0">
+                        {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || optIdx + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={opt}
+                        onChange={(e) => {
+                          const updated = [...draftOptions];
+                          updated[optIdx] = e.target.value;
+                          setDraftOptions(updated);
+                        }}
+                        placeholder={`نص الخيار ${optIdx + 1}...`}
+                        className="flex-1 bg-slate-900/80 border border-slate-700/80 focus:border-amber-400 text-white text-xs sm:text-sm outline-none px-3 py-1.5 rounded-xl"
+                      />
+
+                      {/* Pick option image */}
+                      <button
+                        type="button"
+                        onClick={() => handlePickOptionImage(optIdx)}
+                        className="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 transition-all shadow-sm"
+                        title="اختر صورة لهذا الخيار من جهازك"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="hidden sm:inline">صورة الخيار</span>
+                      </button>
+
+                      {/* Delete Option */}
+                      {draftOptions.length > 2 ? (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveInlineOption(optIdx)}
+                          className="px-2.5 py-1.5 rounded-xl bg-red-950/70 hover:bg-red-900 border border-red-500/60 text-red-300 hover:text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm shrink-0"
+                          title="حذف هذا الخيار من الإجابات"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                          <span className="hidden sm:inline">حذف</span>
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-slate-500 px-2 py-1 font-bold shrink-0">
+                          (حد أدنى خيارين)
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Attached Option Image Preview and URL Input */}
+                    {optImage ? (
+                      <div className="flex items-center gap-3 pr-8 pt-1">
+                        <div
+                          onClick={() => onZoomImage(optImage)}
+                          className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-amber-400/70 bg-black/70 p-0.5 cursor-pointer hover:scale-105 transition-transform shrink-0 shadow"
+                          title="انقر لتكبير صورة الإجابة"
+                        >
+                          <img
+                            src={optImage}
+                            alt={`صورة الخيار ${optIdx + 1}`}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[11px] text-amber-300 font-bold flex items-center gap-1">
+                            <ImageIcon className="w-3 h-3" />
+                            <span>مرفق صورة مع هذا الخيار</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveDraftOptionImage(optIdx)}
+                            className="text-[11px] text-red-400 hover:text-red-300 font-bold flex items-center gap-1 cursor-pointer w-fit"
+                          >
+                            <X className="w-3 h-3" />
+                            <span>إزالة صورة الخيار</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="pr-8">
+                        <input
+                          type="url"
+                          placeholder="أو الصق رابط صورة مباشر لهذا الخيار (https://...)..."
+                          className="w-full px-3 py-1 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300 text-[11px] outline-none"
+                          onBlur={(e) => {
+                            if (e.target.value.trim()) {
+                              const updated = [...draftOptionImages];
+                              updated[optIdx] = e.target.value.trim();
+                              setDraftOptionImages(updated);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -1854,7 +2141,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             {question.question}
           </h3>
 
-          {/* Image Thumbnail if attached */}
+          {/* Question Image Thumbnail if attached */}
           {question.imageUrl && (
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <div
@@ -1868,7 +2155,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                 />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-bold gap-1">
                   <Eye className="w-4 h-4" />
-                  <span>انقر للتكبير</span>
+                  <span>انقر لتكبير صورة السؤال</span>
                 </div>
               </div>
 
@@ -1883,33 +2170,56 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             </div>
           )}
 
-          {/* Options Grid */}
+          {/* Options Grid with Option Images */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
             {question.options.map((opt, optIdx) => {
               const isCorrect = optIdx === question.correctIndex;
+              const optImg = question.optionImages?.[optIdx];
+
               return (
                 <div
                   key={optIdx}
-                  className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-2.5 ${
+                  className={`p-3 rounded-xl border text-xs flex flex-col justify-between gap-2.5 ${
                     isCorrect
                       ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200 font-bold shadow-[0_0_12px_rgba(16,185,129,0.2)]'
                       : 'bg-slate-950 border-slate-800 text-slate-300'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`w-5 h-5 rounded-md text-[10px] font-mono font-black flex items-center justify-center shrink-0 ${
-                        isCorrect ? 'bg-emerald-500 text-slate-950' : 'bg-slate-900 text-slate-400'
-                      }`}
-                    >
-                      {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || optIdx + 1}
-                    </span>
-                    <span className="leading-relaxed">{opt}</span>
+                  <div className="flex items-center justify-between gap-2 w-full">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`w-5 h-5 rounded-md text-[10px] font-mono font-black flex items-center justify-center shrink-0 ${
+                          isCorrect ? 'bg-emerald-500 text-slate-950' : 'bg-slate-900 text-slate-400'
+                        }`}
+                      >
+                        {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || optIdx + 1}
+                      </span>
+                      <span className="leading-relaxed">{opt || '(خيار بالصورة)'}</span>
+                    </div>
+
+                    {isCorrect && (
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-900/60 px-2 py-0.5 rounded-full shrink-0">
+                        ✓ الإجابة الصحيحة
+                      </span>
+                    )}
                   </div>
-                  {isCorrect && (
-                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-900/60 px-2 py-0.5 rounded-full shrink-0">
-                      ✓ الإجابة الصحيحة
-                    </span>
+
+                  {/* Option Image Thumbnail if present */}
+                  {optImg && (
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onZoomImage(optImg);
+                      }}
+                      className="relative rounded-lg overflow-hidden border border-amber-400/60 bg-black/60 p-1 cursor-pointer hover:border-amber-400 flex items-center justify-center max-h-24"
+                      title="انقر لتكبير صورة الخيار"
+                    >
+                      <img
+                        src={optImg}
+                        alt={`صورة الخيار ${optIdx + 1}`}
+                        className="max-h-20 w-auto object-contain rounded"
+                      />
+                    </div>
                   )}
                 </div>
               );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CpLogo } from './CpLogo';
-import { CheckCircle2, Loader2, ArrowLeft, Clock } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 import { getGroupByUsername } from '../data/studentAccounts';
 
 interface StudentWelcomeFloatingCardProps {
@@ -18,7 +18,7 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
   const groupMeta = getGroupByUsername(username);
 
   useEffect(() => {
-    // 7-second smooth interval / timer without numeric counter
+    // 7-second smooth progress interval without numeric counter or instructional sentences
     const totalMs = durationSeconds * 1000;
     const intervalMs = 50;
     let elapsedMs = 0;
@@ -48,7 +48,7 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
-        {/* Verified Badge: تم التحقق من بياناتك لجميع المجموعات + مدة 7 ثوانٍ */}
+        {/* Verified Badge: تم التحقق من بياناتك لجميع المجموعات */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
           <span className="px-4 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-sm font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -60,11 +60,6 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
               المجموعة {groupMeta.code}: {groupMeta.name}
             </span>
           )}
-
-          <span className="px-3 py-1.5 rounded-full bg-amber-950/80 border border-amber-500/60 text-amber-300 text-xs font-bold flex items-center gap-1 shadow-sm">
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
-            <span>مدة التحميل: 7 ثوانٍ فقط</span>
-          </span>
         </div>
 
         {/* Environment Logo */}
@@ -82,9 +77,9 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
           </h2>
         </div>
 
-        {/* 7-Second Modern Elegant Loading Bar */}
+        {/* Modern Elegant Loading Bar - No Counter, No Sentences, Strict Wait */}
         <div className="w-full bg-[#070a16] p-5 sm:p-6 rounded-2xl border border-slate-800/90 shadow-inner space-y-4">
-          {/* Progress bar (7s smooth fill, no numeric counter) */}
+          {/* Progress bar (smooth fill, no numeric counter) */}
           <div className="h-4 w-full bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800/90 relative shadow-inner">
             <div
               className="h-full bg-gradient-to-r from-blue-600 via-indigo-500 via-[#ffd700] to-amber-400 rounded-full transition-all duration-75 ease-linear shadow-[0_0_20px_rgba(255,215,0,0.65)] relative overflow-hidden"
@@ -95,24 +90,16 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
             </div>
           </div>
 
-          {/* Large harmonious loading text: جاري التحميل انتظر */}
+          {/* Large harmonious loading text: جاري التحميل انتظر (No seconds or instruction) */}
           <div className="pt-1 flex items-center justify-center gap-2.5">
             <Loader2 className="w-5 h-5 text-[#ffd700] animate-spin" />
             <p className="text-lg sm:text-xl font-black text-amber-300 font-['Tajawal'] tracking-wide">
-              جاري التحميل انتظر (7 ثوانٍ)...
+              جاري التحميل انتظر...
             </p>
           </div>
         </div>
 
-        {/* Instant Skip Button: تخطي الانتظار والدخول فوراً */}
-        <button
-          type="button"
-          onClick={onFinish}
-          className="mt-5 px-5 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-amber-500/40 hover:border-amber-400 text-amber-300 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-md hover:scale-105"
-        >
-          <span>تخطي الانتظار والدخول فوراً</span>
-          <ArrowLeft className="w-4 h-4 text-amber-400" />
-        </button>
+        {/* Strict waiting until progress completes - no skip button */}
       </div>
     </div>
   );

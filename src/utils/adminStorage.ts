@@ -6,7 +6,7 @@ const USERS_KEY = 'cp_portal_users_v4'; // Bumped key to load G1_Cp_01... format
 const LOGS_KEY = 'cp_activity_logs_v1';
 
 const DEFAULT_SETTINGS: AdminSettings = {
-  whatsappNumber: '+201000000000',
+  whatsappNumber: '+201091473136',
   whatsappDefaultMessage: 'مرحباً، أحتاج مساعدة بخصوص تسجيل الدخول في بوابة Cp',
   whatsappEnabled: true,
   adminPasswordHash: 'admin123', // Default admin password
@@ -66,13 +66,18 @@ export function getAdminSettings(): AdminSettings {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) {
       const legacyPhone = localStorage.getItem('cp_admin_whatsapp');
-      if (legacyPhone) {
+      if (legacyPhone && legacyPhone !== '+201000000000') {
         DEFAULT_SETTINGS.whatsappNumber = legacyPhone;
       }
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(DEFAULT_SETTINGS));
       return DEFAULT_SETTINGS;
     }
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    if (!parsed.whatsappNumber || parsed.whatsappNumber === '+201000000000') {
+      parsed.whatsappNumber = '+201091473136';
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...DEFAULT_SETTINGS, ...parsed }));
+    }
+    return { ...DEFAULT_SETTINGS, ...parsed };
   } catch {
     return DEFAULT_SETTINGS;
   }

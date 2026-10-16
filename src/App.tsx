@@ -15,6 +15,7 @@ import { saveCustomGameLevels } from './data/gameLevelsData';
 import { saveSiteInstructionsConfig } from './utils/instructionsStorage';
 import { saveSplashImageUrl } from './utils/splashStorage';
 import { saveSupervisorsBoardConfig } from './utils/supervisorsStorage';
+import { saveSiteTitleConfig } from './utils/siteTitleStorage';
 import { recordStudentLogin } from './utils/studentAuditStorage';
 
 const SESSION_KEY = 'cp_active_session_username_v1';
@@ -68,6 +69,11 @@ export default function App() {
         saveSupervisorsBoardConfig(data, false);
       }
     });
+    const unsubSiteTitle = subscribeToGlobalData('siteTitle', (data) => {
+      if (data && typeof data === 'object') {
+        saveSiteTitleConfig(data, false);
+      }
+    });
 
     return () => {
       unsubPre();
@@ -76,6 +82,7 @@ export default function App() {
       unsubInstructions();
       unsubSplash();
       unsubSupervisors();
+      unsubSiteTitle();
     };
   }, []);
 

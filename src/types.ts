@@ -45,6 +45,7 @@ export interface LevelQuestion {
   id: string;
   question: string;
   options: string[];
+  optionImages?: (string | null | undefined)[];
   correctIndex: number;
   explanation: string;
   points: number;
@@ -66,6 +67,7 @@ export interface PreTestQuestion {
   id: string;
   question: string;
   options: string[];
+  optionImages?: (string | null | undefined)[];
   correctIndex: number;
   explanation: string;
   points: number;

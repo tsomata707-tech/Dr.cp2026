@@ -8,14 +8,14 @@ interface WhatsAppSupportProps {
 export const WhatsAppSupport: React.FC<WhatsAppSupportProps> = ({
   className = '',
 }) => {
-  const [phoneNumber, setPhoneNumber] = useState<string>('+201000000000');
+  const [phoneNumber, setPhoneNumber] = useState<string>('+201091473136');
   const [defaultMessage, setDefaultMessage] = useState<string>('مرحباً، أحتاج مساعدة بخصوص تسجيل الدخول في بوابة Cp');
 
   // Load current configured WhatsApp number from storage
   useEffect(() => {
     const updateFromStorage = () => {
       const settings = getAdminSettings();
-      setPhoneNumber(settings.whatsappNumber || '+201000000000');
+      setPhoneNumber(settings.whatsappNumber || '+201091473136');
       setDefaultMessage(settings.whatsappDefaultMessage || 'مرحباً، أحتاج مساعدة بخصوص تسجيل الدخول في بوابة Cp');
     };
 
