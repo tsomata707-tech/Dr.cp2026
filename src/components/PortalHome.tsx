@@ -624,7 +624,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       {activeMainSection === 'honor' && (
         <HonorBoard
           currentUsername={username}
-          onContinueToInstructions={() => setActiveMainSection('instructions')}
+          onContinueToInstructions={() => setActiveMainSection('groups')}
         />
       )}
 
@@ -633,6 +633,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
         <ResearchGroups
           selectedGroupId={selectedGroupId}
           onSelectGroup={(id) => setSelectedGroupId(id)}
+          onEnterGroup={() => setActiveMainSection('instructions')}
           currentUsername={username}
         />
       )}
@@ -672,20 +673,20 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
         />
       )}
 
-      {/* 2. لوحة الشرف الخاصة بمشرفي المشروع والرسالة */}
+      {/* 2. لوحة الشرف الخاصة بمشرفي المشروع والرسالة: بعدها يرى الطالب الأربع مجموعات */}
       {showSupervisorModal && (
         <SupervisorsHonorBoard
           isModal={true}
           onClose={() => {
             setShowSupervisorModal(false);
-            setActiveMainSection('instructions');
+            setActiveMainSection('groups');
           }}
           onContinue={() => {
             setShowSupervisorModal(false);
-            setActiveMainSection('instructions');
+            setActiveMainSection('groups');
           }}
           showContinueButton={true}
-          continueButtonText="الانتقال إلى القواعد والإرشادات 📋"
+          continueButtonText="الانتقال إلى المجموعات البحثية الأربعة 👥"
         />
       )}
 

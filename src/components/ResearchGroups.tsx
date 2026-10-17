@@ -105,12 +105,14 @@ export const RESEARCH_GROUPS_DATA: ResearchGroup[] = [
 interface ResearchGroupsProps {
   selectedGroupId: string;
   onSelectGroup: (groupId: string) => void;
+  onEnterGroup?: () => void;
   currentUsername?: string;
 }
 
 export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
   selectedGroupId,
   onSelectGroup,
+  onEnterGroup,
   currentUsername,
 }) => {
   const userGroupMeta = currentUsername ? getGroupByUsername(currentUsername) : null;
@@ -123,21 +125,24 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
       return;
     }
     onSelectGroup(group.id);
+    if (onEnterGroup) {
+      onEnterGroup();
+    }
   };
 
   return (
-    <section className="space-y-6 text-right" id="research-groups-section">
-      {/* Alert Modal for unauthorized group click */}
+    <section className="space-y-6 text-right font-['Cairo',_sans-serif]" id="research-groups-section">
+      {/* Alert Modal for unauthorized group click: انت لست ضمن هذه المجموعه */}
       {blockedAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#0f0c1f] border-2 border-red-500 rounded-3xl p-6 sm:p-8 max-w-lg w-full text-right shadow-[0_0_50px_rgba(239,68,68,0.3)] space-y-4">
-            <div className="flex items-center gap-3 text-red-400">
-              <div className="w-12 h-12 rounded-2xl bg-red-950/80 border border-red-500/50 flex items-center justify-center shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+          <div className="bg-[#0f0c1f] border-2 border-red-500 rounded-3xl p-6 sm:p-8 max-w-lg w-full text-right shadow-[0_0_50px_rgba(239,68,68,0.4)] space-y-4">
+            <div className="flex items-center gap-3 text-red-400 pb-3 border-b border-red-900/50">
+              <div className="w-12 h-12 rounded-2xl bg-red-950/80 border border-red-500/50 flex items-center justify-center shrink-0 shadow-inner">
                 <Lock className="w-6 h-6 text-red-400" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-white font-['Tajawal']">
-                  عفواً! غير مصرح لك بالدخول لهذه المجموعة
+                <h3 className="text-xl font-black text-red-400 font-['Tajawal']">
+                  أنت لست ضمن هذه المجموعة
                 </h3>
                 <span className="text-xs text-red-300 font-['Cairo']">
                   ضوابط العزل التجريبي للبحث العلمي
@@ -148,22 +153,35 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
             <p className="text-sm text-slate-200 leading-relaxed font-['IBM_Plex_Sans_Arabic']">
               طالبنا العزيز (<strong className="text-[#ffd700] font-mono">{currentUsername}</strong>)، أنت مقيد رسمياً في:
               <br />
-              <span className="inline-block mt-2 px-3 py-1.5 rounded-xl bg-amber-950/60 border border-[#d4af37] text-amber-300 font-bold text-xs">
+              <span className="inline-block mt-2 px-3 py-1.5 rounded-xl bg-amber-950/80 border border-[#d4af37] text-amber-300 font-black text-xs shadow-sm">
                 ⭐ {userGroupMeta?.name} ({userGroupMeta?.code})
               </span>
             </p>
 
-            <p className="text-xs text-slate-400 leading-relaxed font-['IBM_Plex_Sans_Arabic']">
-              يرجى الالتزام بالمجموعة المقيد بها رسميًا لمتابعة مهامك وأنشطتك التعليمية بنجاح.
+            <p className="text-xs text-slate-300 leading-relaxed font-['IBM_Plex_Sans_Arabic']">
+              لا يمكن الدخول إلا إلى المجموعة الخاصة بك وفقاً لضوابط العزل التجريبي لمتغيرات البحث العلمي.
             </p>
 
-            <div className="pt-2 flex justify-end">
+            <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setBlockedAlert(null);
+                  if (userGroupMeta) {
+                    onSelectGroup(userGroupMeta.id);
+                    if (onEnterGroup) onEnterGroup();
+                  }
+                }}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-lg"
+              >
+                الانتقال إلى مجموعتي الخاصة ({userGroupMeta?.code}) 🚀
+              </button>
               <button
                 type="button"
                 onClick={() => setBlockedAlert(null)}
-                className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-all cursor-pointer shadow-lg"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all cursor-pointer"
               >
-                فهمت ذلك والعودة لمجموعتي المصرح بها
+                إغلاق
               </button>
             </div>
           </div>
@@ -202,7 +220,7 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
           </div>
         </div>
 
-        {/* The 4 Groups Grid */}
+        {/* The 4 Groups Grid - All 4 groups visible normally */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           {RESEARCH_GROUPS_DATA.map((group) => {
             const isAssignedToUser = userGroupMeta ? group.id === userGroupMeta.id : true;
@@ -217,9 +235,7 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                 className={`rounded-2xl p-5 border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between relative overflow-hidden bg-gradient-to-b ${
                   group.bgGradient
                 } ${
-                  isLockedForUser
-                    ? 'opacity-65 border-slate-800 hover:border-red-500/50 grayscale-[25%]'
-                    : isSelected
+                  isSelected
                     ? `${group.borderClass} shadow-[0_0_25px_rgba(212,175,55,0.3)] ring-2 ring-[#ffd700]/50`
                     : 'border-slate-800 hover:border-[#d4af37]/60'
                 }`}
@@ -301,27 +317,27 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                       e.stopPropagation();
                       handleGroupClick(group);
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                       isLockedForUser
-                        ? 'bg-red-950/50 hover:bg-red-900/60 text-red-300 border border-red-800/60'
+                        ? 'bg-slate-900 hover:bg-red-950/70 text-slate-300 hover:text-red-300 border border-slate-700 hover:border-red-500/50 shadow-sm'
                         : isSelected
-                        ? 'bg-[#d4af37] text-slate-950 shadow-md'
+                        ? 'bg-[#d4af37] hover:bg-amber-400 text-slate-950 font-black shadow-md'
                         : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700'
                     }`}
                   >
                     {isLockedForUser ? (
                       <>
                         <Lock className="w-3 h-3 text-red-400" />
-                        <span>مغلق لغير مجموعتك</span>
+                        <span>دخول المجموعة</span>
                       </>
                     ) : isSelected ? (
                       <>
-                        <span>المجموعة النشطة</span>
+                        <span>دخول بيئة مجموعتي</span>
                         <ArrowLeft className="w-3.5 h-3.5" />
                       </>
                     ) : (
                       <>
-                        <span>تفعيل المجموعة</span>
+                        <span>اختيار مجموعتي</span>
                         <ArrowLeft className="w-3.5 h-3.5" />
                       </>
                     )}

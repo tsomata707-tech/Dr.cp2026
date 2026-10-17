@@ -293,7 +293,7 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
                 id="btn-honor-continue-to-instructions"
                 className="w-full sm:w-auto min-w-[280px] px-8 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-sm sm:text-base shadow-[0_0_25px_rgba(37,99,235,0.45)] border-2 border-blue-400/50 flex items-center justify-center gap-2 cursor-pointer transition-all transform hover:-translate-y-0.5"
               >
-                <span>الانتقال إلى القواعد والإرشادات 📋</span>
+                <span>الانتقال إلى المجموعات البحثية الأربعة 👥</span>
                 <ArrowLeft className="w-4 h-4" />
               </button>
             </div>
