@@ -77,6 +77,8 @@ interface GameLevelUnlockLoaderProps {
   badgeEmoji?: string;
   onComplete: () => void;
   onCancel?: () => void;
+  durationMs?: number;
+  customHeading?: string;
 }
 
 // Synthesize pleasant arcade sound effects using Web Audio API (no external sound files required)
@@ -115,6 +117,8 @@ export const GameLevelUnlockLoader: React.FC<GameLevelUnlockLoaderProps> = ({
   badgeEmoji = '🏅',
   onComplete,
   onCancel,
+  durationMs = 5000,
+  customHeading,
 }) => {
   const [progress, setProgress] = useState(1);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -123,7 +127,7 @@ export const GameLevelUnlockLoader: React.FC<GameLevelUnlockLoaderProps> = ({
   soundRef.current = soundEnabled;
 
   useEffect(() => {
-    const totalDuration = 2400; // 2.4 seconds smooth loading experience
+    const totalDuration = durationMs; // Exactly 5 seconds loading bar as requested
     const startTime = performance.now();
     let lastBeepMilestone = 0;
 
@@ -231,13 +235,13 @@ export const GameLevelUnlockLoader: React.FC<GameLevelUnlockLoaderProps> = ({
         {/* Stage Header */}
         <div className="text-center mb-6">
           <span className="text-xs font-black text-[#ffd700] tracking-wider uppercase font-['Cairo'] block mb-1">
-            🎮 تجهيز ساحة اللعبة التعليمية 🎮
+            ⏱️ {customHeading ? 'جاري الانتقال' : 'تجهيز ساحة اللعبة التعليمية'} 🎮
           </span>
-          <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal'] tracking-tight">
-            {levelTitle}
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#ffd700] font-['Tajawal'] tracking-tight">
+            {customHeading || `جاري الانتقال إلى ليفل ${levelNumber}`}
           </h2>
-          <p className="text-xs text-slate-400 mt-1.5 font-['Cairo']">
-            استعد لمشاهدة فيديو الشرح التفاعلي وخوض التحديات الشيقة
+          <p className="text-xs text-slate-300 mt-1.5 font-['Cairo']">
+            {levelTitle}
           </p>
         </div>
 

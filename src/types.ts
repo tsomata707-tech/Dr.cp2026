@@ -84,12 +84,32 @@ export interface PreTestResult {
   passed: boolean;
 }
 
+export interface LevelMediaItem {
+  id: string;
+  title: string;
+  url: string;
+  type: 'video' | 'image' | 'pdf';
+  format?: string;
+  size?: number;
+  addedAt?: string;
+}
+
+export interface StudentActivitySubmission {
+  fileUrl: string;
+  fileName: string;
+  fileType: 'video' | 'image' | 'pdf';
+  fileSize?: number;
+  uploadedAt: string;
+  notes?: string;
+}
+
 export interface StudentGameProgress {
   username: string;
   avatarId: string;
   customPhotoUrl?: string; // Student custom uploaded photo from their device
-  currentLevel: number; // 1 to 10
+  currentLevel: number; // 1 to 9
   completedLevels: Record<number, CompletedLevelResult>;
+  studentActivities?: Record<number, StudentActivitySubmission>; // Level 1..9 activities uploaded by student
   preTestResult?: PreTestResult;
   postTestResult?: PreTestResult;
   totalScore: number;

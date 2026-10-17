@@ -22,12 +22,14 @@ interface HonorBoardProps {
   currentUsername?: string;
   defaultView?: 'supervisors' | 'students';
   onContinueToInstructions?: () => void;
+  onContinueToPreTest?: () => void;
 }
 
 export const HonorBoard: React.FC<HonorBoardProps> = ({
   currentUsername = '',
   defaultView = 'supervisors',
   onContinueToInstructions,
+  onContinueToPreTest,
 }) => {
   const [activeView, setActiveView] = useState<'supervisors' | 'students'>(defaultView);
 
@@ -99,9 +101,9 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
       {/* Render Selected View */}
       {activeView === 'supervisors' ? (
         <SupervisorsHonorBoard
-          showContinueButton={!!onContinueToInstructions}
-          onContinue={onContinueToInstructions}
-          continueButtonText="الانتقال إلى القواعد والإرشادات 📋"
+          showContinueButton={!!(onContinueToPreTest || onContinueToInstructions)}
+          onContinue={onContinueToPreTest || onContinueToInstructions}
+          continueButtonText="الانتقال إلى الاختبار القبلي 🏎️"
         />
       ) : (
         /* Real Students Honor Board Section */
@@ -284,16 +286,16 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
             </div>
           )}
 
-          {/* Continue to Instructions button on Students Honor Board */}
-          {onContinueToInstructions && (
+          {/* Continue to Pre-Test button on Students Honor Board */}
+          {(onContinueToPreTest || onContinueToInstructions) && (
             <div className="pt-4 flex items-center justify-center">
               <button
                 type="button"
-                onClick={onContinueToInstructions}
-                id="btn-honor-continue-to-instructions"
-                className="w-full sm:w-auto min-w-[280px] px-8 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-sm sm:text-base shadow-[0_0_25px_rgba(37,99,235,0.45)] border-2 border-blue-400/50 flex items-center justify-center gap-2 cursor-pointer transition-all transform hover:-translate-y-0.5"
+                onClick={onContinueToPreTest || onContinueToInstructions}
+                id="btn-honor-continue-to-pretest"
+                className="w-full sm:w-auto min-w-[280px] px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-sm sm:text-base shadow-[0_0_25px_rgba(255,215,0,0.45)] border-2 border-amber-300 flex items-center justify-center gap-2 cursor-pointer transition-all transform hover:-translate-y-0.5"
               >
-                <span>الانتقال إلى المجموعات البحثية الأربعة 👥</span>
+                <span>الانتقال إلى الاختبار القبلي 🏎️</span>
                 <ArrowLeft className="w-4 h-4" />
               </button>
             </div>

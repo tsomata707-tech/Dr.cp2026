@@ -19,6 +19,7 @@ import { AdminVideoManager } from './AdminVideoManager';
 import { AdminSplashManager } from './AdminSplashManager';
 import { AdminSupervisorsHonorManager } from './AdminSupervisorsHonorManager';
 import { AdminSiteTitleManager } from './AdminSiteTitleManager';
+import { AdminLevelInstructionsManager } from './AdminLevelInstructionsManager';
 
 interface AdminPanelProps {
   onExitAdmin: () => void;
@@ -27,6 +28,7 @@ interface AdminPanelProps {
 
 type AdminTab =
   | 'users'
+  | 'level_instructions'
   | 'tests_settings'
   | 'students_audit'
   | 'site_title'
@@ -86,6 +88,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             >
               <Users className="w-4 h-4 text-blue-300" />
               <span>اليوزر</span>
+            </button>
+
+            {/* TAB: تعديل الليفل والتعليمات (المطلوب بالنص الحرفي) */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('level_instructions')}
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTab === 'level_instructions'
+                  ? 'bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 text-slate-950 shadow-lg shadow-amber-500/30 ring-2 ring-amber-400/50'
+                  : 'bg-slate-800/80 hover:bg-slate-800 text-amber-300 border border-amber-500/40'
+              }`}
+            >
+              <Layers className="w-4 h-4 text-amber-400" />
+              <span>تعديل الليفل والتعليمات</span>
             </button>
 
             {/* TAB 2: إعدادات الاختبارات */}
@@ -192,6 +208,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
       {/* Main Tab Content - Opens in the same page seamlessly */}
       <div className="bg-[#0b0e1e] border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl transition-all">
         {activeTab === 'users' && <AdminUsersManager onLoginAsStudent={onLoginAsStudent} />}
+        {activeTab === 'level_instructions' && <AdminLevelInstructionsManager />}
         {activeTab === 'tests_settings' && <AdminTestsSettingsManager />}
         {activeTab === 'students_audit' && <AdminStudentsAuditManager />}
         {activeTab === 'site_title' && <AdminSiteTitleManager />}

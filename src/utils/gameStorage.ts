@@ -151,10 +151,10 @@ export function submitLevelChallenge(
   );
   prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
-  // Advance level if passed
+  // Advance level if passed (1 up to 9)
   const passThreshold = Math.floor(maxScore * 0.5); // 50% pass rate
   if (scoreGained >= passThreshold) {
-    if (levelNumber === prog.currentLevel && levelNumber < 10) {
+    if (levelNumber === prog.currentLevel && levelNumber < 9) {
       prog.currentLevel = levelNumber + 1;
     }
     // Award badge
@@ -179,6 +179,38 @@ export function submitLevelChallenge(
     isImmediateFeedback: isImmediate,
     scoreGained,
   };
+}
+
+export function saveStudentLevelActivity(
+  username: string,
+  levelNumber: number,
+  submission: import('../types').StudentActivitySubmission
+): StudentGameProgress {
+  const all = getAllStudentsProgress();
+  const prog = getStudentProgress(username);
+  if (!prog.studentActivities) {
+    prog.studentActivities = {};
+  }
+  prog.studentActivities[levelNumber] = submission;
+  prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  all[username] = prog;
+  saveAllStudentsProgress(all);
+  syncStudentProgressToFirestore(prog).catch(() => {});
+  addActivityLog(
+    `رفع نشاط خاص: قام الطالب ${username} برفع نشاط المستوى ${levelNumber} (${submission.fileName})`,
+    username,
+    'success'
+  );
+  try {
+    window.dispatchEvent(
+      new CustomEvent('cp_student_activity_uploaded', {
+        detail: { username, levelNumber, submission },
+      })
+    );
+  } catch {
+    // Ignore
+  }
+  return prog;
 }
 
 export function resetStudentProgress(username: string): StudentGameProgress {

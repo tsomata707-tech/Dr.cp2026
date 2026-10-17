@@ -1,4 +1,4 @@
-import { CartoonAvatar, LevelQuestion } from '../types';
+import { CartoonAvatar, LevelQuestion, LevelMediaItem } from '../types';
 import { syncGlobalQuestionsAndLevels } from '../utils/realtimeService';
 
 export const CARTOON_AVATARS: CartoonAvatar[] = [
@@ -55,8 +55,11 @@ export interface GameLevelDef {
   title: string;
   shortTitle: string;
   storyMission: string;
+  instructions?: string;
   badgeName: string;
   badgeEmoji: string;
+  videos?: LevelMediaItem[];
+  images?: LevelMediaItem[];
   questions: LevelQuestion[];
 }
 
@@ -67,8 +70,11 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     title: 'المستوى 1: أساسيات الوسائط وتثبيت Adobe Captivate 2019',
     shortTitle: 'تثبيت البرنامج',
     storyMission: 'مهمتك الأولى يا بطل: تهيئة بيئة العمل الرقمية، التحقق من معمارية 64-Bit، وتشغيل معالج التثبيت القياسي للبرنامج بنجاح.',
+    instructions: '1. تأكد من توافر نظام 64-Bit لتشغيل Adobe Captivate 2019.\n2. افتح ملف التثبيت القياسي وقم بضبط دعم اللغة العربية من قائمة التفضيلات Preferences.\n3. تصفح الفيديوهات والصور التعليمية الخاصة بالمستوى.\n4. أجب عن أنشطة وأسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص بأسفل المستوى (فيديو أو صورة أو PDF) ثم اضغط على زر Finish Level 1 للانتقال للمستوى التالي.',
     badgeName: 'وسام البداية الرقمية',
     badgeEmoji: '🛡️',
+    videos: [],
+    images: [],
     questions: [
       {
         id: 'q1-1',
@@ -117,8 +123,11 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     title: 'المستوى 2: جولة واجهة المستخدم وشاشات البداية',
     shortTitle: 'واجهة المستخدم',
     storyMission: 'استكشف لوحات التحكم ومناطق العمل، وتعرف على شريط الأدوات الرئيسي (Toolbar) ولوحة الخصائص (Properties Panel).',
+    instructions: '1. استكشف شريط الأدوات الرئيسي Toolbar ولوحة الخصائص Properties Panel.\n2. تعرف على متصفح الشرائح Filmstrip وطرق ترتيب الشرائح.\n3. شاهد الفيديوهات التوضيحية وتصفح الصور التعليمية.\n4. أجب عن أسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص بأسفل الصفحة ثم اضغط Finish Level 2.',
     badgeName: 'وسام الملاح السيبراني',
     badgeEmoji: '🧭',
+    videos: [],
+    images: [],
     questions: [
       {
         id: 'q2-1',
@@ -167,8 +176,11 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     title: 'المستوى 3: إنشاء المشروعات التعليمية التفاعلية',
     shortTitle: 'إنشاء المشروعات',
     storyMission: 'اختر نوع المشروع المناسب للمتعلم: متجاوب (Responsive)، أو فارغ (Blank)، أو واقع افتراضي (VR Project).',
+    instructions: '1. تعرف على أنواع المشروعات: Responsive, Blank, VR Project.\n2. اضبط أبعاد المشروع بالبكسل المناسب وتعرف على تقنية Fluid Boxes.\n3. استعرض الوسائط والصور المرفقة بالمستوى.\n4. حل أسئلة التقويم التفاعلية للمستوى.\n5. ارفع نشاطك الخاص بأسفل المستوى ثم اضغط Finish Level 3.',
     badgeName: 'وسام المعماري الرقمي',
     badgeEmoji: '📐',
+    videos: [],
+    images: [],
     questions: [
       {
         id: 'q3-1',
@@ -217,8 +229,11 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     title: 'المستوى 4: إدارة الشرائح والتخطيطات الرئيسية',
     shortTitle: 'إدارة الشرائح',
     storyMission: 'أتقن تنظيم مسارات الشرائح، الشريحة الرئيسية (Master Slide)، وانتقالات العرض الزمني.',
+    instructions: '1. أتقن استخدام الشرائح الرئيسية Master Slides لتوحيد التصميم والهوية.\n2. تدرب على تغيير خلفيات الشرائح وتكرارها وحذفها.\n3. تصفح الفيديوهات والصور التوضيحية للمستوى.\n4. أجب عن الأنشطة التفاعلية.\n5. ارفع نشاطك الخاص بأسفل الصفحة واضغط Finish Level 4.',
     badgeName: 'وسام قائد الشرائح',
     badgeEmoji: '🎞️',
+    videos: [],
+    images: [],
     questions: [
       {
         id: 'q4-1',
@@ -267,8 +282,11 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     title: 'المستوى 5: إدراج الوسائط الرقمية (نصوص، أصوات، صور، فيديو)',
     shortTitle: 'إدراج الوسائط',
     storyMission: 'ادمج عناصر الوسائط المتعددة بانسجام: النصوص التوضيحية، المقاطع الصوتية، وتزامن الفيديو.',
+    instructions: '1. تعلم ضبط التوقيت بالخط الزمني Timeline لظهور الوسائط المتعددة بدقة.\n2. اختر صيغ الفيديو والصوت المتوافقة مثل MP4 و WAV/MP3.\n3. شاهد الفيديوهات والصور المرفقة واستفد من الشرح.\n4. أجب عن أسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص واضغط Finish Level 5.',
     badgeName: 'وسام مهندس الوسائط المتعددة',
     badgeEmoji: '🎬',
+    videos: [],
+    images: [],
     questions: [
       {
         id: 'q5-1',
@@ -317,8 +335,11 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     title: 'المستوى 6: الكائنات التفاعلية والأزرار ومشغلات الأحداث',
     shortTitle: 'الكائنات التفاعلية',
     storyMission: 'ابنِ مسارات التعلم التفاعلية باستخدام الأزرار الذكية، صناديق النقر (Click Boxes)، ومناطق الإفلات.',
+    instructions: '1. تدرب على إضافة الكائنات التفاعلية وصناديق النقر Click Boxes.\n2. اضبط حالات الأزرار التفاعلية الثلاث (Normal, RollOver, Down).\n3. حدد إجراءات الانتقال Jump to Slide.\n4. أجب عن أسئلة المستوى.\n5. ارفع نشاطك الخاص واضغط Finish Level 6.',
     badgeName: 'وسام خبير التفاعل',
     badgeEmoji: '⚡',
+    videos: [],
+    images: [],
     questions: [
       {
         id: 'q6-1',
@@ -343,7 +364,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
           'صامت - ناطق - مترجم'
         ],
         correctIndex: 0,
-        explanation: 'أزرار البرنامج تدعم الحالات التفاعلية التلقائية لإعطاء تغذية مرئية للمتعلم عند تمرير الفأرة والنقر.',
+        explanation: 'أزرار البرنامج تدعم الحالات التلقائية لإعطاء تغذية مرئية للمتعلم عند تمرير الفأرة والنقر.',
         points: 33,
       },
       {
@@ -367,8 +388,11 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     title: 'المستوى 7: بنوك الأسئلة وبناء الاختبارات التفاعلية',
     shortTitle: 'الاختبارات التفاعلية',
     storyMission: 'صمم أدوات التقويم الإلكتروني: أسئلة الاختيار من متعدد، الصواب والخطأ، وبنوك الأسئلة العشوائية.',
+    instructions: '1. تعرف على بناء بنوك الأسئلة Question Pools وتوليد نماذج متكافئة.\n2. اضبط شريحة النتائج Quiz Results Slide ونسبة الاجتياز.\n3. تعرف على فرق التغذية الراجعة الفورية والمرجأة.\n4. أجب عن أسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص واضغط Finish Level 7.',
     badgeName: 'وسام خبير القياس والتقويم',
     badgeEmoji: '🏆',
+    videos: [],
+    images: [],
     questions: [
       {
         id: 'q7-1',
@@ -417,8 +441,11 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     title: 'المستوى 8: تسجيل الشاشة والمحاكاة التفاعلية البرمجية',
     shortTitle: 'المحاكاة التفاعلية',
     storyMission: 'سجل تطبيقات الحاسب بالأنماط الثلاثة: العرض التوضيحي (Demo)، التدريب (Training)، والتقييم (Assessment).',
+    instructions: '1. تدرب على تسجيل الشاشة بالأنماط الثلاثة: Demo, Training, Assessment.\n2. أتقن نمط التدريب لتقديم التلميحات ونمط التقييم لاختبار المهارة.\n3. تصفح الفيديوهات والصور المرفقة بالمستوى.\n4. أجب عن أسئلة المستوى.\n5. ارفع نشاطك الخاص واضغط Finish Level 8.',
     badgeName: 'وسام سيد المحاكاة',
     badgeEmoji: '🖥️',
+    videos: [],
+    images: [],
     questions: [
       {
         id: 'q8-1',
@@ -464,11 +491,14 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
   {
     levelNumber: 9,
     moduleId: 'mod-9',
-    title: 'المستوى 9: استيراد عروض PowerPoint وتطويرها تفاعلياً',
-    shortTitle: 'استيراد البوربوينت',
-    storyMission: 'حول العروض التقديمية الساكنة إلى تجارب تعلم نشطة، تفاعلية، ومدعومة بالتقويم والوسائط.',
-    badgeName: 'وسام محول المحتوى النشط',
-    badgeEmoji: '📊',
+    title: 'المستوى 9: استيراد PowerPoint ونشر وتصدير المشروعات (HTML5 / SCORM)',
+    shortTitle: 'استيراد البوربوينت ونشر المشروعات',
+    storyMission: 'حول العروض التقديمية الساكنة إلى تجارب تعلم نشطة تفاعلية، وانشر المشروع بصيغة HTML5 المتوافقة مع نظم LMS ومعايير SCORM.',
+    instructions: '1. استورد ملف العرض التقديمي PPTX مع تفعيل خيار الربط الديناميكي Link لمزامنة التعديلات.\n2. أضف عناصر تفاعلية وكائنات ذكية فوق الشرائح المستوردة.\n3. اضبط إعدادات النشر والتصدير بصيغة HTML5 ومعايير SCORM 1.2 / 2004 أو xAPI.\n4. تصفح الفيديوهات والصور التوضيحية الخاصة بالمستوى.\n5. ارفع نشاطك الخاص بأسفل الصفحة ثم اضغط على زر Finish Level 9 للانتقال للاختبار البعدي.',
+    badgeName: 'وسام تاج التميز الرقمي المطلق',
+    badgeEmoji: '👑',
+    videos: [],
+    images: [],
     questions: [
       {
         id: 'q9-1',
@@ -485,43 +515,6 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
       },
       {
         id: 'q9-2',
-        question: 'ما القيمة المضافة لتحويل عرض تقديمي عادي إلى مشروع في Adobe Captivate 2019؟',
-        options: [
-          'إمكانية إضافة أسئلة اختبار تفاعلية، تفرع معرفي، ومحاكاة برمجية، وتصدير متوافق مع معايير SCORM',
-          'تقليل جودة الشرائح',
-          'منع الطلاب من مشاهدة العرض',
-          'جعل الشرائح غير قابلة للنقر'
-        ],
-        correctIndex: 0,
-        explanation: 'التحويل يمنح المحتوى صفة التفاعلية الذاتية ويدمجه مع نظم إدارة التعلم ومنصات التقييم الإلكتروني.',
-        points: 33,
-      },
-      {
-        id: 'q9-3',
-        question: 'هل يمكن إضافة عناصر كائنات تفاعلية إضافية (مثل أزرار ذكية أو فيديو تفاعلي) فوق شرائح البوربوينت المستوردة؟',
-        options: [
-          'نعم، يمكن إدراج وتراكب كافة كائنات وأدوات Captivate فوق الشرائح المستوردة بكل سهولة',
-          'لا، يتم تجميد الشريحة كلياً',
-          'فقط النصوص دون الصور',
-          'يتطلب حذف الشريحة أولاً'
-        ],
-        correctIndex: 0,
-        explanation: 'شرائح البوربوينت تصبح شريحة كابتيفايت متكاملة تدعم إضافة الأصوات، الكائنات التفاعلية، والاختبارات.',
-        points: 33,
-      },
-    ],
-  },
-  {
-    levelNumber: 10,
-    moduleId: 'mod-10',
-    title: 'المستوى 10: نشر وتصدير المشروعات (HTML5 / SCORM / LMS)',
-    shortTitle: 'نشر وتصدير المشروعات',
-    storyMission: 'المستوى الختامي الأسطوري: تصدير المشروع بصيغة HTML5 المتوافقة مع منصات التعلم الإلكتروني ومعايير SCORM.',
-    badgeName: 'وسام تاج التميز الرقمي المطلق',
-    badgeEmoji: '👑',
-    questions: [
-      {
-        id: 'q10-1',
         question: 'ما هي معايير حزم التعلم الإلكتروني القياسية التي تسمح بتتبع درجات وتقدم الطالب ونقلها لنظام LMS (مثل Moodle أو Blackboard)؟',
         options: [
           'معايير SCORM (1.2 أو 2004) و xAPI',
@@ -531,10 +524,10 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         ],
         correctIndex: 0,
         explanation: 'معايير SCORM/xAPI هي البروتوكول المعتمد عالمياً لتبادل بيانات إنجاز الطالب والدرجات بين المحتوى والمنصة.',
-        points: 34,
+        points: 33,
       },
       {
-        id: 'q10-2',
+        id: 'q9-3',
         question: 'لماذا يُعتبر تصدير المحتوى بصيغة HTML5 هو الخيار العصري الإلزامي بدلاً من تقنية Flash القديمة؟',
         options: [
           'لأن HTML5 تعمل على كافة متصفحات الويب والهواتف الذكية وأجهزة الأندرويد والآيفون بكفاءة وأمان تام',
@@ -546,26 +539,13 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         explanation: 'صيغة HTML5 مفتوحة المعايير وتعمل على جميع شاشات ومتصفحات الأجهزة المحمولة بدون الحاجة لأي مشغلات خارجية.',
         points: 33,
       },
-      {
-        id: 'q10-3',
-        question: 'في نهاية الموديول العاشر واللعبة التعليمية كاملة، كيف تُعرض نتائج ودرجات الطالب في النمط المرجأ (Deferred Feedback)؟',
-        options: [
-          'تُحذف الدرجات نهائياً',
-          'يتم إتاحة التقرير التراكمي الشامل لكافة المستويات وإظهار إجمالي النقاط والشهادة المستحقة بعد إنجاز الدورة',
-          'تؤجل لعام كامل',
-          'تُرسل كرسالة ورقية بريدية'
-        ],
-        correctIndex: 1,
-        explanation: 'في النمط المرجأ يُكشف التقرير الختامي الشامل للمتعلم في نهاية السلسلة لاختبار أثر الاحتفاظ وتنمية التأمل.',
-        points: 33,
-      },
     ],
   },
 ];
 
 export const DEFAULT_GAME_LEVELS_DATA: GameLevelDef[] = JSON.parse(JSON.stringify(GAME_LEVELS_DATA));
 
-export const GAME_LEVELS_STORAGE_KEY = 'cp_game_levels_custom_v2';
+export const GAME_LEVELS_STORAGE_KEY = 'cp_game_levels_custom_v3';
 
 export function getCustomGameLevels(): GameLevelDef[] {
   try {
@@ -582,10 +562,16 @@ export function getCustomGameLevels(): GameLevelDef[] {
       parsed.forEach((customLvl: GameLevelDef) => {
         const found = GAME_LEVELS_DATA.find((l) => l.levelNumber === customLvl.levelNumber);
         if (found) {
-          found.questions = customLvl.questions;
+          found.title = customLvl.title || found.title;
+          found.shortTitle = customLvl.shortTitle || found.shortTitle;
+          found.storyMission = customLvl.storyMission || found.storyMission;
+          found.instructions = customLvl.instructions || found.instructions;
+          found.videos = customLvl.videos || [];
+          found.images = customLvl.images || [];
+          found.questions = customLvl.questions || found.questions;
         }
       });
-      return parsed;
+      return GAME_LEVELS_DATA;
     }
     return GAME_LEVELS_DATA;
   } catch {
@@ -599,7 +585,13 @@ export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean
     levels.forEach((customLvl: GameLevelDef) => {
       const found = GAME_LEVELS_DATA.find((l) => l.levelNumber === customLvl.levelNumber);
       if (found) {
-        found.questions = customLvl.questions;
+        found.title = customLvl.title || found.title;
+        found.shortTitle = customLvl.shortTitle || found.shortTitle;
+        found.storyMission = customLvl.storyMission || found.storyMission;
+        found.instructions = customLvl.instructions || found.instructions;
+        found.videos = customLvl.videos || [];
+        found.images = customLvl.images || [];
+        found.questions = customLvl.questions || found.questions;
       }
     });
     if (typeof window !== 'undefined') {
@@ -613,12 +605,103 @@ export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean
   }
 }
 
+export function updateGameLevelDetails(
+  levelNumber: number,
+  updates: Partial<GameLevelDef>
+): GameLevelDef[] {
+  const levels = getCustomGameLevels();
+  const target = levels.find((l) => l.levelNumber === levelNumber);
+  if (target) {
+    Object.assign(target, updates);
+    saveCustomGameLevels(levels, true);
+  }
+  return levels;
+}
+
+export function addMediaToLevel(
+  levelNumber: number,
+  media: LevelMediaItem
+): GameLevelDef[] {
+  const levels = getCustomGameLevels();
+  const target = levels.find((l) => l.levelNumber === levelNumber);
+  if (!target) return levels;
+
+  if (media.type === 'video') {
+    if (!target.videos) target.videos = [];
+    if (target.videos.length >= 5) {
+      throw new Error('الحد الأقصى للفيديوهات في كل مستوى هو 5 فيديوهات');
+    }
+    target.videos.push(media);
+  } else {
+    // image or pdf
+    if (!target.images) target.images = [];
+    if (target.images.length >= 5) {
+      throw new Error('الحد الأقصى للصور والملفات في كل مستوى هو 5 ملفات');
+    }
+    target.images.push(media);
+  }
+
+  saveCustomGameLevels(levels, true);
+  return levels;
+}
+
+export function removeMediaFromLevel(
+  levelNumber: number,
+  mediaId: string
+): GameLevelDef[] {
+  const levels = getCustomGameLevels();
+  const target = levels.find((l) => l.levelNumber === levelNumber);
+  if (!target) return levels;
+
+  if (target.videos) {
+    target.videos = target.videos.filter((v) => v.id !== mediaId);
+  }
+  if (target.images) {
+    target.images = target.images.filter((img) => img.id !== mediaId);
+  }
+
+  saveCustomGameLevels(levels, true);
+  return levels;
+}
+
+export function replaceMediaInLevel(
+  levelNumber: number,
+  mediaId: string,
+  updated: LevelMediaItem
+): GameLevelDef[] {
+  const levels = getCustomGameLevels();
+  const target = levels.find((l) => l.levelNumber === levelNumber);
+  if (!target) return levels;
+
+  if (target.videos) {
+    const idx = target.videos.findIndex((v) => v.id === mediaId);
+    if (idx !== -1) {
+      target.videos[idx] = updated;
+    }
+  }
+  if (target.images) {
+    const idx = target.images.findIndex((img) => img.id === mediaId);
+    if (idx !== -1) {
+      target.images[idx] = updated;
+    }
+  }
+
+  saveCustomGameLevels(levels, true);
+  return levels;
+}
+
 export function resetGameLevelsToDefault(): GameLevelDef[] {
   try {
     localStorage.removeItem(GAME_LEVELS_STORAGE_KEY);
     DEFAULT_GAME_LEVELS_DATA.forEach((defLvl) => {
       const found = GAME_LEVELS_DATA.find((l) => l.levelNumber === defLvl.levelNumber);
       if (found) {
+        found.title = defLvl.title;
+        found.shortTitle = defLvl.shortTitle;
+        found.storyMission = defLvl.storyMission;
+        found.instructions = defLvl.instructions;
+        found.videos = [];
+        found.images = [];
         found.questions = JSON.parse(JSON.stringify(defLvl.questions));
       }
     });
@@ -636,17 +719,6 @@ export function resetGameLevelsToDefault(): GameLevelDef[] {
 // Initial auto-sync from localStorage if present
 if (typeof window !== 'undefined' && window.localStorage) {
   try {
-    const raw = localStorage.getItem(GAME_LEVELS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        parsed.forEach((customLvl: GameLevelDef) => {
-          const found = GAME_LEVELS_DATA.find((l) => l.levelNumber === customLvl.levelNumber);
-          if (found) {
-            found.questions = customLvl.questions;
-          }
-        });
-      }
-    }
+    getCustomGameLevels();
   } catch {}
 }

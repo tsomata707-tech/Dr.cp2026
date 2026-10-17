@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Gamepad2,
   Trophy,
@@ -25,16 +25,25 @@ import {
   Video,
   Play,
   Home,
+  Upload,
+  FileText,
+  Trash2,
+  Image as ImageIcon,
+  X,
+  FileCheck,
 } from 'lucide-react';
 import { CARTOON_AVATARS, GAME_LEVELS_DATA, GameLevelDef } from '../data/gameLevelsData';
 import {
   getStudentProgress,
   submitLevelChallenge,
   updateStudentAvatar,
+  saveStudentLevelActivity,
 } from '../utils/gameStorage';
 import { useEducationalVideos } from '../utils/videoStorage';
 import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
+import { DraggableLevelInstructions } from './DraggableLevelInstructions';
+import { LevelTransitionLoader5s } from './LevelTransitionLoader5s';
 import { getGroupByUsername, getStudentByUsername } from '../data/studentAccounts';
 import {
   StudentGameProgress,
@@ -43,6 +52,8 @@ import {
   RealtimeQuestionAnswer,
   RealtimeVote,
   RealtimeStudentParticipant,
+  StudentActivitySubmission,
+  LevelMediaItem,
 } from '../types';
 import {
   subscribeToGroupRoom,
@@ -56,16 +67,32 @@ import {
 interface EducationalGameViewProps {
   username: string;
   onBackToHome?: () => void;
+  onCompleteAllLevels?: () => void;
 }
 
-export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ username, onBackToHome }) => {
+export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
+  username,
+  onBackToHome,
+  onCompleteAllLevels,
+}) => {
   const [progress, setProgress] = useState<StudentGameProgress>(() => getStudentProgress(username));
-  const [selectedLevelNum, setSelectedLevelNum] = useState<number>(() => progress.currentLevel);
+  const [selectedLevelNum, setSelectedLevelNum] = useState<number>(() => Math.min(9, progress.currentLevel));
   const [chosenAnswers, setChosenAnswers] = useState<Record<string, number>>({});
   const [showAvatarModal, setShowAvatarModal] = useState<boolean>(false);
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [isVideoOpen, setIsVideoOpen] = useState<boolean>(true);
   const [loadingLevelForGame, setLoadingLevelForGame] = useState<GameLevelDef | null>(null);
+
+  // 5-second transition state as requested: "وبعدها شريط تحميل ٥ ثواني مكتوب أعلاه جاري الانتقال الي ليفل ٢"
+  const [isTransitioning5s, setIsTransitioning5s] = useState<boolean>(false);
+  const [transitionTargetLevel, setTransitionTargetLevel] = useState<number>(2);
+
+  // Student level activity upload state (نشاطك الخاص)
+  const activityFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [studentActivity, setStudentActivity] = useState<StudentActivitySubmission | null>(
+    () => progress.studentActivities?.[selectedLevelNum] || null
+  );
+  const [previewMediaZoom, setPreviewMediaZoom] = useState<LevelMediaItem | null>(null);
   const currentLevelVideos = useEducationalVideos(`level-${selectedLevelNum}`);
   const [feedbackModal, setFeedbackModal] = useState<{
     result: CompletedLevelResult;
@@ -160,14 +187,55 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ userna
     });
   };
 
-  // Submit level challenge with Real-time sync to Firestore
-  const handleSubmitChallenge = async () => {
-    // Check if all questions are answered
-    const unanswered = currentLevelDef.questions.some(
-      (q) => chosenAnswers[q.id] === undefined
-    );
-    if (unanswered) {
-      alert('يرجى الإجابة على جميع الأسئلة قبل اعتماد المستوى');
+  // Sync student activity when level changes
+  useEffect(() => {
+    setStudentActivity(progress.studentActivities?.[selectedLevelNum] || null);
+  }, [selectedLevelNum, progress]);
+
+  // Handle uploading special activity (Video, Image, or PDF)
+  const handleUploadActivity = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isVid = file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/i.test(file.name);
+    const fileType: 'video' | 'image' | 'pdf' = isVid ? 'video' : isPdf ? 'pdf' : 'image';
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const fileUrl = reader.result as string;
+      const submission: StudentActivitySubmission = {
+        fileUrl,
+        fileName: file.name,
+        fileType,
+        fileSize: file.size,
+        uploadedAt: new Date().toISOString(),
+      };
+
+      const updatedProg = saveStudentLevelActivity(username, selectedLevelNum, submission);
+      setProgress(updatedProg);
+      setStudentActivity(submission);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRemoveActivity = () => {
+    if (progress.studentActivities && progress.studentActivities[selectedLevelNum]) {
+      const updatedProg = { ...progress };
+      if (updatedProg.studentActivities) {
+        delete updatedProg.studentActivities[selectedLevelNum];
+      }
+      setProgress(updatedProg);
+      setStudentActivity(null);
+    }
+  };
+
+  // Finish Level Click: triggers 5-second loading bar
+  // "ثم زر finish level 1 وبعدها شريط تحميل ٥ ثواني مكتوب أعلاه جاري الانتقال الي ليفل ٢ وهكذا الي ان تنتهي ال ٩ ليفل"
+  const handleFinishLevelClick = async () => {
+    if (!studentActivity) {
+      alert('يرجى رفع نشاطك الخاص لهذا المستوى أولاً (فيديو أو صورة أو PDF) لإكمال المستوى');
       return;
     }
 
@@ -178,33 +246,53 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ userna
       60
     );
 
-    // Real-time broadcast to Firebase Firestore
+    // Sync to Firebase
     await submitGroupLevelRealtime(groupCode, selectedLevelNum, chosenAnswers, {
       username,
       fullName: studentInfo?.fullName || username,
       avatarEmoji: currentAvatar.emoji,
     });
-
-    // Sync student document to Firestore for Admin Analytics
     await syncStudentProgressToFirestore(updatedProgress);
-
     setProgress(updatedProgress);
-    setShowConfirmModal(false);
-    setChosenAnswers({});
 
-    // Open feedback modal
-    setFeedbackModal({
-      result: levelResult,
-      isImmediate: isImmediateFeedback,
-      levelDef: currentLevelDef,
-    });
+    // Launch 5-second transition loader with heading
+    const nextLvl = selectedLevelNum + 1;
+    setTransitionTargetLevel(nextLvl);
+    setIsTransitioning5s(true);
   };
 
+  const handle5sTransitionComplete = () => {
+    setIsTransitioning5s(false);
+    if (selectedLevelNum < 9) {
+      const nextLvl = selectedLevelNum + 1;
+      setSelectedLevelNum(nextLvl);
+      const freshProg = getStudentProgress(username);
+      setProgress(freshProg);
+      setChosenAnswers({});
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    } else {
+      // Completed Level 9! Transfer to Post-Test
+      if (onCompleteAllLevels) {
+        onCompleteAllLevels();
+      }
+      window.dispatchEvent(new CustomEvent('cp_navigate_to_posttest'));
+    }
+  };
+
+  // Submit level challenge with Real-time sync to Firestore
+  const handleSubmitChallenge = async () => {
+    handleFinishLevelClick();
+  };
 
   const handleNextLevel = () => {
     setFeedbackModal(null);
-    if (selectedLevelNum < 10) {
+    if (selectedLevelNum < 9) {
       setSelectedLevelNum(selectedLevelNum + 1);
+    } else {
+      if (onCompleteAllLevels) {
+        onCompleteAllLevels();
+      }
+      window.dispatchEvent(new CustomEvent('cp_navigate_to_posttest'));
     }
   };
 
@@ -309,7 +397,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ userna
                 <span>المستوى الحالي</span>
               </div>
               <span className="text-xl font-black text-purple-200 font-['Outfit']">
-                {progress.currentLevel} <span className="text-xs text-slate-400">/ 10</span>
+                {progress.currentLevel} <span className="text-xs text-slate-400">/ 9</span>
               </span>
             </div>
 
@@ -340,22 +428,22 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ userna
         </div>
       </div>
 
-      {/* 2. GAME PROGRESS MAP (The 10 Levels Track) */}
+      {/* 2. GAME PROGRESS MAP (The 9 Levels Track) */}
       <div className="rounded-3xl bg-[#0b0914] border-2 border-slate-800 p-5 sm:p-6 text-right">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <Gamepad2 className="w-5 h-5 text-[#ffd700]" />
             <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">
-              مراحل بيئة الألعاب (10 مستويات تفاعلية)
+              مراحل بيئة الألعاب (9 مستويات تفاعلية)
             </h3>
           </div>
           <span className="text-xs text-amber-300 font-['Cairo']">
-            المستوى الذي تُعتمد إجاباته يُقفل تلقائياً للمتابعة للأمام
+            المستوى الذي تُعتمد إجاباته ويُسلّم نشاطه يُقفل تلقائياً للمتابعة للأمام
           </span>
         </div>
 
-        {/* 10 Level Nodes Horizontal / Grid Track */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2.5">
+        {/* 9 Level Nodes Horizontal / Grid Track */}
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2.5">
           {GAME_LEVELS_DATA.map((lvl) => {
             const isCompleted = !!progress.completedLevels[lvl.levelNumber];
             const isCurrent = lvl.levelNumber === progress.currentLevel && !isCompleted;
@@ -428,7 +516,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ userna
           <div>
             <div className="flex items-center gap-2">
               <span className="px-3 py-0.5 rounded-full bg-[#ffd700] text-slate-950 text-xs font-black font-['Cairo']">
-                المستوى {currentLevelDef.levelNumber} من 10
+                المستوى {currentLevelDef.levelNumber} من 9
               </span>
               <span className="px-3 py-0.5 rounded-full bg-purple-950/80 border border-purple-500/50 text-purple-300 text-xs font-bold font-['Cairo']">
                 الجائزة: {currentLevelDef.badgeEmoji} {currentLevelDef.badgeName}
@@ -460,13 +548,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ userna
           </div>
         </div>
 
-        {/* 🌟 STAGE MULTI-PART VIDEOS (تنسيق الشاشة أوتوماتيك للعمل على جميع الأجهزة حتى ٥ أجزاء) */}
-        {currentLevelVideos.length > 0 && (
+        {/* 🌟 STAGE VIDEOS (تتسع حتى 5 فيديوهات وفق متطلبات الأدمن) */}
+        {((currentLevelDef.videos && currentLevelDef.videos.length > 0) || currentLevelVideos.length > 0) && (
           <div className="my-6 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-amber-300 font-['Cairo'] flex items-center gap-1.5">
                 <Video className="w-4 h-4 text-blue-400" />
-                <span>فيديوهات شرح المستوى {selectedLevelNum} ({currentLevelVideos.length} أجزاء):</span>
+                <span>فيديوهات شرح المستوى {selectedLevelNum} ({(currentLevelDef.videos?.length || 0) + currentLevelVideos.length} فيديو متاح):</span>
               </span>
 
               <button
@@ -481,10 +569,59 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ userna
 
             {isVideoOpen && (
               <MultiPartVideoPlayer
-                videos={currentLevelVideos}
+                videos={[
+                  ...(currentLevelDef.videos || []).map((v) => ({
+                    id: v.id,
+                    title: v.title,
+                    url: v.url,
+                    format: v.format,
+                  })),
+                  ...currentLevelVideos.filter(
+                    (cv) => !(currentLevelDef.videos || []).some((v) => v.url === cv.url)
+                  ),
+                ]}
                 title={`شرح المستوى ${selectedLevelNum}: ${currentLevelDef.title}`}
               />
             )}
+          </div>
+        )}
+
+        {/* 🖼️ STAGE IMAGES & PDF DOCUMENTS (تتسع حتى 5 صور أو ملفات PDF مع إمكانية المعاينة والتكبير) */}
+        {currentLevelDef.images && currentLevelDef.images.length > 0 && (
+          <div className="my-6 p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-amber-500/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-300 font-['Cairo'] flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-purple-400" />
+                <span>صور ومستندات شرح المستوى ({currentLevelDef.images.length} ملفات):</span>
+              </span>
+              <span className="text-[11px] text-slate-400">انقر على أي ملف لمعاينته بحجم كامل</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {currentLevelDef.images.map((imgItem) => (
+                <div
+                  key={imgItem.id}
+                  onClick={() => setPreviewMediaZoom(imgItem)}
+                  className="rounded-xl overflow-hidden border border-slate-700 hover:border-amber-400 bg-black/50 p-2 cursor-pointer transition-transform hover:scale-105 flex flex-col items-center justify-center text-center space-y-1.5 group"
+                >
+                  {imgItem.type === 'pdf' ? (
+                    <div className="w-full h-24 rounded-lg bg-rose-500/15 border border-rose-500/40 flex flex-col items-center justify-center text-rose-300">
+                      <FileText className="w-8 h-8" />
+                      <span className="text-[10px] font-mono font-bold mt-1">PDF مستند</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={imgItem.url}
+                      alt={imgItem.title}
+                      className="w-full h-24 object-contain rounded-lg"
+                    />
+                  )}
+                  <span className="text-[10px] font-bold text-slate-300 line-clamp-1 group-hover:text-amber-300">
+                    {imgItem.title}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -714,48 +851,205 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ userna
           })}
         </div>
 
-        {/* LEVEL FOOTER ACTION BUTTONS */}
-        <div className="mt-8 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-slate-400 font-['Cairo']">
-            {isLevelCompleted && (
-              <span className="text-emerald-400 font-bold flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4" />
-                تم اعتماد إجابات المستوى
-              </span>
-            )}
-          </div>
+        {/* ======================================================== */}
+        {/* 4. قسم "نشاطك الخاص" - ينتهي الليفل بعد رفع الطالب نشاطه */}
+        {/* ======================================================== */}
+        <div className="mt-8 pt-8 border-t-2 border-amber-500/40 space-y-6" id="student-activity-section">
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#120e26] via-[#1a1438] to-[#120e26] border-2 border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.25)] text-right relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border-2 border-amber-400 text-amber-300 flex items-center justify-center text-2xl shrink-0 shadow-md">
+                  🎯
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-[11px] font-black">
+                      متطلب إنهاء المستوى {selectedLevelNum}
+                    </span>
+                    <span className="text-xs text-emerald-400 font-bold">
+                      {studentActivity ? '✅ تم رفع النشاط' : '⏳ مطلوب رفع النشاط أولاً'}
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-white font-['Tajawal'] mt-1">
+                    نشاطك الخاص (المستوى {selectedLevelNum})
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                    قم برفع ملف تطبيقك العملي أو مخرج التدريب لهذا المستوى. يقبل النظام جميع امتدادات الفيديو، الصور، ومستندات PDF.
+                  </p>
+                </div>
+              </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-            {!isLevelCompleted ? (
-              <button
-                type="button"
-                onClick={() => {
-                  const unanswered = currentLevelDef.questions.some(
-                    (q) => chosenAnswers[q.id] === undefined
-                  );
-                  if (unanswered) {
-                    alert('يرجى إكمال الإجابات أولاً');
-                    return;
-                  }
-                  setShowConfirmModal(true);
-                }}
-                className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-gradient-to-r from-[#ffd700] to-[#d4af37] hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-[0_0_20px_rgba(212,175,55,0.4)] flex items-center justify-center gap-2 transition-all cursor-pointer"
+              {/* Hidden File Input */}
+              <input
+                ref={activityFileInputRef}
+                type="file"
+                accept="image/*,.pdf,video/*"
+                onChange={handleUploadActivity}
+                className="hidden"
+                id={`activity-upload-input-${selectedLevelNum}`}
+              />
+            </div>
+
+            {/* If No Activity Uploaded Yet */}
+            {!studentActivity ? (
+              <div
+                onClick={() => activityFileInputRef.current?.click()}
+                className="mt-5 p-8 rounded-2xl border-2 border-dashed border-amber-400/60 hover:border-amber-400 bg-slate-950/60 hover:bg-slate-900/60 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-3 group"
               >
-                <Lock className="w-4 h-4" />
-                <span>اعتماد المستوى 🔒</span>
-              </button>
-            ) : (
-              selectedLevelNum < 10 && (
+                <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-400/40 group-hover:scale-110 group-hover:bg-amber-500/20 text-amber-300 flex items-center justify-center transition-all text-3xl">
+                  📁
+                </div>
+                <div>
+                  <h4 className="text-sm sm:text-base font-black text-white font-['Tajawal']">
+                    اضغط هنا لرفع نشاطك الخاص
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-1 font-['Cairo']">
+                    يقبل جميع امتدادات الفيديو (MP4, WebM, ...) والصور (PNG, JPG, ...) وملفات الـ PDF
+                  </p>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setSelectedLevelNum(selectedLevelNum + 1)}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-xs shadow-lg flex items-center gap-2 pointer-events-none"
                 >
-                  <span>المستوى التالي ({selectedLevelNum + 1})</span>
-                  <ArrowLeft className="w-4 h-4" />
+                  <Upload className="w-4 h-4" />
+                  <span>اختيار ملف النشاط من جهازك</span>
                 </button>
-              )
+              </div>
+            ) : (
+              /* If Activity Is Uploaded: Preview and Metadata */
+              <div className="mt-5 p-5 rounded-2xl bg-slate-950/80 border border-emerald-500/50 space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">
+                      {studentActivity.fileType === 'video' ? '🎬' : studentActivity.fileType === 'pdf' ? '📄' : '🖼️'}
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-bold text-white font-mono truncate max-w-xs sm:max-w-md">
+                        {studentActivity.fileName}
+                      </h4>
+                      <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono mt-0.5">
+                        <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-emerald-300 font-bold">
+                          {studentActivity.fileType.toUpperCase()}
+                        </span>
+                        {studentActivity.fileSize && (
+                          <span>{(studentActivity.fileSize / (1024 * 1024)).toFixed(2)} MB</span>
+                        )}
+                        <span>• تم الرفع بنجاح</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => activityFileInputRef.current?.click()}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>تبديل الملف</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRemoveActivity}
+                      className="px-3 py-1.5 rounded-lg bg-red-950/50 hover:bg-red-900/60 border border-red-500/50 text-red-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>حذف</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Inline Preview according to File Type */}
+                <div className="rounded-xl overflow-hidden border border-slate-800 bg-black/60 p-2 flex justify-center items-center">
+                  {studentActivity.fileType === 'video' ? (
+                    <video
+                      controls
+                      src={studentActivity.fileUrl}
+                      className="max-h-72 w-auto max-w-full rounded-lg shadow-lg"
+                    />
+                  ) : studentActivity.fileType === 'image' ? (
+                    <img
+                      src={studentActivity.fileUrl}
+                      alt="معاينة نشاطك الخاص"
+                      className="max-h-72 w-auto max-w-full rounded-lg object-contain shadow-lg"
+                    />
+                  ) : (
+                    <div className="p-6 text-center space-y-2">
+                      <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/50 text-rose-300 flex items-center justify-center mx-auto text-2xl font-bold">
+                        PDF
+                      </div>
+                      <p className="text-xs text-slate-300 font-mono">{studentActivity.fileName}</p>
+                      <a
+                        href={studentActivity.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold border border-slate-700 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>فتح ومعاينة ملف PDF</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
+
+            {/* Finish Level Action Button: "ثم زر finish level 1 وبعدها شريط تحميل ٥ ثواني" */}
+            <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800/80">
+              <div className="text-xs text-slate-400 font-['Cairo']">
+                {!studentActivity ? (
+                  <span className="text-amber-300 font-bold flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4 text-amber-400" />
+                    يجب رفع نشاطك الخاص لتفعيل زر إنهاء المستوى
+                  </span>
+                ) : (
+                  <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4" />
+                    النشاط مكتمل وجاهز للتسليم والإنهاء
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  id={`btn-finish-level-${selectedLevelNum}`}
+                  onClick={() => {
+                    const unanswered = currentLevelDef.questions.some(
+                      (q) => chosenAnswers[q.id] === undefined
+                    );
+                    if (unanswered) {
+                      alert('يرجى الإجابة على جميع أسئلة المستوى أولاً');
+                      return;
+                    }
+                    if (!studentActivity) {
+                      alert('يرجى رفع نشاطك الخاص أولاً (فيديو أو صورة أو PDF) لإكمال المستوى');
+                      return;
+                    }
+                    handleFinishLevelClick();
+                  }}
+                  className={`w-full sm:w-auto min-w-[240px] px-8 py-3.5 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-3 transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg ${
+                    studentActivity
+                      ? 'bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-[0_0_25px_rgba(255,215,0,0.45)] border-2 border-amber-300'
+                      : 'bg-slate-800/80 text-slate-400 border border-slate-700/60 hover:border-amber-400/50'
+                  }`}
+                >
+                  <span>finish level {selectedLevelNum}</span>
+                  <ArrowLeft className="w-5 h-5 shrink-0" />
+                </button>
+
+                {isLevelCompleted && selectedLevelNum < 9 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLevelNum(selectedLevelNum + 1)}
+                    className="px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer"
+                  >
+                    <span>المستوى {selectedLevelNum + 1}</span>
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1016,6 +1310,65 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({ userna
           }}
           onCancel={() => setLoadingLevelForGame(null)}
         />
+      )}
+
+      {/* 5-SECOND LEVEL TRANSITION LOADER
+          "وبعدها شريط تحميل ٥ ثواني مكتوب أعلاه جاري الانتقال الي ليفل ٢ وهكذا الي ان تنتهي ال ٩ ليفل" */}
+      {isTransitioning5s && (
+        <LevelTransitionLoader5s
+          currentLevel={selectedLevelNum}
+          nextLevel={transitionTargetLevel}
+          isFinalLevel={selectedLevelNum >= 9}
+          onComplete={handle5sTransitionComplete}
+        />
+      )}
+
+      {/* 📋 FLOATING DRAGGABLE INSTRUCTIONS MENU
+          "مع اضافه قائمه عائمه يمكن تحركها في اي مكان تتضمن تعليمات كل ليفل" */}
+      <DraggableLevelInstructions
+        key={selectedLevelNum}
+        levelNumber={selectedLevelNum}
+        levelTitle={currentLevelDef.title}
+        instructions={currentLevelDef.instructions || ''}
+      />
+
+      {/* 🔍 MEDIA ZOOM & PREVIEW MODAL FOR IMAGES AND PDF DOCUMENTS */}
+      {previewMediaZoom && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in"
+          onClick={() => setPreviewMediaZoom(null)}
+        >
+          <div
+            className="bg-[#0f0c1f] border-2 border-[#ffd700] rounded-3xl p-5 sm:p-6 max-w-4xl w-full text-right space-y-4 shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-base font-black text-white">{previewMediaZoom.title}</h3>
+              <button
+                type="button"
+                onClick={() => setPreviewMediaZoom(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="max-h-[70vh] overflow-auto flex justify-center items-center">
+              {previewMediaZoom.type === 'pdf' ? (
+                <iframe
+                  src={previewMediaZoom.url}
+                  className="w-full h-96 rounded-xl border border-slate-800"
+                  title="معاينة PDF"
+                />
+              ) : (
+                <img
+                  src={previewMediaZoom.url}
+                  alt={previewMediaZoom.title}
+                  className="max-h-[65vh] w-auto max-w-full rounded-xl object-contain"
+                />
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

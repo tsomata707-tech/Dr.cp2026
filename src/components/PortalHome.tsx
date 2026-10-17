@@ -115,11 +115,20 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
   useEffect(() => {
     const handleReturnToStudentHome = () => {
       setShowSupervisorModal(false);
-      setActiveMainSection('map');
+      setActiveMainSection('honor');
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    };
+    const handleNavToPosttest = () => {
+      refreshProgress();
+      setActiveMainSection('posttest');
       window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     };
     window.addEventListener('cp_navigate_to_student_home', handleReturnToStudentHome);
-    return () => window.removeEventListener('cp_navigate_to_student_home', handleReturnToStudentHome);
+    window.addEventListener('cp_navigate_to_posttest', handleNavToPosttest);
+    return () => {
+      window.removeEventListener('cp_navigate_to_student_home', handleReturnToStudentHome);
+      window.removeEventListener('cp_navigate_to_posttest', handleNavToPosttest);
+    };
   }, []);
 
   const refreshProgress = () => {
@@ -213,13 +222,13 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       };
     }
 
-    // 2. If Pre-Test is done, but the student hasn't completed all 10 educational levels
+    // 2. If Pre-Test is done, but the student hasn't completed all 9 educational levels
     const completedLevelsCount = Object.keys(studentGame.completedLevels || {}).length;
-    if (studentGame.currentLevel <= 10 && completedLevelsCount < 10) {
+    if (studentGame.currentLevel <= 9 && completedLevelsCount < 9) {
       return {
-        stepLabel: `المحطة 2: المراحل التعليمية (${completedLevelsCount}/10 مكتملة)`,
+        stepLabel: `المحطة 2: المراحل التعليمية (${completedLevelsCount}/9 مكتملة)`,
         title: `متابعة من حيث توقفت: المرحلة ${studentGame.currentLevel} (النشاط والتقييم اللحظي)`,
-        description: `أنجزت ${completedLevelsCount} من 10 مستويات بنجاح. استأنف الآن تحديات وأسئلة المستوى ${studentGame.currentLevel} لكسب النقاط.`,
+        description: `أنجزت ${completedLevelsCount} من 9 مستويات بنجاح. استأنف الآن تحديات وأسئلة المستوى ${studentGame.currentLevel} لكسب النقاط.`,
         badge: `المرحلة الحالية: L${studentGame.currentLevel} 🎮`,
         buttonText: `متابعة المرحلة ${studentGame.currentLevel} الآن 🚀`,
         action: () => {
@@ -231,12 +240,12 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       };
     }
 
-    // 3. If all 10 levels are completed, but Post-Test is not completed yet
+    // 3. If all 9 levels are completed, but Post-Test is not completed yet
     if (!studentGame.postTestResult?.completed) {
       return {
         stepLabel: 'المحطة 3: الاختبار البعدي الختامي',
         title: 'متابعة من حيث توقفت: لعبة الاختبار البعدي (المحطة الختامية)',
-        description: 'أتممت كافة المراحل التعليمية بنجاح! استأنف الآن لعبة الاختبار البعدي الختامي.',
+        description: 'أتممت كافة المراحل التعليمية الـ 9 بنجاح! استأنف الآن لعبة الاختبار البعدي الختامي.',
         badge: 'المحطة الختامية 🏁',
         buttonText: 'بدء الاختبار البعدي الآن 🏆',
         action: () => {
@@ -252,7 +261,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
     return {
       stepLabel: 'المسار التعليمي مكتمل بالكامل بنجاح 100%',
       title: 'أتممت كافة الاختبارات والمراحل بنجاح باهر! 🎉',
-      description: 'لقد اجتزت الاختبار القبلي وجميع المستويات العشرة والاختبار البعدي. استعرض رتبتك في لوحة الشرف.',
+      description: 'لقد اجتزت الاختبار القبلي وجميع المستويات التسعة والاختبار البعدي. استعرض رتبتك في لوحة الشرف.',
       badge: 'مكتمل بنسبة 100% 👑',
       buttonText: 'استعراض لوحة الشرف والإنجازات 🏆',
       action: () => {
@@ -310,7 +319,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
             <div className="px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-[#080d1e] border border-purple-500/30 text-center sm:text-right">
               <span className="text-[10px] text-slate-400 block font-['Cairo']">المرحلة الحالية</span>
               <span className="text-base sm:text-lg font-black text-purple-300 font-['Outfit']">
-                L{studentGame.currentLevel} / 10
+                L{studentGame.currentLevel} / 9
               </span>
             </div>
 
