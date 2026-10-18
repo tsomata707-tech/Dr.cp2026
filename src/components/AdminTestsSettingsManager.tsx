@@ -111,6 +111,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
   const [addPosition, setAddPosition] = useState<'top' | 'bottom'>('bottom');
   const [editingQuestionType, setEditingQuestionType] = useState<ActiveTestTab>('pretest');
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null); // null means new question
+  const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
   const [editingTargetLevel, setEditingTargetLevel] = useState<number>(1); // For levels
 
   // Form Fields for Modal
@@ -448,6 +449,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
   const handleOpenAddModal = (tab: ActiveTestTab, position: 'top' | 'bottom' = 'bottom') => {
     setEditingQuestionType(tab);
     setEditingQuestionId(null);
+    setInsertAfterIndex(null);
     setAddPosition(position);
     setFormQuestionText('');
     setFormQuestionKind('mcq');
@@ -458,6 +460,22 @@ export const AdminTestsSettingsManager: React.FC = () => {
     setFormPoints(tab === 'levels' ? 34 : 50);
     setFormImageUrl('');
     setEditingTargetLevel(typeof selectedLevelFilter === 'number' ? selectedLevelFilter : 1);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenAddModalForIndex = (tab: ActiveTestTab, index: number, levelNum?: number) => {
+    setEditingQuestionType(tab);
+    setEditingQuestionId(null);
+    setInsertAfterIndex(index);
+    setFormQuestionText('');
+    setFormQuestionKind('mcq');
+    setFormOptions(['', '', '', '']);
+    setFormOptionImages(['', '', '', '']);
+    setFormCorrectIndex(0);
+    setFormExplanation('');
+    setFormPoints(tab === 'levels' ? 34 : 50);
+    setFormImageUrl('');
+    if (levelNum !== undefined) setEditingTargetLevel(levelNum);
     setIsModalOpen(true);
   };
 
@@ -597,7 +615,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               : q
           );
         } else {
-          // Add new (top or bottom)
+          // Add new (top, bottom, or below specific index)
           const newQ: PreTestQuestion = {
             id: `pt-custom-${Date.now()}`,
             question: formQuestionText.trim(),
@@ -610,7 +628,12 @@ export const AdminTestsSettingsManager: React.FC = () => {
             questionType: formQuestionKind,
             matchingPairs: cleanMatchingPairs,
           };
-          updated = addPosition === 'top' ? [newQ, ...preTestQuestions] : [...preTestQuestions, newQ];
+          if (insertAfterIndex !== null) {
+            updated = [...preTestQuestions];
+            updated.splice(insertAfterIndex + 1, 0, newQ);
+          } else {
+            updated = addPosition === 'top' ? [newQ, ...preTestQuestions] : [...preTestQuestions, newQ];
+          }
         }
         setPreTestQuestions(updated);
         savePreTestQuestions(updated, true);
@@ -636,7 +659,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               : q
           );
         } else {
-          // Add new (top or bottom)
+          // Add new (top, bottom, or below specific index)
           const newQ: PreTestQuestion = {
             id: `post-custom-${Date.now()}`,
             question: formQuestionText.trim(),
@@ -649,7 +672,12 @@ export const AdminTestsSettingsManager: React.FC = () => {
             questionType: formQuestionKind,
             matchingPairs: cleanMatchingPairs,
           };
-          updated = addPosition === 'top' ? [newQ, ...postTestQuestions] : [...postTestQuestions, newQ];
+          if (insertAfterIndex !== null) {
+            updated = [...postTestQuestions];
+            updated.splice(insertAfterIndex + 1, 0, newQ);
+          } else {
+            updated = addPosition === 'top' ? [newQ, ...postTestQuestions] : [...postTestQuestions, newQ];
+          }
         }
         setPostTestQuestions(updated);
         savePostTestQuestions(updated, true);
@@ -1168,6 +1196,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 onRemoveImage={() => handleDirectRemoveImage('pretest', q.id)}
                 onSetOptionImage={(optIdx, dataUrl) => handleDirectSetOptionImage('pretest', q.id, optIdx, dataUrl)}
                 onRemoveOptionImage={(optIdx) => handleDirectRemoveOptionImage('pretest', q.id, optIdx)}
+                onAddBelow={() => handleOpenAddModalForIndex('pretest', idx)}
               />
             ))}
             {filteredPreTest.length === 0 && (
@@ -1227,6 +1256,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 onRemoveImage={() => handleDirectRemoveImage('posttest', q.id)}
                 onSetOptionImage={(optIdx, dataUrl) => handleDirectSetOptionImage('posttest', q.id, optIdx, dataUrl)}
                 onRemoveOptionImage={(optIdx) => handleDirectRemoveOptionImage('posttest', q.id, optIdx)}
+                onAddBelow={() => handleOpenAddModalForIndex('posttest', idx)}
               />
             ))}
             {filteredPostTest.length === 0 && (
@@ -1773,6 +1803,7 @@ interface QuestionAdminCardProps {
   onRemoveImage: () => void;
   onSetOptionImage: (optIdx: number, dataUrl: string) => void;
   onRemoveOptionImage: (optIdx: number) => void;
+  onAddBelow?: () => void;
 }
 
 const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
@@ -1791,6 +1822,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
   onRemoveImage,
   onSetOptionImage,
   onRemoveOptionImage,
+  onAddBelow,
 }) => {
   // Mini state for direct card option URL input
   const [activeOptionUrlIdx, setActiveOptionUrlIdx] = useState<number | null>(null);
@@ -2544,6 +2576,20 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             </div>
           )}
         </>
+      )}
+
+      {/* Add New Question Below This Question Button */}
+      {onAddBelow && (
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={onAddBelow}
+            className="w-full py-2.5 px-4 rounded-xl bg-slate-900/80 hover:bg-slate-900 border border-dashed border-amber-500/50 hover:border-amber-400 text-amber-300 hover:text-white font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow"
+          >
+            <Plus className="w-4 h-4" />
+            <span>➕ إضافة سؤال جديد تحت هذا السؤال رقم ({index})</span>
+          </button>
+        </div>
       )}
     </div>
   );
