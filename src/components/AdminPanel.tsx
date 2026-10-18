@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   FileSpreadsheet,
   Type,
+  Layers,
 } from 'lucide-react';
 import { AdminUsersManager } from './AdminUsersManager';
 import { AdminInstructionsManager } from './AdminInstructionsManager';

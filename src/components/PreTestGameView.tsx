@@ -802,7 +802,9 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               onClick={onFinishPreTest}
               className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-sm transition shadow-xl shadow-sky-900/40 cursor-pointer"
             >
-              الدخول إلى بيئة الألعاب 🚀
+              {mode === 'pre'
+                ? 'الانتقال إلى المستويات والمراحل التعليمية (المستوى 1) 🚀'
+                : 'استعراض لوحة الشرف والإنجازات 🏆'}
             </button>
           </div>
         )}

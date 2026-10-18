@@ -271,7 +271,7 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
                           {stu.points}
                         </td>
                         <td className="py-3 px-3 sm:px-4 text-center font-mono text-emerald-400">
-                          {stu.completedLevels} / 10
+                          {stu.completedLevels} / 9
                         </td>
                         <td className="py-3 px-3 sm:px-4">
                           <span className="px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-amber-200 text-[10px]">

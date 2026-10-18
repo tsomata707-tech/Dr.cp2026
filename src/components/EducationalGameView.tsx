@@ -54,6 +54,7 @@ import {
   RealtimeStudentParticipant,
   StudentActivitySubmission,
   LevelMediaItem,
+  EducationalVideo,
 } from '../types';
 import {
   subscribeToGroupRoom,
@@ -570,14 +571,20 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             {isVideoOpen && (
               <MultiPartVideoPlayer
                 videos={[
-                  ...(currentLevelDef.videos || []).map((v) => ({
+                  ...(currentLevelDef.videos || []).map((v, idx): EducationalVideo => ({
                     id: v.id,
                     title: v.title,
-                    url: v.url,
-                    format: v.format,
+                    targetSlotId: `level-${selectedLevelNum}`,
+                    targetSlotName: `المستوى ${selectedLevelNum}`,
+                    videoUrl: v.url,
+                    videoType: 'file',
+                    partNumber: idx + 1,
+                    partTitle: v.title,
+                    addedAt: v.addedAt || new Date().toISOString(),
+                    isActive: true,
                   })),
                   ...currentLevelVideos.filter(
-                    (cv) => !(currentLevelDef.videos || []).some((v) => v.url === cv.url)
+                    (cv) => !(currentLevelDef.videos || []).some((v) => v.url === cv.videoUrl)
                   ),
                 ]}
                 title={`شرح المستوى ${selectedLevelNum}: ${currentLevelDef.title}`}

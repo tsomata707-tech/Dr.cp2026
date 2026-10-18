@@ -576,9 +576,9 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
           mode="pre"
           onFinishPreTest={() => {
             refreshProgress();
-            setActiveMainSection('map');
+            setActiveMainSection('game');
           }}
-          onBackToInstructions={() => setActiveMainSection('instructions')}
+          onBackToInstructions={() => setActiveMainSection('honor')}
         />
       )}
 
@@ -589,9 +589,9 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
           mode="post"
           onFinishPreTest={() => {
             refreshProgress();
-            setActiveMainSection('map');
+            setActiveMainSection('honor');
           }}
-          onBackToInstructions={() => setActiveMainSection('map')}
+          onBackToInstructions={() => setActiveMainSection('honor')}
         />
       )}
 
@@ -603,11 +603,15 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
         />
       )}
 
-      {/* 5. اللعبة التعليمية والنشاط والتغذية الراجعة المتمايزة (Screens 8, 9, 10, 11) */}
+      {/* 5. اللعبة التعليمية والنشاط والتغذية الراجعة المتمايزة (المستويات الـ 9) */}
       {activeMainSection === 'game' && (
         <EducationalGameView
           username={username}
-          onBackToHome={() => setActiveMainSection('map')}
+          onBackToHome={() => setActiveMainSection('honor')}
+          onCompleteAllLevels={() => {
+            refreshProgress();
+            setActiveMainSection('posttest');
+          }}
         />
       )}
 
@@ -629,11 +633,12 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
         />
       )}
 
-      {/* 8. لوحة الشرف العامة */}
+      {/* 8. لوحة الشرف العامة (الترتيب: تسجيل الدخول ثم لوحة الشرف ثم زر أسفل اللوحة ينقل الطالب للاختبار القبلي) */}
       {activeMainSection === 'honor' && (
         <HonorBoard
           currentUsername={username}
-          onContinueToInstructions={() => setActiveMainSection('groups')}
+          onContinueToPreTest={() => setActiveMainSection('pretest')}
+          onContinueToInstructions={() => setActiveMainSection('pretest')}
         />
       )}
 
