@@ -720,19 +720,27 @@ export const DEFAULT_PRETEST_QUESTIONS: PreTestQuestion[] = [
 
 export function ensureMatchingQuestionsIntegrity(questions: PreTestQuestion[]): PreTestQuestion[] {
   if (!Array.isArray(questions)) return DEFAULT_PRETEST_QUESTIONS;
-  let modified = false;
-  const updated = questions.map((q, idx) => {
-    if ((q.id === 'pt-4' || idx === 3) && q.questionType !== 'matching') {
-      modified = true;
-      return { ...DEFAULT_PRETEST_QUESTIONS[3], id: q.id };
+  return questions.map((q) => {
+    if (q.id === 'pt-4') {
+      const defaultQ = DEFAULT_PRETEST_QUESTIONS[3];
+      return {
+        ...defaultQ,
+        ...q,
+        questionType: 'matching',
+        matchingPairs: q.matchingPairs && q.matchingPairs.length > 0 ? q.matchingPairs : defaultQ.matchingPairs,
+      };
     }
-    if ((q.id === 'pt-8' || idx === 7) && q.questionType !== 'matching') {
-      modified = true;
-      return { ...DEFAULT_PRETEST_QUESTIONS[7], id: q.id };
+    if (q.id === 'pt-8') {
+      const defaultQ = DEFAULT_PRETEST_QUESTIONS[7];
+      return {
+        ...defaultQ,
+        ...q,
+        questionType: 'matching',
+        matchingPairs: q.matchingPairs && q.matchingPairs.length > 0 ? q.matchingPairs : defaultQ.matchingPairs,
+      };
     }
     return q;
   });
-  return updated;
 }
 
 export function getPreTestQuestions(): PreTestQuestion[] {
