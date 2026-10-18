@@ -6,7 +6,6 @@ import { syncGlobalQuestionsAndLevels } from '../utils/realtimeService';
 const PRETEST_QUESTIONS_KEY = 'cp_pretest_questions_bank_v2';
 const POSTTEST_QUESTIONS_KEY = 'cp_posttest_questions_bank_v2';
 
-// Tests start completely empty as requested by admin
 export const DEFAULT_PRETEST_QUESTIONS: PreTestQuestion[] = [];
 
 export function ensureMatchingQuestionsIntegrity(questions: PreTestQuestion[]): PreTestQuestion[] {
@@ -17,29 +16,19 @@ export function ensureMatchingQuestionsIntegrity(questions: PreTestQuestion[]): 
 export function getPreTestQuestions(): PreTestQuestion[] {
   try {
     const raw = localStorage.getItem(PRETEST_QUESTIONS_KEY);
-    if (!raw) {
-      savePreTestQuestions(DEFAULT_PRETEST_QUESTIONS);
-      return DEFAULT_PRETEST_QUESTIONS;
-    }
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      savePreTestQuestions(DEFAULT_PRETEST_QUESTIONS);
-      return DEFAULT_PRETEST_QUESTIONS;
-    }
-    return ensureMatchingQuestionsIntegrity(parsed);
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
   } catch {
-    return DEFAULT_PRETEST_QUESTIONS;
+    return [];
   }
 }
 
 export function savePreTestQuestions(questions: PreTestQuestion[], syncRemote: boolean = true): void {
-  try {
-    localStorage.setItem(PRETEST_QUESTIONS_KEY, JSON.stringify(questions));
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('pretest-questions-updated', { detail: questions }));
-    }
-  } catch (e) {
-    console.warn('localStorage savePreTestQuestions error:', e);
+  localStorage.setItem(PRETEST_QUESTIONS_KEY, JSON.stringify(questions));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('pretest-questions-updated', { detail: questions }));
   }
   if (syncRemote) {
     syncGlobalQuestionsAndLevels('pretest', questions).catch(() => {});
@@ -47,8 +36,8 @@ export function savePreTestQuestions(questions: PreTestQuestion[], syncRemote: b
 }
 
 export function resetPreTestQuestionsToDefault(): PreTestQuestion[] {
-  savePreTestQuestions(DEFAULT_PRETEST_QUESTIONS, true);
-  return DEFAULT_PRETEST_QUESTIONS;
+  savePreTestQuestions([], true);
+  return [];
 }
 
 export function submitPreTestResult(
@@ -116,29 +105,19 @@ export function submitPreTestResult(
 export function getPostTestQuestions(): PreTestQuestion[] {
   try {
     const raw = localStorage.getItem(POSTTEST_QUESTIONS_KEY);
-    if (!raw) {
-      savePostTestQuestions(DEFAULT_PRETEST_QUESTIONS, false);
-      return DEFAULT_PRETEST_QUESTIONS;
-    }
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      savePostTestQuestions(DEFAULT_PRETEST_QUESTIONS, false);
-      return DEFAULT_PRETEST_QUESTIONS;
-    }
-    return ensureMatchingQuestionsIntegrity(parsed);
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
   } catch {
-    return DEFAULT_PRETEST_QUESTIONS;
+    return [];
   }
 }
 
 export function savePostTestQuestions(questions: PreTestQuestion[], syncRemote: boolean = true): void {
-  try {
-    localStorage.setItem(POSTTEST_QUESTIONS_KEY, JSON.stringify(questions));
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('posttest-questions-updated', { detail: questions }));
-    }
-  } catch (e) {
-    console.warn('localStorage savePostTestQuestions error:', e);
+  localStorage.setItem(POSTTEST_QUESTIONS_KEY, JSON.stringify(questions));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('posttest-questions-updated', { detail: questions }));
   }
   if (syncRemote) {
     syncGlobalQuestionsAndLevels('posttest', questions).catch(() => {});
@@ -146,8 +125,8 @@ export function savePostTestQuestions(questions: PreTestQuestion[], syncRemote: 
 }
 
 export function resetPostTestQuestionsToDefault(): PreTestQuestion[] {
-  savePostTestQuestions(DEFAULT_PRETEST_QUESTIONS);
-  return DEFAULT_PRETEST_QUESTIONS;
+  savePostTestQuestions([], false);
+  return [];
 }
 
 export function submitPostTestResult(

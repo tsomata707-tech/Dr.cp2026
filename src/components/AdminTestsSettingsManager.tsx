@@ -1151,12 +1151,17 @@ export const AdminTestsSettingsManager: React.FC = () => {
         {/* Reset to Defaults button */}
         <button
           type="button"
-          onClick={() => handleResetDefaults(activeTab)}
-          className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-amber-300 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shrink-0"
-          title="استعادة بنك الأسئلة الافتراضي المعتمد"
+          onClick={() => {
+            if (window.confirm('هل أنت متأكد؟ سيتم حذف جميع الأسئلة والمستويات من المتصفح؟')) {
+              localStorage.clear();
+              window.location.reload();
+            }
+          }}
+          className="px-4 py-2.5 rounded-xl border border-red-900 bg-red-950/40 hover:bg-red-900 text-red-400 hover:text-red-100 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shrink-0"
+          title="حذف كل محتوى الأسئلة والمستويات من هذا المتصفح"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>استعادة الأسئلة القياسية</span>
+          <Trash2 className="w-3.5 h-3.5" />
+          <span>حذف كافة محتوى الأسئلة (بدء من الصفر)</span>
         </button>
       </div>
 
