@@ -15,7 +15,6 @@ import { LeaderboardOrTeamBoard } from './LeaderboardOrTeamBoard';
 import { ApplicationTaskModal } from './ApplicationTaskModal';
 import { PointsCelebrationModal } from './PointsCelebrationModal';
 import { ProgressBoardView } from './ProgressBoardView';
-import { DesignChallengeView } from './DesignChallengeView';
 import { SupervisorsHonorBoard } from './SupervisorsHonorBoard';
 import { PreTestGameView } from './PreTestGameView';
 import { StudentWelcomeFloatingCard } from './StudentWelcomeFloatingCard';
@@ -61,7 +60,6 @@ export type PortalSection =
   | 'game'
   | 'task'
   | 'progress'
-  | 'challenge'
   | 'ranking'
   | 'honor'
   | 'groups'
@@ -183,20 +181,6 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       points: bonusPoints,
       total: prog.totalScore,
       message: `لقد أنهيت المهمة التطبيقية للمرحلة ${prog.currentLevel} بنجاح!`,
-    });
-  };
-
-  const handleChallengeSolve = (bonusPoints: number) => {
-    const all = getAllStudentsProgress();
-    const prog = getStudentProgress(username);
-    prog.totalScore += bonusPoints;
-    saveAllStudentsProgress(all);
-    refreshProgress();
-
-    setCelebrationData({
-      points: bonusPoints,
-      total: prog.totalScore,
-      message: 'رائع! لقد قمت بحل مشكلة التصميم في Adobe Captivate بنجاح وحصدت نقاط التميز.',
     });
   };
 
@@ -461,20 +445,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
 
 
 
-            {/* 6. التحدي ومشكلة التصميم */}
-            <button
-              type="button"
-              id="tab-challenge"
-              onClick={() => setActiveMainSection('challenge')}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                activeMainSection === 'challenge'
-                  ? 'bg-gradient-to-r from-pink-600 to-rose-700 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              <Zap className="w-4 h-4" />
-              <span>⚡ التحدي ومشكلة التصميم</span>
-            </button>
+
 
             {/* 7. الملف الشخصي */}
             <button
@@ -625,13 +596,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
         />
       )}
 
-      {/* 7. التحدي ومشكلة التصميم (Screen 17) */}
-      {activeMainSection === 'challenge' && (
-        <DesignChallengeView
-          currentLevel={studentGame.currentLevel}
-          onSolveChallenge={handleChallengeSolve}
-        />
-      )}
+
 
       {/* 8. لوحة الشرف العامة (الترتيب: تسجيل الدخول ثم لوحة الشرف ثم زر أسفل اللوحة ينقل الطالب للاختبار القبلي) */}
       {activeMainSection === 'honor' && (
