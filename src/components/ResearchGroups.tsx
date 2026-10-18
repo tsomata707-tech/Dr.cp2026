@@ -31,9 +31,9 @@ export const RESEARCH_GROUPS_DATA: ResearchGroup[] = [
     accentColor: '#f59e0b',
     borderClass: 'border-amber-500/80',
     bgGradient: 'from-amber-950/40 via-[#151126] to-[#090712]',
-    membersCount: 28,
+    membersCount: 15,
     averageScore: 92,
-    completedTasks: 320,
+    completedTasks: 135,
     rules: [
       'تغذية راجعة فورية تعزز الإجابة الصحيحة وتوضح خطأ الاستجابة لحظياً',
       'لوحة صدارة وتنافس لحصد أعلى النقاط وتسجيل أقل زمن محاكاة',
@@ -51,9 +51,9 @@ export const RESEARCH_GROUPS_DATA: ResearchGroup[] = [
     accentColor: '#a855f7',
     borderClass: 'border-purple-500/80',
     bgGradient: 'from-purple-950/40 via-[#151126] to-[#090712]',
-    membersCount: 26,
+    membersCount: 15,
     averageScore: 89,
-    completedTasks: 295,
+    completedTasks: 135,
     rules: [
       'تأجيل إظهار نتائج التصحيح حتى اكتمال كافة أسئلة الموديول',
       'تطوير مهارة التفكير التأملي والتقييم الذاتي للمهام',
@@ -71,9 +71,9 @@ export const RESEARCH_GROUPS_DATA: ResearchGroup[] = [
     accentColor: '#06b6d4',
     borderClass: 'border-cyan-500/80',
     bgGradient: 'from-cyan-950/40 via-[#151126] to-[#090712]',
-    membersCount: 30,
+    membersCount: 15,
     averageScore: 94,
-    completedTasks: 340,
+    completedTasks: 135,
     rules: [
       'مشاركة الشاشات والحلول بين أعضاء الفريق التعليمي',
       'تغذية راجعة فورية مشتركة تُعرض للجميع لتدارك الخطأ جماعياً',
@@ -91,9 +91,9 @@ export const RESEARCH_GROUPS_DATA: ResearchGroup[] = [
     accentColor: '#10b981',
     borderClass: 'border-emerald-500/80',
     bgGradient: 'from-emerald-950/40 via-[#151126] to-[#090712]',
-    membersCount: 27,
+    membersCount: 15,
     averageScore: 88,
-    completedTasks: 280,
+    completedTasks: 135,
     rules: [
       'جلسات حوار تفاعلية لتبادل الرأي قبل تسليم المحاكاة',
       'تغذية راجعة مرجئة مفصلة توزع على الفريق في ختام الموديول',
@@ -304,7 +304,7 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                 <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-3">
                     <span className="text-slate-400">
-                      الطلاب: <strong className="text-white font-mono">{group.membersCount}</strong>
+                      الطلاب: <strong className="text-white font-mono">{group.membersCount} طالب</strong>
                     </span>
                     <span className="text-slate-400">
                       متوسط الإتقان: <strong className="text-emerald-400 font-mono">{group.averageScore}%</strong>
