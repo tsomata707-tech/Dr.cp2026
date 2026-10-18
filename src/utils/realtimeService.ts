@@ -408,9 +408,29 @@ export const subscribeToAllStudentsProgress = (
  */
 export type GlobalSyncType = 'pretest' | 'posttest' | 'levels' | 'instructions' | 'splash' | 'supervisors' | 'siteTitle';
 
+function sanitizeData(data: any): any {
+  if (data === undefined) return null;
+  if (data === null) return null;
+  if (Array.isArray(data)) return data.map(sanitizeData);
+  if (typeof data === 'object') {
+    const sanitized: any = {};
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        const val = data[key];
+        if (val !== undefined) {
+          sanitized[key] = sanitizeData(val);
+        }
+      }
+    }
+    return sanitized;
+  }
+  return data;
+}
+
 export async function syncGlobalQuestionsAndLevels(type: GlobalSyncType, data: any) {
   try {
-    await rtdbSet(ref(rtdb, `globalSettings/${type}`), data);
+    const sanitizedData = sanitizeData(data);
+    await rtdbSet(ref(rtdb, `globalSettings/${type}`), sanitizedData);
   } catch (err) {
     console.error(`Failed to sync ${type} to Firebase RTDB:`, err);
   }
