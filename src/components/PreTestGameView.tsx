@@ -35,6 +35,7 @@ import {
   submitPostTestResult,
 } from '../data/preTestData';
 import { PreTestQuestion, PreTestResult, StudentGameProgress } from '../types';
+import { MatchingQuestionTableView } from './MatchingQuestionTableView';
 
 interface PreTestGameViewProps {
   username: string;
@@ -312,6 +313,15 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
   const currentQ = questions[currentIndex] || questions[0];
   const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
 
+  // Check if current question is a matching/table question (Questions 4 and 8)
+  const isMatchingQuestion =
+    currentQ.questionType === 'matching' ||
+    (Boolean(currentQ.matchingPairs) && (currentQ.matchingPairs?.length ?? 0) > 0) ||
+    currentQ.id === 'pt-4' ||
+    currentQ.id === 'pt-8' ||
+    currentIndex === 3 ||
+    currentIndex === 7;
+
   // Play sound wrapper
   const triggerSound = (type: 'engine' | 'drive' | 'correct' | 'wrong' | 'click' | 'fanfare' | 'box') => {
     if (soundEnabled) {
@@ -534,7 +544,24 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
             </div>
           </div>
         ) : !isFinished ? (
-          <div className="space-y-6">
+          isMatchingQuestion ? (
+            <MatchingQuestionTableView
+              key={currentQ.id}
+              question={currentQ}
+              questionNumber={currentIndex + 1}
+              totalQuestions={questions.length}
+              soundEnabled={soundEnabled}
+              onBackToHome={onBackToInstructions}
+              onFinishMatching={(isCorrectAll) => {
+                setChosenAnswers((prev) => ({
+                  ...prev,
+                  [currentQ.id]: isCorrectAll ? (currentQ.correctIndex ?? 0) : 999,
+                }));
+                handleNextQuestion();
+              }}
+            />
+          ) : (
+            <div className="space-y-6">
             {/* THE QUESTION BOX */}
             <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 border-2 border-slate-700/80 shadow-[0_0_40px_rgba(30,41,59,0.5)] relative overflow-hidden">
               <div className="flex items-center justify-between mb-4">
@@ -766,7 +793,8 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                 </button>
               </div>
             )}
-          </div>
+            </div>
+          )
         ) : (
           /* COMPLETION SCREEN: Strict academic notice, score is private to Admin */
           <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-950 to-black border-2 border-sky-500/50 text-center shadow-[0_0_50px_rgba(56,189,248,0.2)] max-w-2xl mx-auto space-y-6">

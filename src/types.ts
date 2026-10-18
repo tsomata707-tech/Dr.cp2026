@@ -41,6 +41,12 @@ export interface CartoonAvatar {
   description: string;
 }
 
+export interface MatchingPairItem {
+  id: string;
+  text: string;
+  imageUrl: string;
+}
+
 export interface LevelQuestion {
   id: string;
   question: string;
@@ -51,6 +57,8 @@ export interface LevelQuestion {
   points: number;
   imageUrl?: string;
   levelNumber?: number;
+  questionType?: 'mcq' | 'matching';
+  matchingPairs?: MatchingPairItem[];
 }
 
 export interface CompletedLevelResult {
@@ -72,6 +80,8 @@ export interface PreTestQuestion {
   explanation: string;
   points: number;
   imageUrl?: string;
+  questionType?: 'mcq' | 'matching';
+  matchingPairs?: MatchingPairItem[];
 }
 
 export interface PreTestResult {

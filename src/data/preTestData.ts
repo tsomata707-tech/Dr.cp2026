@@ -2,6 +2,7 @@ import { PreTestQuestion, PreTestResult, StudentGameProgress } from '../types';
 import { getAllStudentsProgress, saveAllStudentsProgress } from '../utils/gameStorage';
 import { addActivityLog } from '../utils/adminStorage';
 import { syncGlobalQuestionsAndLevels } from '../utils/realtimeService';
+import { MATCHING_ASSETS_Q4, MATCHING_ASSETS_Q8 } from './matchingQuestionAssets';
 
 const PRETEST_QUESTIONS_KEY = 'cp_pretest_questions_bank_v2';
 const POSTTEST_QUESTIONS_KEY = 'cp_posttest_questions_bank_v2';
@@ -48,15 +49,44 @@ export const DEFAULT_PRETEST_QUESTIONS: PreTestQuestion[] = [
   },
   {
     id: 'pt-4',
-    question: 'رتب الخطوات التالية لتدعيم اللغة العربية بداخل البرنامج:\n(أ. تفعيل الخيار Requires an Indic composer | ب. قائمة Category | ج. نختار General settings | د. من قائمة Edit نختار Preferences)',
+    questionType: 'matching',
+    question: 'سؤال توصيل: رتب خطوات تدعيم اللغة العربية بداخل البرنامج بسحب ووضع الصورة المناسبة أمام كل جملة في الجدول:',
+    matchingPairs: [
+      {
+        id: 'q4-pair-1',
+        text: 'الخطوة 1: من قائمة Edit في شريط القوائم نختار الأمر Preferences',
+        imageUrl: MATCHING_ASSETS_Q4.step1_preferences,
+      },
+      {
+        id: 'q4-pair-2',
+        text: 'الخطوة 2: من قائمة الفئات Category نختار General settings',
+        imageUrl: MATCHING_ASSETS_Q4.step2_category,
+      },
+      {
+        id: 'q4-pair-3',
+        text: 'الخطوة 3: تفعيل خيار دعم النصوص الشرقية Requires an Indic composer',
+        imageUrl: MATCHING_ASSETS_Q4.step3_indicComposer,
+      },
+      {
+        id: 'q4-pair-4',
+        text: 'الخطوة 4: حفظ الإعدادات وإعادة تشغيل Adobe Captivate لتطبيق التغييرات',
+        imageUrl: MATCHING_ASSETS_Q4.step4_restart,
+      },
+    ],
     options: [
-      'د ⬅️ ب ⬅️ ج ⬅️ أ (Edit ⬅️ Preferences ⬅️ Category ⬅️ General settings ⬅️ Indic composer)',
-      'أ ⬅️ ب ⬅️ ج ⬅️ د',
-      'ج ⬅️ د ⬅️ أ ⬅️ ب',
-      'ب ⬅️ ج ⬅️ د ⬅️ أ',
+      'الخطوة 1: من قائمة Edit في شريط القوائم نختار Preferences',
+      'الخطوة 2: من قائمة الفئات Category نختار General settings',
+      'الخطوة 3: تفعيل خيار دعم النصوص الشرقية Requires an Indic composer',
+      'الخطوة 4: حفظ الإعدادات وإعادة تشغيل Adobe Captivate لتطبيق التغييرات',
+    ],
+    optionImages: [
+      MATCHING_ASSETS_Q4.step1_preferences,
+      MATCHING_ASSETS_Q4.step2_category,
+      MATCHING_ASSETS_Q4.step3_indicComposer,
+      MATCHING_ASSETS_Q4.step4_restart,
     ],
     correctIndex: 0,
-    explanation: 'لدعم اللغة العربية نذهب إلى قائمة Edit ثم Preferences ومن Category نختار General settings ثم نفعّل خيار Indic composer.',
+    explanation: 'الترتيب الصحيح لتدعيم اللغة العربية: الدخول إلى Edit > Preferences، ثم اختيار Category > General settings، تفعيل Indic composer، ثم إعادة تشغيل البرنامج.',
     points: 50,
   },
   {
@@ -100,15 +130,44 @@ export const DEFAULT_PRETEST_QUESTIONS: PreTestQuestion[] = [
   },
   {
     id: 'pt-8',
-    question: 'يمكن إنشاء مشروع جديد أو فتح مشروع تم إنشاؤه مسبقاً باستخدام لوحة المفاتيح بالضغط على Ctrl+O ( )',
+    questionType: 'matching',
+    question: 'سؤال توصيل: وصّل ورتب الأوامر والاختصارات الأساسية لإدارة المشاريع بالصورة المقابلة لكل جملة في الجدول:',
+    matchingPairs: [
+      {
+        id: 'q8-pair-1',
+        text: 'إنشاء مشروع تفاعلي جديد فارغ من البداية (Blank Project - Ctrl+N)',
+        imageUrl: MATCHING_ASSETS_Q8.step1_newProject,
+      },
+      {
+        id: 'q8-pair-2',
+        text: 'فتح مشروع تعليمي تم تصميمه وحفظه مسبقاً (Open Project - Ctrl+O)',
+        imageUrl: MATCHING_ASSETS_Q8.step2_openProject,
+      },
+      {
+        id: 'q8-pair-3',
+        text: 'حفظ المشروع والتعديلات المنجزة في ملف CPTX (Save Project - Ctrl+S)',
+        imageUrl: MATCHING_ASSETS_Q8.step3_saveProject,
+      },
+      {
+        id: 'q8-pair-4',
+        text: 'معاينة المشروع التفاعلي بالكامل على المتصفح (Preview in Browser - F11)',
+        imageUrl: MATCHING_ASSETS_Q8.step4_previewBrowser,
+      },
+    ],
     options: [
-      'خطأ (Ctrl+O لفتح مشروع موجود فقط، بينما الجديد Ctrl+N)',
-      'صواب',
-      'صواب لكافة المشروعات',
-      'لا يمكن استخدام لوحة المفاتيح',
+      'إنشاء مشروع تفاعلي جديد فارغ من البداية (Blank Project - Ctrl+N)',
+      'فتح مشروع تعليمي تم تصميمه وحفظه مسبقاً (Open Project - Ctrl+O)',
+      'حفظ المشروع والتعديلات المنجزة في ملف CPTX (Save Project - Ctrl+S)',
+      'معاينة المشروع التفاعلي بالكامل على المتصفح (Preview in Browser - F11)',
+    ],
+    optionImages: [
+      MATCHING_ASSETS_Q8.step1_newProject,
+      MATCHING_ASSETS_Q8.step2_openProject,
+      MATCHING_ASSETS_Q8.step3_saveProject,
+      MATCHING_ASSETS_Q8.step4_previewBrowser,
     ],
     correctIndex: 0,
-    explanation: 'العبارة خطأ؛ لأن الاختصار Ctrl+O يفتح مشروعاً مسبقاً فقط (Open)، بينما إنشاء مشروع جديد يتم عبر Ctrl+N.',
+    explanation: 'توصيل اختصارات المشروع: New Project = Ctrl+N، Open = Ctrl+O، Save = Ctrl+S، Preview in Browser = F11.',
     points: 50,
   },
   {
@@ -659,6 +718,23 @@ export const DEFAULT_PRETEST_QUESTIONS: PreTestQuestion[] = [
   },
 ];
 
+export function ensureMatchingQuestionsIntegrity(questions: PreTestQuestion[]): PreTestQuestion[] {
+  if (!Array.isArray(questions)) return DEFAULT_PRETEST_QUESTIONS;
+  let modified = false;
+  const updated = questions.map((q, idx) => {
+    if ((q.id === 'pt-4' || idx === 3) && q.questionType !== 'matching') {
+      modified = true;
+      return { ...DEFAULT_PRETEST_QUESTIONS[3], id: q.id };
+    }
+    if ((q.id === 'pt-8' || idx === 7) && q.questionType !== 'matching') {
+      modified = true;
+      return { ...DEFAULT_PRETEST_QUESTIONS[7], id: q.id };
+    }
+    return q;
+  });
+  return updated;
+}
+
 export function getPreTestQuestions(): PreTestQuestion[] {
   try {
     const raw = localStorage.getItem(PRETEST_QUESTIONS_KEY);
@@ -671,7 +747,8 @@ export function getPreTestQuestions(): PreTestQuestion[] {
       savePreTestQuestions(DEFAULT_PRETEST_QUESTIONS);
       return DEFAULT_PRETEST_QUESTIONS;
     }
-    return parsed;
+    const validated = ensureMatchingQuestionsIntegrity(parsed);
+    return validated;
   } catch {
     return DEFAULT_PRETEST_QUESTIONS;
   }
@@ -772,7 +849,8 @@ export function getPostTestQuestions(): PreTestQuestion[] {
       savePostTestQuestions(DEFAULT_PRETEST_QUESTIONS, false);
       return DEFAULT_PRETEST_QUESTIONS;
     }
-    return parsed;
+    const validated = ensureMatchingQuestionsIntegrity(parsed);
+    return validated;
   } catch {
     return DEFAULT_PRETEST_QUESTIONS;
   }

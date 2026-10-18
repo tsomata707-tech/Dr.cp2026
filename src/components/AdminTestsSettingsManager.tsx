@@ -115,6 +115,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
 
   // Form Fields for Modal
   const [formQuestionText, setFormQuestionText] = useState('');
+  const [formQuestionKind, setFormQuestionKind] = useState<'mcq' | 'matching'>('mcq');
   const [formOptions, setFormOptions] = useState<string[]>(['', '', '', '']);
   const [formOptionImages, setFormOptionImages] = useState<(string | null | undefined)[]>(['', '', '', '']);
   const [formCorrectIndex, setFormCorrectIndex] = useState<number>(0);
@@ -449,6 +450,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
     setEditingQuestionId(null);
     setAddPosition(position);
     setFormQuestionText('');
+    setFormQuestionKind('mcq');
     setFormOptions(['', '', '', '']);
     setFormOptionImages(['', '', '', '']);
     setFormCorrectIndex(0);
@@ -464,6 +466,12 @@ export const AdminTestsSettingsManager: React.FC = () => {
     setEditingQuestionType(tab);
     setEditingQuestionId(q.id);
     setFormQuestionText(q.question || '');
+    const isMatching =
+      q.questionType === 'matching' ||
+      (Boolean(q.matchingPairs) && (q.matchingPairs?.length ?? 0) > 0) ||
+      q.id === 'pt-4' ||
+      q.id === 'pt-8';
+    setFormQuestionKind(isMatching ? 'matching' : 'mcq');
     const opts = q.options && q.options.length > 0 ? [...q.options] : ['', ''];
     setFormOptions(opts);
     setFormOptionImages(
@@ -484,6 +492,10 @@ export const AdminTestsSettingsManager: React.FC = () => {
     setEditingQuestionId(q.id);
     setEditingTargetLevel(levelNum);
     setFormQuestionText(q.question || '');
+    const isMatching =
+      q.questionType === 'matching' ||
+      (Boolean(q.matchingPairs) && (q.matchingPairs?.length ?? 0) > 0);
+    setFormQuestionKind(isMatching ? 'matching' : 'mcq');
     const opts = q.options && q.options.length > 0 ? [...q.options] : ['', ''];
     setFormOptions(opts);
     setFormOptionImages(
@@ -553,6 +565,15 @@ export const AdminTestsSettingsManager: React.FC = () => {
     const cleanOptionImages = cleanPairs.map((p) => p.image);
     const safeCorrectIndex = formCorrectIndex >= cleanOptions.length ? 0 : formCorrectIndex;
 
+    const isMatching = formQuestionKind === 'matching';
+    const cleanMatchingPairs = isMatching
+      ? cleanPairs.map((p, idx) => ({
+          id: `pair-${Date.now()}-${idx}`,
+          text: p.text,
+          imageUrl: p.image || '',
+        }))
+      : undefined;
+
     setIsSavingModal(true);
     try {
       if (editingQuestionType === 'pretest') {
@@ -570,6 +591,8 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   explanation: formExplanation.trim(),
                   points: Number(formPoints) || 50,
                   imageUrl: formImageUrl.trim() || undefined,
+                  questionType: formQuestionKind,
+                  matchingPairs: cleanMatchingPairs,
                 }
               : q
           );
@@ -584,12 +607,14 @@ export const AdminTestsSettingsManager: React.FC = () => {
             explanation: formExplanation.trim(),
             points: Number(formPoints) || 50,
             imageUrl: formImageUrl.trim() || undefined,
+            questionType: formQuestionKind,
+            matchingPairs: cleanMatchingPairs,
           };
           updated = addPosition === 'top' ? [newQ, ...preTestQuestions] : [...preTestQuestions, newQ];
         }
         setPreTestQuestions(updated);
         savePreTestQuestions(updated, true);
-        showNotification('✓ تم حفظ وتحديث السؤال والإجابات والصور في الاختبار القبلي فوراً');
+        showNotification('✓ تم حفظ وتحديث السؤال والإجابات وصور التوصيل في الاختبار القبلي فوراً');
       } else if (editingQuestionType === 'posttest') {
         let updated: PreTestQuestion[];
         if (editingQuestionId) {
@@ -605,6 +630,8 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   explanation: formExplanation.trim(),
                   points: Number(formPoints) || 50,
                   imageUrl: formImageUrl.trim() || undefined,
+                  questionType: formQuestionKind,
+                  matchingPairs: cleanMatchingPairs,
                 }
               : q
           );
@@ -619,12 +646,14 @@ export const AdminTestsSettingsManager: React.FC = () => {
             explanation: formExplanation.trim(),
             points: Number(formPoints) || 50,
             imageUrl: formImageUrl.trim() || undefined,
+            questionType: formQuestionKind,
+            matchingPairs: cleanMatchingPairs,
           };
           updated = addPosition === 'top' ? [newQ, ...postTestQuestions] : [...postTestQuestions, newQ];
         }
         setPostTestQuestions(updated);
         savePostTestQuestions(updated, true);
-        showNotification('✓ تم حفظ وتحديث السؤال والإجابات والصور في الاختبار البعدي فوراً');
+        showNotification('✓ تم حفظ وتحديث السؤال والإجابات وصور التوصيل في الاختبار البعدي فوراً');
       } else {
         // 10 Stages (levels)
         const updatedLevels = gameLevels.map((lvl) => {
@@ -1373,6 +1402,43 @@ export const AdminTestsSettingsManager: React.FC = () => {
               </div>
             )}
 
+            {/* Question Type Selector: MCQ vs Matching Table */}
+            <div className="p-3.5 rounded-2xl bg-[#0d1226] border border-slate-700 space-y-2">
+              <label className="block text-xs font-bold text-slate-200">
+                نوع السؤال ونمطه التفاعلي:
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setFormQuestionKind('mcq')}
+                  className={`px-4 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    formQuestionKind === 'mcq'
+                      ? 'bg-amber-500 text-slate-950 border-amber-300 shadow-md font-black'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                  }`}
+                >
+                  <span>🔘 اختيار من متعدد عادي (MCQ)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormQuestionKind('matching')}
+                  className={`px-4 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    formQuestionKind === 'matching'
+                      ? 'bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white border-fuchsia-300 shadow-md font-black'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                  }`}
+                >
+                  <span>🔗 سؤال توصيل وترتيب صور (Matching)</span>
+                </button>
+              </div>
+
+              {formQuestionKind === 'matching' && (
+                <div className="p-2.5 rounded-xl bg-fuchsia-950/40 border border-fuchsia-500/40 text-[11px] text-fuchsia-200 leading-relaxed font-['Cairo']">
+                  💡 <strong>نمط التوصيل:</strong> اكتب في كل صف العبارة/الخطوة (الجملة في الجدول) وضع الصورة المقابلة لها. سيقوم الطالب بسحب الصور غير المرتبة لوضعها في المكان الصحيح بالجدول.
+                </div>
+              )}
+            </div>
+
             {/* Question Text */}
             <div>
               <label className="block text-xs font-bold text-slate-200 mb-1.5">
@@ -1447,10 +1513,14 @@ export const AdminTestsSettingsManager: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <label className="text-xs font-bold text-slate-200 block">
-                    خيارات الإجابة وصورها (حدد الإجابة الصحيحة بالدائرة، ويمكنك إضافة صور لكل خيار أو حذفه):
+                    {formQuestionKind === 'matching'
+                      ? 'جمل وخطوات الجدول وصور التوصيل المقابلة لها (سؤال توصيل):'
+                      : 'خيارات الإجابة وصورها (حدد الإجابة الصحيحة بالدائرة، ويمكنك إضافة صور لكل خيار أو حذفه):'}
                   </label>
                   <span className="text-[11px] text-amber-300/80 font-medium">
-                    يمكن وضع صورة لكل خيار إجابة بالضغط على زر 📷 صورة الخيار
+                    {formQuestionKind === 'matching'
+                      ? 'اكتب الجملة في الجدول ثم اختر صورة التوصيل المقابلة لها (يقوم الطالب بسحب الصور لوضعها بالجدول):'
+                      : 'يمكن وضع صورة لكل خيار إجابة بالضغط على زر 📷 صورة الخيار'}
                   </span>
                 </div>
                 <button
@@ -1459,7 +1529,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   className="px-3.5 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 hover:text-white text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all"
                 >
                   <Plus className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>➕ إضافة إجابة جديدة</span>
+                  <span>{formQuestionKind === 'matching' ? '➕ إضافة جملة وصورة توصيل' : '➕ إضافة إجابة جديدة'}</span>
                 </button>
               </div>
 
@@ -1470,21 +1540,29 @@ export const AdminTestsSettingsManager: React.FC = () => {
                     <div
                       key={idx}
                       className={`p-3 rounded-2xl border transition-all space-y-2.5 ${
-                        formCorrectIndex === idx
+                        formQuestionKind === 'matching'
+                          ? 'bg-fuchsia-950/20 border-fuchsia-500/50 shadow-[0_0_15px_rgba(192,132,252,0.15)]'
+                          : formCorrectIndex === idx
                           ? 'bg-emerald-950/40 border-emerald-500/80 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
                           : 'bg-slate-950 border-slate-800'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <input
-                          type="radio"
-                          name="correct-option-group"
-                          id={`opt-radio-${idx}`}
-                          checked={formCorrectIndex === idx}
-                          onChange={() => setFormCorrectIndex(idx)}
-                          className="w-4 h-4 text-emerald-500 accent-emerald-500 cursor-pointer shrink-0"
-                          title="تحديد هذا الخيار كإجابة صحيحة"
-                        />
+                        {formQuestionKind === 'matching' ? (
+                          <span className="px-2.5 py-1 rounded-lg bg-fuchsia-950 border border-fuchsia-500/60 text-fuchsia-300 font-bold text-[10px] shrink-0">
+                            صف #{idx + 1}
+                          </span>
+                        ) : (
+                          <input
+                            type="radio"
+                            name="correct-option-group"
+                            id={`opt-radio-${idx}`}
+                            checked={formCorrectIndex === idx}
+                            onChange={() => setFormCorrectIndex(idx)}
+                            className="w-4 h-4 text-emerald-500 accent-emerald-500 cursor-pointer shrink-0"
+                            title="تحديد هذا الخيار كإجابة صحيحة"
+                          />
+                        )}
                         <span className="w-6 h-6 rounded-lg bg-slate-900 text-slate-300 text-xs font-mono font-bold flex items-center justify-center shrink-0">
                           {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][idx] || idx + 1}
                         </span>
@@ -1492,7 +1570,11 @@ export const AdminTestsSettingsManager: React.FC = () => {
                           type="text"
                           value={opt}
                           onChange={(e) => handleOptionChange(idx, e.target.value)}
-                          placeholder={`نص الخيار رقم ${idx + 1}...`}
+                          placeholder={
+                            formQuestionKind === 'matching'
+                              ? `الجملة / العبارة رقم ${idx + 1} بالجدول...`
+                              : `نص الخيار رقم ${idx + 1}...`
+                          }
                           className="flex-1 bg-slate-900/80 border border-slate-700/80 focus:border-amber-400 text-white text-xs sm:text-sm outline-none px-3 py-1.5 rounded-xl"
                         />
 
@@ -1501,10 +1583,10 @@ export const AdminTestsSettingsManager: React.FC = () => {
                           type="button"
                           onClick={() => handleModalOptionImagePick(idx)}
                           className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0 transition-all shadow-sm"
-                          title="رفع صورة لهذا الخيار من جهازك"
+                          title={formQuestionKind === 'matching' ? 'رفع صورة التوصيل المقابلة لهذه الجملة' : 'رفع صورة لهذا الخيار من جهازك'}
                         >
                           <Upload className="w-3.5 h-3.5 text-amber-400" />
-                          <span>صورة الخيار</span>
+                          <span>{formQuestionKind === 'matching' ? 'صورة التوصيل' : 'صورة الخيار'}</span>
                         </button>
 
                         {/* Delete this option */}
@@ -1866,6 +1948,11 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             <span className="px-2 py-0.5 rounded-lg bg-blue-950/70 border border-blue-500/40 text-blue-300 text-[10px] font-bold flex items-center gap-1">
               <ImageIcon className="w-3 h-3" />
               <span>صور بالإجابات</span>
+            </span>
+          )}
+          {(question.questionType === 'matching' || (Boolean(question.matchingPairs) && (question.matchingPairs?.length ?? 0) > 0) || question.id === 'pt-4' || question.id === 'pt-8') && (
+            <span className="px-2.5 py-0.5 rounded-lg bg-fuchsia-950/90 border border-fuchsia-500/60 text-fuchsia-300 font-bold text-[10px] flex items-center gap-1 shadow-sm">
+              <span>🔗 سؤال توصيل وترتيب صور</span>
             </span>
           )}
         </div>
