@@ -909,6 +909,59 @@ export const AdminLevelInstructionsManager: React.FC = () => {
               />
             </div>
 
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                صورة أو فيديو توضيحي للسؤال (رابط أو رفع ملف):
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={editingQuestion.imageUrl || ''}
+                  onChange={(e) =>
+                    setEditingQuestion({ ...editingQuestion, imageUrl: e.target.value })
+                  }
+                  placeholder="https://... أو رفع ملف"
+                  className="flex-1 px-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-400 font-mono"
+                />
+                <label className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold cursor-pointer transition flex items-center gap-1 shrink-0">
+                  <span>📁 رفع ملف</span>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 4.5 * 1024 * 1024) {
+                        showError('حجم الملف كبير جداً (أكبر من 4.5 ميجابايت).');
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        setEditingQuestion({ ...editingQuestion, imageUrl: reader.result as string });
+                        showToast('تم إرفاق الملف بنجاح بالسؤال');
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+                {editingQuestion.imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingQuestion({ ...editingQuestion, imageUrl: undefined })}
+                    className="px-3 py-2 rounded-xl bg-red-950/60 hover:bg-red-900 text-red-300 text-xs font-bold"
+                  >
+                    إزالة
+                  </button>
+                )}
+              </div>
+              {editingQuestion.imageUrl && (
+                <div className="mt-2 h-24 rounded-xl overflow-hidden border border-slate-700 bg-black/50 p-1 flex items-center justify-center">
+                  <img src={editingQuestion.imageUrl} alt="معاينة" className="max-h-full max-w-full object-contain rounded-lg" />
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
               <button
                 type="button"
