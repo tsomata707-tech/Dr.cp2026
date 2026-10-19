@@ -457,17 +457,17 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           <div className="flex items-center gap-2 pb-3 border-b border-slate-800 text-cyan-400 font-bold">
             <HelpCircle className="w-5 h-5" />
             <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">
-              تعليمات المستوى (تظهر في القائمة العائمة المتحركة)
+              أهداف المستوى (تظهر في القائمة العائمة المتحركة)
             </h3>
           </div>
 
           <div className="p-3 rounded-2xl bg-cyan-950/30 border border-cyan-500/30 text-xs text-cyan-200 leading-relaxed">
-            💡 هذه التعليمات تظهر للطالب في <strong>قائمة عائمة يمكن تحريكها بحرية في أي مكان على الشاشة</strong>، وتوضح له متطلبات إنهاء المستوى ورفع نشاطه الخاص.
+            💡 هذه الأهداف تظهر للطالب في <strong>قائمة عائمة يمكن تحريكها بحرية في أي مكان على الشاشة</strong>، وتوضح له متطلبات إنهاء المستوى ورفع نشاطه الخاص.
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-1.5">
-              نص تعليمات المستوى {selectedLevelNum}:
+              نص أهداف المستوى {selectedLevelNum}:
             </label>
             <textarea
               rows={6}

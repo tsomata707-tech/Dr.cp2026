@@ -203,7 +203,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             className="w-full sm:w-auto min-w-[240px] px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-base sm:text-lg shadow-[0_0_30px_rgba(37,99,235,0.45)] border-2 border-blue-400/50 hover:border-blue-300 transition-all cursor-pointer flex items-center justify-center gap-3 transform hover:-translate-y-0.5"
           >
             <BookOpen className="w-5 h-5 text-[#ffd700]" />
-            <span>قواعد اللعبة والتعليمات</span>
+            <span>قواعد اللعبة والأهداف</span>
             <ArrowLeft className="w-5 h-5" />
           </button>
 

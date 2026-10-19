@@ -1405,7 +1405,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               <label className="text-xs font-bold text-slate-300 block">
                 {editingLevelNum === 9
                   ? '🎯 نص أهداف المستوى 9 (تظهر للطالب في القائمة العائمة وأعلى الشاشة وتُعدل بحرية من الأدمن):'
-                  : 'نص أهداف وتعليمات المستوى:'}
+                  : 'نص أهداف المستوى:'}
               </label>
               <textarea
                 value={levelObjectivesText}
@@ -1419,7 +1419,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
               <span className="text-[11px] text-slate-400">
                 {editingLevelNum === 9
-                  ? '✨ تم تغيير التعليمات إلى أهداف للمستوى 9 مع تمكين الأدمن من وضع الأسئلة والإجابات بحرية تامة'
+                  ? '✨ تم تحويل التعليمات إلى أهداف للمستوى 9 مع تمكين الأدمن من وضع الأسئلة والإجابات بحرية تامة'
                   : '✨ تنعكس تعديلات الأهداف لحظياً للطلاب وللأدمن'}
               </span>
               <button

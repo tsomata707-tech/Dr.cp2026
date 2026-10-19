@@ -114,10 +114,10 @@ export const DraggableLevelInstructions: React.FC<DraggableLevelInstructionsProp
         type="button"
         onClick={() => setIsVisible(true)}
         className="fixed bottom-6 left-6 z-50 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs sm:text-sm shadow-[0_0_25px_rgba(251,191,36,0.5)] border-2 border-amber-300 flex items-center gap-2 cursor-pointer transition-transform hover:scale-105"
-        title={isObjectives ? 'إظهار قائمة أهداف المستوى العائمة' : 'إظهار قائمة تعليمات المستوى العائمة'}
+        title={isObjectives ? 'إظهار قائمة أهداف المستوى العائمة' : 'إظهار قائمة أهداف المستوى العائمة'}
       >
         <BookOpen className="w-4 h-4" />
-        <span>{isObjectives ? `🎯 إظهار أهداف المستوى ${levelNumber}` : `📋 إظهار تعليمات المستوى ${levelNumber}`}</span>
+        <span>{isObjectives ? `🎯 إظهار أهداف المستوى ${levelNumber}` : `📋 إظهار أهداف المستوى ${levelNumber}`}</span>
       </button>
     );
   }
@@ -152,7 +152,7 @@ export const DraggableLevelInstructions: React.FC<DraggableLevelInstructionsProp
                 {isObjectives ? 'أهداف المستوى 🎯' : 'قائمة عائمة متحركة ✋'}
               </span>
               <h4 className="text-xs sm:text-sm font-black text-white font-['Tajawal'] truncate max-w-[170px]">
-                {isObjectives ? `أهداف المستوى ${levelNumber}` : `تعليمات المستوى ${levelNumber}`}
+                {isObjectives ? `أهداف المستوى ${levelNumber}` : `أهداف المستوى ${levelNumber}`}
               </h4>
             </div>
           </div>

@@ -91,7 +91,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
               <span>اليوزر</span>
             </button>
 
-            {/* TAB: تعديل الليفل والتعليمات (المطلوب بالنص الحرفي) */}
+            {/* TAB: تعديل الليفل والأهداف */}
             <button
               type="button"
               onClick={() => setActiveTab('level_instructions')}
@@ -102,7 +102,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
               }`}
             >
               <Layers className="w-4 h-4 text-amber-400" />
-              <span>تعديل الليفل والتعليمات</span>
+              <span>تعديل الليفل والأهداف</span>
             </button>
 
             {/* TAB 2: إعدادات الاختبارات */}
@@ -161,7 +161,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
               <span>شاشة البداية والصورة</span>
             </button>
 
-            {/* TAB 6: التعليمات والمعايير */}
+            {/* TAB 6: الأهداف والمعايير */}
             <button
               type="button"
               onClick={() => setActiveTab('instructions_standards')}
@@ -172,7 +172,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
               }`}
             >
               <BookOpen className="w-4 h-4" />
-              <span>التعليمات والمعايير</span>
+              <span>الأهداف والمعايير</span>
             </button>
 
             {/* TAB 7: إدارة الفيديوهات */}
