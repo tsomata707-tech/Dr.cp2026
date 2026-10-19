@@ -26,6 +26,8 @@ import {
   Loader2,
   Clock,
   Copy,
+  Target,
+  Save,
 } from 'lucide-react';
 import { PreTestQuestion, LevelQuestion } from '../types';
 import {
@@ -101,6 +103,14 @@ export const AdminTestsSettingsManager: React.FC = () => {
   // 10 Stages state
   const [gameLevels, setGameLevels] = useState<GameLevelDef[]>(() => getCustomGameLevels());
   const [selectedLevelFilter, setSelectedLevelFilter] = useState<number | 'all'>('all');
+
+  // Level Objectives state (Editable Objectives for Level 9 and all levels)
+  const [editingLevelNum, setEditingLevelNum] = useState<number>(9);
+  const [levelObjectivesText, setLevelObjectivesText] = useState<string>(() => {
+    const l9 = getCustomGameLevels().find((l) => l.levelNumber === 9);
+    return l9?.objectives || l9?.instructions || '';
+  });
+  const [isSavingObjectives, setIsSavingObjectives] = useState<boolean>(false);
 
   // Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -180,6 +190,28 @@ export const AdminTestsSettingsManager: React.FC = () => {
     const synced = copyPreTestQuestionsToPostTest();
     setPostTestQuestions(synced);
     showNotification(`✓ تم نسخ كافة أسئلة الاختبار القبلي (${synced.length} سؤال) إلى الاختبار البعدي فوراً ومزامنتها للجميع بنجاح`);
+  };
+
+  // Save / Update Level Objectives (and instructions) with real-time sync
+  const handleSaveLevelObjectives = async (levelNum: number, newObjectives: string) => {
+    setIsSavingObjectives(true);
+    try {
+      const updatedLevels = gameLevels.map((lvl) => {
+        if (lvl.levelNumber === levelNum) {
+          return {
+            ...lvl,
+            objectives: newObjectives.trim(),
+            instructions: newObjectives.trim(),
+          };
+        }
+        return lvl;
+      });
+      setGameLevels(updatedLevels);
+      saveCustomGameLevels(updatedLevels, true);
+      showNotification(`✓ تم حفظ وتحديث أهداف المستوى ${levelNum} بنجاح ومزامنتها لجميع الطلاب فوراً`);
+    } finally {
+      setTimeout(() => setIsSavingObjectives(false), 250);
+    }
   };
 
   const showNotification = (text: string, type: 'success' | 'error' = 'success') => {
@@ -1151,7 +1183,15 @@ export const AdminTestsSettingsManager: React.FC = () => {
             <Filter className="w-4 h-4 text-cyan-400" />
             <select
               value={selectedLevelFilter}
-              onChange={(e) => setSelectedLevelFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+              onChange={(e) => {
+                const val = e.target.value === 'all' ? 'all' : Number(e.target.value);
+                setSelectedLevelFilter(val);
+                if (typeof val === 'number') {
+                  setEditingLevelNum(val);
+                  const targetLvl = gameLevels.find((l) => l.levelNumber === val);
+                  setLevelObjectivesText(targetLvl?.objectives || targetLvl?.instructions || '');
+                }
+              }}
               className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs font-bold outline-none cursor-pointer"
             >
               <option value="all">جميع المراحل (10 مراحل)</option>
@@ -1316,12 +1356,90 @@ export const AdminTestsSettingsManager: React.FC = () => {
 
       {/* ======================= SECTION 3: THE 10 STAGES QUESTIONS ======================= */}
       {activeTab === 'levels' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
+          {/* ================= LEVEL OBJECTIVES / INSTRUCTIONS EDITOR CARD ================= */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#0d1433] via-[#121c45] to-[#0d1433] border-2 border-cyan-500/60 shadow-[0_0_30px_rgba(6,182,212,0.2)] space-y-4 text-right">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-cyan-500/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 text-cyan-300 flex items-center justify-center shrink-0">
+                  <Target className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-black border border-cyan-400/40">
+                      {editingLevelNum === 9 ? 'المستوى 9 - أهداف قابلة للتعديل' : `المستوى ${editingLevelNum}`}
+                    </span>
+                    <span className="text-[11px] text-amber-300 font-bold">
+                      {editingLevelNum === 9 ? '🎯 أهداف المستوى (تم تحويل التعليمات إلى أهداف)' : 'أهداف وتعليمات المستوى'}
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-0.5">
+                    {editingLevelNum === 9 ? 'أهداف المستوى 9 (قابلة للتعديل من الأدمن ومزامنتها فوراً)' : `أهداف المستوى ${editingLevelNum} (قابلة للتعديل)`}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Level Selector for Objectives */}
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                <span className="text-xs text-slate-300 font-bold">تحديد المستوى لتعديل أهدافه:</span>
+                <select
+                  value={editingLevelNum}
+                  onChange={(e) => {
+                    const num = Number(e.target.value);
+                    setEditingLevelNum(num);
+                    const targetLvl = gameLevels.find((l) => l.levelNumber === num);
+                    setLevelObjectivesText(targetLvl?.objectives || targetLvl?.instructions || '');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-slate-950 border border-cyan-500/50 text-cyan-200 text-xs font-bold outline-none cursor-pointer"
+                >
+                  {gameLevels.map((lvl) => (
+                    <option key={lvl.levelNumber} value={lvl.levelNumber}>
+                      المستوى {lvl.levelNumber}: {lvl.shortTitle}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 block">
+                {editingLevelNum === 9
+                  ? '🎯 نص أهداف المستوى 9 (تظهر للطالب في القائمة العائمة وأعلى الشاشة وتُعدل بحرية من الأدمن):'
+                  : 'نص أهداف وتعليمات المستوى:'}
+              </label>
+              <textarea
+                value={levelObjectivesText}
+                onChange={(e) => setLevelObjectivesText(e.target.value)}
+                rows={4}
+                placeholder="اكتب أهداف المستوى هنا (كل هدف في سطر)..."
+                className="w-full p-3.5 rounded-2xl bg-slate-950/90 border border-slate-700 focus:border-cyan-400 text-white text-xs leading-relaxed outline-none transition font-['IBM_Plex_Sans_Arabic']"
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+              <span className="text-[11px] text-slate-400">
+                {editingLevelNum === 9
+                  ? '✨ تم تغيير التعليمات إلى أهداف للمستوى 9 مع تمكين الأدمن من وضع الأسئلة والإجابات بحرية تامة'
+                  : '✨ تنعكس تعديلات الأهداف لحظياً للطلاب وللأدمن'}
+              </span>
+              <button
+                type="button"
+                disabled={isSavingObjectives}
+                onClick={() => handleSaveLevelObjectives(editingLevelNum, levelObjectivesText)}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg transition cursor-pointer"
+              >
+                {isSavingObjectives ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                <span>💾 حفظ وتحديث أهداف المستوى ومزامنتها فوراً</span>
+              </button>
+            </div>
+          </div>
+
           {/* Top Add Question Button in 10 Stages */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-blue-950/30 border border-blue-500/40">
             <span className="text-xs font-bold text-blue-200">
-              عرض {filteredLevelsQuestions.length} سؤال في المراحل التعليمية العشر
-              {typeof selectedLevelFilter === 'number' && ` (المستوى ${selectedLevelFilter})`}
+              {selectedLevelFilter === 9
+                ? `عرض ${filteredLevelsQuestions.length} نشاط في المستوى 9 (أنشطة تطبيقية يقوم بها الطالب)`
+                : `عرض ${filteredLevelsQuestions.length} سؤال في المراحل التعليمية العشر ${typeof selectedLevelFilter === 'number' ? `(المستوى ${selectedLevelFilter})` : ''}`}
             </span>
             <button
               type="button"
@@ -1329,7 +1447,11 @@ export const AdminTestsSettingsManager: React.FC = () => {
               className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
             >
               <Plus className="w-4 h-4" />
-              <span>➕ إضافة سؤال جديد في أعلى المراحل العشر (البداية)</span>
+              <span>
+                {selectedLevelFilter === 9
+                  ? '➕ إضافة نشاط جديد في أعلى المستوى 9 (البداية)'
+                  : '➕ إضافة سؤال جديد في أعلى المراحل العشر (البداية)'}
+              </span>
             </button>
           </div>
 
@@ -1338,7 +1460,11 @@ export const AdminTestsSettingsManager: React.FC = () => {
               <QuestionAdminCard
                 key={question.id}
                 index={idx + 1}
-                levelBadge={`المستوى ${level.levelNumber}: ${level.shortTitle}`}
+                levelBadge={
+                  level.levelNumber === 9
+                    ? `المستوى 9: أنشطة ومهام يقوم بها الطالب`
+                    : `المستوى ${level.levelNumber}: ${level.shortTitle}`
+                }
                 question={question}
                 isInlineEditing={inlineEditingCardId === question.id}
                 isSavingThisCard={savingCardId === question.id}
@@ -1370,7 +1496,11 @@ export const AdminTestsSettingsManager: React.FC = () => {
               className="w-full py-3.5 px-6 rounded-2xl border-2 border-dashed border-blue-500/50 hover:border-blue-400 bg-blue-950/20 hover:bg-blue-950/40 text-blue-300 hover:text-white font-black text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg"
             >
               <Plus className="w-5 h-5" />
-              <span>➕ إضافة سؤال جديد في نهاية المراحل العشر</span>
+              <span>
+                {selectedLevelFilter === 9
+                  ? '➕ إضافة نشاط جديد في نهاية المستوى 9 (نشاط يقوم به الطالب)'
+                  : '➕ إضافة سؤال جديد في نهاية المراحل العشر'}
+              </span>
             </button>
           </div>
         </div>
@@ -1396,13 +1526,17 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-white font-['Tajawal']">
-                    {editingQuestionId ? 'تعديل السؤال وخيارات الإجابة والصور' : `إضافة سؤال جديد (${addPosition === 'top' ? 'في البداية' : 'في النهاية'})`}
+                    {editingQuestionType === 'levels' && editingTargetLevel === 9
+                      ? (editingQuestionId ? 'تعديل نشاط المستوى 9 (نشاط يقوم به الطالب)' : `إضافة نشاط جديد في المستوى 9 (${addPosition === 'top' ? 'في البداية' : 'في النهاية'})`)
+                      : (editingQuestionId ? 'تعديل السؤال وخيارات الإجابة والصور' : `إضافة سؤال جديد (${addPosition === 'top' ? 'في البداية' : 'في النهاية'})`)}
                   </h3>
                   <span className="text-xs text-amber-300 font-bold">
                     {editingQuestionType === 'pretest'
                       ? 'الاختبار القبلي (Pre-Test)'
                       : editingQuestionType === 'posttest'
                       ? 'الاختبار البعدي (Post-Test)'
+                      : editingTargetLevel === 9
+                      ? 'المستوى 9: أنشطة ومهام تطبيقية يقوم بها الطالب'
                       : `المراحل العشر (المستوى ${editingTargetLevel})`}
                   </span>
                 </div>
@@ -1507,7 +1641,9 @@ export const AdminTestsSettingsManager: React.FC = () => {
             {/* Question Text */}
             <div>
               <label className="block text-xs font-bold text-slate-200 mb-1.5">
-                نص السؤال: <span className="text-amber-400">*</span>
+                {editingQuestionType === 'levels' && editingTargetLevel === 9
+                  ? 'نص النشاط / المهمة (نشاط يقوم به الطالب):'
+                  : 'نص السؤال:'} <span className="text-amber-400">*</span>
               </label>
               <textarea
                 rows={3}

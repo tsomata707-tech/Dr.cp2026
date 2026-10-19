@@ -56,6 +56,7 @@ export interface GameLevelDef {
   shortTitle: string;
   storyMission: string;
   instructions?: string;
+  objectives?: string;
   badgeName: string;
   badgeEmoji: string;
   videos?: LevelMediaItem[];
@@ -491,10 +492,11 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
   {
     levelNumber: 9,
     moduleId: 'mod-9',
-    title: 'المستوى 9: استيراد PowerPoint ونشر وتصدير المشروعات (HTML5 / SCORM)',
-    shortTitle: 'استيراد البوربوينت ونشر المشروعات',
+    title: 'المستوى 9: استيراد PowerPoint ونشر وتصدير المشروعات (HTML5 / SCORM) - أنشطة تطبيقية',
+    shortTitle: 'أنشطة وتطبيقات المستوى 9',
     storyMission: 'حول العروض التقديمية الساكنة إلى تجارب تعلم نشطة تفاعلية، وانشر المشروع بصيغة HTML5 المتوافقة مع نظم LMS ومعايير SCORM.',
-    instructions: '1. استورد ملف العرض التقديمي PPTX مع تفعيل خيار الربط الديناميكي Link لمزامنة التعديلات.\n2. أضف عناصر تفاعلية وكائنات ذكية فوق الشرائح المستوردة.\n3. اضبط إعدادات النشر والتصدير بصيغة HTML5 ومعايير SCORM 1.2 / 2004 أو xAPI.\n4. تصفح الفيديوهات والصور التوضيحية الخاصة بالمستوى.\n5. ارفع نشاطك الخاص بأسفل الصفحة ثم اضغط على زر Finish Level 9 للانتقال للاختبار البعدي.',
+    instructions: '1. استيراد ملفات العروض التقديمية PowerPoint وربطها ديناميكياً داخل Adobe Captivate.\n2. تحويل الشرائح الساكنة إلى عناصر تعليمية نشطة وتفاعلية.\n3. ضبط إعدادات التصدير ومعايير حزم التعلم الإلكتروني SCORM و xAPI لتتبع الدرجات في منصات LMS.\n4. نشر وتصدير المشروع النهائي بصيغة HTML5 المتوافقة مع كافة المتصفحات والأجهزة الذكية.\n5. تنفيذ ورفع النشاط التطبيقي العملي الخاص بالمستوى بنجاح.',
+    objectives: '1. استيراد ملفات العروض التقديمية PowerPoint وربطها ديناميكياً داخل Adobe Captivate.\n2. تحويل الشرائح الساكنة إلى عناصر تعليمية نشطة وتفاعلية.\n3. ضبط إعدادات التصدير ومعايير حزم التعلم الإلكتروني SCORM و xAPI لتتبع الدرجات في منصات LMS.\n4. نشر وتصدير المشروع النهائي بصيغة HTML5 المتوافقة مع كافة المتصفحات والأجهزة الذكية.\n5. تنفيذ ورفع النشاط التطبيقي العملي الخاص بالمستوى بنجاح.',
     badgeName: 'وسام تاج التميز الرقمي المطلق',
     badgeEmoji: '👑',
     videos: [],
@@ -502,12 +504,12 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     questions: [
       {
         id: 'q9-1',
-        question: 'عند استيراد ملف PowerPoint (PPTX) إلى Captivate 2019، ما الخيار الأفضل للحفاظ على الارتباط والتعديل المستمر؟',
+        question: 'نشاط 1 (يقوم به الطالب): عند قيامك باستيراد ملف عرض تقديمي (PowerPoint) إلى Adobe Captivate، ما هو الإجراء العملي الأفضل لضمان مزامنة أي تعديل يطرأ على ملف العرض الأصلي مستقبلاً؟',
         options: [
-          'تفعيل خيار الربط الديناميكي (Link) لمزامنة أي تعديل في ملف العرض الأصلي',
-          'تحويل الملف إلى صورة ورقية وطباعتها',
-          'حذف ملف البوربوينت نهائياً',
-          'تغيير امتداد الملف إلى ملف نصي'
+          'تفعيل خيار الربط الديناميكي (Link) لمزامنة التعديلات تلقائياً',
+          'طباعة الشرائح يدوياً على ورق وإعادة مسحها ضوئياً',
+          'حذف ملف البوربوينت الأصلي من جهاز الكمبيوتر',
+          'تغيير امتداد العرض إلى ملف مفكرة نصي TXT'
         ],
         correctIndex: 0,
         explanation: 'خيار Link يتيح لك تعديل شرائح البوربوينت مستقبلاً وتحديثها تلقائياً داخل مشروع Captivate بضغطة زر.',
@@ -515,12 +517,12 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
       },
       {
         id: 'q9-2',
-        question: 'ما هي معايير حزم التعلم الإلكتروني القياسية التي تسمح بتتبع درجات وتقدم الطالب ونقلها لنظام LMS (مثل Moodle أو Blackboard)؟',
+        question: 'نشاط 2 (يقوم به الطالب): أثناء إعدادك لنشر المشروع التعليمي، ما هي المعايير القياسية العالمية التي تضبطها لتمكين نظام إدارة التعلم LMS (مثل Moodle أو Blackboard) من تتبع درجاتك ونسبة إنجازك؟',
         options: [
-          'معايير SCORM (1.2 أو 2004) و xAPI',
-          'معايير ملفات الوورد DOCX',
-          'معايير طباعة الورق العادي',
-          'معايير الأقراص المرنة'
+          'معايير حزم التعلم الإلكتروني SCORM (1.2 / 2004) و xAPI',
+          'معايير وتنسيقات مستندات Word القياسية',
+          'معايير الطباعة الورقية والكتب المصورة',
+          'تنسيق ملفات الأقراص المدمجة القديمة ISO'
         ],
         correctIndex: 0,
         explanation: 'معايير SCORM/xAPI هي البروتوكول المعتمد عالمياً لتبادل بيانات إنجاز الطالب والدرجات بين المحتوى والمنصة.',
@@ -528,12 +530,12 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
       },
       {
         id: 'q9-3',
-        question: 'لماذا يُعتبر تصدير المحتوى بصيغة HTML5 هو الخيار العصري الإلزامي بدلاً من تقنية Flash القديمة؟',
+        question: 'نشاط 3 (يقوم به الطالب): بصفتك مصمم محتوى تفاعلي، ما الصيغة التفاعلية الحديثة المعتمدة التي تصدر بها مشروعك ليعمل بأعلى كفاءة وأمان على متصفحات الويب والهواتف الذكية والأجهزة اللوحية دون الحاجة لمشغلات إضافية؟',
         options: [
-          'لأن HTML5 تعمل على كافة متصفحات الويب والهواتف الذكية وأجهزة الأندرويد والآيفون بكفاءة وأمان تام',
-          'لأنها تتطلب برامج إضافية معقدة',
-          'لأنها لا تدعم الألوان',
-          'لأنها تعمل على أجهزة الكمبيوتر القديمة فقط'
+          'التصدير بصيغة HTML5 مفتوحة المعايير والمتوافقة مع كافة الشاشات والمتصفحات',
+          'التصدير بصيغة Flash القديمة والمحظورة أمنياً',
+          'التصدير بصيغة ملف تنفيذي قديم يعمل فقط على نظام تشغيل واحد محدد',
+          'الطباعة على ورق عالي الجودة'
         ],
         correctIndex: 0,
         explanation: 'صيغة HTML5 مفتوحة المعايير وتعمل على جميع شاشات ومتصفحات الأجهزة المحمولة بدون الحاجة لأي مشغلات خارجية.',
@@ -566,6 +568,7 @@ export function getCustomGameLevels(): GameLevelDef[] {
           found.shortTitle = customLvl.shortTitle || found.shortTitle;
           found.storyMission = customLvl.storyMission || found.storyMission;
           found.instructions = customLvl.instructions || found.instructions;
+          found.objectives = customLvl.objectives || found.objectives;
           found.videos = customLvl.videos || [];
           found.images = customLvl.images || [];
           found.questions = customLvl.questions || found.questions;
@@ -589,6 +592,7 @@ export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean
         found.shortTitle = customLvl.shortTitle || found.shortTitle;
         found.storyMission = customLvl.storyMission || found.storyMission;
         found.instructions = customLvl.instructions || found.instructions;
+        found.objectives = customLvl.objectives || found.objectives;
         found.videos = customLvl.videos || [];
         found.images = customLvl.images || [];
         found.questions = customLvl.questions || found.questions;

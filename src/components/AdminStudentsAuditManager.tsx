@@ -27,8 +27,8 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { generateSixtyStudents, RESEARCH_GROUPS_META, getGroupByUsername } from '../data/studentAccounts';
-import { getAllStudentsProgress, getStudentProgress } from '../utils/gameStorage';
 import { StudentGameProgress, PreTestResult, CompletedLevelResult } from '../types';
+import { getPostTestQuestions } from '../data/preTestData';
 import {
   getStudentLoginsAuditMap,
   StudentLoginAudit,
@@ -40,6 +40,7 @@ import {
   subscribeToAllStudentsProgress,
   subscribeToStudentsLoginsAudit,
 } from '../utils/realtimeService';
+import { getAllStudentsProgress } from '../utils/gameStorage';
 
 type AuditTabFilter = 'all' | 'pretest' | 'posttest' | 'levels' | 'logins';
 
@@ -78,6 +79,7 @@ interface EnrichedStudentRow {
   totalLevelsScore: number;
   levelsDetails: Record<number, CompletedLevelResult>;
   lastActive: string;
+  raw: StudentGameProgress;
 }
 
 export const AdminStudentsAuditManager: React.FC = () => {
@@ -221,6 +223,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
         totalLevelsScore,
         levelsDetails: completedLevels,
         lastActive: prog.lastActive || '-',
+        raw: prog,
       };
     });
   }, [progressMap, loginAuditMap]);
@@ -306,6 +309,9 @@ export const AdminStudentsAuditManager: React.FC = () => {
 
   // 2. Export Post-Test Sheet
   const handleExportPostTestSheet = () => {
+    const postQuestions = getPostTestQuestions();
+    const qHeaders = postQuestions.map((_, i) => `س${i + 1} (النتيجة 0/1 أو 1/1)`);
+
     const headers = [
       'م',
       'اسم المستخدم (اليوزر نيم)',
@@ -314,30 +320,40 @@ export const AdminStudentsAuditManager: React.FC = () => {
       'نمط التغذية الراجعة',
       'حالة إتمام الاختبار البعدي',
       'تاريخ ووقت الإتمام الفعلي',
-      'الدرجة المحرزة',
+      'الدرجة المحرزة (/53)',
       'الدرجة العظمى',
       'النسبة المئوية (%)',
       'حالة الاجتياز',
       'زمن الإجابة المستغرق',
+      ...qHeaders,
     ];
 
-    const rows = enrichedStudents.map((s, idx) => [
-      idx + 1,
-      s.username,
-      `${s.groupCode} (${s.groupName})`,
-      s.learningMode,
-      s.feedbackMode,
-      s.postTestCompleted ? 'مكتمل' : 'غير مكتمل',
-      s.postTestDate,
-      s.postTestCompleted ? s.postTestScore : '-',
-      s.postTestCompleted ? s.postTestMaxScore : '-',
-      s.postTestCompleted ? `${s.postTestPercentage}%` : '-',
-      s.postTestCompleted ? (s.postTestPassed ? 'مجتاز بنجاح' : 'لم يجتز') : 'لم يتقدم',
-      s.postTestCompleted ? formatDuration(s.postTestTimeSpent) : '-',
-    ]);
+    const rows = enrichedStudents.map((s, idx) => {
+      const qScores = postQuestions.map((q) => {
+        if (!s.postTestCompleted || !s.raw.postTestResult) return '-';
+        const itemScore = s.raw.postTestResult.questionScores?.[q.id] ?? (s.raw.postTestResult.answers?.[q.id] === q.correctIndex ? 1 : 0);
+        return itemScore === 1 ? '1/1' : '0/1';
+      });
+
+      return [
+        idx + 1,
+        s.username,
+        `${s.groupCode} (${s.groupName})`,
+        s.learningMode,
+        s.feedbackMode,
+        s.postTestCompleted ? 'مكتمل' : 'غير مكتمل',
+        s.postTestDate,
+        s.postTestCompleted ? s.postTestScore : '-',
+        s.postTestCompleted ? s.postTestMaxScore : 53,
+        s.postTestCompleted ? `${s.postTestPercentage}%` : '-',
+        s.postTestCompleted ? (s.postTestPassed ? 'مجتاز بنجاح' : 'لم يجتز') : 'لم يتقدم',
+        s.postTestCompleted ? formatDuration(s.postTestTimeSpent) : '-',
+        ...qScores,
+      ];
+    });
 
     downloadCsvSheet('شيت_نتائج_الاختبار_البعدي_PostTest_Results', headers, rows);
-    showToast('تم تصدير وتحميل شيت نتائج الاختبار البعدي بنجاح بصيغة Excel / CSV');
+    showToast('تم تصدير وتحميل شيت نتائج الاختبار البعدي بنجاح بصيغة Excel / CSV مع درجات كل سؤال (0/1 أو 1/1)');
   };
 
   // 3. Export 10 Stages Game Levels Sheet
@@ -937,7 +953,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
                 <span className="text-[10px] text-amber-300 font-bold block">القبلي</span>
                 <span className="text-xs font-black text-white font-mono block mt-0.5">
-                  {inspectStudent.preTestCompleted ? `${inspectStudent.preTestScore}/50` : 'لم يتم'}
+                  {inspectStudent.preTestCompleted ? `${inspectStudent.preTestScore}/${inspectStudent.preTestMaxScore || 53}` : 'لم يتم'}
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
@@ -949,10 +965,45 @@ export const AdminStudentsAuditManager: React.FC = () => {
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
                 <span className="text-[10px] text-purple-300 font-bold block">البعدي</span>
                 <span className="text-xs font-black text-white font-mono block mt-0.5">
-                  {inspectStudent.postTestCompleted ? `${inspectStudent.postTestScore}/50` : 'لم يتم'}
+                  {inspectStudent.postTestCompleted ? `${inspectStudent.postTestScore}/${inspectStudent.postTestMaxScore || 53}` : 'لم يتم'}
                 </span>
               </div>
             </div>
+
+            {/* Post-Test Question Breakdown (0/1 or 1/1) */}
+            {inspectStudent.postTestCompleted && inspectStudent.raw.postTestResult && (
+              <div className="space-y-2 p-3.5 rounded-2xl bg-purple-950/20 border border-purple-500/30">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-purple-300 flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-purple-400" />
+                    <span>نتائج أسئلة الاختبار البعدي (0/1 عند الخطأ، 1/1 عند الصواب):</span>
+                  </h4>
+                  <span className="text-[11px] font-mono font-black text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded-lg border border-purple-500/40">
+                    {inspectStudent.postTestScore} / {inspectStudent.postTestMaxScore || 53}
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 sm:grid-cols-9 gap-1.5 max-h-40 overflow-y-auto pr-1 pt-1">
+                  {getPostTestQuestions().map((q, qIdx) => {
+                    const itemScore = inspectStudent.raw.postTestResult?.questionScores?.[q.id] ?? (inspectStudent.raw.postTestResult?.answers?.[q.id] === q.correctIndex ? 1 : 0);
+                    const isRight = itemScore === 1;
+                    return (
+                      <div
+                        key={q.id || qIdx}
+                        className={`p-1 rounded-lg text-center border font-mono text-[10px] ${
+                          isRight
+                            ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300 font-bold'
+                            : 'bg-rose-950/80 border-rose-500/60 text-rose-300 font-bold'
+                        }`}
+                        title={`سؤال ${qIdx + 1}: ${isRight ? '1/1 (صحيح)' : '0/1 (خطأ)'}`}
+                      >
+                        <div className="text-[8px] text-slate-400">س{qIdx + 1}</div>
+                        <div>{isRight ? '1/1' : '0/1'}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Sessions List */}
             <div className="space-y-2">

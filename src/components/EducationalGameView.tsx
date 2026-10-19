@@ -31,6 +31,7 @@ import {
   Image as ImageIcon,
   X,
   FileCheck,
+  Target,
 } from 'lucide-react';
 import { CARTOON_AVATARS, GAME_LEVELS_DATA, GameLevelDef } from '../data/gameLevelsData';
 import {
@@ -537,6 +538,18 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             <p className="text-xs sm:text-sm text-slate-300 font-['IBM_Plex_Sans_Arabic'] mt-2 leading-relaxed bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800">
               🎯 <strong className="text-amber-300">السيناريو والمهمة الكرتونية:</strong> {currentLevelDef.storyMission}
             </p>
+
+            {selectedLevelNum === 9 && (currentLevelDef.objectives || currentLevelDef.instructions) && (
+              <div className="text-xs sm:text-sm text-cyan-200 font-['IBM_Plex_Sans_Arabic'] mt-3 leading-relaxed bg-cyan-950/40 p-3.5 rounded-2xl border border-cyan-500/40 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-cyan-300">
+                  <Target className="w-4 h-4 text-cyan-400" />
+                  <span>🎯 أهداف المستوى 9 (قابلة للتعديل والتحقيق):</span>
+                </div>
+                <p className="whitespace-pre-line text-slate-200 text-xs">
+                  {currentLevelDef.objectives || currentLevelDef.instructions}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0">
@@ -722,9 +735,30 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         )}
 
 
+        {/* LEVEL 9 ACTIVITIES BANNER */}
+        {selectedLevelNum === 9 && (
+          <div className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-blue-950/60 via-slate-900/80 to-blue-950/60 border border-blue-500/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-right">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl p-2 rounded-xl bg-blue-500/20 border border-blue-400/40">🎯</span>
+              <div>
+                <h3 className="text-sm sm:text-base font-black text-white font-['Tajawal']">
+                  أنشطة ومهام المستوى 9 (أنشطة تطبيقية يقوم بها الطالب)
+                </h3>
+                <p className="text-xs text-blue-200 mt-0.5">
+                  جميع أسئلة هذا المستوى عبارة عن أنشطة ومهام يقوم بها الطالب لتحقيق المهارات المستهدفة ونواتج التعلم.
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-400/40 text-xs font-bold shrink-0">
+              {currentLevelDef.questions.length} أنشطة
+            </span>
+          </div>
+        )}
+
         {/* QUESTIONS LIST */}
         <div className="mt-6 space-y-6">
           {currentLevelDef.questions.map((q, qIndex) => {
+            const isLevel9 = selectedLevelNum === 9;
             const chosen = isLevelCompleted && completedResult
               ? completedResult.answers[q.id]
               : chosenAnswers[q.id];
@@ -735,13 +769,20 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-4 text-right"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-xl bg-[#ffd700]/20 border border-[#ffd700] text-[#ffd700] font-black text-xs flex items-center justify-center font-['Outfit'] shrink-0">
-                      {qIndex + 1}
+                  <div className="flex items-start gap-2.5">
+                    <span className="min-w-7 px-2 h-7 rounded-xl bg-[#ffd700]/20 border border-[#ffd700] text-[#ffd700] font-black text-xs flex items-center justify-center font-['Outfit'] shrink-0 mt-0.5">
+                      {isLevel9 ? `نشاط ${qIndex + 1}` : qIndex + 1}
                     </span>
-                    <h4 className="text-sm sm:text-base font-bold text-white font-['Tajawal'] leading-relaxed">
-                      {q.question}
-                    </h4>
+                    <div>
+                      {isLevel9 && (
+                        <span className="inline-block px-2.5 py-0.5 rounded-md bg-blue-500/20 border border-blue-400/40 text-blue-300 text-[10px] font-bold mb-1.5">
+                          🎯 نشاط يقوم به الطالب
+                        </span>
+                      )}
+                      <h4 className="text-sm sm:text-base font-bold text-white font-['Tajawal'] leading-relaxed">
+                        {q.question}
+                      </h4>
+                    </div>
                   </div>
                   <span className="text-xs font-mono text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-lg border border-amber-500/40 shrink-0">
                     +{q.points} XP
@@ -1336,7 +1377,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         key={selectedLevelNum}
         levelNumber={selectedLevelNum}
         levelTitle={currentLevelDef.title}
-        instructions={currentLevelDef.instructions || ''}
+        instructions={(selectedLevelNum === 9 ? (currentLevelDef.objectives || currentLevelDef.instructions) : currentLevelDef.instructions) || ''}
       />
 
       {/* 🔍 MEDIA ZOOM & PREVIEW MODAL FOR IMAGES AND PDF DOCUMENTS */}
