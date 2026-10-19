@@ -381,8 +381,21 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
   // Record answer neutral: NO correct/wrong shown to student. Score goes strictly to Admin!
   const chooseAnswerWithoutRevealing = (stationIdx: number) => {
     setChosenAnswers((prev) => ({ ...prev, [currentQ.id]: stationIdx }));
-    setAnsweredState('selected');
-    triggerSound('click');
+    
+    // In posttest, show feedback to student
+    if (mode === 'post') {
+      setAnsweredState('evaluating');
+      triggerSound(stationIdx === currentQ.correctIndex ? 'correct' : 'wrong');
+      
+      // Delay to show feedback before proceeding
+      setTimeout(() => {
+        setAnsweredState('selected');
+      }, 800);
+    } else {
+      // In pretest, no feedback to student
+      setAnsweredState('selected');
+      triggerSound('click');
+    }
   };
 
   // Pointer drag move & drop handling for hand-steering (Touch & Mouse)
@@ -796,17 +809,31 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
 
             {/* NEUTRAL SELECTION BANNER (Result hidden from student, stored for Admin only) */}
             {answeredState === 'selected' && (
-              <div className="p-5 rounded-2xl bg-slate-900/95 border border-sky-500/50 backdrop-blur-md shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in">
+              <div className={`p-5 rounded-2xl border backdrop-blur-md shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in ${
+                mode === 'post' 
+                  ? (chosenAnswers[currentQ.id] === currentQ.correctIndex 
+                      ? 'bg-green-950/95 border-green-500/50' 
+                      : 'bg-red-950/95 border-red-500/50')
+                  : 'bg-slate-900/95 border-sky-500/50'
+              }`}>
                 <div className="flex items-center gap-3 text-right">
-                  <div className="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/40 flex items-center justify-center font-black shrink-0">
-                    <CheckCircle2 className="w-5 h-5 text-sky-400" />
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-black shrink-0 ${
+                    mode === 'post'
+                      ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
+                          ? 'bg-green-500/20 text-green-300 border-green-500/40'
+                          : 'bg-red-500/20 text-red-300 border-red-500/40')
+                      : 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                  }`}>
+                    {mode === 'post' ? (chosenAnswers[currentQ.id] === currentQ.correctIndex ? <CheckCircle2 className="w-5 h-5" /> : <X className="w-5 h-5" />) : <CheckCircle2 className="w-5 h-5" />}
                   </div>
                   <div>
                     <span className="block text-xs font-black text-white">
-                      تم تسجيل وتثبيت اختيارك بنجاح
+                      {mode === 'post' 
+                        ? (chosenAnswers[currentQ.id] === currentQ.correctIndex ? 'إجابة صحيحة! أحسنت' : 'إجابة خاطئة')
+                        : 'تم تسجيل وتثبيت اختيارك بنجاح'}
                     </span>
                     <span className="block text-[11px] text-slate-400">
-                      استجابتك مسجلة في لوحة المشرف وأستاذ المقرر. اضغط للمتابعة.
+                      {mode === 'post' ? 'اضغط للمتابعة للسؤال التالي' : 'استجابتك مسجلة في لوحة المشرف وأستاذ المقرر. اضغط للمتابعة.'}
                     </span>
                   </div>
                 </div>
@@ -814,7 +841,13 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                 <button
                   type="button"
                   onClick={handleNextQuestion}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white shadow-lg shadow-sky-900/30 cursor-pointer shrink-0"
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition text-white shadow-lg cursor-pointer shrink-0 ${
+                    mode === 'post'
+                      ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
+                          ? 'bg-green-600 hover:bg-green-500 shadow-green-900/30'
+                          : 'bg-red-600 hover:bg-red-500 shadow-red-900/30')
+                      : 'bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 shadow-sky-900/30'
+                  }`}
                 >
                   <span>
                     {currentIndex + 1 < questions.length

@@ -149,14 +149,14 @@ export function submitPostTestResult(
     lastActive: new Date().toISOString(),
   };
 
-  const questions = getPostTestQuestions();
+  const questions = getPreTestQuestions(); // Sync from PreTest bank
   let score = 0;
   let maxScore = 0;
 
   questions.forEach((q) => {
-    maxScore += q.points;
+    maxScore += 1; // 1 point per question
     if (chosenAnswers[q.id] === q.correctIndex) {
-      score += q.points;
+      score += 1; // 1 point per correct answer
     }
   });
 
