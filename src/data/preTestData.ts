@@ -154,9 +154,9 @@ export function submitPostTestResult(
   let maxScore = 0;
 
   questions.forEach((q) => {
-    maxScore += q.points;
+    maxScore += 1; // Always 1 point per question
     if (chosenAnswers[q.id] === q.correctIndex) {
-      score += q.points;
+      score += 1;
     }
   });
 
