@@ -194,7 +194,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons: قواعد اللعبة والتعليمات + الصفحة الخاصة للطالب */}
+        {/* Action Buttons: قواعد اللعبة والأهداف + الصفحة الخاصة للطالب */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-800/80">
           <button
             type="button"

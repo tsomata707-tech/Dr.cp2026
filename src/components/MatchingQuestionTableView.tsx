@@ -432,7 +432,7 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
           </h2>
 
           <p className="text-xs sm:text-sm text-amber-300 font-semibold mt-2">
-            💡 تعليمات: اسحب الصورة المناسبة وضعها أمام الجملة في الجدول، أو انقر على الصورة ثم انقر على خانة الجدول لوضعها.
+            💡 أهداف: اسحب الصورة المناسبة وضعها أمام الجملة في الجدول، أو انقر على الصورة ثم انقر على خانة الجدول لوضعها.
           </p>
         </div>
 

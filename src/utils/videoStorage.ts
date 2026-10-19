@@ -82,7 +82,7 @@ export const VIDEO_SLOTS: VideoSlotDef[] = [
   {
     slotId: 'general-intro',
     name: 'شاشة التمهيد العام للبيئة (Environment Guide)',
-    description: 'يظهر في الصفحة التمهيدية أو شاشة التعليمات لشرح آليات اللعب ونظام النقاط والشارات.',
+    description: 'يظهر في الصفحة التمهيدية أو شاشة الأهداف لشرح آليات اللعب ونظام النقاط والشارات.',
     recommendedDuration: '03:30',
   },
 ];

@@ -90,7 +90,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
 
     saveCustomGameLevels(updatedLevels, true);
     setLevels(updatedLevels);
-    showToast(`تم حفظ وتحديث بيانات وتعليمات المستوى ${selectedLevelNum} بنجاح!`);
+    showToast(`تم حفظ وتحديث بيانات وأهداف المستوى ${selectedLevelNum} بنجاح!`);
   };
 
   // Handle Video Upload (Up to 5)
@@ -356,7 +356,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                 <span>إدارة المستويات الـ 9 المعتمدة</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal']">
-                تعديل الليفل والتعليمات والوسائط والأنشطة
+                تعديل الليفل والأهداف والوسائط والأنشطة
               </h2>
             </div>
           </div>
@@ -457,7 +457,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           <div className="flex items-center gap-2 pb-3 border-b border-slate-800 text-cyan-400 font-bold">
             <HelpCircle className="w-5 h-5" />
             <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">
-              أهداف المستوى (تظهر في القائمة العائمة المتحركة)
+              أهداف المستوى
             </h3>
           </div>
 
@@ -485,7 +485,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
               className="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-2 cursor-pointer transition shadow"
             >
               <Save className="w-3.5 h-3.5" />
-              <span>حفظ التعليمات</span>
+              <span>حفظ الأهداف</span>
             </button>
           </div>
         </div>

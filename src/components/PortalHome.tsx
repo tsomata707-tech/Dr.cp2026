@@ -538,7 +538,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
         />
       )}
 
-      {/* 3. شاشة التعليمات وقواعد اللعبة (Screen 4) */}
+      {/* 3. شاشة الأهداف وقواعد اللعبة (Screen 4) */}
       {activeMainSection === 'instructions' && (
         <InstructionsScreen
           onGotIt={() => {

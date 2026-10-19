@@ -1367,7 +1367,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-black border border-cyan-400/40">
-                      {editingLevelNum === 9 ? 'المستوى 9 - أهداف قابلة للتعديل' : `المستوى ${editingLevelNum}`}
+                      {`المستوى ${editingLevelNum}`}
                     </span>
                     <span className="text-[11px] text-amber-300 font-bold">
                       أهداف المستوى

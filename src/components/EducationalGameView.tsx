@@ -1372,7 +1372,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       )}
 
       {/* 📋 FLOATING DRAGGABLE INSTRUCTIONS MENU
-          "مع اضافه قائمه عائمه يمكن تحركها في اي مكان تتضمن تعليمات كل ليفل" */}
+          "مع اضافه قائمه عائمه يمكن تحركها في اي مكان تتضمن أهداف كل ليفل" */}
       <DraggableLevelInstructions
         key={selectedLevelNum}
         levelNumber={selectedLevelNum}
