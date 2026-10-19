@@ -275,12 +275,38 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     return () => window.removeEventListener(eventName, handleUpdate);
   }, [mode]);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [chosenAnswers, setChosenAnswers] = useState<Record<string, number>>({});
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`cp_${mode}_index_${username}`);
+      return saved ? parseInt(saved, 10) : 0;
+    } catch { return 0; }
+  });
+  const [chosenAnswers, setChosenAnswers] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem(`cp_${mode}_answers_${username}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
   const [selectedStationIndex, setSelectedStationIndex] = useState<number | null>(null);
 
   // Dedicated Game Mode & Intro
-  const [gameStarted, setGameStarted] = useState(false);
+  const [gameStarted, setGameStarted] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`cp_${mode}_started_${username}`);
+      return saved === 'true';
+    } catch { return false; }
+  });
+
+  // Effect hooks to persist state
+  useEffect(() => {
+    localStorage.setItem(`cp_${mode}_index_${username}`, currentIndex.toString());
+  }, [currentIndex, username, mode]);
+  useEffect(() => {
+    localStorage.setItem(`cp_${mode}_answers_${username}`, JSON.stringify(chosenAnswers));
+  }, [chosenAnswers, username, mode]);
+  useEffect(() => {
+    localStorage.setItem(`cp_${mode}_started_${username}`, gameStarted.toString());
+  }, [gameStarted, username, mode]);
 
   // Interaction State
   const [isDrivingToStation, setIsDrivingToStation] = useState<number | null>(null);
@@ -424,6 +450,12 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     } else {
       submission = submitPreTestResult(username, chosenAnswers, totalTime);
     }
+    
+    // Clear persistence
+    localStorage.removeItem(`cp_${mode}_index_${username}`);
+    localStorage.removeItem(`cp_${mode}_answers_${username}`);
+    localStorage.removeItem(`cp_${mode}_started_${username}`);
+
     setFinalResult(submission.result);
     setIsFinished(true);
     triggerSound('fanfare');
