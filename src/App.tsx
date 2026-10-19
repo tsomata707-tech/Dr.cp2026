@@ -19,6 +19,7 @@ import { saveSiteTitleConfig } from './utils/siteTitleStorage';
 import { recordStudentLogin } from './utils/studentAuditStorage';
 
 const SESSION_KEY = 'cp_active_session_username_v1';
+const ADMIN_SESSION_KEY = 'cp_active_admin_session_v1';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<string | null>(() => {
@@ -29,7 +30,13 @@ export default function App() {
     }
   });
   const [authScreen, setAuthScreen] = useState<'splash' | 'login'>('splash');
-  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
 
   // Automatically rehydrate any uploaded videos from IndexedDB on startup
@@ -114,11 +121,17 @@ export default function App() {
   };
 
   const handleAdminAuthenticated = () => {
+    try {
+      localStorage.setItem(ADMIN_SESSION_KEY, 'true');
+    } catch {}
     setIsAdminMode(true);
     setIsAdminModalOpen(false);
   };
 
   const handleExitAdmin = () => {
+    try {
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+    } catch {}
     setIsAdminMode(false);
   };
 

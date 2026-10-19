@@ -1323,6 +1323,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 onRemoveImage={() => handleDirectRemoveImage('levels', question.id, level.levelNumber)}
                 onSetOptionImage={(optIdx, dataUrl) => handleDirectSetOptionImage('levels', question.id, optIdx, dataUrl, level.levelNumber)}
                 onRemoveOptionImage={(optIdx) => handleDirectRemoveOptionImage('levels', question.id, optIdx, level.levelNumber)}
+                onAddBelow={() => handleOpenAddModalForIndex('levels', idx, level.levelNumber)}
               />
             ))}
             {filteredLevelsQuestions.length === 0 && (
@@ -2076,7 +2077,17 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             </button>
           )}
         </div>
+        {onAddBelow && (
+          <button
+            type="button"
+            onClick={onAddBelow}
+            className="w-full mt-3 py-2 rounded-xl border border-dashed border-amber-500/30 bg-amber-950/20 hover:bg-amber-950/40 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          >
+            <span>➕ إضافة سؤال جديد تحت هذا السؤال</span>
+          </button>
+        )}
       </div>
+
 
       {/* Inline Image URL Bar if toggled */}
       {showUrlInputBar && (

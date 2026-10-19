@@ -411,7 +411,7 @@ export type GlobalSyncType = 'pretest' | 'posttest' | 'levels' | 'instructions' 
 function sanitizeData(data: any): any {
   if (data === undefined) return null;
   if (data === null) return null;
-  if (Array.isArray(data)) return data.map(sanitizeData);
+  if (Array.isArray(data)) return data.map(val => (val === undefined ? null : sanitizeData(val)));
   if (typeof data === 'object') {
     const sanitized: any = {};
     for (const key in data) {
