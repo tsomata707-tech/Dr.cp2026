@@ -75,7 +75,21 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
 
   // Main Section Navigation:
   // الترتيب الصحيح المعتمد: تسجيل الدخول -> لوحة الشرف -> القواعد والإرشادات -> الانتقال إلى بيئة الألعاب
-  const [activeMainSection, setActiveMainSection] = useState<PortalSection>('honor');
+  const [activeMainSection, setActiveMainSection] = useState<PortalSection>(() => {
+    try {
+      const saved = localStorage.getItem(`cp_active_portal_section_${username}`);
+      if (saved) return saved as PortalSection;
+      // Default: if pre-test not completed, start there
+      return !studentGame.preTestResult?.completed ? 'pretest' : 'honor';
+    } catch {
+      return 'honor';
+    }
+  });
+
+  // Save active section on change
+  useEffect(() => {
+    localStorage.setItem(`cp_active_portal_section_${username}`, activeMainSection);
+  }, [activeMainSection, username]);
 
   // Floating welcome card upon login for 15 seconds with loading bar
   const [showWelcomeFloatingCard, setShowWelcomeFloatingCard] = useState<boolean>(true);
@@ -108,6 +122,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
   }, [activeMainSection]);
+
 
   // Global listener to return to student personal home page
   useEffect(() => {
