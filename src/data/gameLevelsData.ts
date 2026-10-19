@@ -585,6 +585,20 @@ export function getCustomGameLevels(): GameLevelDef[] {
 export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean = true): void {
   try {
     localStorage.setItem(GAME_LEVELS_STORAGE_KEY, JSON.stringify(levels));
+  } catch (err: unknown) {
+    console.error('Failed to save custom game levels:', err);
+    if (
+      err instanceof DOMException &&
+      (err.name === 'QuotaExceededError' ||
+        err.code === 22 ||
+        err.name === 'NS_ERROR_DOM_QUOTA_REACHED')
+    ) {
+      throw new Error('حجم الملف كبير جداً وتجاوز السعة المسموحة لذاكرة المتصفح (5 ميجابايت). يرجى ضغط الفيديو أو اختيار ملف أصغر حجماً.');
+    }
+    throw new Error('فشل حفظ البيانات في التخزين المحلي.');
+  }
+
+  try {
     levels.forEach((customLvl: GameLevelDef) => {
       const found = GAME_LEVELS_DATA.find((l) => l.levelNumber === customLvl.levelNumber);
       if (found) {
@@ -605,7 +619,7 @@ export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean
       syncGlobalQuestionsAndLevels('levels', levels).catch(() => {});
     }
   } catch (err) {
-    console.error('Failed to save custom game levels:', err);
+    console.error('Failed to sync game levels:', err);
   }
 }
 

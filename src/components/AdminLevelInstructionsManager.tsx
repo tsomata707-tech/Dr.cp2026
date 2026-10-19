@@ -98,6 +98,12 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 4.5 * 1024 * 1024) {
+      showError('حجم الفيديو كبير جداً (أكبر من 4.5 ميجابايت). يرجى ضغط الفيديو أو اختيار ملف أصغر حجماً.');
+      e.target.value = '';
+      return;
+    }
+
     const existingVideos = currentLevel.videos || [];
     if (existingVideos.length >= 5) {
       showError('الحد الأقصى هو 5 فيديوهات لكل مستوى.');
@@ -168,6 +174,12 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   const handleUploadImageOrPdf = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 4.5 * 1024 * 1024) {
+      showError('حجم الملف كبير جداً (أكبر من 4.5 ميجابايت). يرجى اختيار ملف أصغر حجماً.');
+      e.target.value = '';
+      return;
+    }
 
     const existingImages = currentLevel.images || [];
     if (existingImages.length >= 5) {
