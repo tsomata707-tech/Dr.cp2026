@@ -609,12 +609,14 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         {/* 🖼️ STAGE IMAGES & PDF DOCUMENTS (تتسع حتى 5 صور أو ملفات PDF مع إمكانية المعاينة والتكبير) */}
         {currentLevelDef.images && currentLevelDef.images.length > 0 && (
           <div className="my-6 p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-amber-500/30 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <span className="text-xs font-bold text-amber-300 font-['Cairo'] flex items-center gap-1.5">
                 <ImageIcon className="w-4 h-4 text-purple-400" />
-                <span>صور ومستندات شرح المستوى ({currentLevelDef.images.length} ملفات):</span>
+                <span>{currentLevelDef.imagesSectionTitle || `صور ومستندات المستوى ${selectedLevelNum} (${currentLevelDef.images.length} ملفات):`}</span>
               </span>
-              <span className="text-[11px] text-slate-400">انقر على أي ملف لمعاينته بحجم كامل</span>
+              <span className="text-[11px] text-slate-300 font-semibold">
+                {currentLevelDef.imagesSectionDesc || 'إمكانية رفع حتى 5 صور أو ملفات PDF بحد أقصى (يقبل جميع امتدادات الصور PNG, JPG, WebP, GIF, SVG و PDF مع إمكانية التبديل)'}
+              </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">

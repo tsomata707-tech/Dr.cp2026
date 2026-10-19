@@ -57,6 +57,8 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   const [storyDraft, setStoryDraft] = useState<string>(currentLevel?.storyMission || '');
   const [instructionsDraft, setInstructionsDraft] = useState<string>(currentLevel?.instructions || '');
   const [activityPromptDraft, setActivityPromptDraft] = useState<string>(currentLevel?.activityPrompt || '');
+  const [imagesTitleDraft, setImagesTitleDraft] = useState<string>(currentLevel?.imagesSectionTitle || '');
+  const [imagesDescDraft, setImagesDescDraft] = useState<string>(currentLevel?.imagesSectionDesc || '');
 
   // Update drafts when selectedLevelNum changes
   useEffect(() => {
@@ -66,6 +68,8 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       setStoryDraft(currentLevel.storyMission || '');
       setInstructionsDraft(currentLevel.instructions || '');
       setActivityPromptDraft(currentLevel.activityPrompt || '');
+      setImagesTitleDraft(currentLevel.imagesSectionTitle || '');
+      setImagesDescDraft(currentLevel.imagesSectionDesc || '');
     }
   }, [selectedLevelNum, levels]);
 
@@ -90,6 +94,8 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     target.storyMission = storyDraft.trim() || target.storyMission;
     target.instructions = instructionsDraft.trim() || target.instructions;
     target.activityPrompt = activityPromptDraft.trim() || target.activityPrompt;
+    target.imagesSectionTitle = imagesTitleDraft.trim() || target.imagesSectionTitle;
+    target.imagesSectionDesc = imagesDescDraft.trim() || target.imagesSectionDesc;
 
     saveCustomGameLevels(updatedLevels, true);
     setLevels(updatedLevels);
@@ -629,15 +635,39 @@ export const AdminLevelInstructionsManager: React.FC = () => {
 
       {/* Images & PDF Section (Up to 5 images/PDFs with replacement and deletion) */}
       <div className="p-6 rounded-3xl bg-[#090d20] border border-slate-800 shadow-xl space-y-4">
+        {/* Editable Title & Description for Images Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+          <div>
+            <label className="block text-[11px] font-bold text-slate-300 mb-1">عنوان قسم الصور والمستندات:</label>
+            <input
+              type="text"
+              value={imagesTitleDraft}
+              onChange={(e) => setImagesTitleDraft(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:border-emerald-400 outline-none"
+              placeholder={`صور ومستندات المستوى ${selectedLevelNum}`}
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold text-slate-300 mb-1">وصف قسم الصور والمستندات:</label>
+            <input
+              type="text"
+              value={imagesDescDraft}
+              onChange={(e) => setImagesDescDraft(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:border-emerald-400 outline-none"
+              placeholder="إمكانية رفع حتى 5 صور أو ملفات PDF..."
+            />
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div className="flex items-center gap-2 text-emerald-400">
             <ImageIcon className="w-5 h-5" />
             <div>
               <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">
-                صور ومستندات المستوى {selectedLevelNum}
+                {imagesTitleDraft || `صور ومستندات المستوى ${selectedLevelNum}`}
               </h3>
               <span className="text-xs text-slate-400">
-                إمكانية رفع حتى 5 صور أو ملفات PDF بحد أقصى (يقبل جميع امتدادات الصور PNG, JPG, WebP, GIF, SVG و PDF مع إمكانية التبديل)
+                {imagesDescDraft || 'إمكانية رفع حتى 5 صور أو ملفات PDF بحد أقصى (يقبل جميع امتدادات الصور PNG, JPG, WebP, GIF, SVG و PDF مع إمكانية التبديل)'}
               </span>
             </div>
           </div>
