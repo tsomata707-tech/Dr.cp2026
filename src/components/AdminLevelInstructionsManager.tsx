@@ -462,7 +462,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           </div>
 
           <div className="p-3 rounded-2xl bg-cyan-950/30 border border-cyan-500/30 text-xs text-cyan-200 leading-relaxed">
-            💡 هذه الأهداف تظهر للطالب في <strong>قائمة عائمة يمكن تحريكها بحرية في أي مكان على الشاشة</strong>، وتوضح له متطلبات إنهاء المستوى ورفع نشاطه الخاص.
+            💡 الأهداف المذكورة أدناه تظهر للطالب في القائمة العائمة أثناء اللعب.
           </div>
 
           <div>

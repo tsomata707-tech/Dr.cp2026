@@ -1370,11 +1370,11 @@ export const AdminTestsSettingsManager: React.FC = () => {
                       {editingLevelNum === 9 ? 'المستوى 9 - أهداف قابلة للتعديل' : `المستوى ${editingLevelNum}`}
                     </span>
                     <span className="text-[11px] text-amber-300 font-bold">
-                      {editingLevelNum === 9 ? '🎯 أهداف المستوى (تم تحويل التعليمات إلى أهداف)' : 'أهداف وتعليمات المستوى'}
+                      أهداف المستوى
                     </span>
                   </div>
                   <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-0.5">
-                    {editingLevelNum === 9 ? 'أهداف المستوى 9 (قابلة للتعديل من الأدمن ومزامنتها فوراً)' : `أهداف المستوى ${editingLevelNum} (قابلة للتعديل)`}
+                    {`أهداف المستوى ${editingLevelNum}`}
                   </h3>
                 </div>
               </div>
@@ -1403,24 +1403,20 @@ export const AdminTestsSettingsManager: React.FC = () => {
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-300 block">
-                {editingLevelNum === 9
-                  ? '🎯 نص أهداف المستوى 9 (تظهر للطالب في القائمة العائمة وأعلى الشاشة وتُعدل بحرية من الأدمن):'
-                  : 'نص أهداف المستوى:'}
+                نص أهداف المستوى:
               </label>
               <textarea
                 value={levelObjectivesText}
                 onChange={(e) => setLevelObjectivesText(e.target.value)}
                 rows={4}
-                placeholder="اكتب أهداف المستوى هنا (كل هدف في سطر)..."
+                placeholder="اكتب أهداف المستوى هنا..."
                 className="w-full p-3.5 rounded-2xl bg-slate-950/90 border border-slate-700 focus:border-cyan-400 text-white text-xs leading-relaxed outline-none transition font-['IBM_Plex_Sans_Arabic']"
               />
             </div>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
               <span className="text-[11px] text-slate-400">
-                {editingLevelNum === 9
-                  ? '✨ تم تحويل التعليمات إلى أهداف للمستوى 9 مع تمكين الأدمن من وضع الأسئلة والإجابات بحرية تامة'
-                  : '✨ تنعكس تعديلات الأهداف لحظياً للطلاب وللأدمن'}
+                ✨ تنعكس تعديلات الأهداف لحظياً للطلاب
               </span>
               <button
                 type="button"

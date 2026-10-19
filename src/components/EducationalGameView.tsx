@@ -543,7 +543,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               <div className="text-xs sm:text-sm text-cyan-200 font-['IBM_Plex_Sans_Arabic'] mt-3 leading-relaxed bg-cyan-950/40 p-3.5 rounded-2xl border border-cyan-500/40 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold text-cyan-300">
                   <Target className="w-4 h-4 text-cyan-400" />
-                  <span>🎯 أهداف المستوى 9 (قابلة للتعديل والتحقيق):</span>
+                  <span>🎯 أهداف المستوى 9:</span>
                 </div>
                 <p className="whitespace-pre-line text-slate-200 text-xs">
                   {currentLevelDef.objectives || currentLevelDef.instructions}
