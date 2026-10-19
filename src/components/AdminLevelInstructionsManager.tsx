@@ -56,6 +56,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   const [shortTitleDraft, setShortTitleDraft] = useState<string>(currentLevel?.shortTitle || '');
   const [storyDraft, setStoryDraft] = useState<string>(currentLevel?.storyMission || '');
   const [instructionsDraft, setInstructionsDraft] = useState<string>(currentLevel?.instructions || '');
+  const [activityPromptDraft, setActivityPromptDraft] = useState<string>(currentLevel?.activityPrompt || '');
 
   // Update drafts when selectedLevelNum changes
   useEffect(() => {
@@ -64,6 +65,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       setShortTitleDraft(currentLevel.shortTitle || '');
       setStoryDraft(currentLevel.storyMission || '');
       setInstructionsDraft(currentLevel.instructions || '');
+      setActivityPromptDraft(currentLevel.activityPrompt || '');
     }
   }, [selectedLevelNum, levels]);
 
@@ -87,6 +89,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     target.shortTitle = shortTitleDraft.trim() || target.shortTitle;
     target.storyMission = storyDraft.trim() || target.storyMission;
     target.instructions = instructionsDraft.trim() || target.instructions;
+    target.activityPrompt = activityPromptDraft.trim() || target.activityPrompt;
 
     saveCustomGameLevels(updatedLevels, true);
     setLevels(updatedLevels);
@@ -467,6 +470,19 @@ export const AdminLevelInstructionsManager: React.FC = () => {
               onChange={(e) => setStoryDraft(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-amber-400 text-white text-xs leading-relaxed focus:outline-none transition-colors"
               placeholder="اكتب مضمون المستوى والمهمة المعرفية والشرح الخاص بهذا المستوى..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-300 mb-1.5">
+              عنوان ورسالة طلب رفع النشاط للطالب (Activity Prompt):
+            </label>
+            <textarea
+              rows={2}
+              value={activityPromptDraft}
+              onChange={(e) => setActivityPromptDraft(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-amber-400 text-white text-xs leading-relaxed focus:outline-none transition-colors"
+              placeholder="مثال: قم برفع ملف تطبيقك العملي..."
             />
           </div>
         </div>

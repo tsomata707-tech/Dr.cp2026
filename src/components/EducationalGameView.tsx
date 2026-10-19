@@ -922,7 +922,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     نشاطك الخاص (المستوى {selectedLevelNum})
                   </h3>
                   <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
-                    قم برفع ملف تطبيقك العملي أو مخرج التدريب لهذا المستوى. يقبل النظام جميع امتدادات الفيديو، الصور، ومستندات PDF.
+                    {currentLevelDef.activityPrompt || 'قم برفع ملف تطبيقك العملي أو مخرج التدريب لهذا المستوى. يقبل النظام جميع امتدادات الفيديو، الصور، ومستندات PDF.'}
                   </p>
                 </div>
               </div>

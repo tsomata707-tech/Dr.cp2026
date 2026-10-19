@@ -57,6 +57,7 @@ export interface GameLevelDef {
   storyMission: string;
   instructions?: string;
   objectives?: string;
+  activityPrompt?: string;
   badgeName: string;
   badgeEmoji: string;
   videos?: LevelMediaItem[];
@@ -569,6 +570,7 @@ export function getCustomGameLevels(): GameLevelDef[] {
           found.storyMission = customLvl.storyMission || found.storyMission;
           found.instructions = customLvl.instructions || found.instructions;
           found.objectives = customLvl.objectives || found.objectives;
+          found.activityPrompt = customLvl.activityPrompt !== undefined ? customLvl.activityPrompt : found.activityPrompt;
           found.videos = customLvl.videos || [];
           found.images = customLvl.images || [];
           found.questions = customLvl.questions || found.questions;
@@ -607,6 +609,7 @@ export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean
         found.storyMission = customLvl.storyMission || found.storyMission;
         found.instructions = customLvl.instructions || found.instructions;
         found.objectives = customLvl.objectives || found.objectives;
+        found.activityPrompt = customLvl.activityPrompt !== undefined ? customLvl.activityPrompt : found.activityPrompt;
         found.videos = customLvl.videos || [];
         found.images = customLvl.images || [];
         found.questions = customLvl.questions !== undefined ? customLvl.questions : found.questions;
