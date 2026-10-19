@@ -595,7 +595,7 @@ export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean
         found.objectives = customLvl.objectives || found.objectives;
         found.videos = customLvl.videos || [];
         found.images = customLvl.images || [];
-        found.questions = customLvl.questions || found.questions;
+        found.questions = customLvl.questions !== undefined ? customLvl.questions : found.questions;
       }
     });
     if (typeof window !== 'undefined') {

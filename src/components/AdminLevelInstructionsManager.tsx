@@ -251,11 +251,14 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       levelNumber: selectedLevelNum,
     };
 
-    const updatedLevels = [...levels];
-    const target = updatedLevels.find((l) => l.levelNumber === selectedLevelNum);
-    if (!target) return;
+    const updatedLevels = levels.map((lvl) => {
+      if (lvl.levelNumber !== selectedLevelNum) return lvl;
+      return {
+        ...lvl,
+        questions: [...lvl.questions, newQ],
+      };
+    });
 
-    target.questions.push(newQ);
     saveCustomGameLevels(updatedLevels, true);
     setLevels(updatedLevels);
     setEditingQuestion(newQ);
@@ -264,16 +267,17 @@ export const AdminLevelInstructionsManager: React.FC = () => {
 
   // Save edited question
   const handleSaveQuestion = (updatedQ: LevelQuestion) => {
-    const updatedLevels = [...levels];
-    const target = updatedLevels.find((l) => l.levelNumber === selectedLevelNum);
-    if (!target) return;
-
-    const idx = target.questions.findIndex((q) => q.id === updatedQ.id);
-    if (idx !== -1) {
-      target.questions[idx] = updatedQ;
-    } else {
-      target.questions.push(updatedQ);
-    }
+    const updatedLevels = levels.map((lvl) => {
+      if (lvl.levelNumber !== selectedLevelNum) return lvl;
+      const exists = lvl.questions.some((q) => q.id === updatedQ.id);
+      const newQuestions = exists
+        ? lvl.questions.map((q) => (q.id === updatedQ.id ? updatedQ : q))
+        : [...lvl.questions, updatedQ];
+      return {
+        ...lvl,
+        questions: newQuestions,
+      };
+    });
 
     saveCustomGameLevels(updatedLevels, true);
     setLevels(updatedLevels);
@@ -283,11 +287,14 @@ export const AdminLevelInstructionsManager: React.FC = () => {
 
   // Delete Question
   const handleDeleteQuestion = (qId: string) => {
-    const updatedLevels = [...levels];
-    const target = updatedLevels.find((l) => l.levelNumber === selectedLevelNum);
-    if (!target) return;
+    const updatedLevels = levels.map((lvl) => {
+      if (lvl.levelNumber !== selectedLevelNum) return lvl;
+      return {
+        ...lvl,
+        questions: lvl.questions.filter((q) => q.id !== qId),
+      };
+    });
 
-    target.questions = target.questions.filter((q) => q.id !== qId);
     saveCustomGameLevels(updatedLevels, true);
     setLevels(updatedLevels);
     showToast('تم حذف السؤال بنجاح');
