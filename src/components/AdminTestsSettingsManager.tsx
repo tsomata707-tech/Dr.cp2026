@@ -1153,7 +1153,9 @@ export const AdminTestsSettingsManager: React.FC = () => {
           type="button"
           onClick={() => {
             if (window.confirm('هل أنت متأكد؟ سيتم حذف جميع الأسئلة والمستويات من المتصفح؟')) {
-              localStorage.clear();
+              localStorage.removeItem('cp_pretest_questions_bank_v2');
+              localStorage.removeItem('cp_posttest_questions_bank_v2');
+              localStorage.removeItem('cp_game_levels_storage_v1');
               window.location.reload();
             }
           }}

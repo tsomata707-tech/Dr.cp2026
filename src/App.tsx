@@ -30,13 +30,7 @@ export default function App() {
     }
   });
   const [authScreen, setAuthScreen] = useState<'splash' | 'login'>('splash');
-  const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(ADMIN_SESSION_KEY) === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
 
   // Automatically rehydrate any uploaded videos from IndexedDB on startup
