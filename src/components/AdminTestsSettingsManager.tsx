@@ -637,7 +637,10 @@ export const AdminTestsSettingsManager: React.FC = () => {
         }
         setPreTestQuestions(updated);
         savePreTestQuestions(updated, true);
-        showNotification('✓ تم حفظ وتحديث السؤال والإجابات وصور التوصيل في الاختبار القبلي فوراً');
+        // Sync to PostTest automatically
+        setPostTestQuestions(updated);
+        savePostTestQuestions(updated, true);
+        showNotification('✓ تم حفظ وتحديث السؤال في الاختبارين القبلي والبعدي فوراً');
       } else if (editingQuestionType === 'posttest') {
         let updated: PreTestQuestion[];
         if (editingQuestionId) {

@@ -847,15 +847,27 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
             </div>
 
             {/* Academic Notice: Scores in Admin panel only */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-sky-950/40 border border-sky-500/30 text-right space-y-2">
-              <div className="flex items-center gap-2 text-sky-300 font-bold text-xs">
-                <Shield className="w-4 h-4 text-sky-400 shrink-0" />
-                <span>تنبيه نظام القياس والتقويم:</span>
+            {mode === 'post' ? (
+              <div className="p-4 sm:p-5 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-right space-y-2">
+                <div className="flex items-center gap-2 text-amber-300 font-bold text-xs">
+                  <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>نتيجتك في الاختبار البعدي:</span>
+                </div>
+                <p className="text-xl font-black text-white leading-relaxed">
+                  {finalResult ? `${finalResult.score} / ${finalResult.maxScore} درجة` : 'جارٍ الحساب...'}
+                </p>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed font-normal">
-                درجات ونتائج الاختبارات تُحسب وتُسجل بدقة في لوحة تحكم المشرف وأستاذ المقرر للمتابعة الإحصائية وقياس أثر التعلم دون إظهارها للطالب في هذه المرحلة.
-              </p>
-            </div>
+            ) : (
+              <div className="p-4 sm:p-5 rounded-2xl bg-sky-950/40 border border-sky-500/30 text-right space-y-2">
+                <div className="flex items-center gap-2 text-sky-300 font-bold text-xs">
+                  <Shield className="w-4 h-4 text-sky-400 shrink-0" />
+                  <span>تنبيه نظام القياس والتقويم:</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed font-normal">
+                  درجات ونتائج الاختبارات تُحسب وتُسجل بدقة في لوحة تحكم المشرف وأستاذ المقرر للمتابعة الإحصائية وقياس أثر التعلم دون إظهارها للطالب في هذه المرحلة.
+                </p>
+              </div>
+            )}
 
             <button
               type="button"
