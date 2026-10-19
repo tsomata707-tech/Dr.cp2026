@@ -25,6 +25,7 @@ import {
   ChevronUp,
   Loader2,
   Clock,
+  Copy,
 } from 'lucide-react';
 import { PreTestQuestion, LevelQuestion } from '../types';
 import {
@@ -34,6 +35,7 @@ import {
   getPostTestQuestions,
   savePostTestQuestions,
   resetPostTestQuestionsToDefault,
+  copyPreTestQuestionsToPostTest,
 } from '../data/preTestData';
 import {
   GAME_LEVELS_DATA,
@@ -168,6 +170,17 @@ export const AdminTestsSettingsManager: React.FC = () => {
       window.removeEventListener('game-levels-updated', handleLevelsUpdate);
     };
   }, []);
+
+  // Copy all PreTest questions to PostTest
+  const handleCopyPreToPost = () => {
+    if (preTestQuestions.length === 0) {
+      showNotification('لا توجد أسئلة مسجلة في الاختبار القبلي لنسخها حالياً!', 'error');
+      return;
+    }
+    const synced = copyPreTestQuestionsToPostTest();
+    setPostTestQuestions(synced);
+    showNotification(`✓ تم نسخ كافة أسئلة الاختبار القبلي (${synced.length} سؤال) إلى الاختبار البعدي فوراً ومزامنتها للجميع بنجاح`);
+  };
 
   const showNotification = (text: string, type: 'success' | 'error' = 'success') => {
     setFeedbackMsg({ text, type });
@@ -637,7 +650,10 @@ export const AdminTestsSettingsManager: React.FC = () => {
         }
         setPreTestQuestions(updated);
         savePreTestQuestions(updated, true);
-        showNotification('✓ تم حفظ وتحديث السؤال والإجابات وصور التوصيل في الاختبار القبلي فوراً');
+        // Mirror to PostTest as well
+        setPostTestQuestions(updated);
+        savePostTestQuestions(updated, true);
+        showNotification('✓ تم حفظ وتحديث السؤال في الاختبارين القبلي والبعدي ومزامنتهما للجميع فوراً');
       } else if (editingQuestionType === 'posttest') {
         let updated: PreTestQuestion[];
         if (editingQuestionId) {
@@ -1235,14 +1251,25 @@ export const AdminTestsSettingsManager: React.FC = () => {
             <span className="text-xs font-bold text-purple-200">
               عرض {filteredPostTest.length} من إجمالي {postTestQuestions.length} سؤال في الاختبار البعدي
             </span>
-            <button
-              type="button"
-              onClick={() => handleOpenAddModal('posttest', 'top')}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>➕ إضافة سؤال جديد في أعلى الاختبار البعدي (البداية)</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyPreToPost}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
+                title="نسخ كافة أسئلة الاختبار القبلي ومطابقتها في الاختبار البعدي فوراً"
+              >
+                <Copy className="w-4 h-4 text-amber-400" />
+                <span>📋 نسخ ومطابقة كافة أسئلة القبلي (53 سؤالاً) للبعدي</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenAddModal('posttest', 'top')}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>➕ إضافة سؤال جديد في أعلى الاختبار البعدي (البداية)</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4">

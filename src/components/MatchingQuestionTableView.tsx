@@ -23,6 +23,7 @@ interface MatchingQuestionTableViewProps {
   soundEnabled: boolean;
   onFinishMatching: (isCorrectAll: boolean, matchesMap: Record<number, number>) => void;
   onBackToHome?: () => void;
+  mode?: 'pre' | 'post';
 }
 
 interface ImageCardItem {
@@ -39,6 +40,7 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
   soundEnabled,
   onFinishMatching,
   onBackToHome,
+  mode = 'pre',
 }) => {
   // Extract pairs: text & matching image
   const defaultPairs = useMemo(() => {
@@ -73,6 +75,7 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
   // Dragging state
   const [draggedCard, setDraggedCard] = useState<ImageCardItem | null>(null);
   const [dragOverRow, setDragOverRow] = useState<number | null>(null);
+  const [matchingScore, setMatchingScore] = useState<number | null>(null);
 
   // Sound effects
   const playSound = (type: 'intro' | 'place' | 'success' | 'click' | 'reset') => {
@@ -250,6 +253,10 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
     });
 
     const isCorrectAll = correctMatches === defaultPairs.length;
+    setMatchingScore(isCorrectAll ? 1 : 0);
+    if (isCorrectAll) {
+      playSound('success');
+    }
 
     // Show the requested fullscreen outro message:
     // "انتهينا من التوصيل اكمل باقي الاختبار بنفس الشكل والنمط المتفق عليه"
@@ -348,10 +355,21 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
           <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-to-b from-emerald-400/15 to-transparent rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 max-w-4xl w-full text-center space-y-8 py-10">
-            {/* Top Success Badge */}
-            <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 font-black text-sm sm:text-base shadow-[0_0_30px_rgba(16,185,129,0.35)] animate-pulse">
-              <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-              <span>تم إنجاز سؤال التوصيل بنجاح تام!</span>
+            {/* Top Success & Score Badge */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 font-black text-sm sm:text-base shadow-[0_0_30px_rgba(16,185,129,0.35)] animate-pulse">
+                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                <span>تم إنجاز سؤال التوصيل!</span>
+              </div>
+              {mode === 'post' && (
+                <div className={`inline-flex items-center gap-2 px-6 py-2 rounded-full border-2 font-black text-sm sm:text-base shadow-xl ${
+                  matchingScore === 1
+                    ? 'bg-emerald-950/90 border-emerald-400 text-emerald-300'
+                    : 'bg-rose-950/90 border-rose-500 text-rose-300'
+                }`}>
+                  <span>النتيجة: {matchingScore === 1 ? '1/1 ✓' : '0/1 ✗'}</span>
+                </div>
+              )}
             </div>
 
             {/* Giant Outro Text filling screen as explicitly requested */}
@@ -629,6 +647,22 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
         </div>
 
         {/* CONFIRMATION SUBMISSION BUTTON */}
+        {/* Post-Test Score Indicator on Matching Card */}
+        {mode === 'post' && (
+          <div className="pt-3 border-t border-slate-800 flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
+            <span className="text-xs text-slate-300 font-bold">النتيجة المقدرة لسؤال التوصيل:</span>
+            <div className="flex items-center gap-2">
+              <span className={`px-2.5 py-0.5 rounded-lg font-mono font-black text-xs border ${
+                matchingScore === 1
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                  : 'bg-slate-900 text-amber-300 border-slate-700'
+              }`}>
+                {matchingScore === 1 ? '1/1' : '0/1'}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-xs text-slate-400">
             {isAllPlaced ? (

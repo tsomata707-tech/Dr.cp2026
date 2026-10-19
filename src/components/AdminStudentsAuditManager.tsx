@@ -169,7 +169,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       const pre = prog.preTestResult;
       const preTestCompleted = !!pre?.completed;
       const preTestScore = pre ? pre.score : 0;
-      const preTestMaxScore = pre ? pre.maxScore : 50;
+      const preTestMaxScore = pre && pre.maxScore ? pre.maxScore : 53;
       const preTestPercentage = preTestMaxScore > 0 ? Math.round((preTestScore / preTestMaxScore) * 100) : 0;
       const preTestPassed = !!pre?.passed;
       const preTestDate = pre?.completedAt || '-';
@@ -179,7 +179,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       const post = prog.postTestResult;
       const postTestCompleted = !!post?.completed;
       const postTestScore = post ? post.score : 0;
-      const postTestMaxScore = post ? post.maxScore : 50;
+      const postTestMaxScore = post && post.maxScore ? post.maxScore : 53;
       const postTestPercentage = postTestMaxScore > 0 ? Math.round((postTestScore / postTestMaxScore) * 100) : 0;
       const postTestPassed = !!post?.passed;
       const postTestDate = post?.completedAt || '-';
@@ -411,14 +411,14 @@ export const AdminStudentsAuditManager: React.FC = () => {
       'تاريخ ووقت آخر دخول',
       'جهاز الدخول',
       'حالة الاختبار القبلي',
-      'درجة الاختبار القبلي (/50)',
+      'درجة الاختبار القبلي (/53)',
       'نسبة القبلي (%)',
       'اجتياز القبلي',
       'تاريخ القبلي',
       'المراحل المكتملة (من 10)',
       'نقاط المراحل (XP)',
       'حالة الاختبار البعدي',
-      'درجة الاختبار البعدي (/50)',
+      'درجة الاختبار البعدي (/53)',
       'نسبة البعدي (%)',
       'اجتياز البعدي',
       'تاريخ البعدي',

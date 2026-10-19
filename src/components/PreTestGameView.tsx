@@ -260,19 +260,26 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
   onFinishPreTest,
   onBackToInstructions,
 }) => {
-  // Load questions based on mode
+  // Load questions based on mode (Guaranteed fallback: Post-test inherits Pre-test questions)
   const [questions, setQuestions] = useState<PreTestQuestion[]>(() => {
-    return mode === 'post' ? getPostTestQuestions() : getPreTestQuestions();
+    const list = mode === 'post' ? getPostTestQuestions() : getPreTestQuestions();
+    if (list.length > 0) return list;
+    return getPreTestQuestions();
   });
 
   // Keep questions synced in real-time if updated by admin via Firebase
   useEffect(() => {
     const handleUpdate = () => {
-      setQuestions(mode === 'post' ? getPostTestQuestions() : getPreTestQuestions());
+      const list = mode === 'post' ? getPostTestQuestions() : getPreTestQuestions();
+      setQuestions(list.length > 0 ? list : getPreTestQuestions());
     };
     const eventName = mode === 'post' ? 'posttest-questions-updated' : 'pretest-questions-updated';
     window.addEventListener(eventName, handleUpdate);
-    return () => window.removeEventListener(eventName, handleUpdate);
+    window.addEventListener('pretest-questions-updated', handleUpdate);
+    return () => {
+      window.removeEventListener(eventName, handleUpdate);
+      window.removeEventListener('pretest-questions-updated', handleUpdate);
+    };
   }, [mode]);
 
   const [currentIndex, setCurrentIndex] = useState(() => {
@@ -596,6 +603,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               questionNumber={currentIndex + 1}
               totalQuestions={questions.length}
               soundEnabled={soundEnabled}
+              mode={mode}
               onBackToHome={onBackToInstructions}
               onFinishMatching={(isCorrectAll) => {
                 setChosenAnswers((prev) => ({
@@ -664,6 +672,56 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                   </div>
                 </div>
               )}
+              {/* Bottom of Question Card: Post-Test Score Indicator (0/1 initially, 1/1 if correct, 0/1 if wrong) */}
+              {mode === 'post' && (
+                <div className={`mt-5 pt-3.5 border-t-2 flex flex-wrap items-center justify-between gap-2 px-4 py-3 rounded-2xl transition-all ${
+                  answeredState === 'selected' || answeredState === 'evaluating'
+                    ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
+                        ? 'bg-emerald-950/80 border-emerald-500/70 text-emerald-200'
+                        : 'bg-rose-950/80 border-rose-500/70 text-rose-200')
+                    : 'bg-slate-950/70 border-slate-800 text-slate-300'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    {answeredState === 'selected' || answeredState === 'evaluating' ? (
+                      chosenAnswers[currentQ.id] === currentQ.correctIndex ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                          <span className="text-xs sm:text-sm font-black text-emerald-300">
+                            إجابة صحيحة! أحسنت ✓
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <X className="w-5 h-5 text-rose-400" />
+                          <span className="text-xs sm:text-sm font-black text-rose-300">
+                            إجابة خاطئة ✗
+                          </span>
+                        </>
+                      )
+                    ) : (
+                      <>
+                        <HelpCircle className="w-4 h-4 text-amber-400" />
+                        <span className="text-xs text-slate-400 font-bold">
+                          حدد إجابتك لاحتساب درجة السؤال
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-xl border border-white/10">
+                    <span className="text-xs font-bold text-slate-300">النتيجة:</span>
+                    <span className={`px-2.5 py-0.5 rounded-lg font-mono font-black text-sm border shadow-sm ${
+                      (answeredState === 'selected' || answeredState === 'evaluating') && chosenAnswers[currentQ.id] === currentQ.correctIndex
+                        ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                        : 'bg-slate-900 text-amber-300 border-slate-700'
+                    }`}>
+                      {(answeredState === 'selected' || answeredState === 'evaluating') && chosenAnswers[currentQ.id] === currentQ.correctIndex
+                        ? '1/1'
+                        : '0/1'}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ANSWER OPTIONS: GAME 1 (STATIONS) OR GAME 2 (BOXES 📦) */}
@@ -683,9 +741,20 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                   }
 
                   if (answeredState !== 'idle' && isSelected) {
-                    // Neutral selection without revealing correct or wrong!
-                    stationBg = 'bg-sky-950/80 border-sky-400 text-white shadow-[0_0_25px_rgba(56,189,248,0.4)] ring-2 ring-sky-400/50';
-                    bayBadge = 'bg-sky-400 text-slate-950 border-sky-300 font-bold';
+                    if (mode === 'post') {
+                      const isCorrect = optIdx === currentQ.correctIndex;
+                      if (isCorrect) {
+                        stationBg = 'bg-emerald-950/90 border-emerald-400 text-white ring-2 ring-emerald-400/60 shadow-[0_0_30px_rgba(16,185,129,0.4)]';
+                        bayBadge = 'bg-emerald-400 text-slate-950 border-emerald-300 font-bold';
+                      } else {
+                        stationBg = 'bg-rose-950/90 border-rose-500 text-white ring-2 ring-rose-500/60 shadow-[0_0_30px_rgba(244,63,94,0.4)]';
+                        bayBadge = 'bg-rose-500 text-white border-rose-400 font-bold';
+                      }
+                    } else {
+                      // Neutral selection in pretest without revealing correct or wrong!
+                      stationBg = 'bg-sky-950/80 border-sky-400 text-white shadow-[0_0_25px_rgba(56,189,248,0.4)] ring-2 ring-sky-400/50';
+                      bayBadge = 'bg-sky-400 text-slate-950 border-sky-300 font-bold';
+                    }
                   }
 
                   return (
@@ -728,10 +797,24 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
 
                       {isSelected && (
                         <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                          <span className="text-xs font-black text-sky-400 flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>تم اختيار هذه المحطة</span>
-                          </span>
+                          {mode === 'post' ? (
+                            optIdx === currentQ.correctIndex ? (
+                              <span className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                <span>إجابة صحيحة • النتيجة: 1/1</span>
+                              </span>
+                            ) : (
+                              <span className="text-xs font-black text-rose-300 flex items-center gap-1.5">
+                                <X className="w-4 h-4 text-rose-400" />
+                                <span>إجابة خاطئة • النتيجة: 0/1</span>
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-xs font-black text-sky-400 flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>تم اختيار هذه المحطة</span>
+                            </span>
+                          )}
                           <RacingCarGraphic scale={0.7} isDriving={isDrivingToStation === optIdx} />
                         </div>
                       )}
@@ -749,7 +832,16 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
 
                   let boxCardStyle = 'bg-gradient-to-b from-[#141022] to-[#0c0916] border-slate-800 hover:border-amber-500/60 text-slate-200';
                   if (isSelected) {
-                    boxCardStyle = 'bg-gradient-to-b from-[#241738] via-[#1a122e] to-[#120a22] border-amber-400 text-white ring-2 ring-amber-400/50 shadow-[0_0_30px_rgba(251,191,36,0.35)]';
+                    if (mode === 'post') {
+                      const isCorrect = optIdx === currentQ.correctIndex;
+                      if (isCorrect) {
+                        boxCardStyle = 'bg-gradient-to-b from-emerald-950 via-[#0d2a1c] to-black border-emerald-400 text-white ring-2 ring-emerald-400/50 shadow-[0_0_35px_rgba(16,185,129,0.45)]';
+                      } else {
+                        boxCardStyle = 'bg-gradient-to-b from-rose-950 via-[#2a0d14] to-black border-rose-500 text-white ring-2 ring-rose-500/50 shadow-[0_0_35px_rgba(244,63,94,0.45)]';
+                      }
+                    } else {
+                      boxCardStyle = 'bg-gradient-to-b from-[#241738] via-[#1a122e] to-[#120a22] border-amber-400 text-white ring-2 ring-amber-400/50 shadow-[0_0_30px_rgba(251,191,36,0.35)]';
+                    }
                   }
 
                   return (
@@ -793,11 +885,25 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                       </div>
 
                       {isSelected && (
-                        <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-xs text-amber-300 font-bold">
-                          <span className="flex items-center gap-1.5">
-                            <Check className="w-4 h-4 text-amber-400" />
-                            <span>تم اختيار هذا الصندوق</span>
-                          </span>
+                        <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-bold">
+                          {mode === 'post' ? (
+                            optIdx === currentQ.correctIndex ? (
+                              <span className="flex items-center gap-1.5 text-emerald-300 font-black">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                <span>إجابة صحيحة • النتيجة: 1/1</span>
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1.5 text-rose-300 font-black">
+                                <X className="w-4 h-4 text-rose-400" />
+                                <span>إجابة خاطئة • النتيجة: 0/1</span>
+                              </span>
+                            )
+                          ) : (
+                            <span className="flex items-center gap-1.5 text-amber-300">
+                              <Check className="w-4 h-4 text-amber-400" />
+                              <span>تم اختيار هذا الصندوق</span>
+                            </span>
+                          )}
                           <span className="font-mono text-[11px] text-slate-400">Box #{boxNumber}</span>
                         </div>
                       )}
@@ -807,33 +913,48 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               </div>
             )}
 
-            {/* NEUTRAL SELECTION BANNER (Result hidden from student, stored for Admin only) */}
+            {/* SELECTION BANNER (Post-Test reveals 1/1 or 0/1, Pre-Test stays neutral for Admin) */}
             {answeredState === 'selected' && (
               <div className={`p-5 rounded-2xl border backdrop-blur-md shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in ${
                 mode === 'post' 
                   ? (chosenAnswers[currentQ.id] === currentQ.correctIndex 
-                      ? 'bg-green-950/95 border-green-500/50' 
-                      : 'bg-red-950/95 border-red-500/50')
+                      ? 'bg-emerald-950/95 border-emerald-500/60 shadow-emerald-900/30' 
+                      : 'bg-rose-950/95 border-rose-500/60 shadow-rose-900/30')
                   : 'bg-slate-900/95 border-sky-500/50'
               }`}>
                 <div className="flex items-center gap-3 text-right">
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-black shrink-0 ${
+                  <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center font-black shrink-0 ${
                     mode === 'post'
                       ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
-                          ? 'bg-green-500/20 text-green-300 border-green-500/40'
-                          : 'bg-red-500/20 text-red-300 border-red-500/40')
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.35)]'
+                          : 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-[0_0_20px_rgba(244,63,94,0.35)]')
                       : 'bg-sky-500/20 text-sky-300 border-sky-500/40'
                   }`}>
-                    {mode === 'post' ? (chosenAnswers[currentQ.id] === currentQ.correctIndex ? <CheckCircle2 className="w-5 h-5" /> : <X className="w-5 h-5" />) : <CheckCircle2 className="w-5 h-5" />}
+                    {mode === 'post' ? (chosenAnswers[currentQ.id] === currentQ.correctIndex ? <CheckCircle2 className="w-6 h-6 text-emerald-400" /> : <X className="w-6 h-6 text-rose-400" />) : <CheckCircle2 className="w-6 h-6 text-sky-400" />}
                   </div>
                   <div>
-                    <span className="block text-xs font-black text-white">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-black text-white">
+                        {mode === 'post' 
+                          ? (chosenAnswers[currentQ.id] === currentQ.correctIndex ? 'إجابة صحيحة! أحسنت ✓' : 'إجابة خاطئة ✗')
+                          : 'تم تسجيل وتثبيت اختيارك بنجاح'}
+                      </span>
+                      {mode === 'post' && (
+                        <span className={`px-2.5 py-0.5 rounded-lg text-xs font-mono font-black ${
+                          chosenAnswers[currentQ.id] === currentQ.correctIndex
+                            ? 'bg-emerald-500 text-slate-950'
+                            : 'bg-rose-600 text-white'
+                        }`}>
+                          النتيجة: {chosenAnswers[currentQ.id] === currentQ.correctIndex ? '1/1' : '0/1'}
+                        </span>
+                      )}
+                    </div>
+                    <span className="block text-[11px] text-slate-400 mt-0.5">
                       {mode === 'post' 
-                        ? (chosenAnswers[currentQ.id] === currentQ.correctIndex ? 'إجابة صحيحة! أحسنت' : 'إجابة خاطئة')
-                        : 'تم تسجيل وتثبيت اختيارك بنجاح'}
-                    </span>
-                    <span className="block text-[11px] text-slate-400">
-                      {mode === 'post' ? 'اضغط للمتابعة للسؤال التالي' : 'استجابتك مسجلة في لوحة المشرف وأستاذ المقرر. اضغط للمتابعة.'}
+                        ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
+                            ? 'تم احتساب درجة السؤال (1/1) وتسجيلها في شيت الإدارة.'
+                            : 'لم يتم احتساب درجة السؤال (0/1) وتم تسجيلها في شيت الإدارة.')
+                        : 'استجابتك مسجلة في لوحة المشرف وأستاذ المقرر. اضغط للمتابعة.'}
                     </span>
                   </div>
                 </div>
@@ -841,11 +962,11 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                 <button
                   type="button"
                   onClick={handleNextQuestion}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition text-white shadow-lg cursor-pointer shrink-0 ${
+                  className={`flex items-center gap-2 px-7 py-3 rounded-xl text-xs font-black transition text-white shadow-lg cursor-pointer shrink-0 ${
                     mode === 'post'
                       ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
-                          ? 'bg-green-600 hover:bg-green-500 shadow-green-900/30'
-                          : 'bg-red-600 hover:bg-red-500 shadow-red-900/30')
+                          ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30'
+                          : 'bg-rose-600 hover:bg-rose-500 shadow-rose-900/30')
                       : 'bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 shadow-sky-900/30'
                   }`}
                 >
@@ -861,39 +982,77 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
             </div>
           )
         ) : (
-          /* COMPLETION SCREEN: Strict academic notice, score is private to Admin */
+          /* COMPLETION SCREEN: Post-test reveals full final score to student, Pre-test is private to Admin */
           <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-950 to-black border-2 border-sky-500/50 text-center shadow-[0_0_50px_rgba(56,189,248,0.2)] max-w-2xl mx-auto space-y-6">
-            <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-2xl shadow-sky-500/40">
-              <CheckCircle2 className="w-10 h-10" />
+            <div className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center text-white shadow-2xl ${
+              mode === 'post'
+                ? 'bg-gradient-to-tr from-emerald-500 to-teal-600 shadow-emerald-500/40'
+                : 'bg-gradient-to-tr from-sky-500 to-blue-600 shadow-sky-500/40'
+            }`}>
+              {mode === 'post' ? <Trophy className="w-10 h-10 text-yellow-300" /> : <CheckCircle2 className="w-10 h-10" />}
             </div>
 
             <div>
-              <span className="text-xs font-black px-3.5 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/40">
+              <span className={`text-xs font-black px-3.5 py-1 rounded-full border ${
+                mode === 'post'
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+              }`}>
                 تم تسليم {testLabel} بنجاح 📋
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-white mt-3 font-['Tajawal']">
-                شكراً لك! تم استلام جميع إجاباتك كاملة
+                {mode === 'post' ? 'تهانينا! اكتمل الاختبار البعدي' : 'شكراً لك! تم استلام جميع إجاباتك كاملة'}
               </h2>
               <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-                لقد أتممت الاختبار بنجاح وتم تسجيل كافة إجاباتك الاستكشافية في منظومة التعلم.
+                {mode === 'post'
+                  ? 'تم تصحيح كافة الأسئلة الـ 53 واحتساب نتيجتك النهائية وتسجيلها في شيت الإدارة.'
+                  : 'لقد أتممت الاختبار بنجاح وتم تسجيل كافة إجاباتك الاستكشافية في منظومة التعلم.'}
               </p>
             </div>
 
-            {/* Academic Notice: Scores in Admin panel only */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-sky-950/40 border border-sky-500/30 text-right space-y-2">
-              <div className="flex items-center gap-2 text-sky-300 font-bold text-xs">
-                <Shield className="w-4 h-4 text-sky-400 shrink-0" />
-                <span>تنبيه نظام القياس والتقويم:</span>
+            {/* Score presentation for Post-Test vs Academic Notice for Pre-Test */}
+            {mode === 'post' ? (
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-950/80 via-slate-900 to-black border-2 border-emerald-500/50 text-center space-y-3 shadow-xl">
+                <span className="text-xs text-emerald-300 font-bold block">
+                  النتيجة النهائية للاختبار البعدي (53 سؤالاً بمعدل 1 درجة لكل سؤال)
+                </span>
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-4xl sm:text-5xl font-black text-[#ffd700] font-mono drop-shadow">
+                    {finalResult ? finalResult.score : 0}
+                  </span>
+                  <span className="text-2xl font-bold text-slate-400 font-mono">
+                    / {finalResult ? finalResult.maxScore : 53}
+                  </span>
+                </div>
+                <div className="flex items-center justify-center gap-2 pt-1">
+                  <span className="px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
+                    النسبة المئوية: {finalResult && finalResult.maxScore ? Math.round((finalResult.score / finalResult.maxScore) * 100) : 0}%
+                  </span>
+                  <span className="px-3 py-1 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold">
+                    {finalResult?.passed ? '✓ اجتياز متميز' : 'تم التسليم'}
+                  </span>
+                </div>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed font-normal">
-                درجات ونتائج الاختبارات تُحسب وتُسجل بدقة في لوحة تحكم المشرف وأستاذ المقرر للمتابعة الإحصائية وقياس أثر التعلم دون إظهارها للطالب في هذه المرحلة.
-              </p>
-            </div>
+            ) : (
+              <div className="p-4 sm:p-5 rounded-2xl bg-sky-950/40 border border-sky-500/30 text-right space-y-2">
+                <div className="flex items-center gap-2 text-sky-300 font-bold text-xs">
+                  <Shield className="w-4 h-4 text-sky-400 shrink-0" />
+                  <span>تنبيه نظام القياس والتقويم:</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed font-normal">
+                  درجات ونتائج الاختبارات القبلي تُحسب وتُسجل بدقة في لوحة تحكم المشرف وأستاذ المقرر للمتابعة الإحصائية وقياس أثر التعلم دون إظهارها للطالب في هذه المرحلة.
+                </p>
+              </div>
+            )}
 
             <button
               type="button"
               onClick={onFinishPreTest}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-sm transition shadow-xl shadow-sky-900/40 cursor-pointer"
+              className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-black text-sm transition shadow-xl cursor-pointer ${
+                mode === 'post'
+                  ? 'bg-gradient-to-r from-emerald-500 via-teal-600 to-emerald-500 hover:from-emerald-400 hover:to-teal-500 text-slate-950 shadow-emerald-900/40'
+                  : 'bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-blue-500 text-white shadow-sky-900/40'
+              }`}
             >
               {mode === 'pre'
                 ? 'الانتقال إلى المستويات والمراحل التعليمية (المستوى 1) 🚀'

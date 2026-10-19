@@ -66,6 +66,7 @@ export interface CompletedLevelResult {
   score: number;
   maxScore: number;
   answers: Record<string, number>; // questionId -> chosenIndex
+  questionScores?: Record<string, number>; // questionId -> 1 or 0
   completedAt: string;
   timeSpentSeconds: number;
   feedbackRevealedToStudent: boolean; // true for G1 & G3, false for G2 & G4
@@ -89,6 +90,7 @@ export interface PreTestResult {
   score: number;
   maxScore: number;
   answers: Record<string, number>; // questionId -> chosenIndex
+  questionScores?: Record<string, number>; // questionId -> 1 or 0
   completedAt: string;
   timeSpentSeconds: number;
   passed: boolean;
