@@ -373,6 +373,25 @@ export const submitGroupLevelRealtime = async (
   return { levelResult, isImmediateFeedback };
 };
 
+export function sanitizeData(data: any): any {
+  if (data === undefined) return null;
+  if (data === null) return null;
+  if (Array.isArray(data)) return data.map(val => (val === undefined ? null : sanitizeData(val)));
+  if (typeof data === 'object') {
+    const sanitized: any = {};
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        const val = data[key];
+        if (val !== undefined) {
+          sanitized[key] = sanitizeData(val);
+        }
+      }
+    }
+    return sanitized;
+  }
+  return data;
+}
+
 /**
  * Sync individual student progress to Firebase Realtime Database
  */
@@ -383,7 +402,7 @@ export const syncStudentProgressToFirestore = async (progress: StudentGameProgre
   }
 
   try {
-    await rtdbSet(ref(rtdb, `studentsProgress/${progress.username}`), progress);
+    await rtdbSet(ref(rtdb, `studentsProgress/${progress.username}`), sanitizeData(progress));
   } catch (error) {
     console.error('Failed to sync student progress to Firebase:', error);
   }
@@ -423,24 +442,7 @@ export const subscribeToAllStudentsProgress = (
  */
 export type GlobalSyncType = 'pretest' | 'posttest' | 'levels' | 'instructions' | 'splash' | 'supervisors' | 'siteTitle';
 
-function sanitizeData(data: any): any {
-  if (data === undefined) return null;
-  if (data === null) return null;
-  if (Array.isArray(data)) return data.map(val => (val === undefined ? null : sanitizeData(val)));
-  if (typeof data === 'object') {
-    const sanitized: any = {};
-    for (const key in data) {
-      if (data.hasOwnProperty(key)) {
-        const val = data[key];
-        if (val !== undefined) {
-          sanitized[key] = sanitizeData(val);
-        }
-      }
-    }
-    return sanitized;
-  }
-  return data;
-}
+
 
 export async function syncGlobalQuestionsAndLevels(type: GlobalSyncType, data: any) {
   try {

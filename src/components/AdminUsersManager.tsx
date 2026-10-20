@@ -15,6 +15,7 @@ import {
   Copy,
   Check,
   RefreshCw,
+  RotateCcw,
   LogIn,
   Edit,
   Trash2,
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react';
 import { PortalUser } from '../types';
 import { getPortalUsers, savePortalUsers, addActivityLog } from '../utils/adminStorage';
+import { resetStudentProgress, resetAllStudentsToRealCleanState } from '../utils/gameStorage';
 import { RESEARCH_GROUPS_META, getStudentPassword } from '../data/studentAccounts';
 
 interface AdminUsersManagerProps {
@@ -61,6 +63,15 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
   const showToast = (text: string, type: 'success' | 'info' | 'error' = 'success') => {
     setToastMsg({ text, type });
     setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  // Reset student progress to initial state
+  const handleResetStudentProgress = (user: PortalUser) => {
+    if (window.confirm(`هل أنت متأكد من تصفير وإعادة تهيئة بيانات الطالب ${user.username} بالكامل؟`)) {
+      resetStudentProgress(user.username);
+      addActivityLog(`قام المشرف بإعادة تهيئة بيانات الطالب: ${user.username}`, 'admin', 'warning');
+      showToast(`✓ تم إعادة تهيئة بيانات الطالب ${user.username} بنجاح`);
+    }
   };
 
   // Toggle user active status
@@ -644,6 +655,18 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
                         </button>
+
+                        {/* Reset Student Progress */}
+                        {user.username !== 'admin' && (
+                          <button
+                            type="button"
+                            onClick={() => handleResetStudentProgress(user)}
+                            className="p-1.5 rounded-lg bg-indigo-950/60 hover:bg-indigo-900 border border-indigo-500/50 text-indigo-300 hover:text-white cursor-pointer transition-all"
+                            title="تهيئة بيانات الطالب (تصفير الدرجات والتقدم)"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+                        )}
 
                         {/* Delete User (safe) */}
                         {user.username !== 'admin' && (

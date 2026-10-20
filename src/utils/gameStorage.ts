@@ -245,31 +245,89 @@ export function saveStudentLevelActivity(
 }
 
 export function resetStudentProgress(username: string): StudentGameProgress {
+  const cleanUsername = username.trim();
   const all = getAllStudentsProgress();
   const avatarIndex =
-    Math.abs(username.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0)) %
+    Math.abs(cleanUsername.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0)) %
     CARTOON_AVATARS.length;
 
+  const currentAvatar = all[cleanUsername]?.avatarId || CARTOON_AVATARS[avatarIndex].id;
+
   const resetProg: StudentGameProgress = {
-    username,
-    avatarId: CARTOON_AVATARS[avatarIndex].id,
+    username: cleanUsername,
+    avatarId: currentAvatar,
     currentLevel: 1,
     completedLevels: {},
     totalScore: 0,
     hearts: 3,
     badges: [],
-    lastActive: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    lastActive: 'لم يبدأ بعد (تمت التهيئة)',
   };
-  all[username] = resetProg;
+
+  all[cleanUsername] = resetProg;
   saveAllStudentsProgress(all);
-  addActivityLog(`إعادة تعيين تقدم اللعبة للطالب: ${username}`, 'المشرف', 'warning');
+
+  // Clear all in-progress test answer storage and cached views for this student
+  try {
+    localStorage.removeItem(`cp_pre_index_${cleanUsername}`);
+    localStorage.removeItem(`cp_pre_answers_${cleanUsername}`);
+    localStorage.removeItem(`cp_pre_started_${cleanUsername}`);
+    localStorage.removeItem(`cp_post_index_${cleanUsername}`);
+    localStorage.removeItem(`cp_post_answers_${cleanUsername}`);
+    localStorage.removeItem(`cp_post_started_${cleanUsername}`);
+    localStorage.removeItem(`cp_active_portal_section_${cleanUsername}`);
+  } catch {
+    // Ignore
+  }
+
+  // Sync to Firebase RTDB
+  syncStudentProgressToFirestore(resetProg).catch(() => {});
+
+  // Dispatch global window events so all active components re-render immediately
+  try {
+    window.dispatchEvent(new CustomEvent('cp_student_profile_updated', { detail: { username: cleanUsername } }));
+    window.dispatchEvent(new CustomEvent('cp_student_progress_reset', { detail: { username: cleanUsername } }));
+  } catch {
+    // Ignore
+  }
+
+  addActivityLog(
+    `تهيئة درجات الطالب: تم إعادة درجات وتقدم الطالب ${cleanUsername} إلى الصفر كأنه لم يجب على أي شيء`,
+    'admin',
+    'warning'
+  );
+
   return resetProg;
 }
 
 export function resetAllStudentsToRealCleanState(): Record<string, StudentGameProgress> {
   const clean = generateCleanRealStudents();
   localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(clean));
-  addActivityLog('تم مسح البيانات الوهمية وتعيين البيانات الحقيقية النظيفة لكافة الطلاب', 'المشرف', 'warning');
+
+  // Sync each student to Firebase RTDB and clear any local keys
+  Object.values(clean).forEach((prog) => {
+    try {
+      localStorage.removeItem(`cp_pre_index_${prog.username}`);
+      localStorage.removeItem(`cp_pre_answers_${prog.username}`);
+      localStorage.removeItem(`cp_pre_started_${prog.username}`);
+      localStorage.removeItem(`cp_post_index_${prog.username}`);
+      localStorage.removeItem(`cp_post_answers_${prog.username}`);
+      localStorage.removeItem(`cp_post_started_${prog.username}`);
+      localStorage.removeItem(`cp_active_portal_section_${prog.username}`);
+    } catch {
+      // Ignore
+    }
+    syncStudentProgressToFirestore(prog).catch(() => {});
+  });
+
+  try {
+    window.dispatchEvent(new CustomEvent('cp_student_profile_updated', { detail: { all: true } }));
+    window.dispatchEvent(new CustomEvent('cp_student_progress_reset', { detail: { all: true } }));
+  } catch {
+    // Ignore
+  }
+
+  addActivityLog('تمت تهيئة وتصفير درجات ونتائج كافة الطلاب بنجاح', 'admin', 'warning');
   return clean;
 }
 
