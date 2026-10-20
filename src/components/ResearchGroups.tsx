@@ -306,9 +306,6 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                     <span className="text-slate-400">
                       الطلاب: <strong className="text-white font-mono">{group.membersCount} طالب</strong>
                     </span>
-                    <span className="text-slate-400">
-                      متوسط الإتقان: <strong className="text-emerald-400 font-mono">{group.averageScore}%</strong>
-                    </span>
                   </div>
 
                   <button
