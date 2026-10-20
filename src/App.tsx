@@ -22,22 +22,18 @@ const SESSION_KEY = 'cp_active_session_username_v1';
 const ADMIN_SESSION_KEY = 'cp_active_admin_session_v1';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem(SESSION_KEY) || null;
-    } catch {
-      return null;
-    }
-  });
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [authScreen, setAuthScreen] = useState<'splash' | 'login'>('splash');
-  const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(ADMIN_SESSION_KEY) === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem(SESSION_KEY);
+    if (savedUser) setCurrentUser(savedUser);
+    
+    const savedAdmin = localStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+    if (savedAdmin) setIsAdminMode(true);
+  }, []);
 
   // Automatically rehydrate any uploaded videos from IndexedDB on startup
   useEffect(() => {

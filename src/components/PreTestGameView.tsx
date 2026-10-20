@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { CARTOON_AVATARS } from '../data/gameLevelsData';
 import { getStudentProgress } from '../utils/gameStorage';
-import { getStudentByUsername } from '../data/studentAccounts';
+import { getStudentByUsername, getGroupByUsername } from '../data/studentAccounts';
 import {
   getPreTestQuestions,
   getPostTestQuestions,
@@ -261,6 +261,9 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
   onFinishPreTest,
   onBackToInstructions,
 }) => {
+  const isAdmin = username.trim().toLowerCase() === 'admin';
+  const groupMeta = getGroupByUsername(username);
+  const isImmediate = isAdmin || (groupMeta ? groupMeta.feedbackMode === 'فورية' : true);
   // Load questions based on mode (Guaranteed fallback: Post-test inherits Pre-test questions)
   const [questions, setQuestions] = useState<PreTestQuestion[]>(() => {
     const list = mode === 'post' ? getPostTestQuestions() : getPreTestQuestions();
@@ -390,8 +393,9 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
   const chooseAnswerWithoutRevealing = (stationIdx: number) => {
     setChosenAnswers((prev) => ({ ...prev, [currentQ.id]: stationIdx }));
     
-    // In posttest, show feedback to student
-    if (mode === 'post') {
+
+    // In posttest, show feedback to student only if immediate
+    if (mode === 'post' && isImmediate) {
       setAnsweredState('evaluating');
       triggerSound(stationIdx === currentQ.correctIndex ? 'correct' : 'wrong');
       
@@ -400,7 +404,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
         setAnsweredState('selected');
       }, 800);
     } else {
-      // In pretest, no feedback to student
+      // In pretest or delayed posttest, no feedback to student
       setAnsweredState('selected');
       triggerSound('click');
     }

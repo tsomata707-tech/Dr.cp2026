@@ -259,6 +259,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       return;
     }
 
+    if (!isAdmin && Object.keys(chosenAnswers).length < currentLevelDef.questions.length) {
+      alert('يرجى الإجابة على جميع الأسئلة قبل الانتقال للمستوى التالي');
+      return;
+    }
+
     if (isAdmin) {
       // In read-only admin mode, advance level without saving or polluting scores
       const nextLvl = selectedLevelNum + 1;
@@ -1287,36 +1292,53 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 {/* Table showing activities, status, and points earned according to Storyboard */}
                 <div className="p-4 rounded-2xl bg-[#090714] border border-purple-500/40 space-y-2.5">
                   <div className="space-y-1.5 font-mono text-xs">
-                    {feedbackModal.levelDef.questions.map((q, idx) => {
-                      const isCorrect = feedbackModal.result.answers[q.id] === q.correctIndex;
-                      return (
-                        <div
-                          key={q.id}
-                          className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800"
-                        >
-                          <span className="text-slate-300 font-['Cairo'] font-bold">
-                            نشاط {idx + 1}: {q.question.substring(0, 32)}...
-                          </span>
-                          <span
-                            className={`font-black font-mono ${
-                              isCorrect ? 'text-emerald-400' : 'text-red-400'
-                            }`}
+                      {feedbackModal.levelDef.questions.map((q, idx) => {
+                        const isCorrect = feedbackModal.result.answers[q.id] === q.correctIndex;
+                        return (
+                          <div
+                            key={q.id}
+                            className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800"
                           >
-                            {isCorrect ? '✔️ +50 نقطة' : '❌ 0 نقطة'}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                            <span className="text-slate-300 font-['Cairo'] font-bold">
+                              نشاط {idx + 1}: {q.question.substring(0, 32)}...
+                            </span>
+                            {/* Only show result if not a student in deferred mode, or if admin */}
+                            {!isImmediateGroup || isAdmin ? (
+                              <span
+                                className={`font-black font-mono ${
+                                  isCorrect ? 'text-emerald-400' : 'text-red-400'
+                                }`}
+                              >
+                                {isCorrect ? '✔️ +50 نقطة' : '❌ 0 نقطة'}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 font-mono text-[10px]">
+                                تم تسجيل الإجابة
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
 
-                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                    <span className="text-xs font-bold text-amber-300 font-['Cairo']">
-                      إجمالي نقاط المرحلة المكتسبة:
-                    </span>
-                    <span className="text-lg font-black text-[#ffd700] font-['Outfit']">
-                      +{feedbackModal.result.score} ⭐
-                    </span>
-                  </div>
+                    {!isImmediateGroup && !isAdmin && (
+                       <div className="pt-2 border-t border-slate-800 text-center">
+                         <span className="text-[10px] text-slate-400 font-['Cairo']">
+                           النتائج التفصيلية ستكون متاحة لاحقاً
+                         </span>
+                       </div>
+                    )}
+
+                    <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-300 font-['Cairo']">
+                        {isImmediateGroup || isAdmin ? 'إجمالي نقاط المرحلة المكتسبة:' : 'تم رصد النشاط:'}
+                      </span>
+                      {(isImmediateGroup || isAdmin) && (
+                        <span className="text-lg font-black text-[#ffd700] font-['Outfit']">
+                          +{feedbackModal.result.score} ⭐
+                        </span>
+                      )}
+                    </div>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/50 text-xs text-purple-200 font-['Cairo'] leading-relaxed">
