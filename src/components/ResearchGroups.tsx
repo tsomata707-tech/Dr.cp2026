@@ -200,9 +200,6 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                 <span className="text-xs font-bold px-3 py-0.5 rounded-full bg-[#d4af37]/15 border border-[#d4af37] text-amber-300 font-['Cairo']">
                   المجموعات التجريبية الأربعة للدراسة
                 </span>
-                <span className="text-xs text-purple-300 font-semibold font-['Cairo']">
-                  (التفاعلي • الفوري • المرجأ)
-                </span>
               </div>
               <h2 className="text-lg sm:text-2xl font-black text-white font-['Tajawal'] mt-1">
                 الأربع جروبات: التفاعل بين نمط التعلم ونمط التغذية الراجعة
