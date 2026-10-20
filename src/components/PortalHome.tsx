@@ -593,6 +593,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       {activeMainSection === 'game' && (
         <EducationalGameView
           username={username}
+          selectedGroupId={selectedGroupId}
           onBackToHome={() => setActiveMainSection('groups')}
           onCompleteAllLevels={() => {
             refreshProgress();

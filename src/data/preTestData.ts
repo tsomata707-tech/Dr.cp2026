@@ -870,6 +870,11 @@ export function submitPreTestResult(
     passed,
   };
 
+  // For admin user (Read-only mode): do not commit answers, do not save scores, do not modify database
+  if (username.trim().toLowerCase() === 'admin') {
+    return { progress: prog, result };
+  }
+
   prog.preTestResult = result;
   const badgeName = 'وسام المستكشف التمهيدي (الاختبار القبلي)';
   if (!prog.badges.includes(badgeName)) {
@@ -978,6 +983,11 @@ export function submitPostTestResult(
     timeSpentSeconds,
     passed,
   };
+
+  // For admin user (Read-only mode): do not commit answers, do not save scores, do not modify database
+  if (username.trim().toLowerCase() === 'admin') {
+    return { progress: prog, result };
+  }
 
   prog.postTestResult = result;
   prog.totalScore += score;

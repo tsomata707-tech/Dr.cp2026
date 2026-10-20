@@ -24,6 +24,7 @@ import {
   Navigation,
   Home,
   Package,
+  Eye,
 } from 'lucide-react';
 import { CARTOON_AVATARS } from '../data/gameLevelsData';
 import { getStudentProgress } from '../utils/gameStorage';
@@ -545,6 +546,23 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
             </button>
           </div>
         </header>
+
+        {/* Admin Read-Only Notice Banner */}
+        {username.trim().toLowerCase() === 'admin' && (
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-slate-900 to-emerald-950/90 border-2 border-emerald-500/80 shadow-[0_0_25px_rgba(16,185,129,0.3)] flex items-center gap-3 text-xs sm:text-sm font-['Cairo'] text-emerald-200">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500 flex items-center justify-center shrink-0 shadow-inner">
+              <Eye className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <span className="font-black text-emerald-300 font-['Tajawal'] text-sm sm:text-base">
+                وضع استعراض المشرف (حساب للقراءة فقط 👁️):
+              </span>
+              <p className="text-xs text-slate-300 mt-0.5">
+                يمكنك تجربة وحل أسئلة {testLabel} بحرية، ولن يتم احتساب أو اعتماد أي إجابات أو تسجيل درجات في قاعدة البيانات أو لوحات الشرف.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Progress Tracker */}
         <div className="mb-6 space-y-2">

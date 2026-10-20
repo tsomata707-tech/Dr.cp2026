@@ -45,7 +45,7 @@ import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { DraggableLevelInstructions } from './DraggableLevelInstructions';
 import { LevelTransitionLoader5s } from './LevelTransitionLoader5s';
-import { getGroupByUsername, getStudentByUsername } from '../data/studentAccounts';
+import { getGroupByUsername, getStudentByUsername, RESEARCH_GROUPS_META } from '../data/studentAccounts';
 import {
   StudentGameProgress,
   CompletedLevelResult,
@@ -70,13 +70,16 @@ interface EducationalGameViewProps {
   username: string;
   onBackToHome?: () => void;
   onCompleteAllLevels?: () => void;
+  selectedGroupId?: string;
 }
 
 export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   username,
   onBackToHome,
   onCompleteAllLevels,
+  selectedGroupId,
 }) => {
+  const isAdmin = username.trim().toLowerCase() === 'admin';
   const [progress, setProgress] = useState<StudentGameProgress>(() => getStudentProgress(username));
   const [selectedLevelNum, setSelectedLevelNum] = useState<number>(() => Math.min(9, progress.currentLevel));
   const [chosenAnswers, setChosenAnswers] = useState<Record<string, number>>({});
@@ -102,8 +105,21 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     levelDef: GameLevelDef;
   } | null>(null);
 
-  // Group metadata
-  const userGroupMeta = getGroupByUsername(username);
+  // Group metadata: for admin, resolve dynamically based on selectedGroupId (allowing admin to enter and inspect ANY group)
+  const userGroupMeta = useMemo(() => {
+    if (isAdmin && selectedGroupId) {
+      const codeMap: Record<string, 'G1' | 'G2' | 'G3' | 'G4'> = {
+        'grp-1': 'G1',
+        'grp-2': 'G2',
+        'grp-3': 'G3',
+        'grp-4': 'G4',
+      };
+      const code = codeMap[selectedGroupId] || 'G1';
+      return RESEARCH_GROUPS_META[code] || null;
+    }
+    return getGroupByUsername(username);
+  }, [username, isAdmin, selectedGroupId]);
+
   const groupCode = userGroupMeta?.code || 'G1';
   const isCollaborative = userGroupMeta?.learningMode === 'تعاوني';
   const isImmediateGroup = userGroupMeta ? userGroupMeta.feedbackMode === 'فورية' : true;
@@ -175,18 +191,20 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const handleSelectOption = (questionId: string, optionIndex: number) => {
     if (isLevelCompleted) return; // Cannot modify if already completed
 
-    // Update local state instantly
+    // Update local state instantly (admin can preview interactive choices locally)
     setChosenAnswers((prev) => ({
       ...prev,
       [questionId]: optionIndex,
     }));
 
-    // Broadcast in real-time to Firebase Firestore so all 15 peers see the selection simultaneously!
-    selectQuestionOptionRealtime(groupCode, selectedLevelNum, questionId, optionIndex, {
-      username,
-      fullName: studentInfo?.fullName || username,
-      avatarEmoji: currentAvatar.emoji,
-    });
+    // Broadcast in real-time to Firebase Firestore for regular students (admin is read-only)
+    if (!isAdmin) {
+      selectQuestionOptionRealtime(groupCode, selectedLevelNum, questionId, optionIndex, {
+        username,
+        fullName: studentInfo?.fullName || username,
+        avatarEmoji: currentAvatar.emoji,
+      });
+    }
   };
 
   // Sync student activity when level changes
@@ -236,8 +254,16 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   // Finish Level Click: triggers 5-second loading bar
   // "ثم زر finish level 1 وبعدها شريط تحميل ٥ ثواني مكتوب أعلاه جاري الانتقال الي ليفل ٢ وهكذا الي ان تنتهي ال ٩ ليفل"
   const handleFinishLevelClick = async () => {
-    if (!studentActivity) {
+    if (!isAdmin && !studentActivity) {
       alert('يرجى رفع نشاطك الخاص لهذا المستوى أولاً (فيديو أو صورة أو PDF) لإكمال المستوى');
+      return;
+    }
+
+    if (isAdmin) {
+      // In read-only admin mode, advance level without saving or polluting scores
+      const nextLvl = selectedLevelNum + 1;
+      setTransitionTargetLevel(nextLvl);
+      setIsTransitioning5s(true);
       return;
     }
 
@@ -300,6 +326,30 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   return (
     <div className="space-y-6 text-right" id="educational-game-arena">
+      {/* Admin Read-Only Notice Banner */}
+      {isAdmin && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-[#0d1815] to-emerald-950/90 border-2 border-emerald-500/80 shadow-[0_0_25px_rgba(16,185,129,0.3)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs sm:text-sm font-['Cairo'] text-emerald-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500 flex items-center justify-center shrink-0 shadow-inner">
+              <Eye className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-emerald-300 font-['Tajawal'] text-sm sm:text-base">
+                  وضع استعراض المشرف (حساب للقراءة فقط 👁️)
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-900/60 border border-emerald-400/50 text-[11px] text-emerald-200 font-bold">
+                  {userGroupMeta?.name || 'مجموعة تجريبية'} ({groupCode})
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                يمكنك التنقل بين المستويات الـ 9 واختبار أي مجموعة وتجربة الأسئلة بحرية، ولن يتم احتساب أو اعتماد أي إجابات أو تعديلات على درجات وبيانات المنظومة.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 0. RETURN TO STUDENT HOME BUTTON (🏠 الصفحة الخاصة للطالب) */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-[#0c1024]/95 border-2 border-amber-500/60 shadow-[0_0_25px_rgba(255,215,0,0.2)]">
         <button

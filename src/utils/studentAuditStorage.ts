@@ -48,6 +48,18 @@ export function saveAllStudentLoginsAudit(map: Record<string, StudentLoginAudit>
  */
 export function recordStudentLogin(username: string): StudentLoginAudit {
   const cleanUser = username.trim();
+
+  // Read-only admin user: do not pollute student logins audit map
+  if (cleanUser.toLowerCase() === 'admin') {
+    return {
+      username: 'admin',
+      firstLogin: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+      totalLogins: 1,
+      sessions: [],
+    };
+  }
+
   const now = new Date();
 
   // Format real date & time

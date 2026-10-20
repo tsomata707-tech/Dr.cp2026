@@ -226,6 +226,11 @@ export const selectQuestionOptionRealtime = async (
     avatarEmoji: string;
   }
 ) => {
+  // Read-only admin check: never broadcast or store admin selections
+  if (student.username.toLowerCase() === 'admin') {
+    return;
+  }
+
   const timeStr = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   const newAnswer: RealtimeQuestionAnswer = {
@@ -309,6 +314,11 @@ export const submitGroupLevelRealtime = async (
     feedbackRevealedToStudent: isImmediateFeedback,
   };
 
+  // Read-only admin check: never submit or overwrite group state in RTDB
+  if (submittedBy.username.toLowerCase() === 'admin') {
+    return { levelResult, isImmediateFeedback };
+  }
+
   try {
     const nextLevel = Math.min(10, levelNumber + 1);
 
@@ -367,6 +377,11 @@ export const submitGroupLevelRealtime = async (
  * Sync individual student progress to Firebase Realtime Database
  */
 export const syncStudentProgressToFirestore = async (progress: StudentGameProgress) => {
+  // Read-only admin check: never sync admin to studentsProgress in RTDB
+  if (progress.username.toLowerCase() === 'admin') {
+    return;
+  }
+
   try {
     await rtdbSet(ref(rtdb, `studentsProgress/${progress.username}`), progress);
   } catch (error) {

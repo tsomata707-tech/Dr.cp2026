@@ -25,8 +25,23 @@ export function saveAllStudentsProgress(all: Record<string, StudentGameProgress>
 }
 
 export function getStudentProgress(username: string): StudentGameProgress {
-  const all = getAllStudentsProgress();
   const cleanUsername = username.trim();
+
+  // Special Read-Only Administrator Profile: full read access to all 9 levels, no saving/mutations
+  if (cleanUsername.toLowerCase() === 'admin') {
+    return {
+      username: 'admin',
+      avatarId: 'avatar-cpbot',
+      currentLevel: 9,
+      completedLevels: {},
+      totalScore: 0,
+      hearts: 3,
+      badges: [],
+      lastActive: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    };
+  }
+
+  const all = getAllStudentsProgress();
 
   if (all[cleanUsername]) {
     const existing = all[cleanUsername];
@@ -143,6 +158,16 @@ export function submitLevelChallenge(
     feedbackRevealedToStudent: isImmediate,
   };
 
+  // For admin user (Read-only mode): do not commit answers, do not save scores, do not modify database
+  if (username.trim().toLowerCase() === 'admin') {
+    return {
+      progress: prog,
+      levelResult,
+      isImmediateFeedback: isImmediate,
+      scoreGained: 0,
+    };
+  }
+
   // Record this level permanently
   prog.completedLevels[levelNumber] = levelResult;
   prog.totalScore = Object.values(prog.completedLevels).reduce(
@@ -186,8 +211,14 @@ export function saveStudentLevelActivity(
   levelNumber: number,
   submission: import('../types').StudentActivitySubmission
 ): StudentGameProgress {
-  const all = getAllStudentsProgress();
   const prog = getStudentProgress(username);
+
+  // Admin user: read-only, do not persist activity submissions
+  if (username.trim().toLowerCase() === 'admin') {
+    return prog;
+  }
+
+  const all = getAllStudentsProgress();
   if (!prog.studentActivities) {
     prog.studentActivities = {};
   }

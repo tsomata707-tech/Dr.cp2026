@@ -38,9 +38,9 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
     const allProgress = getAllStudentsProgress();
     const studentsList = Object.values(allProgress);
 
-    // Only include students who have started, scored points, or completed levels
+    // Only include students who have started, scored points, or completed levels (excluding read-only admin)
     const activeOnes = studentsList.filter(
-      (s) => s.totalScore > 0 || Object.keys(s.completedLevels || {}).length > 0
+      (s) => s.username.toLowerCase() !== 'admin' && (s.totalScore > 0 || Object.keys(s.completedLevels || {}).length > 0)
     );
 
     // Sort by real score descending

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Zap, Clock, Shield, Sparkles, Award, CheckCircle2, MessageSquare, ArrowLeft, Target, Flame, Lock, AlertTriangle } from 'lucide-react';
+import { Users, Zap, Clock, Shield, Sparkles, Award, CheckCircle2, MessageSquare, ArrowLeft, Target, Flame, Lock, AlertTriangle, Eye } from 'lucide-react';
 import { getGroupByUsername } from '../data/studentAccounts';
 
 export interface ResearchGroup {
@@ -115,12 +115,13 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
   onEnterGroup,
   currentUsername,
 }) => {
+  const isAdmin = currentUsername?.trim().toLowerCase() === 'admin';
   const userGroupMeta = currentUsername ? getGroupByUsername(currentUsername) : null;
   const [blockedAlert, setBlockedAlert] = useState<{ groupName: string; groupCode: string } | null>(null);
 
   const handleGroupClick = (group: ResearchGroup) => {
-    // If student has an assigned group and it is different, lock access
-    if (userGroupMeta && group.id !== userGroupMeta.id) {
+    // If student has an assigned group and it is different, lock access (admin has full access to enter any group)
+    if (!isAdmin && userGroupMeta && group.id !== userGroupMeta.id) {
       setBlockedAlert({ groupName: group.name, groupCode: group.code });
       return;
     }
@@ -205,7 +206,12 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                 الأربع جروبات: التفاعل بين نمط التعلم ونمط التغذية الراجعة
               </h2>
               <p className="text-xs text-slate-300 mt-1 font-['IBM_Plex_Sans_Arabic']">
-                {userGroupMeta ? (
+                {isAdmin ? (
+                  <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                    <Eye className="w-4 h-4 text-emerald-400 inline" />
+                    <span>حساب المشرف (admin): مصرح لك بقراءة كامل الموقع والدخول واستعراض أي مجموعة من المجموعات الأربعة.</span>
+                  </span>
+                ) : userGroupMeta ? (
                   <span className="text-amber-300 font-bold">
                     أنت مسجل في مجموعة: {userGroupMeta.name} ومصرح لك بدخولها فقط
                   </span>
@@ -220,9 +226,9 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
         {/* The 4 Groups Grid - All 4 groups visible normally */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           {RESEARCH_GROUPS_DATA.map((group) => {
-            const isAssignedToUser = userGroupMeta ? group.id === userGroupMeta.id : true;
+            const isAssignedToUser = isAdmin ? true : (userGroupMeta ? group.id === userGroupMeta.id : true);
             const isSelected = group.id === selectedGroupId;
-            const isLockedForUser = userGroupMeta ? !isAssignedToUser : false;
+            const isLockedForUser = isAdmin ? false : (userGroupMeta ? !isAssignedToUser : false);
 
             return (
               <div
@@ -238,7 +244,16 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                 }`}
               >
                 {/* Status Badges */}
-                {isLockedForUser ? (
+                {isAdmin ? (
+                  <div className={`absolute top-3 left-3 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 shadow-md ${
+                    isSelected
+                      ? 'bg-[#ffd700] text-slate-950 border border-amber-300'
+                      : 'bg-emerald-950/80 border border-emerald-500 text-emerald-300'
+                  }`}>
+                    <Eye className="w-3 h-3" />
+                    <span>{isSelected ? 'المجموعة المحددة حالياً' : 'متاح للأدمن (استعراض)'}</span>
+                  </div>
+                ) : isLockedForUser ? (
                   <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-red-950/80 border border-red-500 text-red-300 text-[10px] font-black flex items-center gap-1 shadow-md">
                     <Lock className="w-3 h-3 text-red-400" />
                     <span>🔒 مغلق لطلاب المجموعات الأخرى</span>
@@ -319,7 +334,13 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                         : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700'
                     }`}
                   >
-                    {isLockedForUser ? (
+                    {isAdmin ? (
+                      <>
+                        <Eye className="w-3.5 h-3.5 text-amber-300" />
+                        <span>{isSelected ? 'استعراض هذه المجموعة الآن' : 'اختيار واستعراض المجموعة'}</span>
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                      </>
+                    ) : isLockedForUser ? (
                       <>
                         <Lock className="w-3 h-3 text-red-400" />
                         <span>دخول المجموعة</span>
