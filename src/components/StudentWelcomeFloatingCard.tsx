@@ -12,13 +12,13 @@ interface StudentWelcomeFloatingCardProps {
 export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProps> = ({
   username,
   onFinish,
-  durationSeconds = 7,
+  durationSeconds = 5,
 }) => {
   const [progressPercent, setProgressPercent] = useState<number>(0);
   const groupMeta = getGroupByUsername(username);
 
   useEffect(() => {
-    // 7-second smooth progress interval without numeric counter or instructional sentences
+    // 5-second smooth progress interval without numeric counter or instructional sentences
     const totalMs = durationSeconds * 1000;
     const intervalMs = 50;
     let elapsedMs = 0;
@@ -79,6 +79,15 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
 
         {/* Modern Elegant Loading Bar - No Counter, No Sentences, Strict Wait */}
         <div className="w-full bg-[#070a16] p-5 sm:p-6 rounded-2xl border border-slate-800/90 shadow-inner space-y-4">
+          {/* Fading & moving Welcome text above progress bar */}
+          <div className="overflow-hidden py-1">
+            <div className="animate-[pulse_1.5s_ease-in-out_infinite] transition-opacity duration-700">
+              <span className="text-xs sm:text-sm font-black text-amber-300 font-['Tajawal'] tracking-widest px-4 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 shadow-[0_0_20px_rgba(251,191,36,0.4)] inline-block transform hover:scale-105 transition-transform">
+                Welcome ✨ أهلاً بك
+              </span>
+            </div>
+          </div>
+
           {/* Progress bar (smooth fill, no numeric counter) */}
           <div className="h-4 w-full bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800/90 relative shadow-inner">
             <div
