@@ -128,7 +128,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
   useEffect(() => {
     const handleReturnToStudentHome = () => {
       setShowSupervisorModal(false);
-      setActiveMainSection('honor');
+      setActiveMainSection('groups');
       window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     };
     const handleNavToPosttest = () => {
