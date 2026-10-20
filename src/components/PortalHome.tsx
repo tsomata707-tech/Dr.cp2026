@@ -534,7 +534,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
           username={username}
           onStartLearning={() => setActiveMainSection('instructions')}
           onOpenInstructions={() => setActiveMainSection('instructions')}
-          onGoToHome={() => setActiveMainSection('map')}
+          onGoToHome={() => setActiveMainSection('groups')}
         />
       )}
 
@@ -549,8 +549,8 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
               setActiveMainSection('map');
             }
           }}
-          onBackToHome={() => setActiveMainSection('map')}
-          onBackToWelcome={() => setActiveMainSection('map')}
+          onBackToHome={() => setActiveMainSection('groups')}
+          onBackToWelcome={() => setActiveMainSection('groups')}
           actionButtonText="الانتقال إلى بيئة الألعاب 🎮"
         />
       )}
@@ -564,7 +564,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
             refreshProgress();
             setActiveMainSection('game');
           }}
-          onBackToInstructions={() => setActiveMainSection('honor')}
+          onBackToInstructions={() => setActiveMainSection('groups')}
         />
       )}
 
@@ -577,7 +577,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
             refreshProgress();
             setActiveMainSection('honor');
           }}
-          onBackToInstructions={() => setActiveMainSection('honor')}
+          onBackToInstructions={() => setActiveMainSection('groups')}
         />
       )}
 
@@ -585,7 +585,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       {activeMainSection === 'profile' && (
         <ProfileScreen
           username={username}
-          onNavigateToMap={() => setActiveMainSection('map')}
+          onNavigateToMap={() => setActiveMainSection('groups')}
         />
       )}
 
@@ -593,7 +593,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       {activeMainSection === 'game' && (
         <EducationalGameView
           username={username}
-          onBackToHome={() => setActiveMainSection('honor')}
+          onBackToHome={() => setActiveMainSection('groups')}
           onCompleteAllLevels={() => {
             refreshProgress();
             setActiveMainSection('posttest');
