@@ -665,9 +665,9 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
           </div>
         ) : (
           <div className="pt-3 border-t border-slate-800 flex items-center justify-between px-4 py-2 rounded-xl bg-slate-950/60 text-xs text-slate-400">
-            <span>سؤال التوصيل التفاعلي (التغذية الراجعة مرجأة)</span>
-            <span className="font-mono text-amber-300 font-bold">
-              {placedCount === defaultPairs.length ? 'تم الرصد والترتيب ✓' : `${placedCount}/${defaultPairs.length} مكتمل`}
+            <span>سؤال التوصيل التفاعلي</span>
+            <span className="font-mono text-emerald-400 font-bold">
+              {placedCount === defaultPairs.length ? 'اكتمل التوصيل ✓' : `${placedCount}/${defaultPairs.length} مكتمل`}
             </span>
           </div>
         )}

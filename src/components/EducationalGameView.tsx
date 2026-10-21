@@ -1312,8 +1312,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                                 {isCorrect ? '✔️ +50 نقطة' : '❌ 0 نقطة'}
                               </span>
                             ) : (
-                              <span className="text-slate-400 font-mono text-[10px] bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                                تم تسجيل الإجابة ورصدها ⏳
+                              <span className="text-emerald-400 font-mono text-[10px] bg-slate-950 px-2.5 py-0.5 rounded border border-emerald-900/50">
+                                مكتمل ✓
                               </span>
                             )}
                           </div>
@@ -1321,17 +1321,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                       })}
                     </div>
 
-                    {!isImmediateGroup && !isAdmin && (
-                       <div className="pt-2 border-t border-slate-800 text-center">
-                         <span className="text-[11px] text-amber-300 font-['Cairo'] font-bold">
-                           تم احتساب درجاتك وتضاف إلى شيت الطلاب وتظهر النتيجة في نهاية الاختبار.
-                         </span>
-                       </div>
-                    )}
-
                     <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
                       <span className="text-xs font-bold text-amber-300 font-['Cairo']">
-                        {isImmediateGroup || isAdmin ? 'إجمالي نقاط المرحلة المكتسبة:' : 'حالة رصد النشاط:'}
+                        {isImmediateGroup || isAdmin ? 'إجمالي نقاط المرحلة المكتسبة:' : 'حالة المرحلة:'}
                       </span>
                       {isImmediateGroup || isAdmin ? (
                         <span className="text-lg font-black text-[#ffd700] font-['Outfit']">
@@ -1339,14 +1331,14 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                         </span>
                       ) : (
                         <span className="text-xs font-bold text-emerald-400 font-['Cairo']">
-                          تم الحفظ واحتساب الدرجات في الشيت ✓
+                          اكتملت جميع المهام بنجاح ✓
                         </span>
                       )}
                     </div>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/50 text-xs text-purple-200 font-['Cairo'] leading-relaxed">
-                  💡 <strong>التغذية الراجعة العامة:</strong> لقد أنجزت خطوات هذه المرحلة بنجاح وفق نمط التغذية الراجعة المرجأة، وتم حفظ إجاباتك واحتساب نقاطك وتحديث سجلك في شيت الطلاب ولوحة الإشراف.
+                  💡 <strong>ملاحظة تعليمية:</strong> أحسنت! لقد أتممت أنشطة هذه المرحلة بالكامل، ويمكنك الآن الانتقال إلى المرحلة التالية.
                 </div>
 
                 <div className="pt-2 flex justify-center">

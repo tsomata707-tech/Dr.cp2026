@@ -696,8 +696,8 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                   </div>
                 </div>
               )}
-              {/* Bottom of Question Card: Post-Test Score Indicator (0/1 initially, 1/1 if correct, 0/1 if wrong) */}
-              {mode === 'post' && isImmediate ? (
+              {/* Bottom of Question Card: Post-Test Score Indicator (only for immediate feedback mode) */}
+              {mode === 'post' && isImmediate && (
                 <div className={`mt-5 pt-3.5 border-t-2 flex flex-wrap items-center justify-between gap-2 px-4 py-3 rounded-2xl transition-all ${
                   answeredState === 'selected' || answeredState === 'evaluating'
                     ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
@@ -742,32 +742,6 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                       {(answeredState === 'selected' || answeredState === 'evaluating') && chosenAnswers[currentQ.id] === currentQ.correctIndex
                         ? '1/1'
                         : '0/1'}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-5 pt-3.5 border-t-2 border-slate-800 flex flex-wrap items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-slate-950/80 text-slate-300">
-                  <div className="flex items-center gap-2">
-                    {answeredState === 'selected' ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span className="text-xs sm:text-sm font-bold text-slate-200">
-                          تم تسجيل إجابتك بنجاح، ويتم احتساب الدرجات تلقائياً وتظهر النتيجة في نهاية الاختبار وتضاف إلى الشيت.
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <HelpCircle className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span className="text-xs text-slate-400 font-bold">
-                          اختر إجابتك لتسجيلها (التغذية الراجعة والدرجة مرجأة وتظهر في نهاية الاختبار)
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 shrink-0">
-                    <span className="text-xs font-bold text-amber-300 font-mono">
-                      {answeredState === 'selected' ? 'تم الحفظ والاحتساب ⏳' : 'بانتظار الإجابة'}
                     </span>
                   </div>
                 </div>
@@ -963,41 +937,33 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               </div>
             )}
 
-            {/* SELECTION BANNER (Post-Test reveals 1/1 or 0/1, Pre-Test stays neutral for Admin) */}
+            {/* SELECTION BANNER */}
             {answeredState === 'selected' && (
-              <div className={`p-5 rounded-2xl border backdrop-blur-md shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in ${
+              <div className={`p-4 sm:p-5 rounded-2xl border backdrop-blur-md shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in ${
                 mode === 'post' && isImmediate
                   ? (chosenAnswers[currentQ.id] === currentQ.correctIndex 
                       ? 'bg-emerald-950/95 border-emerald-500/60 shadow-emerald-900/30' 
                       : 'bg-rose-950/95 border-rose-500/60 shadow-rose-900/30')
-                  : 'bg-slate-900/95 border-sky-500/50'
+                  : 'bg-slate-900/95 border-slate-800'
               }`}>
-                <div className="flex items-center gap-3 text-right">
-                  <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center font-black shrink-0 ${
-                    mode === 'post' && isImmediate
-                      ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.35)]'
-                          : 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-[0_0_20px_rgba(244,63,94,0.35)]')
-                      : 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                  }`}>
-                    {mode === 'post' && isImmediate ? (
-                      chosenAnswers[currentQ.id] === currentQ.correctIndex ? (
+                {mode === 'post' && isImmediate ? (
+                  <div className="flex items-center gap-3 text-right">
+                    <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center font-black shrink-0 ${
+                      chosenAnswers[currentQ.id] === currentQ.correctIndex
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.35)]'
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-[0_0_20px_rgba(244,63,94,0.35)]'
+                    }`}>
+                      {chosenAnswers[currentQ.id] === currentQ.correctIndex ? (
                         <CheckCircle2 className="w-6 h-6 text-emerald-400" />
                       ) : (
                         <X className="w-6 h-6 text-rose-400" />
-                      )
-                    ) : (
-                      <CheckCircle2 className="w-6 h-6 text-sky-400" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-white">
-                        {mode === 'post' && isImmediate
-                          ? (chosenAnswers[currentQ.id] === currentQ.correctIndex ? 'إجابة صحيحة! أحسنت ✓' : 'إجابة خاطئة ✗')
-                          : 'تم تسجيل إجابتك بنجاح'}
-                      </span>
-                      {mode === 'post' && isImmediate ? (
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-black text-white">
+                          {chosenAnswers[currentQ.id] === currentQ.correctIndex ? 'إجابة صحيحة! أحسنت ✓' : 'إجابة خاطئة ✗'}
+                        </span>
                         <span className={`px-2.5 py-0.5 rounded-lg text-xs font-mono font-black ${
                           chosenAnswers[currentQ.id] === currentQ.correctIndex
                             ? 'bg-emerald-500 text-slate-950'
@@ -1005,21 +971,22 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                         }`}>
                           النتيجة: {chosenAnswers[currentQ.id] === currentQ.correctIndex ? '1/1' : '0/1'}
                         </span>
-                      ) : (
-                        <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-sky-950 border border-sky-500/40 text-sky-300">
-                          تم الرصد ⏳
-                        </span>
-                      )}
+                      </div>
+                      <span className="block text-[11px] text-slate-400 mt-0.5">
+                        {chosenAnswers[currentQ.id] === currentQ.correctIndex
+                          ? 'إجابة صحيحة ومؤكدة.'
+                          : 'إجابة غير صحيحة.'}
+                      </span>
                     </div>
-                    <span className="block text-[11px] text-slate-400 mt-0.5">
-                      {mode === 'post' && isImmediate
-                        ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
-                            ? 'تم احتساب درجة السؤال (1/1) وتسجيلها في شيت الإدارة.'
-                            : 'لم يتم احتساب درجة السؤال (0/1) وتم تسجيلها في شيت الإدارة.')
-                        : 'يتم احتساب الدرجات تلقائياً وتظهر النتيجة في نهاية الاختبار وتضاف إلى الشيت.'}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2.5 text-right">
+                    <span className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-xs sm:text-sm font-bold text-slate-300 font-['Cairo']">
+                      السؤال #{currentIndex + 1} من {questions.length}
                     </span>
                   </div>
-                </div>
+                )}
 
                 <button
                   type="button"
@@ -1029,7 +996,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                       ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
                           ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30'
                           : 'bg-rose-600 hover:bg-rose-500 shadow-rose-900/30')
-                      : 'bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 shadow-sky-900/30'
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-indigo-900/30'
                   }`}
                 >
                   <span>
@@ -1067,15 +1034,15 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               </h2>
               <p className="text-sm text-slate-300 mt-2 leading-relaxed">
                 {mode === 'post'
-                  ? 'تم تصحيح كافة الأسئلة الـ 53 واحتساب نتيجتك النهائية وتسجيلها في شيت الإدارة.'
-                  : 'لقد أتممت الاختبار بنجاح وتم تسجيل كافة إجاباتك الاستكشافية في منظومة التعلم.'}
+                  ? 'تم تصحيح كافة الأسئلة واحتساب نتيجتك النهائية بنجاح.'
+                  : 'لقد أتممت الاختبار بنجاح وتم تسليم كافة إجاباتك.'}
               </p>
             </div>
 
             {/* Score presentation at end of test */}
             <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-950/80 via-slate-900 to-black border-2 border-emerald-500/50 text-center space-y-3 shadow-xl">
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-500/20 border border-purple-400/40 text-purple-300 text-xs font-bold font-['Cairo']">
-                <span>{isDeferredGroup ? '📊 تقرير التغذية الراجعة المرجأة (نهاية الاختبار)' : '📊 نتيجة الاختبار'}</span>
+                <span>📊 نتيجة الاختبار النهائية</span>
               </div>
               <span className="text-xs text-emerald-300 font-bold block">
                 النتيجة النهائية لـ {testLabel} ({finalResult ? finalResult.maxScore : questions.length} سؤالاً)
@@ -1098,7 +1065,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               </div>
               <div className="p-3 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-xs text-emerald-300 flex items-center justify-center gap-2 mt-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>تم احتساب النتيجة بنجاح وتثبيتها تلقائياً في شيت الطلاب وسجل الإدارة.</span>
+                <span>تم احتساب نتيجتك النهائية واعتمادها بنجاح.</span>
               </div>
             </div>
 

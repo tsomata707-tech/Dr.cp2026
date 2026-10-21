@@ -103,12 +103,9 @@ export const CaptivateSimulator: React.FC<CaptivateSimulatorProps> = ({
         setScore((prev) => Math.max(0, prev - 10));
       }
     } else {
-      // Delayed Feedback Mode: Stored until review at end
+      // Delayed Feedback Mode: Stored silently without programmatic text
       setSubmitted(true);
-      setFeedbackMessage({
-        type: 'delayed',
-        text: 'تم تسجيل استجابتك ضمن نمط [التغذية الراجعة المرجئة]. سيتم استعراض التقييم التراكمي الشامل بعد انتهاء الموديول التعليمي بالكامل.',
-      });
+      setFeedbackMessage(null);
     }
   };
 
