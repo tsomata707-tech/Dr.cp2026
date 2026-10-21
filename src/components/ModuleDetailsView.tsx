@@ -306,7 +306,7 @@ export const ModuleDetailsView: React.FC<ModuleDetailsViewProps> = ({
           </div>
 
           <div className="p-4 rounded-2xl bg-[#120f22] border border-slate-800">
-            <span className="text-xs text-slate-400 font-bold mb-2 block">لجنة الإشراف العلمي:</span>
+            <span className="text-xs text-amber-300 font-bold mb-2 block">إشراف:</span>
             <div className="space-y-2">
               {RESEARCH_INFO.supervisors.map((sup, idx) => (
                 <div key={idx} className="text-xs flex items-baseline gap-2">

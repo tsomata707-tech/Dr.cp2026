@@ -192,32 +192,28 @@ export const SupervisorsHonorBoard: React.FC<SupervisorsHonorBoardProps> = ({
           </div>
         </div>
 
-        {/* 🌟 3. BOTTOM SECTION: المشرفين في الصف السفلي مع المحاذاة والتوسيط الذاتي 🌟 */}
         <div className="my-5 sm:my-6 relative z-10" id="honor-board-bottom-supervisors">
-          <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4 border-b border-slate-800 pb-2">
-            <h3 className="text-xs sm:text-sm md:text-base font-bold text-white font-['Tajawal'] flex items-center gap-2">
-              <Award className="w-4 h-4 text-[#ffd700]" />
-              <span>أعضاء لجنة الإشراف العلمي والبحث الأكاديمي الموقرين:</span>
-            </h3>
-            <span className="text-[11px] text-amber-300 font-semibold px-2.5 py-0.5 rounded-full bg-slate-900/80 border border-slate-700">
-              لجنة الإشراف ({supervisorsList.length} {supervisorsList.length === 1 ? 'مشرف' : 'مشرفين'})
-            </span>
+          {/* Title centered in a styled frame with only the word 'إشراف' */}
+          <div className="flex items-center justify-center mb-4 sm:mb-6 relative">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+              <div className="w-full border-t border-slate-800/80" />
+            </div>
+            <div className="relative inline-flex items-center justify-center px-8 py-2 rounded-2xl bg-gradient-to-r from-[#121832] via-[#1a2348] to-[#121832] border-2 border-[#ffd700]/70 text-[#ffd700] shadow-[0_0_25px_rgba(255,215,0,0.25)]">
+              <h3 className="text-base sm:text-lg font-black font-['Tajawal'] tracking-wide">
+                إشراف
+              </h3>
+            </div>
           </div>
 
           {/* Automatic Balanced & Centered Grid/Flex Layout: محاذاة أوتوماتيكية متوازنة عند إضافة أو حذف أي بطاقة */}
           <div className={getContainerLayoutClass(supervisorsList.length)}>
-            {supervisorsList.map((card, idx) => (
+            {supervisorsList.map((card) => (
               <div
                 key={card.id}
                 className={`relative rounded-2xl bg-gradient-to-b from-[#121832]/95 via-[#0b1024]/95 to-[#080c1c]/95 border-2 border-slate-700/80 hover:border-[#ffd700] shadow-[0_12px_32px_rgba(0,0,0,0.7)] hover:shadow-[0_0_30px_rgba(255,215,0,0.35)] transition-all duration-300 p-4 sm:p-5 flex flex-col items-center text-center group hover:-translate-y-1 ${getCardWidthClass(
                   supervisorsList.length
                 )}`}
               >
-                {/* Card Label Tag */}
-                <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-400/60 text-[#ffd700] font-black text-[10px] sm:text-[11px] font-['Cairo'] shadow-sm">
-                  {card.cardLabel || `المشرف ${idx + 1}`}
-                </div>
-
                 {/* Supervisor Photo */}
                 <div className="relative my-2 sm:my-3">
                   <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 sm:p-1.5 bg-gradient-to-tr from-amber-500 via-[#ffd700] to-yellow-200 shadow-[0_0_20px_rgba(255,215,0,0.45)] group-hover:scale-105 transition-transform duration-300">
