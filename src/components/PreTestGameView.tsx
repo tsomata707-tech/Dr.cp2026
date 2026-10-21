@@ -263,7 +263,8 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
 }) => {
   const isAdmin = username.trim().toLowerCase() === 'admin';
   const groupMeta = getGroupByUsername(username);
-  const isImmediate = isAdmin || (groupMeta ? groupMeta.feedbackMode === 'فورية' : true);
+  const isDeferredGroup = groupMeta?.code === 'G2' || groupMeta?.code === 'G4' || groupMeta?.feedbackMode === 'مرجئة';
+  const isImmediate = isAdmin ? true : !isDeferredGroup;
   // Load questions based on mode (Guaranteed fallback: Post-test inherits Pre-test questions)
   const [questions, setQuestions] = useState<PreTestQuestion[]>(() => {
     const list = mode === 'post' ? getPostTestQuestions() : getPreTestQuestions();
@@ -626,6 +627,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               totalQuestions={questions.length}
               soundEnabled={soundEnabled}
               mode={mode}
+              isImmediate={isImmediate}
               onBackToHome={onBackToInstructions}
               onFinishMatching={(isCorrectAll) => {
                 setChosenAnswers((prev) => ({
@@ -695,7 +697,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                 </div>
               )}
               {/* Bottom of Question Card: Post-Test Score Indicator (0/1 initially, 1/1 if correct, 0/1 if wrong) */}
-              {mode === 'post' && (
+              {mode === 'post' && isImmediate ? (
                 <div className={`mt-5 pt-3.5 border-t-2 flex flex-wrap items-center justify-between gap-2 px-4 py-3 rounded-2xl transition-all ${
                   answeredState === 'selected' || answeredState === 'evaluating'
                     ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
@@ -743,6 +745,32 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                     </span>
                   </div>
                 </div>
+              ) : (
+                <div className="mt-5 pt-3.5 border-t-2 border-slate-800 flex flex-wrap items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-slate-950/80 text-slate-300">
+                  <div className="flex items-center gap-2">
+                    {answeredState === 'selected' ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span className="text-xs sm:text-sm font-bold text-slate-200">
+                          تم تسجيل إجابتك بنجاح، ويتم احتساب الدرجات تلقائياً وتظهر النتيجة في نهاية الاختبار وتضاف إلى الشيت.
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <HelpCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="text-xs text-slate-400 font-bold">
+                          اختر إجابتك لتسجيلها (التغذية الراجعة والدرجة مرجأة وتظهر في نهاية الاختبار)
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 shrink-0">
+                    <span className="text-xs font-bold text-amber-300 font-mono">
+                      {answeredState === 'selected' ? 'تم الحفظ والاحتساب ⏳' : 'بانتظار الإجابة'}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -763,7 +791,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                   }
 
                   if (answeredState !== 'idle' && isSelected) {
-                    if (mode === 'post') {
+                    if (mode === 'post' && isImmediate) {
                       const isCorrect = optIdx === currentQ.correctIndex;
                       if (isCorrect) {
                         stationBg = 'bg-emerald-950/90 border-emerald-400 text-white ring-2 ring-emerald-400/60 shadow-[0_0_30px_rgba(16,185,129,0.4)]';
@@ -773,7 +801,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                         bayBadge = 'bg-rose-500 text-white border-rose-400 font-bold';
                       }
                     } else {
-                      // Neutral selection in pretest without revealing correct or wrong!
+                      // Neutral selection in pretest or deferred groups without revealing correct or wrong!
                       stationBg = 'bg-sky-950/80 border-sky-400 text-white shadow-[0_0_25px_rgba(56,189,248,0.4)] ring-2 ring-sky-400/50';
                       bayBadge = 'bg-sky-400 text-slate-950 border-sky-300 font-bold';
                     }
@@ -819,7 +847,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
 
                       {isSelected && (
                         <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                          {mode === 'post' ? (
+                          {mode === 'post' && isImmediate ? (
                             optIdx === currentQ.correctIndex ? (
                               <span className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -834,7 +862,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                           ) : (
                             <span className="text-xs font-black text-sky-400 flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>تم اختيار هذه المحطة</span>
+                              <span>تم اختيار وتثبيت هذه المحطة</span>
                             </span>
                           )}
                           <RacingCarGraphic scale={0.7} isDriving={isDrivingToStation === optIdx} />
@@ -854,7 +882,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
 
                   let boxCardStyle = 'bg-gradient-to-b from-[#141022] to-[#0c0916] border-slate-800 hover:border-amber-500/60 text-slate-200';
                   if (isSelected) {
-                    if (mode === 'post') {
+                    if (mode === 'post' && isImmediate) {
                       const isCorrect = optIdx === currentQ.correctIndex;
                       if (isCorrect) {
                         boxCardStyle = 'bg-gradient-to-b from-emerald-950 via-[#0d2a1c] to-black border-emerald-400 text-white ring-2 ring-emerald-400/50 shadow-[0_0_35px_rgba(16,185,129,0.45)]';
@@ -908,7 +936,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
 
                       {isSelected && (
                         <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-bold">
-                          {mode === 'post' ? (
+                          {mode === 'post' && isImmediate ? (
                             optIdx === currentQ.correctIndex ? (
                               <span className="flex items-center gap-1.5 text-emerald-300 font-black">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -923,7 +951,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                           ) : (
                             <span className="flex items-center gap-1.5 text-amber-300">
                               <Check className="w-4 h-4 text-amber-400" />
-                              <span>تم اختيار هذا الصندوق</span>
+                              <span>تم اختيار وتثبيت هذا الصندوق</span>
                             </span>
                           )}
                           <span className="font-mono text-[11px] text-slate-400">Box #{boxNumber}</span>
@@ -938,7 +966,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
             {/* SELECTION BANNER (Post-Test reveals 1/1 or 0/1, Pre-Test stays neutral for Admin) */}
             {answeredState === 'selected' && (
               <div className={`p-5 rounded-2xl border backdrop-blur-md shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in ${
-                mode === 'post' 
+                mode === 'post' && isImmediate
                   ? (chosenAnswers[currentQ.id] === currentQ.correctIndex 
                       ? 'bg-emerald-950/95 border-emerald-500/60 shadow-emerald-900/30' 
                       : 'bg-rose-950/95 border-rose-500/60 shadow-rose-900/30')
@@ -946,22 +974,30 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               }`}>
                 <div className="flex items-center gap-3 text-right">
                   <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center font-black shrink-0 ${
-                    mode === 'post'
+                    mode === 'post' && isImmediate
                       ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.35)]'
                           : 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-[0_0_20px_rgba(244,63,94,0.35)]')
                       : 'bg-sky-500/20 text-sky-300 border-sky-500/40'
                   }`}>
-                    {mode === 'post' ? (chosenAnswers[currentQ.id] === currentQ.correctIndex ? <CheckCircle2 className="w-6 h-6 text-emerald-400" /> : <X className="w-6 h-6 text-rose-400" />) : <CheckCircle2 className="w-6 h-6 text-sky-400" />}
+                    {mode === 'post' && isImmediate ? (
+                      chosenAnswers[currentQ.id] === currentQ.correctIndex ? (
+                        <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                      ) : (
+                        <X className="w-6 h-6 text-rose-400" />
+                      )
+                    ) : (
+                      <CheckCircle2 className="w-6 h-6 text-sky-400" />
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-black text-white">
-                        {mode === 'post' 
+                        {mode === 'post' && isImmediate
                           ? (chosenAnswers[currentQ.id] === currentQ.correctIndex ? 'إجابة صحيحة! أحسنت ✓' : 'إجابة خاطئة ✗')
-                          : 'تم تسجيل وتثبيت اختيارك بنجاح'}
+                          : 'تم تسجيل إجابتك بنجاح'}
                       </span>
-                      {mode === 'post' && (
+                      {mode === 'post' && isImmediate ? (
                         <span className={`px-2.5 py-0.5 rounded-lg text-xs font-mono font-black ${
                           chosenAnswers[currentQ.id] === currentQ.correctIndex
                             ? 'bg-emerald-500 text-slate-950'
@@ -969,14 +1005,18 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                         }`}>
                           النتيجة: {chosenAnswers[currentQ.id] === currentQ.correctIndex ? '1/1' : '0/1'}
                         </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-sky-950 border border-sky-500/40 text-sky-300">
+                          تم الرصد ⏳
+                        </span>
                       )}
                     </div>
                     <span className="block text-[11px] text-slate-400 mt-0.5">
-                      {mode === 'post' 
+                      {mode === 'post' && isImmediate
                         ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
                             ? 'تم احتساب درجة السؤال (1/1) وتسجيلها في شيت الإدارة.'
                             : 'لم يتم احتساب درجة السؤال (0/1) وتم تسجيلها في شيت الإدارة.')
-                        : 'استجابتك مسجلة في لوحة المشرف وأستاذ المقرر. اضغط للمتابعة.'}
+                        : 'يتم احتساب الدرجات تلقائياً وتظهر النتيجة في نهاية الاختبار وتضاف إلى الشيت.'}
                     </span>
                   </div>
                 </div>
@@ -985,7 +1025,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                   type="button"
                   onClick={handleNextQuestion}
                   className={`flex items-center gap-2 px-7 py-3 rounded-xl text-xs font-black transition text-white shadow-lg cursor-pointer shrink-0 ${
-                    mode === 'post'
+                    mode === 'post' && isImmediate
                       ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
                           ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30'
                           : 'bg-rose-600 hover:bg-rose-500 shadow-rose-900/30')
@@ -1032,40 +1072,35 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               </p>
             </div>
 
-            {/* Score presentation for Post-Test vs Academic Notice for Pre-Test */}
-            {mode === 'post' ? (
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-950/80 via-slate-900 to-black border-2 border-emerald-500/50 text-center space-y-3 shadow-xl">
-                <span className="text-xs text-emerald-300 font-bold block">
-                  النتيجة النهائية للاختبار البعدي (53 سؤالاً بمعدل 1 درجة لكل سؤال)
+            {/* Score presentation at end of test */}
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-950/80 via-slate-900 to-black border-2 border-emerald-500/50 text-center space-y-3 shadow-xl">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-500/20 border border-purple-400/40 text-purple-300 text-xs font-bold font-['Cairo']">
+                <span>{isDeferredGroup ? '📊 تقرير التغذية الراجعة المرجأة (نهاية الاختبار)' : '📊 نتيجة الاختبار'}</span>
+              </div>
+              <span className="text-xs text-emerald-300 font-bold block">
+                النتيجة النهائية لـ {testLabel} ({finalResult ? finalResult.maxScore : questions.length} سؤالاً)
+              </span>
+              <div className="flex items-center justify-center gap-3">
+                <span className="text-4xl sm:text-5xl font-black text-[#ffd700] font-mono drop-shadow">
+                  {finalResult ? finalResult.score : 0}
                 </span>
-                <div className="flex items-center justify-center gap-3">
-                  <span className="text-4xl sm:text-5xl font-black text-[#ffd700] font-mono drop-shadow">
-                    {finalResult ? finalResult.score : 0}
-                  </span>
-                  <span className="text-2xl font-bold text-slate-400 font-mono">
-                    / {finalResult ? finalResult.maxScore : 53}
-                  </span>
-                </div>
-                <div className="flex items-center justify-center gap-2 pt-1">
-                  <span className="px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
-                    النسبة المئوية: {finalResult && finalResult.maxScore ? Math.round((finalResult.score / finalResult.maxScore) * 100) : 0}%
-                  </span>
-                  <span className="px-3 py-1 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold">
-                    {finalResult?.passed ? '✓ اجتياز متميز' : 'تم التسليم'}
-                  </span>
-                </div>
+                <span className="text-2xl font-bold text-slate-400 font-mono">
+                  / {finalResult ? finalResult.maxScore : questions.length}
+                </span>
               </div>
-            ) : (
-              <div className="p-4 sm:p-5 rounded-2xl bg-sky-950/40 border border-sky-500/30 text-right space-y-2">
-                <div className="flex items-center gap-2 text-sky-300 font-bold text-xs">
-                  <Shield className="w-4 h-4 text-sky-400 shrink-0" />
-                  <span>تنبيه نظام القياس والتقويم:</span>
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed font-normal">
-                  درجات ونتائج الاختبارات القبلي تُحسب وتُسجل بدقة في لوحة تحكم المشرف وأستاذ المقرر للمتابعة الإحصائية وقياس أثر التعلم دون إظهارها للطالب في هذه المرحلة.
-                </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <span className="px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
+                  النسبة المئوية: {finalResult && finalResult.maxScore ? Math.round((finalResult.score / finalResult.maxScore) * 100) : 0}%
+                </span>
+                <span className="px-3 py-1 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold">
+                  {finalResult?.passed ? '✓ اجتياز متميز' : 'تم الرصد والاعتماد'}
+                </span>
               </div>
-            )}
+              <div className="p-3 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-xs text-emerald-300 flex items-center justify-center gap-2 mt-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>تم احتساب النتيجة بنجاح وتثبيتها تلقائياً في شيت الطلاب وسجل الإدارة.</span>
+              </div>
+            </div>
 
             <button
               type="button"

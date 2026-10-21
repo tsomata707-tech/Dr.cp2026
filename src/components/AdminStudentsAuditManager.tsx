@@ -124,12 +124,19 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const handleLocalLogin = () => {
       setLoginAuditMap(getStudentLoginsAuditMap());
     };
+    const handleProgressUpdate = () => {
+      setProgressMap(getAllStudentsProgress());
+    };
     window.addEventListener('student-login-recorded', handleLocalLogin);
+    window.addEventListener('cp_student_profile_updated', handleProgressUpdate);
+    window.addEventListener('cp_student_progress_reset', handleProgressUpdate);
 
     return () => {
       unsubProgress();
       unsubAudit();
       window.removeEventListener('student-login-recorded', handleLocalLogin);
+      window.removeEventListener('cp_student_profile_updated', handleProgressUpdate);
+      window.removeEventListener('cp_student_progress_reset', handleProgressUpdate);
     };
   }, []);
 

@@ -24,6 +24,7 @@ interface MatchingQuestionTableViewProps {
   onFinishMatching: (isCorrectAll: boolean, matchesMap: Record<number, number>) => void;
   onBackToHome?: () => void;
   mode?: 'pre' | 'post';
+  isImmediate?: boolean;
 }
 
 interface ImageCardItem {
@@ -41,6 +42,7 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
   onFinishMatching,
   onBackToHome,
   mode = 'pre',
+  isImmediate = true,
 }) => {
   // Extract pairs: text & matching image
   const defaultPairs = useMemo(() => {
@@ -361,7 +363,7 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
                 <CheckCircle2 className="w-6 h-6 text-emerald-400" />
                 <span>تم إنجاز سؤال التوصيل!</span>
               </div>
-              {mode === 'post' && (
+              {mode === 'post' && isImmediate && (
                 <div className={`inline-flex items-center gap-2 px-6 py-2 rounded-full border-2 font-black text-sm sm:text-base shadow-xl ${
                   matchingScore === 1
                     ? 'bg-emerald-950/90 border-emerald-400 text-emerald-300'
@@ -648,7 +650,7 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
 
         {/* CONFIRMATION SUBMISSION BUTTON */}
         {/* Post-Test Score Indicator on Matching Card */}
-        {mode === 'post' && (
+        {mode === 'post' && isImmediate ? (
           <div className="pt-3 border-t border-slate-800 flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
             <span className="text-xs text-slate-300 font-bold">النتيجة المقدرة لسؤال التوصيل:</span>
             <div className="flex items-center gap-2">
@@ -660,6 +662,13 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
                 {matchingScore === 1 ? '1/1' : '0/1'}
               </span>
             </div>
+          </div>
+        ) : (
+          <div className="pt-3 border-t border-slate-800 flex items-center justify-between px-4 py-2 rounded-xl bg-slate-950/60 text-xs text-slate-400">
+            <span>سؤال التوصيل التفاعلي (التغذية الراجعة مرجأة)</span>
+            <span className="font-mono text-amber-300 font-bold">
+              {placedCount === defaultPairs.length ? 'تم الرصد والترتيب ✓' : `${placedCount}/${defaultPairs.length} مكتمل`}
+            </span>
           </div>
         )}
 

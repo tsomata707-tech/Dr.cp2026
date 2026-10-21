@@ -1303,7 +1303,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                               نشاط {idx + 1}: {q.question.substring(0, 32)}...
                             </span>
                             {/* Only show result if not a student in deferred mode, or if admin */}
-                            {!isImmediateGroup || isAdmin ? (
+                            {isImmediateGroup || isAdmin ? (
                               <span
                                 className={`font-black font-mono ${
                                   isCorrect ? 'text-emerald-400' : 'text-red-400'
@@ -1312,8 +1312,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                                 {isCorrect ? '✔️ +50 نقطة' : '❌ 0 نقطة'}
                               </span>
                             ) : (
-                              <span className="text-slate-500 font-mono text-[10px]">
-                                تم تسجيل الإجابة
+                              <span className="text-slate-400 font-mono text-[10px] bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                                تم تسجيل الإجابة ورصدها ⏳
                               </span>
                             )}
                           </div>
@@ -1323,26 +1323,30 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
                     {!isImmediateGroup && !isAdmin && (
                        <div className="pt-2 border-t border-slate-800 text-center">
-                         <span className="text-[10px] text-slate-400 font-['Cairo']">
-                           النتائج التفصيلية ستكون متاحة لاحقاً
+                         <span className="text-[11px] text-amber-300 font-['Cairo'] font-bold">
+                           تم احتساب درجاتك وتضاف إلى شيت الطلاب وتظهر النتيجة في نهاية الاختبار.
                          </span>
                        </div>
                     )}
 
                     <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
                       <span className="text-xs font-bold text-amber-300 font-['Cairo']">
-                        {isImmediateGroup || isAdmin ? 'إجمالي نقاط المرحلة المكتسبة:' : 'تم رصد النشاط:'}
+                        {isImmediateGroup || isAdmin ? 'إجمالي نقاط المرحلة المكتسبة:' : 'حالة رصد النشاط:'}
                       </span>
-                      {(isImmediateGroup || isAdmin) && (
+                      {isImmediateGroup || isAdmin ? (
                         <span className="text-lg font-black text-[#ffd700] font-['Outfit']">
                           +{feedbackModal.result.score} ⭐
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-emerald-400 font-['Cairo']">
+                          تم الحفظ واحتساب الدرجات في الشيت ✓
                         </span>
                       )}
                     </div>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/50 text-xs text-purple-200 font-['Cairo'] leading-relaxed">
-                  💡 <strong>التغذية الراجعة العامة:</strong> لقد أنجزت خطوات هذه المرحلة بنجاح وفق متطلبات المعالجة التجريبية المرجأة، وتم حفظ إجاباتك وتحديث سجلك التراكمي في لوحة الإشراف.
+                  💡 <strong>التغذية الراجعة العامة:</strong> لقد أنجزت خطوات هذه المرحلة بنجاح وفق نمط التغذية الراجعة المرجأة، وتم حفظ إجاباتك واحتساب نقاطك وتحديث سجلك في شيت الطلاب ولوحة الإشراف.
                 </div>
 
                 <div className="pt-2 flex justify-center">

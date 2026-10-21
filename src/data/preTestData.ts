@@ -1,7 +1,7 @@
 import { PreTestQuestion, PreTestResult, StudentGameProgress } from '../types';
 import { getAllStudentsProgress, saveAllStudentsProgress } from '../utils/gameStorage';
 import { addActivityLog } from '../utils/adminStorage';
-import { syncGlobalQuestionsAndLevels } from '../utils/realtimeService';
+import { syncGlobalQuestionsAndLevels, syncStudentProgressToFirestore } from '../utils/realtimeService';
 import { MATCHING_ASSETS_Q4, MATCHING_ASSETS_Q8 } from './matchingQuestionAssets';
 
 const PRETEST_QUESTIONS_KEY = 'cp_pretest_questions_bank_v2';
@@ -884,9 +884,13 @@ export function submitPreTestResult(
 
   all[username] = prog;
   saveAllStudentsProgress(all);
+  syncStudentProgressToFirestore(prog).catch(() => {});
+  try {
+    window.dispatchEvent(new CustomEvent('cp_student_profile_updated', { detail: { username } }));
+  } catch {}
 
   addActivityLog(
-    `إتمام الاختبار القبلي: أنهى الطالب ${username} الاختبار القبلي وحصد ${score}/${finalMaxScore} درجة (محفوظ للأدمن فقط)`,
+    `إتمام الاختبار القبلي: أنهى الطالب ${username} الاختبار القبلي وحصد ${score}/${finalMaxScore} درجة (تمت إضافتها للشيت وسجل المتابعة)`,
     username,
     'success'
   );
@@ -999,9 +1003,13 @@ export function submitPostTestResult(
 
   all[username] = prog;
   saveAllStudentsProgress(all);
+  syncStudentProgressToFirestore(prog).catch(() => {});
+  try {
+    window.dispatchEvent(new CustomEvent('cp_student_profile_updated', { detail: { username } }));
+  } catch {}
 
   addActivityLog(
-    `إتمام الاختبار البعدي: أنهى الطالب ${username} الاختبار البعدي وحصد ${score}/${maxScore} درجة (معلن للطالب وللأدمن)`,
+    `إتمام الاختبار البعدي: أنهى الطالب ${username} الاختبار البعدي وحصد ${score}/${maxScore} درجة (تمت إضافتها للشيت ومعلنة)`,
     username,
     'success'
   );
