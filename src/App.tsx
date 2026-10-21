@@ -6,7 +6,7 @@ import { LoginCard } from './components/LoginCard';
 import { PortalHome } from './components/PortalHome';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminLoginModal } from './components/AdminLoginModal';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, Mail } from 'lucide-react';
 import { rehydrateLocalVideoUrls } from './utils/videoStorage';
 import { subscribeToGlobalData } from './utils/realtimeService';
 import { savePreTestQuestions, savePostTestQuestions } from './data/preTestData';
@@ -190,7 +190,17 @@ export default function App() {
       <footer className="relative z-10 py-4 text-center text-[11px] text-slate-500 border-t border-slate-900/60 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span>تصميم بيئة ألعاب تعليمية إلكترونية قائمة على التفاعل بين نمط التغذية الراجعة (فورية / مرجئة) ونمط التعلم (تعاوني / تنافسي) &copy; {new Date().getFullYear()} - جميع الحقوق محفوظة</span>
+            <span>حقوق التصميم والنشر</span>
+            <a
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=tsomata.707@gmail.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-amber-400 hover:text-amber-300 underline underline-offset-4 font-mono font-bold transition-colors cursor-pointer"
+              title="إرسال رسالة إلى tsomata.707@gmail.com عبر بريد Gmail"
+            >
+              <Mail className="w-3.5 h-3.5 text-amber-400" />
+              <span>tsomata.707@gmail.com</span>
+            </a>
           </div>
 
           <div className="flex items-center gap-4">
