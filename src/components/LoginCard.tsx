@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Lock, Eye, EyeOff, ArrowLeft, ShieldAlert, KeyRound, Check, Sparkles, HelpCircle, ArrowRight } from 'lucide-react';
 import { CpLogo } from './CpLogo';
 import { WhatsAppSupport } from './WhatsAppSupport';
-import { getPortalUsers, addActivityLog } from '../utils/adminStorage';
+import { getPortalUsers, getAdminSettings, addActivityLog } from '../utils/adminStorage';
 import { normalizeStudentUsername, getStudentPassword } from '../data/studentAccounts';
 import { getSiteTitleConfig, SiteTitleConfig } from '../utils/siteTitleStorage';
 
@@ -86,9 +86,13 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
       const normalized = normalizeStudentUsername(rawInput);
       const registeredUsers = getPortalUsers();
 
-      // Direct check for admin user (password: admin)
+      // Direct check for admin user
       if (rawInput.trim().toLowerCase() === 'admin') {
-        if (password === 'admin' || password === 'admin123' || password === 'password123') {
+        const adminUser = registeredUsers.find((u) => u.username.toLowerCase() === 'admin');
+        const settings = getAdminSettings();
+        const correctAdminPass = adminUser?.password || settings.adminPasswordHash || 'admin';
+
+        if (password === correctAdminPass) {
           saveOrClearCredentials('admin', password);
           addActivityLog('تسجيل دخول معتمد للمشرف (وضع القراءة والاستعراض): admin', 'admin', 'success');
           onLoginSuccess('admin');
@@ -114,15 +118,11 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
           return;
         }
 
-        // Strict password validation for distinct passwords
-        const isPasswordValid =
-          matched.password === password ||
-          password === matched.username ||
-          password === 'admin' ||
-          password === '123456'; // Graceful fallback
+        // Strict password validation against the user's active password
+        const isPasswordValid = password === matched.password;
 
         if (!isPasswordValid) {
-          setError(`كلمة المرور غير صحيحة لحساب ${matched.username}. تواصل مع المشرف أو اضغط "نسيت كلمة المرور؟"`);
+          setError(`كلمة المرور غير صحيحة لحساب ${matched.username}`);
           addActivityLog(`كلمة مرور خاطئة للمستخدم: ${matched.username}`, matched.username, 'warning');
           return;
         }
@@ -130,6 +130,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
         saveOrClearCredentials(matched.username, password);
         addActivityLog(`تسجيل دخول ناجح: ${matched.username}`, matched.username, 'success');
         onLoginSuccess(matched.username);
+        return;
       } else {
         // Fallback check if it's a valid G1_Cp_xx or G1_CB_xx format
         const match = normalized.match(/^G([1-4])_Cp_(\d{2})$/);

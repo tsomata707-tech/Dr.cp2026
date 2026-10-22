@@ -1,5 +1,6 @@
 import { AdminSettings, PortalUser, ActivityLog } from '../types';
 import { generateSixtyStudents, normalizeStudentUsername } from '../data/studentAccounts';
+import { syncGlobalQuestionsAndLevels } from './realtimeService';
 
 const SETTINGS_KEY = 'cp_admin_settings_v1';
 const USERS_KEY = 'cp_portal_users_v4'; // Bumped key to load G1_Cp_01... format and unique passwords
@@ -90,6 +91,22 @@ export function saveAdminSettings(settings: Partial<AdminSettings>): AdminSettin
   if (settings.whatsappNumber) {
     localStorage.setItem('cp_admin_whatsapp', settings.whatsappNumber);
   }
+  if (settings.adminPasswordHash) {
+    try {
+      const raw = localStorage.getItem(USERS_KEY);
+      if (raw) {
+        const users: PortalUser[] = JSON.parse(raw);
+        const adminUser = users.find((u) => u.username.toLowerCase() === 'admin');
+        if (adminUser && adminUser.password !== settings.adminPasswordHash) {
+          adminUser.password = settings.adminPasswordHash;
+          localStorage.setItem(USERS_KEY, JSON.stringify(users));
+          syncGlobalQuestionsAndLevels('users', users);
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }
   return updated;
 }
 
@@ -103,16 +120,10 @@ export function getPortalUsers(): PortalUser[] {
     const parsed: PortalUser[] = JSON.parse(raw);
 
     // Verify presence of G1_Cp format
-    const hasNewFormat = parsed.some(u => u.username.includes('_Cp_') || u.username.includes('_CP_'));
+    const hasNewFormat = parsed.some((u) => u.username.includes('_Cp_') || u.username.includes('_CP_'));
     if (!hasNewFormat || parsed.length < 60) {
       localStorage.setItem(USERS_KEY, JSON.stringify(DEFAULT_USERS));
       return DEFAULT_USERS;
-    }
-
-    const adminUser = parsed.find(u => u.username.toLowerCase() === 'admin');
-    if (adminUser && adminUser.password !== 'admin') {
-      adminUser.password = 'admin';
-      localStorage.setItem(USERS_KEY, JSON.stringify(parsed));
     }
 
     return parsed;
@@ -121,8 +132,27 @@ export function getPortalUsers(): PortalUser[] {
   }
 }
 
-export function savePortalUsers(users: PortalUser[]): void {
+export function savePortalUsers(users: PortalUser[], syncToRemote: boolean = true): void {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
+
+  // Sync admin password to adminSettings
+  const adminUser = users.find((u) => u.username.toLowerCase() === 'admin');
+  if (adminUser && adminUser.password) {
+    const current = getAdminSettings();
+    if (current.adminPasswordHash !== adminUser.password) {
+      const updatedSettings = { ...current, adminPasswordHash: adminUser.password };
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(updatedSettings));
+    }
+  }
+
+  // Sync to Firebase RTDB so all devices and sessions have the updated passwords
+  if (syncToRemote) {
+    try {
+      syncGlobalQuestionsAndLevels('users', users);
+    } catch {
+      // Ignore offline error
+    }
+  }
 }
 
 export function getActivityLogs(): ActivityLog[] {

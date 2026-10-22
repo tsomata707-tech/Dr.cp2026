@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Lock, Eye, EyeOff, X, ArrowLeft, KeyRound, AlertTriangle } from 'lucide-react';
-import { getAdminSettings } from '../utils/adminStorage';
+import { getAdminSettings, getPortalUsers } from '../utils/adminStorage';
 import { CpLogo } from './CpLogo';
 
 interface AdminLoginModalProps {
@@ -25,8 +25,10 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
     e.preventDefault();
     setError(null);
 
+    const registeredUsers = getPortalUsers();
+    const adminUser = registeredUsers.find((u) => u.username.toLowerCase() === 'admin');
     const settings = getAdminSettings();
-    const correctPassword = settings.adminPasswordHash || 'admin123';
+    const correctPassword = adminUser?.password || settings.adminPasswordHash || 'admin';
 
     if (!password) {
       setError('يرجى كتابة كلمة مرور الأدمن');
@@ -37,7 +39,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
     setTimeout(() => {
       setIsLoading(false);
-      if (password === 'admin' || password === correctPassword || password === 'admin123') {
+      if (password === correctPassword) {
         onAdminAuthenticated();
         setPassword('');
         onClose();
@@ -120,9 +122,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-[11px] text-slate-500 pt-1">
-              * كلمة المرور الافتراضية الأولية للأدمن هي: <code className="text-amber-300 bg-black/40 px-1.5 py-0.5 rounded border border-[#d4af37]/30 font-mono">admin</code> (يمكنك تغييرها من داخل اللوحة).
-            </p>
           </div>
 
           <button
