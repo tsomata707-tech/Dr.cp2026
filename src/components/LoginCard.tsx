@@ -86,7 +86,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
       const normalized = normalizeStudentUsername(rawInput);
       const registeredUsers = getPortalUsers();
 
-      // Direct check for admin user
+      // Direct check for admin user (Read-only access)
       if (rawInput.trim().toLowerCase() === 'admin') {
         const adminUser = registeredUsers.find((u) => u.username.toLowerCase() === 'admin');
         const settings = getAdminSettings();
@@ -94,12 +94,12 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
 
         if (password === correctAdminPass) {
           saveOrClearCredentials('admin', password);
-          addActivityLog('تسجيل دخول معتمد للمشرف (وضع القراءة والاستعراض): admin', 'admin', 'success');
+          addActivityLog('تسجيل دخول للقراءة فقط (Read-only): admin', 'admin', 'success');
           onLoginSuccess('admin');
           return;
         } else {
-          setError('كلمة المرور غير صحيحة لحساب المشرف (admin)');
-          addActivityLog('كلمة مرور خاطئة للمستخدم: admin', 'admin', 'warning');
+          setError('كلمة المرور غير صحيحة لحساب القراءة (admin)');
+          addActivityLog('كلمة مرور خاطئة لحساب القراءة: admin', 'admin', 'warning');
           return;
         }
       }
