@@ -1137,7 +1137,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm sm:text-base font-black font-['Tajawal'] flex items-center gap-2">
-              <span>🎮 أسئلة المراحل الـ 10 (Levels)</span>
+              <span>🎮 أسئلة الـ 9 مراحل (ليفلات / مستويات)</span>
             </span>
             <span
               className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold ${
@@ -1148,7 +1148,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs opacity-90">
-            <span>10 مراحل متدرجة</span>
+            <span>9 مراحل متدرجة (ليفلات أو مستويات)</span>
             <span>•</span>
             <span>بصور: {levelsWithImages}</span>
           </div>
