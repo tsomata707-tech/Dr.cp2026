@@ -1158,8 +1158,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             </div>
           </div>
       </div>
-    </div>
-      
 
       {/* RESULT FEEDBACK MODAL: IMMEDIATE vs DEFERRED */}
       {feedbackModal && (
