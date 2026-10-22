@@ -226,7 +226,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
     if (studentGame.currentLevel <= 9 && completedLevelsCount < 9) {
       return {
         stepLabel: `المحطة 2: المراحل التعليمية (${completedLevelsCount}/9 مكتملة)`,
-        title: `متابعة من حيث توقفت: المرحلة ${studentGame.currentLevel} (النشاط والتقييم اللحظي)`,
+        title: `متابعة من حيث توقفت: المرحلة ${studentGame.currentLevel}`,
         description: `أنجزت ${completedLevelsCount} من 9 مستويات بنجاح. استأنف الآن تحديات وأسئلة المستوى ${studentGame.currentLevel} لكسب النقاط.`,
         badge: `المرحلة الحالية: L${studentGame.currentLevel} 🎮`,
         buttonText: `متابعة المرحلة ${studentGame.currentLevel} الآن 🚀`,
@@ -415,21 +415,6 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
               <span>
                 {studentGame.postTestResult?.completed ? '🏆 الاختبار البعدي (مكتمل)' : '🏁 الاختبار البعدي'}
               </span>
-            </button>
-
-            {/* 2. النشاط والتقييم */}
-            <button
-              type="button"
-              id="tab-educational-game"
-              onClick={() => setActiveMainSection('game')}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                activeMainSection === 'game'
-                  ? 'bg-gradient-to-r from-[#ffd700] via-amber-400 to-[#d4af37] text-slate-950 shadow-[0_0_15px_rgba(212,175,55,0.4)]'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              <Gamepad2 className="w-4 h-4" />
-              <span>🎮 النشاط والتقييم اللحظي</span>
             </button>
 
             {/* 3. المهمة التطبيقية */}
