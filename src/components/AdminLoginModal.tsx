@@ -80,7 +80,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             <span>دخول لوحة تحكم الأدمن</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            أدخل كلمة المرور الخاصة بالمشرف للوصول إلى إعدادات النظام
+            خاص بمدير الموقع
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               htmlFor="input-admin-password"
               className="block text-xs font-bold text-amber-200/90 font-['Cairo']"
             >
-              باسوورد الأدمن (Admin Password)
+              كلمة المرور
             </label>
             <div className="relative group">
               <input
@@ -134,7 +134,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
-                <span>تأكيد والدخول للوحة المشرف</span>
+                <span>دخول</span>
                 <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
               </>
             )}

@@ -108,16 +108,15 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter, onOpenAdmin
         </button>
 
         {/* Admin and Support Quick Link */}
-        <div className="mt-6 flex items-center justify-between w-full max-w-md text-xs text-slate-400 border-t border-slate-800/80 pt-4">
+        <div className="mt-6 flex items-center justify-center w-full max-w-md border-t border-slate-800/80 pt-4">
           <button
             type="button"
             onClick={onOpenAdminLogin}
-            className="text-slate-400 hover:text-amber-300 transition-colors flex items-center gap-1.5 cursor-pointer font-bold"
+            className="text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-2 cursor-pointer font-black text-sm sm:text-base px-5 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 shadow-md"
           >
-            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-            <span>دخول الإدارة والمشرفين</span>
+            <KeyRound className="w-4 h-4 text-amber-400" />
+            <span>مدير الموقع</span>
           </button>
-          <span className="text-[11px] text-slate-400 font-bold">{titleConfig.footerUniversity}</span>
         </div>
       </div>
     </div>
