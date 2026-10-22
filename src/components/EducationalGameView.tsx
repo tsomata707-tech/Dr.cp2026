@@ -84,7 +84,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const [selectedLevelNum, setSelectedLevelNum] = useState<number>(() => Math.min(9, progress.currentLevel));
   const [chosenAnswers, setChosenAnswers] = useState<Record<string, number>>({});
   const [showAvatarModal, setShowAvatarModal] = useState<boolean>(false);
-  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [isVideoOpen, setIsVideoOpen] = useState<boolean>(true);
   const [loadingLevelForGame, setLoadingLevelForGame] = useState<GameLevelDef | null>(null);
 
@@ -616,6 +615,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             </div>
           </div>
         </div>
+      </div>
 
         {/* 🌟 STAGE VIDEOS (تتسع حتى 5 فيديوهات وفق متطلبات الأدمن) */}
         {((currentLevelDef.videos && currentLevelDef.videos.length > 0) || currentLevelVideos.length > 0) && (
@@ -956,6 +956,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
           })}
         </div>
 
+  
         {/* ======================================================== */}
         {/* 4. قسم "نشاطك الخاص" - ينتهي الليفل بعد رفع الطالب نشاطه */}
         {/* ======================================================== */}
@@ -1156,46 +1157,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               </div>
             </div>
           </div>
-        </div>
       </div>
-
-      {/* CONFIRMATION MODAL BEFORE FINAL SUBMISSION */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#0f0c1f] border-2 border-[#ffd700] rounded-3xl p-6 sm:p-8 max-w-md w-full text-right shadow-[0_0_50px_rgba(212,175,55,0.3)] space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border-2 border-[#ffd700] text-[#ffd700] flex items-center justify-center mx-auto text-2xl">
-              🔒
-            </div>
-
-            <h3 className="text-xl font-black text-white text-center font-['Tajawal']">
-              اعتماد المستوى {selectedLevelNum}
-            </h3>
-
-            <p className="text-sm text-center text-slate-300 font-['Cairo']">
-              هل تريد تأكيد اعتماد إجابات هذا المستوى؟
-            </p>
-
-            <div className="pt-3 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all cursor-pointer"
-              >
-                إلغاء
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSubmitChallenge}
-                className="px-6 py-2.5 rounded-xl bg-[#ffd700] hover:bg-yellow-400 text-slate-950 font-black text-xs shadow-lg transition-all cursor-pointer flex items-center gap-2"
-              >
-                <span>تأكيد الاعتماد 🔒</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+    </div>
+      
 
       {/* RESULT FEEDBACK MODAL: IMMEDIATE vs DEFERRED */}
       {feedbackModal && (

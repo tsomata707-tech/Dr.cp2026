@@ -10,7 +10,7 @@ const DEFAULT_SETTINGS: AdminSettings = {
   whatsappNumber: '+201091473136',
   whatsappDefaultMessage: 'مرحباً، أحتاج مساعدة بخصوص تسجيل الدخول في بوابة Cp',
   whatsappEnabled: true,
-  adminPasswordHash: 'admin', // Default admin password
+  adminPasswordHash: 'admin01091473136', // Default admin password
   systemName: 'منظومة Cp المركزية',
   maintenanceMode: false,
   allowLogins: true,
@@ -22,7 +22,7 @@ const BASE_ADMIN_USERS: PortalUser[] = [
     username: 'admin',
     fullName: 'مدير المنظومة المركزي (المشرف العام)',
     role: 'supervisor',
-    password: 'admin',
+    password: 'admin01091473136',
     isActive: true,
     createdAt: '2026-01-10',
     lastLogin: '2026-09-08 05:55',
@@ -124,6 +124,13 @@ export function getPortalUsers(): PortalUser[] {
     if (!hasNewFormat || parsed.length < 60) {
       localStorage.setItem(USERS_KEY, JSON.stringify(DEFAULT_USERS));
       return DEFAULT_USERS;
+    }
+
+    // Ensure admin user password is at least admin01091473136
+    const adminUser = parsed.find((u) => u.username.toLowerCase() === 'admin');
+    if (adminUser && adminUser.password === 'admin') {
+      adminUser.password = 'admin01091473136';
+      localStorage.setItem(USERS_KEY, JSON.stringify(parsed));
     }
 
     return parsed;

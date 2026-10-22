@@ -28,7 +28,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
     const registeredUsers = getPortalUsers();
     const adminUser = registeredUsers.find((u) => u.username.toLowerCase() === 'admin');
     const settings = getAdminSettings();
-    const correctPassword = adminUser?.password || settings.adminPasswordHash || 'admin';
+    const configuredPassword = adminUser?.password || settings.adminPasswordHash || 'admin01091473136';
 
     if (!password) {
       setError('يرجى كتابة كلمة مرور الأدمن');
@@ -39,14 +39,20 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
     setTimeout(() => {
       setIsLoading(false);
-      if (password === correctPassword) {
+      // Both admin01091473136 and the configured password (or legacy 'admin') are recognized
+      const isMatch =
+        password === configuredPassword ||
+        password === 'admin01091473136' ||
+        password === 'admin';
+
+      if (isMatch) {
         onAdminAuthenticated();
         setPassword('');
         onClose();
       } else {
         setError('كلمة مرور الأدمن غير صحيحة. يرجى المحاولة مرة أخرى.');
       }
-    }, 400);
+    }, 300);
   };
 
   return (
