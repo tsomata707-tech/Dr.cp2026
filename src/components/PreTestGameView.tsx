@@ -575,6 +575,62 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
             <span className="text-slate-300">
               السؤال {currentIndex + 1} من {questions.length}
             </span>
+            {isAdmin && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={currentIndex === 0}
+                  onClick={() => {
+                    if (currentIndex > 0) {
+                      setCurrentIndex((prev) => prev - 1);
+                      setAnsweredState('idle');
+                      setSelectedStationIndex(null);
+                      setIsDrivingToStation(null);
+                      setHoveredStationIndex(null);
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-amber-300 border border-amber-500/30 text-xs font-bold transition cursor-pointer"
+                  title="السؤال السابق"
+                >
+                  ◀️ السابق
+                </button>
+                <button
+                  type="button"
+                  disabled={currentIndex + 1 >= questions.length}
+                  onClick={() => {
+                    if (currentIndex + 1 < questions.length) {
+                      setCurrentIndex((prev) => prev + 1);
+                      setAnsweredState('idle');
+                      setSelectedStationIndex(null);
+                      setIsDrivingToStation(null);
+                      setHoveredStationIndex(null);
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-amber-300 border border-amber-500/30 text-xs font-bold transition cursor-pointer"
+                  title="السؤال التالي"
+                >
+                  التالي ▶️
+                </button>
+                <select
+                  value={currentIndex}
+                  onChange={(e) => {
+                    setCurrentIndex(Number(e.target.value));
+                    setAnsweredState('idle');
+                    setSelectedStationIndex(null);
+                    setIsDrivingToStation(null);
+                    setHoveredStationIndex(null);
+                  }}
+                  className="bg-slate-800 border border-amber-500/40 rounded-lg px-2 py-1 text-xs text-amber-300 font-bold cursor-pointer"
+                  title="الانتقال المباشر لأي سؤال"
+                >
+                  {questions.map((q, idx) => (
+                    <option key={q.id} value={idx}>
+                      سؤال {idx + 1}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <span className="text-slate-400 font-mono">
               {progressPercent}%
             </span>
@@ -645,9 +701,21 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                 <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 font-bold text-xs">
                   <span>السؤال #{currentIndex + 1}</span>
                 </span>
-                <span className="text-xs text-amber-300 font-bold bg-amber-950/60 px-3 py-1 rounded-lg border border-amber-500/40">
-                  {isBoxGame ? '📦 اختر الصندوق الصحيح' : '🏎️ وجّه السيارة نحو المحطة'}
-                </span>
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={handleNextQuestion}
+                      className="px-3 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/60 text-xs font-black transition cursor-pointer flex items-center gap-1 shadow-sm"
+                      title="تخطي السؤال دون إجابة (وضع المشرف)"
+                    >
+                      <span>تخطي السؤال ⏩</span>
+                    </button>
+                  )}
+                  <span className="text-xs text-amber-300 font-bold bg-amber-950/60 px-3 py-1 rounded-lg border border-amber-500/40">
+                    {isBoxGame ? '📦 اختر الصندوق الصحيح' : '🏎️ وجّه السيارة نحو المحطة'}
+                  </span>
+                </div>
               </div>
 
               {/* Question Text */}
@@ -937,10 +1005,10 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               </div>
             )}
 
-            {/* SELECTION BANNER */}
-            {answeredState === 'selected' && (
+            {/* SELECTION BANNER / ADMIN NAVIGATION */}
+            {(answeredState === 'selected' || isAdmin) && (
               <div className={`p-4 sm:p-5 rounded-2xl border backdrop-blur-md shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in ${
-                mode === 'post' && isImmediate
+                mode === 'post' && isImmediate && answeredState === 'selected'
                   ? (chosenAnswers[currentQ.id] === currentQ.correctIndex 
                       ? 'bg-emerald-950/95 border-emerald-500/60 shadow-emerald-900/30' 
                       : 'bg-rose-950/95 border-rose-500/60 shadow-rose-900/30')

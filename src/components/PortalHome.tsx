@@ -136,11 +136,18 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       setActiveMainSection('posttest');
       window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     };
+    const handleAdminSwitchGroup = (e: any) => {
+      if (e.detail?.groupId) {
+        setSelectedGroupId(e.detail.groupId);
+      }
+    };
     window.addEventListener('cp_navigate_to_student_home', handleReturnToStudentHome);
     window.addEventListener('cp_navigate_to_posttest', handleNavToPosttest);
+    window.addEventListener('cp_admin_switch_group', handleAdminSwitchGroup);
     return () => {
       window.removeEventListener('cp_navigate_to_student_home', handleReturnToStudentHome);
       window.removeEventListener('cp_navigate_to_posttest', handleNavToPosttest);
+      window.removeEventListener('cp_admin_switch_group', handleAdminSwitchGroup);
     };
   }, []);
 

@@ -332,7 +332,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     <div className="space-y-6 text-right" id="educational-game-arena">
       {/* Admin Read-Only Notice Banner */}
       {isAdmin && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-[#0d1815] to-emerald-950/90 border-2 border-emerald-500/80 shadow-[0_0_25px_rgba(16,185,129,0.3)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs sm:text-sm font-['Cairo'] text-emerald-200">
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-[#0d1815] to-emerald-950/90 border-2 border-emerald-500/80 shadow-[0_0_25px_rgba(16,185,129,0.3)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs sm:text-sm font-['Cairo'] text-emerald-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500 flex items-center justify-center shrink-0 shadow-inner">
               <Eye className="w-5 h-5 text-emerald-400" />
@@ -350,6 +350,28 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 يمكنك التنقل بين المستويات الـ 9 واختبار أي مجموعة وتجربة الأسئلة بحرية، ولن يتم احتساب أو اعتماد أي إجابات أو تعديلات على درجات وبيانات المنظومة.
               </p>
             </div>
+          </div>
+
+          {/* Quick group switcher for admin */}
+          <div className="flex items-center gap-2 bg-slate-900/90 p-2 rounded-xl border border-emerald-500/40">
+            <span className="text-xs text-emerald-300 font-bold whitespace-nowrap">تبديل المجموعة:</span>
+            <select
+              value={groupCode}
+              onChange={(e) => {
+                const targetCode = e.target.value;
+                const groupObj = Object.values(RESEARCH_GROUPS_META).find((g) => g.code === targetCode);
+                if (groupObj) {
+                  // Dispatch custom event to sync with parent if needed
+                  window.dispatchEvent(new CustomEvent('cp_admin_switch_group', { detail: { groupId: groupObj.id, groupCode: targetCode } }));
+                }
+              }}
+              className="bg-slate-950 border border-emerald-500/60 rounded-lg px-2.5 py-1 text-xs text-amber-300 font-black cursor-pointer"
+            >
+              <option value="G1">G1 - فردي وتغذية فورية</option>
+              <option value="G2">G2 - فردي وتغذية مرجئة</option>
+              <option value="G3">G3 - تعاوني وتغذية فورية</option>
+              <option value="G4">G4 - تعاوني وتغذية مرجئة</option>
+            </select>
           </div>
         </div>
       )}
@@ -503,7 +525,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
           {GAME_LEVELS_DATA.map((lvl) => {
             const isCompleted = !!progress.completedLevels[lvl.levelNumber];
             const isCurrent = lvl.levelNumber === progress.currentLevel && !isCompleted;
-            const isUpcoming = lvl.levelNumber > progress.currentLevel;
+            const isUpcoming = !isAdmin && lvl.levelNumber > progress.currentLevel;
             const isSelected = lvl.levelNumber === selectedLevelNum;
 
             return (
@@ -1103,7 +1125,12 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             {/* Finish Level Action Button: "ثم زر finish level 1 وبعدها شريط تحميل ٥ ثواني" */}
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800/80">
               <div className="text-xs text-slate-400 font-['Cairo']">
-                {!studentActivity ? (
+                {isAdmin ? (
+                  <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    وضع المشرف (قراءة فقط 👁️): يمكنك الانتقال وتصفح أي مستوى بحرية دون الحاجة لحل الأسئلة أو رفع نشاط.
+                  </span>
+                ) : !studentActivity ? (
                   <span className="text-amber-300 font-bold flex items-center gap-1.5">
                     <AlertCircle className="w-4 h-4 text-amber-400" />
                     يجب رفع نشاطك الخاص لتفعيل زر إنهاء المستوى
@@ -1121,21 +1148,23 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   type="button"
                   id={`btn-finish-level-${selectedLevelNum}`}
                   onClick={() => {
-                    const unanswered = currentLevelDef.questions.some(
-                      (q) => chosenAnswers[q.id] === undefined
-                    );
-                    if (unanswered) {
-                      alert('يرجى الإجابة على جميع أسئلة المستوى أولاً');
-                      return;
-                    }
-                    if (!studentActivity) {
-                      alert('يرجى رفع نشاطك الخاص أولاً (فيديو أو صورة أو PDF) لإكمال المستوى');
-                      return;
+                    if (!isAdmin) {
+                      const unanswered = currentLevelDef.questions.some(
+                        (q) => chosenAnswers[q.id] === undefined
+                      );
+                      if (unanswered) {
+                        alert('يرجى الإجابة على جميع أسئلة المستوى أولاً');
+                        return;
+                      }
+                      if (!studentActivity) {
+                        alert('يرجى رفع نشاطك الخاص أولاً (فيديو أو صورة أو PDF) لإكمال المستوى');
+                        return;
+                      }
                     }
                     handleFinishLevelClick();
                   }}
                   className={`w-full sm:w-auto min-w-[240px] px-8 py-3.5 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-3 transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg ${
-                    studentActivity
+                    studentActivity || isAdmin
                       ? 'bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-[0_0_25px_rgba(255,215,0,0.45)] border-2 border-amber-300'
                       : 'bg-slate-800/80 text-slate-400 border border-slate-700/60 hover:border-amber-400/50'
                   }`}
@@ -1144,11 +1173,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   <ArrowLeft className="w-5 h-5 shrink-0" />
                 </button>
 
-                {isLevelCompleted && selectedLevelNum < 9 && (
+                {(isLevelCompleted || isAdmin) && selectedLevelNum < 9 && (
                   <button
                     type="button"
                     onClick={() => setSelectedLevelNum(selectedLevelNum + 1)}
-                    className="px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer"
+                    className="px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-lg"
                   >
                     <span>المستوى {selectedLevelNum + 1}</span>
                     <ArrowLeft className="w-4 h-4" />
