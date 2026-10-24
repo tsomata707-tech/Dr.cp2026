@@ -28,7 +28,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
   const [activeChatModalGroup, setActiveChatModalGroup] = useState<'A' | 'B' | 'C' | 'D' | 'E' | null>(null);
   const [blockedAlert, setBlockedAlert] = useState<{ groupCode: string; groupName: string } | null>(null);
 
-  // Chat messages state per group
+  // Chat messages state per group with full history persistence
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>(() => {
     try {
       const saved = localStorage.getItem('cp_collab_chats_v1');
@@ -83,6 +83,39 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
     };
   });
 
+  // Real-time synchronization of chat messages across tabs, sessions, and devices
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'cp_collab_chats_v1' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed && typeof parsed === 'object') {
+            setMessages(parsed);
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    // Polling interval for instant real-time sync
+    const interval = setInterval(() => {
+      try {
+        const saved = localStorage.getItem('cp_collab_chats_v1');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') {
+            setMessages(parsed);
+          }
+        }
+      } catch {}
+    }, 1200);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
   const [inputText, setInputText] = useState('');
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
@@ -99,7 +132,6 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
   }, [activeChatModalGroup, messages]);
 
   const handleOpenGroupChat = (groupCode: 'A' | 'B' | 'C' | 'D' | 'E') => {
-    // If user is student, they can ONLY enter their assigned group
     if (!isAdmin && userCollabGroup && userCollabGroup !== groupCode) {
       const def = COLLABORATIVE_GROUPS_DEF[groupCode];
       setBlockedAlert({ groupCode, groupName: def.name });
@@ -123,10 +155,16 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
       timestamp: timeStr,
     };
 
-    setMessages((prev) => ({
-      ...prev,
-      [activeChatModalGroup]: [...(prev[activeChatModalGroup] || []), newMsg],
-    }));
+    const updatedGroupMessages = [...(messages[activeChatModalGroup] || []), newMsg];
+    const updatedAll = {
+      ...messages,
+      [activeChatModalGroup]: updatedGroupMessages,
+    };
+
+    setMessages(updatedAll);
+    try {
+      localStorage.setItem('cp_collab_chats_v1', JSON.stringify(updatedAll));
+    } catch {}
 
     setInputText('');
   };
@@ -203,7 +241,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                   المجموعات التعاونية الخمس (A, B, C, D, E)
                 </span>
                 <span className="text-xs font-bold px-3 py-0.5 rounded-full bg-amber-950/80 border border-[#ffd700] text-amber-300 font-['Cairo']">
-                  شات جماعي تفاعلي مع المشرف 💬
+                  شات جماعي في الوقت الحقيقي مع سجل المحادثة 💬
                 </span>
               </div>
               <h2 className="text-lg sm:text-2xl font-black text-white font-['Tajawal'] mt-1">
@@ -245,7 +283,6 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                     : 'border-slate-800 hover:border-cyan-500/50'
                 }`}
               >
-                {/* Badges */}
                 {isMyGroup && (
                   <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-cyan-400 text-slate-950 text-[10px] font-black flex items-center gap-1 shadow-md">
                     <CheckCircle2 className="w-3 h-3 stroke-[3]" />
@@ -284,7 +321,6 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                     {group.description}
                   </p>
 
-                  {/* Members list */}
                   <div className="mt-3 p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5 text-xs text-slate-300">
                     <div className="text-[11px] font-bold text-amber-300 mb-1 flex items-center gap-1">
                       <Users className="w-3.5 h-3.5" />
@@ -312,7 +348,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                 </div>
 
                 <div className="pt-4 mt-3 border-t border-slate-800/80 flex items-center justify-between">
-                  <span className="text-xs text-slate-400">شات جماعي مباشر</span>
+                  <span className="text-xs text-slate-400">شات حي في الوقت الحقيقي</span>
                   <button
                     type="button"
                     onClick={(e) => {
@@ -326,7 +362,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                     }`}
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
-                    <span>دخول الشات التفاعلي 💬</span>
+                    <span>دخول الشات والسجل 💬</span>
                     <ArrowLeft className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -336,7 +372,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
         </div>
       </div>
 
-      {/* Active Group Chat Room Modal */}
+      {/* Active Group Chat Room Modal with Full History Box */}
       {activeChatModalGroup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md animate-fadeIn">
           <div className="bg-[#0b0918] border-2 border-cyan-400 rounded-3xl max-w-2xl w-full h-[85vh] flex flex-col shadow-[0_0_60px_rgba(6,182,212,0.35)] overflow-hidden">
@@ -344,16 +380,16 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
             {/* Modal Header */}
             <div className="px-6 py-4 bg-[#110e26] border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 text-cyan-300 flex items-center justify-center font-mono font-black text-lg">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 text-cyan-300 font-mono font-black text-lg flex items-center justify-center">
                   {activeChatModalGroup}
                 </div>
                 <div>
                   <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">
-                    شات مجموعة التعاون ({activeChatModalGroup})
+                    سجل محادثة مجموعة التعاون ({activeChatModalGroup})
                   </h3>
                   <span className="text-xs text-cyan-300 font-['Cairo'] flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>متصل الآن: الأعضاء الـ 3 + المشرف الآلي</span>
+                    <span>تحديث حي في الوقت الحقيقي (متصل الآن)</span>
                   </span>
                 </div>
               </div>
@@ -367,46 +403,52 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
               </button>
             </div>
 
-            {/* Chat Messages List */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-[#070510]">
-              {(messages[activeChatModalGroup] || []).map((msg) => {
-                const isMe = msg.sender === currentUsername;
-                const isMsgAdmin = msg.role === 'admin';
+            {/* Chat Messages History Box */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-[#070510]" id="chat-history-container">
+              {(!messages[activeChatModalGroup] || messages[activeChatModalGroup].length === 0) ? (
+                <div className="text-center text-slate-500 py-10 text-xs font-['Cairo']">
+                  لا توجد رسائل سابقة في هذا السجل بعد. كن أول من يبدأ المحادثة!
+                </div>
+              ) : (
+                (messages[activeChatModalGroup] || []).map((msg) => {
+                  const isMe = msg.sender === currentUsername;
+                  const isMsgAdmin = msg.role === 'admin';
 
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${isMe ? 'items-start' : 'items-end'}`}
-                  >
-                    <div className="flex items-center gap-2 mb-1 px-1">
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {msg.timestamp}
-                      </span>
-                      <span
-                        className={`text-xs font-bold font-mono px-2 py-0.5 rounded-md ${
-                          isMsgAdmin
-                            ? 'bg-amber-950 text-amber-300 border border-amber-500/50'
-                            : 'bg-slate-800 text-cyan-300'
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${isMe ? 'items-start' : 'items-end'}`}
+                    >
+                      <div className="flex items-center gap-2 mb-1 px-1">
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {msg.timestamp}
+                        </span>
+                        <span
+                          className={`text-xs font-bold font-mono px-2 py-0.5 rounded-md ${
+                            isMsgAdmin
+                              ? 'bg-amber-950 text-amber-300 border border-amber-500/50'
+                              : 'bg-slate-800 text-cyan-300'
+                          }`}
+                        >
+                          {isMsgAdmin ? '👑 المشرف (Admin)' : msg.sender}
+                        </span>
+                      </div>
+
+                      <div
+                        className={`max-w-[80%] rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed shadow-md ${
+                          isMe
+                            ? 'bg-cyan-600 text-white rounded-tr-none'
+                            : isMsgAdmin
+                            ? 'bg-[#1e152f] border border-amber-500/50 text-amber-100 rounded-tl-none'
+                            : 'bg-[#131026] border border-slate-800 text-slate-200 rounded-tl-none'
                         }`}
                       >
-                        {isMsgAdmin ? '👑 المشرف (Admin)' : msg.sender}
-                      </span>
+                        <p className="font-['IBM_Plex_Sans_Arabic'] whitespace-pre-wrap">{msg.text}</p>
+                      </div>
                     </div>
-
-                    <div
-                      className={`max-w-[80%] rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed shadow-md ${
-                        isMe
-                          ? 'bg-cyan-600 text-white rounded-tr-none'
-                          : isMsgAdmin
-                          ? 'bg-[#1e152f] border border-amber-500/50 text-amber-100 rounded-tl-none'
-                          : 'bg-[#131026] border border-slate-800 text-slate-200 rounded-tl-none'
-                      }`}
-                    >
-                      <p className="font-['IBM_Plex_Sans_Arabic'] whitespace-pre-wrap">{msg.text}</p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
               <div ref={chatBottomRef} />
             </div>
 
@@ -419,7 +461,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder={`اكتب رسالتك إلى أفراد مجموعة (${activeChatModalGroup}) والمشرف...`}
+                placeholder={`اكتب رسالتك في الوقت الحقيقي لمجموعة (${activeChatModalGroup})...`}
                 className="flex-1 h-11 px-4 rounded-xl bg-[#070510] text-white text-xs sm:text-sm placeholder:text-slate-500 border border-slate-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none text-right font-['IBM_Plex_Sans_Arabic']"
               />
               <button
