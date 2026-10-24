@@ -68,7 +68,7 @@ export type PortalSection =
   | 'levels';
 
 export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) => {
-  // Detect user's research group based on username (G1_Cp_01 -> G1)
+  const isAdmin = username.trim().toLowerCase() === 'admin';
   const userGroupMeta = getGroupByUsername(username);
   const isCollaborative = userGroupMeta?.learningMode === 'تعاوني';
 
@@ -76,12 +76,13 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
   const [studentGame, setStudentGame] = useState(() => getStudentProgress(username));
 
   // Main Section Navigation:
-  // الترتيب الصحيح المعتمد: تسجيل الدخول -> لوحة الشرف -> القواعد والإرشادات -> الانتقال إلى بيئة الألعاب
   const [activeMainSection, setActiveMainSection] = useState<PortalSection>(() => {
     try {
       const saved = localStorage.getItem(`cp_active_portal_section_${username}`);
-      if (saved) return saved as PortalSection;
-      // Default: if pre-test not completed, start there
+      if (saved) {
+        if (saved === 'collab-chat' && !isCollaborative && !isAdmin) return 'honor';
+        return saved as PortalSection;
+      }
       return !studentGame.preTestResult?.completed ? 'pretest' : 'honor';
     } catch {
       return 'honor';
@@ -505,20 +506,22 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
               <span>المجموعات الـ 4</span>
             </button>
 
-            {/* 12. مجموعات التعاون والشات (A-E) */}
-            <button
-              type="button"
-              id="tab-collab-chat"
-              onClick={() => setActiveMainSection('collab-chat')}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                activeMainSection === 'collab-chat'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.5)]'
-                  : 'text-cyan-300 hover:text-white hover:bg-slate-900 border border-cyan-500/40'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span>🤝 مجموعات التعاون والشات (A-E)</span>
-            </button>
+            {/* 12. مجموعات التعاون والشات (A-E) - Restricted to collaborative students and admin */}
+            {(isCollaborative || isAdmin) && (
+              <button
+                type="button"
+                id="tab-collab-chat"
+                onClick={() => setActiveMainSection('collab-chat')}
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                  activeMainSection === 'collab-chat'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.5)]'
+                    : 'text-cyan-300 hover:text-white hover:bg-slate-900 border border-cyan-500/40'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>🤝 مجموعات التعاون والشات (A-E)</span>
+              </button>
+            )}
 
 
           </div>

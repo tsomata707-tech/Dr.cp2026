@@ -26,7 +26,7 @@ import {
   ArrowUpDown,
   BookOpen,
 } from 'lucide-react';
-import { generateSixtyStudents, RESEARCH_GROUPS_META, getGroupByUsername } from '../data/studentAccounts';
+import { generateSixtyStudents, RESEARCH_GROUPS_META, getGroupByUsername, getCollaborativeGroupByUsername } from '../data/studentAccounts';
 import { StudentGameProgress, PreTestResult, CompletedLevelResult } from '../types';
 import { getPostTestQuestions } from '../data/preTestData';
 import {
@@ -421,6 +421,52 @@ export const AdminStudentsAuditManager: React.FC = () => {
     showToast('تم تصدير وتحميل سجل تسجيل الدخول الفعلي للطلاب بنجاح');
   };
 
+  // Export Collaborative Sheet (شيت خاص بالتعاوني - G3 & G4)
+  const handleExportCollaborativeSheet = () => {
+    const headers = [
+      'م', 'اسم المستخدم', 'المجموعة البحثية', 'نمط التعاوني', 'تاريخ ووقت أول دخول', 'تاريخ ووقت آخر دخول',
+      'حالة القبلي', 'درجة القبلي (/53)', 'تاريخ ووقت القبلي الفعلي',
+      'المراحل المكتملة', 'نقاط المراحل',
+      'حالة البعدي', 'درجة البعدي (/53)', 'تاريخ ووقت البعدي الفعلي',
+    ];
+    const collabStudents = enrichedStudents.filter((s) => s.learningMode === 'تعاوني');
+    const rows = collabStudents.map((s, idx) => [
+      idx + 1, s.username, `${s.groupCode} (${s.groupName})`, s.feedbackMode,
+      s.firstLogin, s.lastLogin,
+      s.preTestCompleted ? 'مكتمل' : 'غير مكتمل', s.preTestCompleted ? s.preTestScore : '-', s.preTestDate,
+      `${s.completedLevelsCount} / 10`, s.totalLevelsScore,
+      s.postTestCompleted ? 'مكتمل' : 'غير مكتمل', s.postTestCompleted ? s.postTestScore : '-', s.postTestDate,
+    ]);
+    downloadCsvSheet('شيت_نتائج_المجموعات_التعاونية_Collaborative_Groups', headers, rows);
+    showToast('تم تصدير شيت المجموعات التعاونية بنجاح');
+  };
+
+  // Export Individual Group Sheet (شيت لكل مجموعة على حدة: G1, G2, G3, G4 أو A, B, C, D, E)
+  const handleExportGroupSheet = (targetGroupCode: string) => {
+    const headers = [
+      'م', 'اسم المستخدم', 'المجموعة', 'نمط التعلم', 'التغذية الراجعة', 'أول دخول', 'آخر دخول',
+      'حالة القبلي', 'درجة القبلي', 'تاريخ ووقت القبلي الفعلي', 'المراحل المكتملة', 'نقاط المراحل',
+      'حالة البعدي', 'درجة البعدي', 'تاريخ ووقت البعدي الفعلي',
+    ];
+    const groupStudents = enrichedStudents.filter((s) => {
+      if (['A', 'B', 'C', 'D', 'E'].includes(targetGroupCode)) {
+        const collabGrp = getCollaborativeGroupByUsername(s.username);
+        return collabGrp === targetGroupCode;
+      }
+      return s.groupCode === targetGroupCode;
+    });
+
+    const rows = groupStudents.map((s, idx) => [
+      idx + 1, s.username, s.groupName, s.learningMode, s.feedbackMode,
+      s.firstLogin, s.lastLogin,
+      s.preTestCompleted ? 'مكتمل' : '-', s.preTestCompleted ? s.preTestScore : '-', s.preTestDate,
+      `${s.completedLevelsCount}/10`, s.totalLevelsScore,
+      s.postTestCompleted ? 'مكتمل' : '-', s.postTestCompleted ? s.postTestScore : '-', s.postTestDate,
+    ]);
+    downloadCsvSheet(`شيت_مجموعة_${targetGroupCode}_Group_Results`, headers, rows);
+    showToast(`تم تصدير شيت مجموعة ${targetGroupCode} بنجاح`);
+  };
+
   // 5. Comprehensive Master Sheet
   const handleExportComprehensiveSheet = () => {
     const headers = [
@@ -659,6 +705,40 @@ export const AdminStudentsAuditManager: React.FC = () => {
             </div>
             <Download className="w-4 h-4 text-emerald-400 shrink-0" />
           </button>
+        </div>
+
+        {/* Collaborative Sheet & Individual Group Sheets Export Section */}
+        <div className="mt-4 p-5 rounded-2xl bg-[#090b17] border border-cyan-500/40 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black text-cyan-300 font-['Cairo'] flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-cyan-400" />
+              <span>تصدير الشيت الخاص بالمجموعات التعاونية وشيتات المجموعات المنفصلة (مع الوقت والتاريخ الفعلي):</span>
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportCollaborativeSheet}
+              className="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs shadow-md transition cursor-pointer flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>📁 شيت المجموعات التعاونية (شامل)</span>
+            </button>
+
+            {['G1', 'G2', 'G3', 'G4', 'A', 'B', 'C', 'D', 'E'].map((grp) => (
+              <button
+                key={grp}
+                type="button"
+                onClick={() => handleExportGroupSheet(grp)}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs border border-slate-700 transition cursor-pointer flex items-center gap-1.5"
+                title={`تصدير شيت مجموعة ${grp} مستقل`}
+              >
+                <Download className="w-3.5 h-3.5 text-amber-400" />
+                <span>شيت مجموعة {grp}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
