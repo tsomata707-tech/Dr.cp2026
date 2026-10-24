@@ -6,6 +6,7 @@ import { RightSidebarModules } from './RightSidebarModules';
 import { ModuleDetailsView } from './ModuleDetailsView';
 import { HonorBoard } from './HonorBoard';
 import { ResearchGroups } from './ResearchGroups';
+import { CollaborativeGroupsChat } from './CollaborativeGroupsChat';
 import { EducationalGameView } from './EducationalGameView';
 import { WelcomeScreen } from './WelcomeScreen';
 import { InstructionsScreen } from './InstructionsScreen';
@@ -63,6 +64,7 @@ export type PortalSection =
   | 'ranking'
   | 'honor'
   | 'groups'
+  | 'collab-chat'
   | 'levels';
 
 export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) => {
@@ -503,6 +505,21 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
               <span>المجموعات الـ 4</span>
             </button>
 
+            {/* 12. مجموعات التعاون والشات (A-E) */}
+            <button
+              type="button"
+              id="tab-collab-chat"
+              onClick={() => setActiveMainSection('collab-chat')}
+              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                activeMainSection === 'collab-chat'
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.5)]'
+                  : 'text-cyan-300 hover:text-white hover:bg-slate-900 border border-cyan-500/40'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>🤝 مجموعات التعاون والشات (A-E)</span>
+            </button>
+
 
           </div>
         </div>
@@ -622,6 +639,14 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
           onSelectGroup={(id) => setSelectedGroupId(id)}
           onEnterGroup={() => setActiveMainSection('instructions')}
           currentUsername={username}
+        />
+      )}
+
+      {/* 10. مجموعات التعاون والشات (A-E) */}
+      {activeMainSection === 'collab-chat' && (
+        <CollaborativeGroupsChat
+          currentUsername={username}
+          onBackToHome={() => setActiveMainSection('groups')}
         />
       )}
 
