@@ -1,6 +1,6 @@
 import { StudentGameProgress, CompletedLevelResult } from '../types';
 import { GAME_LEVELS_DATA, CARTOON_AVATARS } from '../data/gameLevelsData';
-import { getGroupByUsername } from '../data/studentAccounts';
+import { getGroupByUsername, getCollaborativeGroupByUsername, COLLABORATIVE_GROUPS_DEF } from '../data/studentAccounts';
 import { addActivityLog } from './adminStorage';
 import { syncStudentProgressToFirestore } from './realtimeService';
 
@@ -185,6 +185,49 @@ export function submitLevelChallenge(
     // Award badge
     if (!prog.badges.includes(levelDef.badgeName)) {
       prog.badges.push(levelDef.badgeName);
+    }
+  }
+
+  // Collaborative immediate group sync: if user belongs to sub-group A, B, C, D, or E in G3 collaborative immediate
+  const collabGroup = getCollaborativeGroupByUsername(username);
+  const isCollabImmediate = groupMeta?.learningMode === 'تعاوني' && groupMeta?.feedbackMode === 'فورية';
+
+  if (isCollabImmediate && collabGroup) {
+    const teamDef = COLLABORATIVE_GROUPS_DEF[collabGroup];
+    if (teamDef && teamDef.members) {
+      teamDef.members.forEach((memberUser) => {
+        if (memberUser.toUpperCase() !== username.toUpperCase()) {
+          const memberProg = getStudentProgress(memberUser);
+          memberProg.completedLevels[levelNumber] = levelResult;
+          memberProg.totalScore = Object.values(memberProg.completedLevels).reduce(
+            (acc, lvl) => acc + (lvl.score || 0),
+            0
+          );
+          memberProg.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
+          if (scoreGained >= passThreshold) {
+            if (levelNumber === memberProg.currentLevel && levelNumber < 9) {
+              memberProg.currentLevel = levelNumber + 1;
+            }
+            if (!memberProg.badges.includes(levelDef.badgeName)) {
+              memberProg.badges.push(levelDef.badgeName);
+            }
+          }
+          all[memberUser] = memberProg;
+          syncStudentProgressToFirestore(memberProg).catch(() => {});
+        }
+      });
+
+      try {
+        const collabTeamStateKey = 'cp_collab_team_answers_v1';
+        const rawTeam = localStorage.getItem(collabTeamStateKey);
+        const teamAnswers = rawTeam ? JSON.parse(rawTeam) : {};
+        teamAnswers[`${collabGroup}_${levelNumber}`] = {
+          completedBy: username,
+          completedAt: new Date().toISOString(),
+          score: scoreGained,
+        };
+        localStorage.setItem(collabTeamStateKey, JSON.stringify(teamAnswers));
+      } catch {}
     }
   }
 

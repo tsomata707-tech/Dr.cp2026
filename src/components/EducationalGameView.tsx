@@ -45,7 +45,7 @@ import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { DraggableLevelInstructions } from './DraggableLevelInstructions';
 import { LevelTransitionLoader5s } from './LevelTransitionLoader5s';
-import { getGroupByUsername, getStudentByUsername, RESEARCH_GROUPS_META } from '../data/studentAccounts';
+import { getGroupByUsername, getStudentByUsername, RESEARCH_GROUPS_META, getCollaborativeGroupByUsername } from '../data/studentAccounts';
 import {
   StudentGameProgress,
   CompletedLevelResult,
@@ -123,6 +123,30 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const isCollaborative = userGroupMeta?.learningMode === 'تعاوني';
   const isImmediateGroup = userGroupMeta ? userGroupMeta.feedbackMode === 'فورية' : true;
   const studentInfo = useMemo(() => getStudentByUsername(username), [username]);
+
+  const collabSubGroup = getCollaborativeGroupByUsername(username);
+  const [teammateAnswerInfo, setTeammateAnswerInfo] = useState<{ completedBy: string; score: number } | null>(null);
+
+  useEffect(() => {
+    if (isCollaborative && isImmediateGroup && collabSubGroup) {
+      try {
+        const rawTeam = localStorage.getItem('cp_collab_team_answers_v1');
+        if (rawTeam) {
+          const teamAnswers = JSON.parse(rawTeam);
+          const record = teamAnswers[`${collabSubGroup}_${selectedLevelNum}`];
+          if (record && record.completedBy && record.completedBy.toUpperCase() !== username.toUpperCase()) {
+            setTeammateAnswerInfo(record);
+          } else {
+            setTeammateAnswerInfo(null);
+          }
+        }
+      } catch {
+        setTeammateAnswerInfo(null);
+      }
+    } else {
+      setTeammateAnswerInfo(null);
+    }
+  }, [username, selectedLevelNum, isCollaborative, isImmediateGroup, collabSubGroup, progress]);
 
   // Real-time group room state from Firebase Firestore
   const [roomState, setRoomState] = useState<GroupRoomState>(() => getDefaultRoomState(groupCode));
@@ -372,6 +396,23 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               <option value="G3">G3 - تعاوني وتغذية فورية</option>
               <option value="G4">G4 - تعاوني وتغذية مرجئة</option>
             </select>
+          </div>
+        </div>
+      )}
+
+      {/* Collaborative Team Immediate Answer Notification Banner */}
+      {teammateAnswerInfo && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-950/90 via-[#0d1c24] to-cyan-950/90 border-2 border-cyan-400/80 shadow-[0_0_30px_rgba(6,182,212,0.3)] flex items-center gap-3 text-cyan-200 text-xs sm:text-sm font-['Cairo'] animate-fadeIn">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5 text-cyan-300" />
+          </div>
+          <div>
+            <span className="font-black text-white font-['Tajawal'] text-sm sm:text-base block">
+              🤝 إشعار الفريق التعاوني الفوري (إجابة مشتركة للفريق):
+            </span>
+            <span>
+              لقد قام صديقك في مجموعتك التعاونية، وهو المستخدم <strong className="text-amber-300 font-mono underline">{teammateAnswerInfo.completedBy}</strong>، بالإجابة وإتمام هذا المستوى مسبقاً! إجاباتكم الفريقية مسجلة ومشتركة.
+            </span>
           </div>
         </div>
       )}
