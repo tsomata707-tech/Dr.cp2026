@@ -4,6 +4,7 @@ import { ShieldCheck, Sparkles, LogOut, User, KeyRound, Lock, Home } from 'lucid
 import { getStudentProgress } from '../utils/gameStorage';
 import { CARTOON_AVATARS } from '../data/gameLevelsData';
 import { getGroupByUsername } from '../data/studentAccounts';
+import { CollaborativeNotificationBell } from './CollaborativeNotificationBell';
 
 interface NavbarProps {
   isLoggedIn?: boolean;
@@ -74,6 +75,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <KeyRound className="w-3.5 h-3.5" />
               <span>وضع المشرف (الأدمن)</span>
             </span>
+            <CollaborativeNotificationBell currentUsername="admin" />
             <button
               type="button"
               onClick={onExitAdmin}
@@ -109,6 +111,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
               ) : null}
             </div>
+
+            {/* Collaborative Notification Bell & Envelope */}
+            <CollaborativeNotificationBell currentUsername={username} />
 
             {/* Button: Return to Student Home Page */}
             <button

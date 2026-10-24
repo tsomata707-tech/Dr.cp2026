@@ -144,13 +144,19 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
         setSelectedGroupId(e.detail.groupId);
       }
     };
+    const handleOpenCollabChatEvent = () => {
+      setActiveMainSection('collab-chat');
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    };
     window.addEventListener('cp_navigate_to_student_home', handleReturnToStudentHome);
     window.addEventListener('cp_navigate_to_posttest', handleNavToPosttest);
     window.addEventListener('cp_admin_switch_group', handleAdminSwitchGroup);
+    window.addEventListener('cp_open_collab_chat', handleOpenCollabChatEvent);
     return () => {
       window.removeEventListener('cp_navigate_to_student_home', handleReturnToStudentHome);
       window.removeEventListener('cp_navigate_to_posttest', handleNavToPosttest);
       window.removeEventListener('cp_admin_switch_group', handleAdminSwitchGroup);
+      window.removeEventListener('cp_open_collab_chat', handleOpenCollabChatEvent);
     };
   }, []);
 

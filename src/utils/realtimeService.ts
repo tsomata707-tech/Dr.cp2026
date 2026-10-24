@@ -526,3 +526,221 @@ export function subscribeToStudentsLoginsAudit(
     return () => {};
   }
 }
+
+/**
+ * Collab Chat Message schema
+ */
+export interface CollabChatMessage {
+  id: string;
+  sender: string;
+  role: 'student' | 'admin';
+  text: string;
+  timestamp: string;
+  createdAt: number;
+}
+
+export interface CollabNotificationEvent {
+  id: string;
+  groupCode: string;
+  sender: string;
+  role: 'student' | 'admin';
+  text: string;
+  timestamp: string;
+  createdAt: number;
+}
+
+/**
+ * Web Audio notification chime (two-tone pleasant bell)
+ */
+export function playCollabNotificationChime() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+
+    // Tone 1
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, now); // A5
+    gain1.gain.setValueAtTime(0.15, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.35);
+
+    // Tone 2
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1318.5, now + 0.12); // E6
+    gain2.gain.setValueAtTime(0.18, now + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.55);
+  } catch {
+    // Audio context may require user interaction in some browsers
+  }
+}
+
+/**
+ * Real-time listener for Collaborative Group Chat messages in Firebase RTDB
+ */
+export function subscribeToCollabGroupChat(
+  groupCode: string,
+  onUpdate: (messages: CollabChatMessage[]) => void
+): () => void {
+  try {
+    const chatRef = ref(rtdb, `collabChats/${groupCode}/messages`);
+    const unsubscribe = onValue(
+      chatRef,
+      (snapshot) => {
+        try {
+          if (snapshot.exists()) {
+            const val = snapshot.val();
+            let list: CollabChatMessage[] = [];
+            if (Array.isArray(val)) {
+              list = val.filter(Boolean);
+            } else if (typeof val === 'object' && val !== null) {
+              list = Object.values(val);
+            }
+            list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            onUpdate(list);
+            try {
+              localStorage.setItem(`cp_collab_cache_${groupCode}`, JSON.stringify(list));
+            } catch {}
+          } else {
+            try {
+              const cached = localStorage.getItem(`cp_collab_cache_${groupCode}`);
+              if (cached) onUpdate(JSON.parse(cached));
+            } catch {}
+          }
+        } catch (err) {
+          console.warn('Error reading collab chat from RTDB:', err);
+        }
+      },
+      (error) => {
+        console.warn('RTDB collabChats subscription error:', error);
+      }
+    );
+    return unsubscribe;
+  } catch (err) {
+    console.warn('Failed to subscribe to collabChats in RTDB:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Send a message to a Collaborative Group in Firebase RTDB & notify peers
+ */
+export async function sendCollabGroupChatMessage(
+  groupCode: string,
+  message: CollabChatMessage
+): Promise<void> {
+  const sanitized = sanitizeData(message);
+  try {
+    // 1. Save message to RTDB under its ID
+    const msgRef = ref(rtdb, `collabChats/${groupCode}/messages/${message.id}`);
+    await rtdbSet(msgRef, sanitized);
+
+    // 2. Broadcast latest notification for bells and envelopes
+    const notifRef = ref(rtdb, `collabChats/${groupCode}/latestNotification`);
+    const notifData: CollabNotificationEvent = {
+      id: message.id,
+      groupCode,
+      sender: message.sender,
+      role: message.role,
+      text: message.text,
+      timestamp: message.timestamp,
+      createdAt: message.createdAt || Date.now(),
+    };
+    await rtdbSet(notifRef, notifData);
+
+    // 3. Clear typing status for this user
+    await updateCollabGroupTyping(groupCode, message.sender, false);
+  } catch (err) {
+    console.error('Failed to send collab chat message to RTDB:', err);
+  }
+
+  // Also update local cache
+  try {
+    const raw = localStorage.getItem(`cp_collab_cache_${groupCode}`);
+    const list: CollabChatMessage[] = raw ? JSON.parse(raw) : [];
+    if (!list.some((m) => m.id === message.id)) {
+      list.push(message);
+      localStorage.setItem(`cp_collab_cache_${groupCode}`, JSON.stringify(list));
+    }
+  } catch {}
+}
+
+/**
+ * Real-time listener for latest notification in a collaborative group (or all groups for admin)
+ */
+export function subscribeToCollabGroupNotification(
+  groupCode: string,
+  onNotification: (notif: CollabNotificationEvent) => void
+): () => void {
+  try {
+    const notifRef = ref(rtdb, `collabChats/${groupCode}/latestNotification`);
+    const unsubscribe = onValue(notifRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val() as CollabNotificationEvent;
+        if (data) onNotification(data);
+      }
+    });
+    return unsubscribe;
+  } catch {
+    return () => {};
+  }
+}
+
+/**
+ * Update real-time typing status in Firebase RTDB
+ */
+export async function updateCollabGroupTyping(
+  groupCode: string,
+  username: string,
+  isTyping: boolean
+): Promise<void> {
+  try {
+    const safeUserKey = username.replace(/[.#$[\]]/g, '_');
+    const typingRef = ref(rtdb, `collabChats/${groupCode}/typing/${safeUserKey}`);
+    await rtdbSet(typingRef, isTyping ? { username, time: Date.now() } : null);
+  } catch {}
+}
+
+/**
+ * Real-time listener for typing users in a collaborative group
+ */
+export function subscribeToCollabGroupTyping(
+  groupCode: string,
+  onTyping: (typingUsers: string[]) => void
+): () => void {
+  try {
+    const typingRef = ref(rtdb, `collabChats/${groupCode}/typing`);
+    const unsubscribe = onValue(typingRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const val = snapshot.val();
+        const now = Date.now();
+        const active: string[] = [];
+        if (typeof val === 'object' && val !== null) {
+          Object.values(val).forEach((entry: any) => {
+            if (entry && entry.username && now - (entry.time || 0) < 4000) {
+              active.push(entry.username);
+            }
+          });
+        }
+        onTyping(active);
+      } else {
+        onTyping([]);
+      }
+    });
+    return unsubscribe;
+  } catch {
+    return () => {};
+  }
+}
