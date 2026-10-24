@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings,
   BookOpen,
@@ -11,6 +11,7 @@ import {
   FileSpreadsheet,
   Type,
   Layers,
+  MessageSquare,
 } from 'lucide-react';
 import { AdminUsersManager } from './AdminUsersManager';
 import { AdminInstructionsManager } from './AdminInstructionsManager';
@@ -21,6 +22,7 @@ import { AdminSplashManager } from './AdminSplashManager';
 import { AdminSupervisorsHonorManager } from './AdminSupervisorsHonorManager';
 import { AdminSiteTitleManager } from './AdminSiteTitleManager';
 import { AdminLevelInstructionsManager } from './AdminLevelInstructionsManager';
+import { CollaborativeGroupsChat } from './CollaborativeGroupsChat';
 
 interface AdminPanelProps {
   onExitAdmin: () => void;
@@ -29,6 +31,7 @@ interface AdminPanelProps {
 
 type AdminTab =
   | 'users'
+  | 'collab_chat'
   | 'level_instructions'
   | 'tests_settings'
   | 'students_audit'
@@ -40,6 +43,25 @@ type AdminTab =
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsStudent }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
+  const [adminTargetCollabGroup, setAdminTargetCollabGroup] = useState<string | null>(() => {
+    return (sessionStorage.getItem('cp_pending_collab_group') as any) || null;
+  });
+
+  // Listen to open collab chat event when in Admin panel
+  useEffect(() => {
+    const handleOpenCollabChat = (e: any) => {
+      const groupCode = (e.detail?.groupCode || sessionStorage.getItem('cp_pending_collab_group') || 'G3-A') as string;
+      setAdminTargetCollabGroup(groupCode);
+      setActiveTab('collab_chat');
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('cp_open_collab_chat', handleOpenCollabChat);
+    window.addEventListener('cp_navigate_to_collab_chat', handleOpenCollabChat);
+    return () => {
+      window.removeEventListener('cp_open_collab_chat', handleOpenCollabChat);
+      window.removeEventListener('cp_navigate_to_collab_chat', handleOpenCollabChat);
+    };
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-16 font-['Cairo',_sans-serif] text-right" dir="rtl">
@@ -89,6 +111,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             >
               <Users className="w-4 h-4 text-blue-300" />
               <span>اليوزر</span>
+            </button>
+
+            {/* TAB: غرف الشات ومجموعات التعاون (G3 & G4) */}
+            <button
+              type="button"
+              id="admin-tab-collab-chat"
+              onClick={() => setActiveTab('collab_chat')}
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTab === 'collab_chat'
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-lg shadow-cyan-500/30 ring-2 ring-cyan-400/50'
+                  : 'bg-slate-800/80 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4 text-cyan-400" />
+              <span>شات مجموعات التعاون (G3 & G4) 💬</span>
             </button>
 
             {/* TAB: تعديل الليفل والأهداف */}
@@ -209,6 +246,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
       {/* Main Tab Content - Opens in the same page seamlessly */}
       <div className="bg-[#0b0e1e] border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl transition-all">
         {activeTab === 'users' && <AdminUsersManager onLoginAsStudent={onLoginAsStudent} />}
+        {activeTab === 'collab_chat' && (
+          <CollaborativeGroupsChat
+            currentUsername="admin"
+            initialGroup={adminTargetCollabGroup}
+          />
+        )}
         {activeTab === 'level_instructions' && <AdminLevelInstructionsManager />}
         {activeTab === 'tests_settings' && <AdminTestsSettingsManager />}
         {activeTab === 'students_audit' && <AdminStudentsAuditManager />}

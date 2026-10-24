@@ -44,6 +44,8 @@ import {
   Home,
   ArrowLeft,
   Database,
+  Bell,
+  Mail,
 } from 'lucide-react';
 
 interface PortalHomeProps {
@@ -127,6 +129,11 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
   }, [activeMainSection]);
 
 
+  // Selected collaborative group when opening chat from notifications or bell
+  const [collabChatTargetGroup, setCollabChatTargetGroup] = useState<string | null>(() => {
+    return (sessionStorage.getItem('cp_pending_collab_group') as any) || null;
+  });
+
   // Global listener to return to student personal home page
   useEffect(() => {
     const handleReturnToStudentHome = () => {
@@ -144,19 +151,26 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
         setSelectedGroupId(e.detail.groupId);
       }
     };
-    const handleOpenCollabChatEvent = () => {
+    const handleOpenCollabChatEvent = (e?: any) => {
+      const target = (e?.detail?.groupCode || sessionStorage.getItem('cp_pending_collab_group') || null) as string | null;
+      if (target) {
+        setCollabChatTargetGroup(target);
+      }
       setActiveMainSection('collab-chat');
       window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     };
+
     window.addEventListener('cp_navigate_to_student_home', handleReturnToStudentHome);
     window.addEventListener('cp_navigate_to_posttest', handleNavToPosttest);
     window.addEventListener('cp_admin_switch_group', handleAdminSwitchGroup);
     window.addEventListener('cp_open_collab_chat', handleOpenCollabChatEvent);
+    window.addEventListener('cp_navigate_to_collab_chat', handleOpenCollabChatEvent);
     return () => {
       window.removeEventListener('cp_navigate_to_student_home', handleReturnToStudentHome);
       window.removeEventListener('cp_navigate_to_posttest', handleNavToPosttest);
       window.removeEventListener('cp_admin_switch_group', handleAdminSwitchGroup);
       window.removeEventListener('cp_open_collab_chat', handleOpenCollabChatEvent);
+      window.removeEventListener('cp_navigate_to_collab_chat', handleOpenCollabChatEvent);
     };
   }, []);
 
@@ -518,14 +532,17 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
                 type="button"
                 id="tab-collab-chat"
                 onClick={() => setActiveMainSection('collab-chat')}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                className={`relative px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
                   activeMainSection === 'collab-chat'
                     ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.5)]'
                     : 'text-cyan-300 hover:text-white hover:bg-slate-900 border border-cyan-500/40'
                 }`}
               >
-                <Users className="w-4 h-4" />
-                <span>🤝 مجموعات التعاون والشات (A-E)</span>
+                <div className="flex items-center gap-1 bg-[#0b1426] px-1.5 py-0.5 rounded-lg border border-cyan-500/60 shadow-sm">
+                  <Mail className="w-3.5 h-3.5 text-cyan-300 animate-pulse" />
+                  <Bell className="w-3.5 h-3.5 text-amber-300 -mr-0.5" />
+                </div>
+                <span>🤝 شات ومجموعات التعاون</span>
               </button>
             )}
 
@@ -655,6 +672,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       {activeMainSection === 'collab-chat' && (
         <CollaborativeGroupsChat
           currentUsername={username}
+          initialGroup={collabChatTargetGroup}
           onBackToHome={() => setActiveMainSection('groups')}
         />
       )}

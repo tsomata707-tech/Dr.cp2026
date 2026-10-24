@@ -5,11 +5,16 @@ import {
   CollabNotificationEvent,
   playCollabNotificationChime,
 } from '../utils/realtimeService';
-import { getCollaborativeGroupByUsername } from '../data/studentAccounts';
+import {
+  getCollaborativeGroupByUsername,
+  ALL_COLLAB_GROUPS,
+  CollaborativeGroupCode,
+  COLLABORATIVE_GROUPS_DEF,
+} from '../data/studentAccounts';
 
 interface CollaborativeNotificationBellProps {
   currentUsername: string;
-  onOpenChat?: (groupCode: 'A' | 'B' | 'C' | 'D' | 'E') => void;
+  onOpenChat?: (groupCode: string) => void;
   className?: string;
 }
 
@@ -21,9 +26,11 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
   const isAdmin = currentUsername?.trim().toLowerCase() === 'admin';
   const userCollabGroup = getCollaborativeGroupByUsername(currentUsername);
 
-  // Group codes to monitor: for students it's their own group; for admin it's all 5 groups
-  const groupsToMonitor: Array<'A' | 'B' | 'C' | 'D' | 'E'> = isAdmin
-    ? ['A', 'B', 'C', 'D', 'E']
+  // Group codes to monitor:
+  // For student: strictly their own assigned triad only (e.g. 'G3-A' or 'G4-B') - NO OTHER GROUP CAN BE MONITORED!
+  // For admin: all 10 triads (G3-A..E and G4-A..E)
+  const groupsToMonitor: CollaborativeGroupCode[] = isAdmin
+    ? ALL_COLLAB_GROUPS
     : userCollabGroup
     ? [userCollabGroup]
     : [];
@@ -40,7 +47,7 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
     }
   });
 
-  // Track the ID of the latest seen message
+  // Track timestamp of latest read
   const [lastReadTimestamp, setLastReadTimestamp] = useState<number>(() => {
     try {
       return parseInt(localStorage.getItem(`cp_last_read_collab_${currentUsername}`) || '0', 10);
@@ -49,7 +56,7 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
     }
   });
 
-  // Subscribe to real-time notifications for collaborative groups
+  // Subscribe to real-time notifications for the specific authorized groups only
   useEffect(() => {
     if (groupsToMonitor.length === 0) return;
 
@@ -59,7 +66,7 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
       const unsub = subscribeToCollabGroupNotification(groupCode, (notif) => {
         // If not sent by current user and newer than last read
         if (notif.sender !== currentUsername && notif.createdAt > (lastReadTimestamp || 0)) {
-          // Play chime sound
+          // Play pleasant chime
           playCollabNotificationChime();
 
           // Show floating toast
@@ -70,7 +77,7 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
 
           // Add to recent notifications list
           setRecentNotifications((prev) => {
-            const next = [notif, ...prev.filter((n) => n.id !== notif.id)].slice(0, 10);
+            const next = [notif, ...prev.filter((n) => n.id !== notif.id)].slice(0, 15);
             try {
               localStorage.setItem(`cp_recent_collab_notifs_${currentUsername}`, JSON.stringify(next));
             } catch {}
@@ -96,7 +103,7 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
     }
   }, [activeToast]);
 
-  const handleOpenTargetChat = (groupCode: 'A' | 'B' | 'C' | 'D' | 'E') => {
+  const handleOpenTargetChat = (groupCode: string) => {
     setShowDropdown(false);
     setActiveToast(null);
     setUnreadCount(0);
@@ -104,23 +111,59 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
     setLastReadTimestamp(now);
     try {
       localStorage.setItem(`cp_last_read_collab_${currentUsername}`, now.toString());
+      sessionStorage.setItem('cp_pending_collab_group', groupCode);
     } catch {}
 
     if (onOpenChat) {
       onOpenChat(groupCode);
-    } else {
+    }
+
+    // Dispatch event immediately
+    window.dispatchEvent(
+      new CustomEvent('cp_open_collab_chat', { detail: { groupCode } })
+    );
+
+    // Re-dispatch after mounting
+    setTimeout(() => {
       window.dispatchEvent(
         new CustomEvent('cp_open_collab_chat', { detail: { groupCode } })
       );
-    }
+    }, 50);
+
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent('cp_open_collab_chat', { detail: { groupCode } })
+      );
+    }, 200);
   };
 
-  // If user is not in collaborative group and not admin, do not render
+  // If user is not in collaborative group and not admin (e.g. competitive students), do not render
   if (!isAdmin && !userCollabGroup) {
     return null;
   }
 
-  const defaultGroupToOpen = userCollabGroup || 'A';
+  const defaultGroupToOpen = userCollabGroup || 'G3-A';
+
+  const getGroupBadge = (code: string) => {
+    const isG3 = code.startsWith('G3');
+    const isG4 = code.startsWith('G4');
+    if (isG3) {
+      return {
+        label: `⚡ فوري (${code})`,
+        bg: 'bg-cyan-950 text-cyan-300 border-cyan-500',
+      };
+    }
+    if (isG4) {
+      return {
+        label: `⏳ مرجأ (${code})`,
+        bg: 'bg-purple-950 text-purple-300 border-purple-500',
+      };
+    }
+    return {
+      label: `مجموعة (${code})`,
+      bg: 'bg-slate-900 text-slate-300 border-slate-700',
+    };
+  };
 
   return (
     <div className={`relative inline-flex items-center gap-1.5 ${className}`}>
@@ -162,9 +205,9 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
                 <Mail className="w-5 h-5" />
               </div>
               <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500 text-[10px] font-bold">
-                    مجموعة ({activeToast.groupCode})
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${getGroupBadge(activeToast.groupCode).bg}`}>
+                    {getGroupBadge(activeToast.groupCode).label}
                   </span>
                   <span className="text-xs font-black text-white font-['Tajawal']">
                     {activeToast.role === 'admin' ? '👑 مشرف المنظومة (Admin)' : activeToast.sender}
@@ -191,10 +234,12 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
 
           <button
             type="button"
-            onClick={() => handleOpenTargetChat(activeToast.groupCode as any)}
-            className="w-full mt-3 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
+            id="btn-toast-go-to-chat"
+            onClick={() => handleOpenTargetChat(activeToast.groupCode)}
+            className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg hover:shadow-cyan-500/25 active:scale-95"
           >
-            <span>فتح الشات والرد الآن 💬</span>
+            <MessageSquare className="w-4 h-4 text-slate-950" />
+            <span>الانتقال إلى المحادثة الفعلية والرد 💬</span>
             <ChevronLeft className="w-4 h-4" />
           </button>
         </div>
@@ -223,33 +268,42 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
                 لا توجد رسائل جديدة حالياً.
               </div>
             ) : (
-              recentNotifications.map((n) => (
-                <div
-                  key={n.id}
-                  onClick={() => handleOpenTargetChat(n.groupCode as any)}
-                  className="p-2.5 rounded-xl bg-[#141830] hover:bg-[#1a2040] border border-slate-800 hover:border-cyan-500/50 cursor-pointer transition"
-                >
-                  <div className="flex items-center justify-between text-[11px] mb-1">
-                    <span className="font-bold text-cyan-300">
-                      {n.sender} (مجموعة {n.groupCode})
-                    </span>
-                    <span className="text-slate-500 font-mono text-[9px]">{n.timestamp}</span>
+              recentNotifications.map((n) => {
+                const badge = getGroupBadge(n.groupCode);
+                return (
+                  <div
+                    key={n.id}
+                    onClick={() => handleOpenTargetChat(n.groupCode)}
+                    className="p-2.5 rounded-xl bg-[#141830] hover:bg-[#1a2040] border border-slate-800 hover:border-cyan-500/50 cursor-pointer transition"
+                  >
+                    <div className="flex items-center justify-between text-[11px] mb-1">
+                      <span className="font-bold text-cyan-300 flex items-center gap-1">
+                        <span>{n.sender}</span>
+                        <span className={`px-1.5 py-0.2 rounded border text-[9px] ${badge.bg}`}>
+                          {n.groupCode}
+                        </span>
+                      </span>
+                      <span className="text-slate-500 font-mono text-[9px]">{n.timestamp}</span>
+                    </div>
+                    <p className="text-xs text-slate-300 line-clamp-1">{n.text}</p>
                   </div>
-                  <p className="text-xs text-slate-300 line-clamp-1">{n.text}</p>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
           <button
             type="button"
+            id="btn-dropdown-go-to-chat"
             onClick={() => handleOpenTargetChat(defaultGroupToOpen)}
-            className="w-full py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black text-xs text-center transition cursor-pointer"
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
           >
-            الانتقال لغرفة الشات 💬
+            <MessageSquare className="w-3.5 h-3.5 text-slate-950" />
+            <span>الانتقال إلى المحادثة الفعلية 💬</span>
           </button>
         </div>
       )}
     </div>
   );
 };
+

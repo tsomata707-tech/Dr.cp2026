@@ -441,7 +441,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
     showToast('تم تصدير شيت المجموعات التعاونية بنجاح');
   };
 
-  // Export Individual Group Sheet (شيت لكل مجموعة على حدة: G1, G2, G3, G4 أو A, B, C, D, E)
+  // Export Individual Group Sheet (شيت لكل مجموعة على حدة: G1, G2, G3, G4 أو مجموعات التعاون الثلاثية G3-A..E و G4-A..E)
   const handleExportGroupSheet = (targetGroupCode: string) => {
     const headers = [
       'م', 'اسم المستخدم', 'المجموعة', 'نمط التعلم', 'التغذية الراجعة', 'أول دخول', 'آخر دخول',
@@ -449,9 +449,9 @@ export const AdminStudentsAuditManager: React.FC = () => {
       'حالة البعدي', 'درجة البعدي', 'تاريخ ووقت البعدي الفعلي',
     ];
     const groupStudents = enrichedStudents.filter((s) => {
-      if (['A', 'B', 'C', 'D', 'E'].includes(targetGroupCode)) {
-        const collabGrp = getCollaborativeGroupByUsername(s.username);
-        return collabGrp === targetGroupCode;
+      const collabGrp = getCollaborativeGroupByUsername(s.username);
+      if (collabGrp && (collabGrp === targetGroupCode || collabGrp.endsWith(`-${targetGroupCode}`))) {
+        return true;
       }
       return s.groupCode === targetGroupCode;
     });
@@ -708,36 +708,77 @@ export const AdminStudentsAuditManager: React.FC = () => {
         </div>
 
         {/* Collaborative Sheet & Individual Group Sheets Export Section */}
-        <div className="mt-4 p-5 rounded-2xl bg-[#090b17] border border-cyan-500/40 space-y-3">
+        <div className="mt-4 p-5 rounded-2xl bg-[#090b17] border border-cyan-500/40 space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-black text-cyan-300 font-['Cairo'] flex items-center gap-2">
               <FileSpreadsheet className="w-4 h-4 text-cyan-400" />
-              <span>تصدير الشيت الخاص بالمجموعات التعاونية وشيتات المجموعات المنفصلة (مع الوقت والتاريخ الفعلي):</span>
+              <span>تصدير شيتات المجموعات المنفصلة ومجموعات التعاون الثلاثية (مع الوقت والتاريخ الفعلي):</span>
             </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={handleExportCollaborativeSheet}
-              className="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs shadow-md transition cursor-pointer flex items-center gap-2"
+              className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs shadow-md transition cursor-pointer flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
-              <span>📁 شيت المجموعات التعاونية (شامل)</span>
+              <span>📁 شيت التعاوني الشامل (G3 + G4)</span>
             </button>
+          </div>
 
-            {['G1', 'G2', 'G3', 'G4', 'A', 'B', 'C', 'D', 'E'].map((grp) => (
-              <button
-                key={grp}
-                type="button"
-                onClick={() => handleExportGroupSheet(grp)}
-                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs border border-slate-700 transition cursor-pointer flex items-center gap-1.5"
-                title={`تصدير شيت مجموعة ${grp} مستقل`}
-              >
-                <Download className="w-3.5 h-3.5 text-amber-400" />
-                <span>شيت مجموعة {grp}</span>
-              </button>
-            ))}
+          {/* Primary Research Groups G1 - G4 */}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-bold text-slate-400 block">المجموعات البحثية الرئيسية الأربعة:</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {['G1', 'G2', 'G3', 'G4'].map((grp) => (
+                <button
+                  key={grp}
+                  type="button"
+                  onClick={() => handleExportGroupSheet(grp)}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs border border-slate-700 transition cursor-pointer flex items-center gap-1.5"
+                  title={`تصدير شيت مجموعة ${grp} كاملة (15 طالب)`}
+                >
+                  <Download className="w-3.5 h-3.5 text-amber-400" />
+                  <span>شيت {grp}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 5 Triads of G3 (تعاوني فوري) */}
+          <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+            <span className="text-[11px] font-bold text-cyan-400 block">فرق التعاون الفوري (G3) - 5 مجموعات ثلاثية (3 طلاب لكل فريق):</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {['G3-A', 'G3-B', 'G3-C', 'G3-D', 'G3-E'].map((grp) => (
+                <button
+                  key={grp}
+                  type="button"
+                  onClick={() => handleExportGroupSheet(grp)}
+                  className="px-3 py-1.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900/60 text-cyan-300 font-bold text-xs border border-cyan-500/50 transition cursor-pointer flex items-center gap-1.5"
+                  title={`تصدير شيت فريق ${grp} (3 طلاب)`}
+                >
+                  <Download className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>فريق {grp}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 5 Triads of G4 (تعاوني مرجأ) */}
+          <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+            <span className="text-[11px] font-bold text-purple-400 block">فرق التعاون المرجأ (G4) - 5 مجموعات ثلاثية (3 طلاب لكل فريق):</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {['G4-A', 'G4-B', 'G4-C', 'G4-D', 'G4-E'].map((grp) => (
+                <button
+                  key={grp}
+                  type="button"
+                  onClick={() => handleExportGroupSheet(grp)}
+                  className="px-3 py-1.5 rounded-xl bg-purple-950/70 hover:bg-purple-900/60 text-purple-300 font-bold text-xs border border-purple-500/50 transition cursor-pointer flex items-center gap-1.5"
+                  title={`تصدير شيت فريق ${grp} (3 طلاب)`}
+                >
+                  <Download className="w-3.5 h-3.5 text-purple-400" />
+                  <span>فريق {grp}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
