@@ -50,7 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header
       id="app-permanent-header"
-      className="fixed top-0 left-0 right-0 z-40 h-16 px-4 md:px-8 flex items-center justify-between backdrop-blur-xl bg-[#08070e]/95 border-b border-[#d4af37]/30 shadow-[0_4px_25px_rgba(0,0,0,0.6)] transition-all duration-300"
+      className="fixed top-0 left-0 right-0 z-40 h-16 px-4 md:px-8 flex items-center justify-between backdrop-blur-xl bg-white/95 border-b-2 border-sky-300/80 shadow-[0_4px_20px_rgba(2,132,199,0.12)] transition-all duration-300"
     >
       {/* Permanent Cp Logo on the Right (RTL) */}
       <div className="flex items-center gap-3">
@@ -59,11 +59,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Center Subtitle or Status */}
       <div className="hidden md:flex items-center gap-2">
-        <span className="text-xs text-amber-300/80 font-['Tajawal'] font-bold">
+        <span className="text-xs text-sky-800 font-['Tajawal'] font-bold">
           بيئة الألعاب التعليمية الإلكترونية
         </span>
-        <span className="text-slate-600">•</span>
-        <span className="text-xs text-slate-400 font-['Cairo']">
+        <span className="text-sky-400">•</span>
+        <span className="text-xs text-slate-600 font-['Cairo'] font-semibold">
           Adobe Captivate 2019
         </span>
       </div>
@@ -72,8 +72,8 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="flex items-center gap-3">
         {isAdmin ? (
           <div className="flex items-center gap-2.5">
-            <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/15 border border-[#d4af37] text-xs font-bold text-amber-300">
-              <KeyRound className="w-3.5 h-3.5" />
+            <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-sky-100 border border-sky-400 text-xs font-bold text-sky-900">
+              <KeyRound className="w-3.5 h-3.5 text-sky-700" />
               <span>وضع المشرف (الأدمن)</span>
             </span>
             <CollaborativeNotificationBell currentUsername="admin" />
@@ -81,7 +81,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={onExitAdmin}
               id="btn-navbar-exit-admin"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/40 bg-red-950/30 hover:bg-red-900/40 text-red-300 text-xs font-bold transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold transition-all cursor-pointer shadow-sm"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>خروج من الأدمن</span>
@@ -89,27 +89,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         ) : isLoggedIn ? (
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#141224] border border-[#d4af37]/40 text-xs text-amber-200">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sky-50 border-2 border-sky-300 text-xs text-sky-950 font-bold shadow-sm">
               {profile?.customPhotoUrl ? (
                 <img
                   src={profile.customPhotoUrl}
                   alt={username}
-                  className="w-5 h-5 rounded-full object-cover border border-[#ffd700]"
+                  className="w-5 h-5 rounded-full object-cover border border-sky-500"
                 />
               ) : avatar ? (
                 <span className="text-sm">{avatar.emoji}</span>
               ) : (
-                <User className="w-3.5 h-3.5 text-amber-400" />
+                <User className="w-3.5 h-3.5 text-sky-700" />
               )}
-              <span className="font-bold text-slate-200 font-['Cairo'] tracking-wide">
+              <span className="font-bold text-slate-900 font-['Cairo'] tracking-wide">
                 {formatStudentDisplayName(username)}
               </span>
               {username?.toLowerCase() === 'admin' ? (
-                <span className="px-2 py-0.5 rounded-md bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 text-[11px] font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-emerald-100 border border-emerald-400 text-emerald-900 text-[11px] font-bold">
                   مشرف (قراءة فقط 👁️)
                 </span>
               ) : groupMeta ? (
-                <span className="px-2 py-0.5 rounded-md bg-purple-950/90 border border-purple-500/50 text-purple-200 text-[11px] font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-cyan-100 border border-cyan-400 text-cyan-900 text-[11px] font-bold">
                   {groupMeta.name}
                 </span>
               ) : null}

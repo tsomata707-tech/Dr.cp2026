@@ -199,20 +199,20 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
 
   return (
     <div className="relative w-full max-w-md mx-auto z-10" id="login-card-wrapper">
-      {/* Outer Blue/Gold Ambient Sheen */}
-      <div className="absolute -inset-1 rounded-[28px] bg-gradient-to-r from-blue-600/30 via-[#d4af37]/30 to-purple-600/30 blur-md opacity-75 pointer-events-none" />
+      {/* Outer Sky Blue Sheen */}
+      <div className="absolute -inset-1 rounded-[28px] bg-gradient-to-r from-sky-400/40 via-cyan-300/40 to-blue-400/40 blur-md opacity-80 pointer-events-none" />
 
-      {/* Main Login Card with Modern UI */}
+      {/* Main Login Card in White and Sky Blue */}
       <div
         id="login-card"
-        className="relative rounded-3xl bg-[#0b0e1b]/95 backdrop-blur-2xl border-2 border-blue-500/40 shadow-[0_0_40px_rgba(37,99,235,0.2),0_20px_45px_rgba(0,0,0,0.85)] p-6 sm:p-8 text-right overflow-hidden transition-all duration-300"
+        className="relative rounded-3xl bg-white/95 backdrop-blur-2xl border-2 border-sky-300 shadow-[0_15px_45px_rgba(2,132,199,0.18)] p-6 sm:p-8 text-right overflow-hidden transition-all duration-300"
       >
         {/* Top Back to Splash Button */}
         {onBackToSplash && (
           <button
             type="button"
             onClick={onBackToSplash}
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-300 transition-colors mb-3 cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs text-sky-700 hover:text-sky-900 font-bold transition-colors mb-3 cursor-pointer"
           >
             <ArrowRight className="w-3.5 h-3.5" />
             <span>العودة لشاشة البداية</span>
@@ -220,13 +220,13 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
         )}
 
         {/* Header with CP Logo & Dynamic Site Title */}
-        <div className="flex flex-col items-center justify-center text-center pb-5 border-b border-slate-800">
+        <div className="flex flex-col items-center justify-center text-center pb-5 border-b border-sky-100">
           <CpLogo size="lg" showText={false} className="mb-2" />
-          <h1 className="text-xl sm:text-2xl font-black text-white tracking-wide font-['Tajawal'] mb-1">
+          <h1 className="text-xl sm:text-2xl font-black text-sky-950 tracking-wide font-['Tajawal'] mb-1">
             تسجيل الدخول
           </h1>
           {titleConfig.mainTitle && (
-            <p className="text-xs text-amber-300/90 font-bold max-w-sm line-clamp-2 leading-relaxed mt-1">
+            <p className="text-xs text-sky-800 font-bold max-w-sm line-clamp-2 leading-relaxed mt-1">
               {titleConfig.mainTitle}
             </p>
           )}
@@ -236,10 +236,10 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
         <form onSubmit={handleSubmit} className="mt-5 space-y-4" id="form-login">
           {error && (
             <div
-              className="p-3 rounded-xl bg-red-950/60 border border-red-500/50 text-red-200 text-xs flex items-center gap-2 animate-shake"
+              className="p-3 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold flex items-center gap-2 animate-shake"
               role="alert"
             >
-              <ShieldAlert className="w-4 h-4 text-red-400 shrink-0" />
+              <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -248,7 +248,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
           <div className="space-y-1.5" id="group-username">
             <label
               htmlFor="input-username"
-              className="block text-xs font-bold text-slate-200 font-['Cairo'] tracking-wide"
+              className="block text-xs font-bold text-slate-800 font-['Cairo'] tracking-wide"
             >
               اسم المستخدم (كود الدخول)
             </label>
@@ -262,10 +262,10 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="أدخل اسم المستخدم (مثال: G1_Cp_01)"
-                className="w-full h-12 pr-11 pl-4 rounded-xl bg-[#070a14] text-white text-sm placeholder:text-slate-500 border-2 border-slate-700/80 hover:border-blue-500/70 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none transition-all text-right font-mono"
+                className="w-full h-12 pr-11 pl-4 rounded-xl bg-sky-50/70 text-slate-900 text-sm placeholder:text-slate-400 border-2 border-sky-200 hover:border-sky-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-400/30 focus:outline-none transition-all text-right font-mono font-bold"
               />
               <div
-                className="absolute top-1/2 -translate-y-1/2 right-3 w-7 h-7 rounded-lg bg-[#11162a] border border-slate-700 flex items-center justify-center text-blue-400 pointer-events-none group-focus-within:border-blue-500 group-focus-within:text-blue-300 transition-colors"
+                className="absolute top-1/2 -translate-y-1/2 right-3 w-7 h-7 rounded-lg bg-sky-100 border border-sky-200 flex items-center justify-center text-sky-600 pointer-events-none group-focus-within:border-sky-500 group-focus-within:text-sky-700 transition-colors"
                 title="أيقونة اسم المستخدم"
               >
                 <User className="w-4 h-4" />
@@ -275,10 +275,10 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
 
           {/* Tripartite Name Section (3 Distinct Boxes: الاسم، اسم الأب، اللقب/العائلة) */}
           {username.trim().toLowerCase() !== 'admin' && (
-            <div className="p-3.5 rounded-xl bg-gradient-to-br from-blue-950/40 via-indigo-950/30 to-purple-950/30 border border-blue-500/30 space-y-2.5">
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-sky-50 via-cyan-50/50 to-blue-50 border border-sky-200 space-y-2.5 shadow-sm">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-blue-300 font-['Cairo'] flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                <label className="text-xs font-bold text-sky-900 font-['Cairo'] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-sky-500"></span>
                   اسم الطالب الثلاثي:
                 </label>
               </div>
@@ -286,8 +286,8 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {/* 1. First Name */}
                 <div className="space-y-1">
-                  <label htmlFor="input-first-name" className="text-[11px] font-semibold text-slate-300 block">
-                    1. الاسم: <span className="text-rose-400">*</span>
+                  <label htmlFor="input-first-name" className="text-[11px] font-bold text-slate-700 block">
+                    1. الاسم: <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -295,14 +295,14 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="الاسم الأول"
-                    className="w-full h-10 px-3 rounded-lg bg-[#070a14] text-white text-xs placeholder:text-slate-500 border border-slate-700 hover:border-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all text-right font-['Cairo']"
+                    className="w-full h-10 px-3 rounded-lg bg-white text-slate-900 text-xs font-bold placeholder:text-slate-400 border border-sky-200 hover:border-sky-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all text-right font-['Cairo']"
                   />
                 </div>
 
                 {/* 2. Father's Name */}
                 <div className="space-y-1">
-                  <label htmlFor="input-father-name" className="text-[11px] font-semibold text-slate-300 block">
-                    2. اسم الأب: <span className="text-rose-400">*</span>
+                  <label htmlFor="input-father-name" className="text-[11px] font-bold text-slate-700 block">
+                    2. اسم الأب: <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -310,14 +310,14 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
                     value={fatherName}
                     onChange={(e) => setFatherName(e.target.value)}
                     placeholder="اسم الأب"
-                    className="w-full h-10 px-3 rounded-lg bg-[#070a14] text-white text-xs placeholder:text-slate-500 border border-slate-700 hover:border-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all text-right font-['Cairo']"
+                    className="w-full h-10 px-3 rounded-lg bg-white text-slate-900 text-xs font-bold placeholder:text-slate-400 border border-sky-200 hover:border-sky-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all text-right font-['Cairo']"
                   />
                 </div>
 
                 {/* 3. Family Name / Surname */}
                 <div className="space-y-1">
-                  <label htmlFor="input-family-name" className="text-[11px] font-semibold text-slate-300 block">
-                    3. اللقب / العائلة: <span className="text-rose-400">*</span>
+                  <label htmlFor="input-family-name" className="text-[11px] font-bold text-slate-700 block">
+                    3. اللقب / العائلة: <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -325,7 +325,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
                     value={familyName}
                     onChange={(e) => setFamilyName(e.target.value)}
                     placeholder="اللقب أو اسم الجد"
-                    className="w-full h-10 px-3 rounded-lg bg-[#070a14] text-white text-xs placeholder:text-slate-500 border border-slate-700 hover:border-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all text-right font-['Cairo']"
+                    className="w-full h-10 px-3 rounded-lg bg-white text-slate-900 text-xs font-bold placeholder:text-slate-400 border border-sky-200 hover:border-sky-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all text-right font-['Cairo']"
                   />
                 </div>
               </div>
@@ -336,7 +336,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
           <div className="space-y-1.5" id="group-password">
             <label
               htmlFor="input-password"
-              className="block text-xs font-bold text-slate-200 font-['Cairo'] tracking-wide"
+              className="block text-xs font-bold text-slate-800 font-['Cairo'] tracking-wide"
             >
               كلمة المرور
             </label>
@@ -349,10 +349,10 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="أدخل كلمة المرور"
-                className="w-full h-12 pr-11 pl-11 rounded-xl bg-[#070a14] text-white text-sm placeholder:text-slate-500 border-2 border-slate-700/80 hover:border-blue-500/70 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none transition-all text-right font-mono"
+                className="w-full h-12 pr-11 pl-11 rounded-xl bg-sky-50/70 text-slate-900 text-sm placeholder:text-slate-400 border-2 border-sky-200 hover:border-sky-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-400/30 focus:outline-none transition-all text-right font-mono font-bold"
               />
               <div
-                className="absolute top-1/2 -translate-y-1/2 right-3 w-7 h-7 rounded-lg bg-[#11162a] border border-slate-700 flex items-center justify-center text-blue-400 pointer-events-none group-focus-within:border-blue-500 group-focus-within:text-blue-300 transition-colors"
+                className="absolute top-1/2 -translate-y-1/2 right-3 w-7 h-7 rounded-lg bg-sky-100 border border-sky-200 flex items-center justify-center text-sky-600 pointer-events-none group-focus-within:border-sky-500 group-focus-within:text-sky-700 transition-colors"
                 title="أيقونة القفل"
               >
                 <Lock className="w-4 h-4" />
@@ -372,12 +372,12 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
 
           {/* Remember Me Checkbox */}
           <div className="flex items-center justify-between pt-1">
-            <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-300">
+            <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-700 font-bold">
               <input
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                className="w-4 h-4 rounded border-sky-300 bg-sky-50 text-sky-600 focus:ring-sky-500 cursor-pointer"
               />
               <span>تذكرني</span>
             </label>
@@ -385,7 +385,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
             <button
               type="button"
               onClick={() => setShowForgotModal(true)}
-              className="text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium underline-offset-4 hover:underline cursor-pointer"
+              className="text-xs text-sky-700 hover:text-sky-900 transition-colors font-bold underline-offset-4 hover:underline cursor-pointer"
             >
               نسيت كلمة المرور؟
             </button>
@@ -396,7 +396,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
             type="submit"
             id="btn-submit-login"
             disabled={isLoading}
-            className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-sm tracking-wide shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:shadow-[0_6px_25px_rgba(37,99,235,0.55)] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 mt-2"
+            className="w-full h-12 rounded-xl bg-gradient-to-r from-sky-600 via-cyan-600 to-sky-700 hover:from-sky-500 hover:to-cyan-500 text-white font-black text-sm tracking-wide shadow-[0_4px_20px_rgba(2,132,199,0.35)] hover:shadow-[0_6px_25px_rgba(2,132,199,0.5)] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 mt-2"
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -412,9 +412,9 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
         {/* Separator */}
         <div className="my-5 relative flex items-center justify-center">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-800" />
+            <div className="w-full border-t border-sky-200" />
           </div>
-          <div className="relative px-3 bg-[#0b0e1b] text-[10px] text-slate-500 font-medium tracking-wider">
+          <div className="relative px-3 bg-white text-[10px] text-sky-800 font-bold tracking-wider">
             المساعدة والتواصل
           </div>
         </div>
@@ -425,15 +425,15 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
         </div>
 
         {/* Discreet Admin Login */}
-        <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-center">
+        <div className="mt-4 pt-3 border-t border-sky-100 flex items-center justify-center">
           <button
             type="button"
             onClick={onOpenAdminLogin}
             id="btn-open-admin-from-card"
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] text-amber-400/80 hover:text-amber-300 hover:bg-amber-400/10 border border-transparent hover:border-amber-400/30 transition-all cursor-pointer font-bold"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-sky-800 hover:text-sky-950 hover:bg-sky-100 border border-sky-300 transition-all cursor-pointer font-bold shadow-sm"
             title="لوحة تحكم الأدمن"
           >
-            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+            <KeyRound className="w-3.5 h-3.5 text-sky-700" />
             <span>لوحة تحكم الأدمن والمشرف</span>
           </button>
         </div>

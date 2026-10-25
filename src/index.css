@@ -1,1 +1,88 @@
 @import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #f0f9ff; /* sky-50 */
+    color: #0f172a; /* slate-900 high-contrast */
+    font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+  }
+}
+
+/* Global White & Sky Blue Theme Overrides */
+.bg-slate-950,
+.bg-slate-900,
+.bg-[#0b0f1e],
+.bg-[#0b0e1b],
+.bg-[#08070e],
+.bg-[#070a14],
+.bg-[#0c0f20],
+.bg-[#0f0c22],
+.bg-[#090d1a],
+.bg-[#090d20],
+.bg-[#0f1426] {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  color: #0f172a !important;
+  border-color: #bae6fd !important; /* sky-200 */
+}
+
+/* Border Overrides */
+.border-slate-800,
+.border-slate-700,
+.border-slate-900 {
+  border-color: #e0f2fe !important; /* sky-100 */
+}
+
+/* Text Clarity Overrides */
+h1, h2, h3, h4, h5, h6 {
+  color: #082f49 !important; /* sky-950 */
+}
+
+.text-white,
+.text-slate-100,
+.text-slate-200,
+.text-slate-300 {
+  color: #0f172a !important; /* slate-900 */
+}
+
+.text-slate-400,
+.text-slate-500 {
+  color: #334155 !important; /* slate-700 */
+}
+
+.text-amber-300,
+.text-amber-400,
+.text-blue-300,
+.text-blue-400 {
+  color: #0284c7 !important; /* sky-600 */
+}
+
+/* Input Overrides */
+input[type="text"],
+input[type="password"],
+textarea,
+select {
+  background-color: #f0f9ff !important;
+  color: #0f172a !important;
+  border-color: #7dd3fc !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f0f9ff;
+}
+::-webkit-scrollbar-thumb {
+  background: #38bdf8;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
+}
