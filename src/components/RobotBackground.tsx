@@ -3,12 +3,12 @@ import React from 'react';
 export const RobotBackground: React.FC = () => {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" id="robot-bg-container">
-      {/* Base Canvas White & Sky Blue Tone */}
-      <div className="absolute inset-0 bg-gradient-to-br from-sky-100 via-white to-cyan-100" />
+      {/* Base Canvas: Soft Matte Off-White / Pale Sky Tone (2 shades softer than bright white) */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#e2eaf2] via-[#ebf1f7] to-[#e0e9f2]" />
 
-      {/* Main Artwork with soft light overlay */}
+      {/* Main Artwork with muted opacity */}
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-30 sm:opacity-40 filter contrast-110 brightness-110 transition-opacity duration-1000"
+        className="absolute inset-0 bg-cover bg-center opacity-20 sm:opacity-25 filter contrast-105 brightness-100 transition-opacity duration-1000"
         style={{
           backgroundImage: `url('/ai_cyber_conflict_bg.jpg')`,
         }}
@@ -94,8 +94,8 @@ export const RobotBackground: React.FC = () => {
         <line x1="0" y1="450" x2="1440" y2="450" stroke="url(#laserBeam)" strokeWidth="1.5" opacity="0.6" />
       </svg>
 
-      {/* Soft Light Vignette */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(240,249,255,0.4)_50%,rgba(224,242,254,0.85)_100%)]" />
+      {/* Soft Matte Vignette */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(233,239,246,0.5)_50%,rgba(224,233,242,0.9)_100%)]" />
 
       {/* Cybernetic Sky-Blue Grid Pattern */}
       <div

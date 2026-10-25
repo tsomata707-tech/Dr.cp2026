@@ -2,23 +2,23 @@
 
 @layer base {
   body {
-    background-color: #f0f9ff;
-    color: #0f172a;
+    background-color: #e8eff5;
+    color: #1e293b;
     font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
   }
 }
 
 /* ============================================================
-   PERVASIVE WHITE & SKY BLUE THEME (الأبيض والأزرق الفاتح / السماوي)
+   ELEGANT MATTE OFF-WHITE & SKY THEME (نسق الأبيض المطفي درجتين والسماوي الهادئ)
    ============================================================ */
 
-/* 1. Global Background Reset */
+/* 1. Global Background Reset: Soft Matte Canvas (2 shades softer than blinding pure white) */
 body, #root, #app-permanent-header, main, footer {
-  background-color: #f0f9ff;
-  color: #0f172a;
+  background-color: #e8eff5;
+  color: #1e293b;
 }
 
-/* 2. Transform ALL dark background classes to pure crisp White or soft Sky-50 */
+/* 2. Transform dark backgrounds into soft matte cloud off-white (#f4f7fb) */
 [class*="bg-slate-9"],
 [class*="bg-slate-8"],
 [class*="bg-slate-7"],
@@ -30,12 +30,12 @@ body, #root, #app-permanent-header, main, footer {
 [class*="bg-[#0"],
 [class*="bg-[#1"],
 [class*="bg-[#2"] {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #bae6fd !important; /* sky-200 */
+  background-color: #f4f7fb !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important; /* soft slate-300 */
 }
 
-/* 3. Strip all dark gradient backgrounds and replace with elegant Sky Blue / White tints */
+/* 3. Strip dark gradient backgrounds and replace with soft matte surfaces */
 [class*="from-[#0"],
 [class*="from-[#1"],
 [class*="from-[#2"],
@@ -44,7 +44,7 @@ body, #root, #app-permanent-header, main, footer {
 [class*="from-gray-9"],
 [class*="from-black"] {
   background-image: none !important;
-  background-color: #ffffff !important;
+  background-color: #f4f7fb !important;
 }
 
 [class*="via-[#0"],
@@ -60,47 +60,51 @@ body, #root, #app-permanent-header, main, footer {
   background-image: none !important;
 }
 
-/* 4. Special gradient card headers (Honor board, badges, levels, modules) get clean sky borders and white background */
+/* 4. Cards, Boards, and Sections: Soft Matte Container with Subtle Border */
 div[class*="rounded-3xl"][class*="border"],
 div[class*="rounded-2xl"][class*="border"],
 section[class*="rounded-3xl"],
 aside[class*="rounded-2xl"] {
-  background-color: #ffffff !important;
-  border-color: #7dd3fc !important; /* sky-300 */
-  box-shadow: 0 10px 30px -5px rgba(2, 132, 199, 0.12) !important;
+  background-color: #f4f7fb !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 8px 25px -4px rgba(15, 23, 42, 0.08) !important;
 }
 
-/* 5. Typography Contrast: Force crisp, high-contrast dark text on white/sky backgrounds */
+/* 5. Typography Hierarchy & Contrast: Cohesive, legible, eye-friendly font colors */
 h1, h2, h3, h4, h5, h6 {
-  color: #082f49 !important; /* sky-950 deep navy */
+  color: #0f2942 !important; /* Deep oceanic navy for maximum clarity */
 }
 
-[class*="text-white"],
-[class*="text-slate-100"],
-[class*="text-slate-200"],
-[class*="text-slate-300"],
-[class*="text-gray-100"],
-[class*="text-gray-200"],
-[class*="text-gray-300"] {
-  color: #0f172a !important; /* slate-900 */
+p, label, li {
+  color: #1e3a5f;
+}
+
+/* Ensure body text that used dark-mode white/slate classes now uses deep readable slate */
+:not(button):not(button *):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-cyan-"]):not([class*="bg-gradient-to"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-amber-"])[class*="text-white"],
+:not(button):not(button *)[class*="text-slate-100"],
+:not(button):not(button *)[class*="text-slate-200"],
+:not(button):not(button *)[class*="text-slate-300"],
+:not(button):not(button *)[class*="text-gray-100"],
+:not(button):not(button *)[class*="text-gray-200"],
+:not(button):not(button *)[class*="text-gray-300"] {
+  color: #1e293b !important; /* slate-800 */
 }
 
 [class*="text-slate-400"],
 [class*="text-slate-500"],
 [class*="text-gray-400"],
 [class*="text-gray-500"] {
-  color: #334155 !important; /* slate-700 */
+  color: #475569 !important; /* slate-600 */
 }
 
-/* Yellow and gold text on dark was readable, on white it must be deep cyan/sky-blue for maximum contrast */
+/* Accent texts: Deep vibrant sky blue */
 [class*="text-amber-300"],
 [class*="text-amber-400"],
-[class*="text-amber-500"],
 [class*="text-yellow-300"],
 [class*="text-yellow-400"],
 [class*="text-[#ffd700]"],
 [class*="text-[#d4af37]"] {
-  color: #0369a1 !important; /* sky-700 */
+  color: #0369a1 !important; /* deep sky-700 */
 }
 
 [class*="text-purple-300"],
@@ -110,7 +114,7 @@ h1, h2, h3, h4, h5, h6 {
   color: #0284c7 !important; /* sky-600 */
 }
 
-/* 6. Borders: Replace dark slate borders with soft sky blue borders */
+/* 6. Soft Borders: Replace dark borders with gentle slate/sky borders */
 [class*="border-slate-9"],
 [class*="border-slate-8"],
 [class*="border-slate-7"],
@@ -119,14 +123,21 @@ h1, h2, h3, h4, h5, h6 {
 [class*="border-[#d4af37]"],
 [class*="border-[#ffd700]"],
 [class*="border-amber-500"] {
-  border-color: #bae6fd !important; /* sky-200 */
+  border-color: #cbd5e1 !important; /* slate-300 */
 }
 
-/* 7. Input fields, textareas, selects */
+/* 7. Input fields, textareas, selects: Comfortable clean fields */
 input, textarea, select {
-  background-color: #f0f9ff !important;
+  background-color: #f8fafc !important;
   color: #0f172a !important;
-  border: 1.5px solid #7dd3fc !important;
+  border: 1.5px solid #94a3b8 !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  background-color: #ffffff !important;
+  border-color: #0284c7 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18) !important;
 }
 
 input::placeholder, textarea::placeholder {
@@ -135,63 +146,65 @@ input::placeholder, textarea::placeholder {
 
 /* 8. Table Styling in Admin Panels, Student Sheets & Results */
 table {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
+  background-color: #f4f7fb !important;
+  color: #1e293b !important;
 }
 
 thead, thead tr, thead th {
-  background-color: #e0f2fe !important;
+  background-color: #e2eaf2 !important;
   color: #0369a1 !important;
-  border-color: #bae6fd !important;
+  border-color: #cbd5e1 !important;
   font-weight: 800 !important;
 }
 
 tbody tr {
-  border-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
 }
 
 tbody tr:hover {
-  background-color: #f0f9ff !important;
+  background-color: #eaf1f7 !important;
 }
 
 td {
-  color: #0f172a !important;
-  border-color: #e0f2fe !important;
+  color: #1e293b !important;
+  border-color: #e2e8f0 !important;
 }
 
-/* 9. Buttons with Sky Blue Gradients */
+/* 9. Action Buttons: Vibrant Sky Blue with Pure White Text */
 button[class*="from-blue-6"],
 button[class*="from-indigo-6"],
 button[class*="from-sky-6"],
-button[class*="from-purple-6"] {
+button[class*="from-purple-6"],
+#btn-splash-enter {
   background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3) !important;
+  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.28) !important;
 }
 
 button[class*="from-blue-6"] *,
 button[class*="from-indigo-6"] *,
 button[class*="from-sky-6"] *,
-button[class*="from-purple-6"] * {
+button[class*="from-purple-6"] *,
+#btn-splash-enter * {
   color: #ffffff !important;
 }
 
 /* 10. Modals & Dialog Overlays */
 div[class*="fixed"][class*="inset-0"][class*="bg-"] {
-  background-color: rgba(15, 23, 42, 0.45) !important;
-  backdrop-filter: blur(6px) !important;
+  background-color: rgba(15, 23, 42, 0.4) !important;
+  backdrop-filter: blur(5px) !important;
 }
 
-/* 11. Custom Scrollbars */
+/* 11. Custom Scrollbars in Sky Palette */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #f0f9ff;
+  background: #e8eff5;
 }
 ::-webkit-scrollbar-thumb {
-  background: #38bdf8;
+  background: #94a3b8;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -218,4 +231,3 @@ div[class*="fixed"][class*="inset-0"][class*="bg-"] {
   opacity: 1 !important;
   visibility: visible !important;
 }
-

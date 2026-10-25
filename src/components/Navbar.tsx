@@ -50,7 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header
       id="app-permanent-header"
-      className="fixed top-0 left-0 right-0 z-40 h-16 px-4 md:px-8 flex items-center justify-between backdrop-blur-xl bg-white/95 border-b-2 border-sky-300/80 shadow-[0_4px_20px_rgba(2,132,199,0.12)] transition-all duration-300"
+      className="fixed top-0 left-0 right-0 z-40 h-16 px-4 md:px-8 flex items-center justify-between backdrop-blur-xl bg-[#f4f7fb]/95 border-b border-slate-300 shadow-[0_2px_12px_rgba(15,23,42,0.06)] transition-all duration-300"
     >
       {/* Permanent Cp Logo on the Right (RTL) */}
       <div className="flex items-center gap-3">

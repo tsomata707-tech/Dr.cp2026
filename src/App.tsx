@@ -3,7 +3,6 @@ import { Navbar } from './components/Navbar';
 import { RobotBackground } from './components/RobotBackground';
 import { SplashScreen } from './components/SplashScreen';
 import { LoginCard } from './components/LoginCard';
-import { EducationalGamingIconsBackground } from './components/EducationalGamingIconsBackground';
 import { PortalHome } from './components/PortalHome';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminLoginModal } from './components/AdminLoginModal';
@@ -163,7 +162,6 @@ export default function App() {
         ) : authScreen === 'splash' ? (
           /* Screen 1: Splash Screen (شاشة الدخول التمهيدية) */
           <div className="flex flex-col items-center justify-center min-h-[78vh] py-4 relative">
-            <EducationalGamingIconsBackground />
             <SplashScreen
               onEnter={() => setAuthScreen('login')}
               onOpenAdminLogin={() => setIsAdminModalOpen(true)}
@@ -172,7 +170,6 @@ export default function App() {
         ) : (
           /* Screen 2: Login Screen (شاشة تسجيل الدخول النموذجية) */
           <div className="flex flex-col items-center justify-center min-h-[78vh] py-4 relative">
-            <EducationalGamingIconsBackground />
             <LoginCard
               onLoginSuccess={handleLoginSuccess}
               onOpenAdminLogin={() => setIsAdminModalOpen(true)}
