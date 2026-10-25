@@ -717,6 +717,32 @@ export function replaceMediaInLevel(
   return levels;
 }
 
+export function updateMediaItemInLevel(
+  levelNumber: number,
+  mediaId: string,
+  partial: Partial<LevelMediaItem>
+): GameLevelDef[] {
+  const levels = getCustomGameLevels();
+  const target = levels.find((l) => l.levelNumber === levelNumber);
+  if (!target) return levels;
+
+  if (target.videos) {
+    const idx = target.videos.findIndex((v) => v.id === mediaId);
+    if (idx !== -1) {
+      target.videos[idx] = { ...target.videos[idx], ...partial };
+    }
+  }
+  if (target.images) {
+    const idx = target.images.findIndex((img) => img.id === mediaId);
+    if (idx !== -1) {
+      target.images[idx] = { ...target.images[idx], ...partial };
+    }
+  }
+
+  saveCustomGameLevels(levels, true);
+  return levels;
+}
+
 export function resetGameLevelsToDefault(): GameLevelDef[] {
   try {
     localStorage.removeItem(GAME_LEVELS_STORAGE_KEY);

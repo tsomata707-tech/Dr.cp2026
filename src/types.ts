@@ -99,6 +99,7 @@ export interface PreTestResult {
 export interface LevelMediaItem {
   id: string;
   title: string;
+  partCustomTitle?: string; // Admin customized title e.g. "شرح السؤال 1: معمارية Captivate"
   url: string;
   type: 'video' | 'image' | 'pdf';
   format?: string;
@@ -107,12 +108,32 @@ export interface LevelMediaItem {
 }
 
 export interface StudentActivitySubmission {
+  id?: string;
   fileUrl: string;
   fileName: string;
-  fileType: 'video' | 'image' | 'pdf';
+  fileType: 'video' | 'image' | 'pdf' | string;
   fileSize?: number;
   uploadedAt: string;
   notes?: string;
+  studentUsername?: string;
+  studentFullName?: string;
+  groupCode?: string;
+  levelNumber?: number;
+  activityTitle?: string;
+  grade?: number | null;
+  maxPoints?: number;
+  feedback?: string;
+  status?: 'pending' | 'graded';
+  gradedAt?: string;
+  gradedBy?: string;
+}
+
+export interface LevelActivityConfig {
+  levelNumber: number;
+  activityTitle: string;
+  instructions: string;
+  maxPoints: number;
+  updatedAt?: string;
 }
 
 export interface StudentGameProgress {
@@ -194,6 +215,7 @@ export interface EducationalVideo {
   duration?: string;
   partNumber?: number; // 1, 2, 3, 4, 5 (up to 5 videos per topic)
   partTitle?: string; // e.g. "الجزء 1: مقدمة في التثبيت"
+  partCustomTitle?: string; // Custom part title set by admin according to question, e.g. "شرح السؤال الأول"
   addedAt: string;
   updatedAt?: string;
   isActive: boolean;

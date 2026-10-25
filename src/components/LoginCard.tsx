@@ -5,6 +5,7 @@ import { WhatsAppSupport } from './WhatsAppSupport';
 import { getPortalUsers, getAdminSettings, addActivityLog } from '../utils/adminStorage';
 import { normalizeStudentUsername, getStudentPassword } from '../data/studentAccounts';
 import { getSiteTitleConfig, SiteTitleConfig } from '../utils/siteTitleStorage';
+import { getStudentTripartiteName, saveStudentTripartiteName } from '../utils/studentNameStorage';
 
 const REMEMBERED_CREDS_KEY = 'cp_remembered_credentials_v2';
 
@@ -24,6 +25,11 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
   const [isLoading, setIsLoading] = useState(false);
   const [titleConfig, setTitleConfig] = useState<SiteTitleConfig>(() => getSiteTitleConfig());
 
+  // Tripartite student name fields (الاسم، اسم الأب، اللقب/العائلة)
+  const [firstName, setFirstName] = useState('');
+  const [fatherName, setFatherName] = useState('');
+  const [familyName, setFamilyName] = useState('');
+
   // Load saved credentials on mount and subscribe to title updates
   useEffect(() => {
     const handleTitleUpdate = (e: any) => {
@@ -40,7 +46,15 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
       const saved = localStorage.getItem(REMEMBERED_CREDS_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.username) setUsername(parsed.username);
+        if (parsed.username) {
+          setUsername(parsed.username);
+          if (parsed.username.trim().toLowerCase() !== 'admin') {
+            const parts = getStudentTripartiteName(parsed.username);
+            setFirstName(parts.firstName || '');
+            setFatherName(parts.fatherName || '');
+            setFamilyName(parts.familyName || '');
+          }
+        }
         if (parsed.password) setPassword(parsed.password);
         setRememberMe(true);
       }
@@ -48,6 +62,17 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
       // Ignore
     }
   }, []);
+
+  // Auto-fill student's tripartite name whenever username changes
+  useEffect(() => {
+    const raw = username.trim();
+    if (raw && raw.toLowerCase() !== 'admin') {
+      const parts = getStudentTripartiteName(raw);
+      setFirstName(parts.firstName || '');
+      setFatherName(parts.fatherName || '');
+      setFamilyName(parts.familyName || '');
+    }
+  }, [username]);
 
   const saveOrClearCredentials = (finalUser: string, finalPass: string) => {
     try {
@@ -72,6 +97,15 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
     if (!rawInput) {
       setError('يرجى إدخال اسم المستخدم (مثال: G1_Cp_01 إلى G4_Cp_15)');
       return;
+    }
+
+    // Strict Tripartite Name Validation (Mandatory for all students)
+    const isAdminUser = rawInput.toLowerCase() === 'admin';
+    if (!isAdminUser) {
+      if (!firstName.trim() || !fatherName.trim() || !familyName.trim()) {
+        setError('⚠️ إلزامي: يرجى إكمال جميع خانات اسم الطالب الثلاثي (الاسم، اسم الأب، واللقب/العائلة) - لا يمكن إتمام تسجيل الدخول إلا بإكمال جميع الخانات الثلاث.');
+        return;
+      }
     }
 
     if (!password) {
@@ -108,6 +142,13 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
           return;
         }
       }
+
+      // Save student tripartite name permanently upon valid student login
+      saveStudentTripartiteName(normalized, {
+        firstName: firstName.trim(),
+        fatherName: fatherName.trim(),
+        familyName: familyName.trim(),
+      });
 
       // Find user by normalized or raw username
       const matched = registeredUsers.find(
@@ -209,7 +250,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
               htmlFor="input-username"
               className="block text-xs font-bold text-slate-200 font-['Cairo'] tracking-wide"
             >
-              اسم المستخدم
+              اسم المستخدم (كود الدخول)
             </label>
 
             <div className="relative group">
@@ -231,6 +272,73 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
               </div>
             </div>
           </div>
+
+          {/* Tripartite Name Section (3 Distinct Boxes: الاسم، اسم الأب، اللقب/العائلة) - Mandatory for Students */}
+          {username.trim().toLowerCase() !== 'admin' && (
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-blue-950/40 via-indigo-950/30 to-purple-950/30 border border-blue-500/30 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-blue-300 font-['Cairo'] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                  اسم الطالب الثلاثي (إلزامي لإتمام الدخول):
+                </label>
+                <span className="text-[10px] text-amber-300/90 font-medium px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+                  مقسم إلى 3 خانات
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {/* 1. First Name */}
+                <div className="space-y-1">
+                  <label htmlFor="input-first-name" className="text-[11px] font-semibold text-slate-300 block">
+                    1. الاسم: <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="input-first-name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="الاسم الأول"
+                    className="w-full h-10 px-3 rounded-lg bg-[#070a14] text-white text-xs placeholder:text-slate-500 border border-slate-700 hover:border-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all text-right font-['Cairo']"
+                  />
+                </div>
+
+                {/* 2. Father's Name */}
+                <div className="space-y-1">
+                  <label htmlFor="input-father-name" className="text-[11px] font-semibold text-slate-300 block">
+                    2. اسم الأب: <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="input-father-name"
+                    value={fatherName}
+                    onChange={(e) => setFatherName(e.target.value)}
+                    placeholder="اسم الأب"
+                    className="w-full h-10 px-3 rounded-lg bg-[#070a14] text-white text-xs placeholder:text-slate-500 border border-slate-700 hover:border-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all text-right font-['Cairo']"
+                  />
+                </div>
+
+                {/* 3. Family Name / Surname */}
+                <div className="space-y-1">
+                  <label htmlFor="input-family-name" className="text-[11px] font-semibold text-slate-300 block">
+                    3. اللقب / العائلة: <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="input-family-name"
+                    value={familyName}
+                    onChange={(e) => setFamilyName(e.target.value)}
+                    placeholder="اللقب أو اسم الجد"
+                    className="w-full h-10 px-3 rounded-lg bg-[#070a14] text-white text-xs placeholder:text-slate-500 border border-slate-700 hover:border-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all text-right font-['Cairo']"
+                  />
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-400 leading-normal flex items-center gap-1 pt-0.5">
+                <span className="text-blue-400">ℹ️</span>
+                يجب ملء الخانات الثلاث ليظهر اسمك كاملاً بجوار اسم المستخدم في الشات والشيتات والمستويات.
+              </p>
+            </div>
+          )}
 
           {/* Second Field: Password */}
           <div className="space-y-1.5" id="group-password">

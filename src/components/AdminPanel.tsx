@@ -12,6 +12,7 @@ import {
   Type,
   Layers,
   MessageSquare,
+  FolderCheck,
 } from 'lucide-react';
 import { AdminUsersManager } from './AdminUsersManager';
 import { AdminInstructionsManager } from './AdminInstructionsManager';
@@ -23,6 +24,7 @@ import { AdminSupervisorsHonorManager } from './AdminSupervisorsHonorManager';
 import { AdminSiteTitleManager } from './AdminSiteTitleManager';
 import { AdminLevelInstructionsManager } from './AdminLevelInstructionsManager';
 import { CollaborativeGroupsChat } from './CollaborativeGroupsChat';
+import { AdminStudentActivitiesManager } from './AdminStudentActivitiesManager';
 
 interface AdminPanelProps {
   onExitAdmin: () => void;
@@ -32,6 +34,7 @@ interface AdminPanelProps {
 type AdminTab =
   | 'users'
   | 'collab_chat'
+  | 'student_activities'
   | 'level_instructions'
   | 'tests_settings'
   | 'students_audit'
@@ -113,7 +116,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
               <span>اليوزر</span>
             </button>
 
-            {/* TAB: غرف الشات ومجموعات التعاون (G3 & G4) */}
+            {/* TAB: شات مجموعات التعاون (G3 & G4) */}
             <button
               type="button"
               id="admin-tab-collab-chat"
@@ -126,6 +129,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             >
               <MessageSquare className="w-4 h-4 text-cyan-400" />
               <span>شات مجموعات التعاون (G3 & G4) 💬</span>
+            </button>
+
+            {/* TAB: نشاط الطلاب (المطلوب في تبويبة جديدة باسم نشاط الطلاب) */}
+            <button
+              type="button"
+              id="admin-tab-student-activities"
+              onClick={() => setActiveTab('student_activities')}
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTab === 'student_activities'
+                  ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400/50'
+                  : 'bg-slate-800/80 hover:bg-slate-800 text-emerald-300 border border-emerald-500/40'
+              }`}
+            >
+              <FolderCheck className="w-4 h-4 text-emerald-400" />
+              <span>نشاط الطلاب 📁</span>
             </button>
 
             {/* TAB: تعديل الليفل والأهداف */}
@@ -252,6 +270,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             initialGroup={adminTargetCollabGroup}
           />
         )}
+        {activeTab === 'student_activities' && <AdminStudentActivitiesManager />}
         {activeTab === 'level_instructions' && <AdminLevelInstructionsManager />}
         {activeTab === 'tests_settings' && <AdminTestsSettingsManager />}
         {activeTab === 'students_audit' && <AdminStudentsAuditManager />}

@@ -24,6 +24,18 @@ export function saveAllStudentsProgress(all: Record<string, StudentGameProgress>
   localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(all));
 }
 
+export function calculateStudentTotalScore(prog: StudentGameProgress): number {
+  const levelsScore = Object.values(prog.completedLevels || {}).reduce(
+    (acc, lvl) => acc + (lvl.score || 0),
+    0
+  );
+  const activitiesScore = Object.values(prog.studentActivities || {}).reduce(
+    (acc, act) => acc + (act.grade || 0),
+    0
+  );
+  return levelsScore + activitiesScore;
+}
+
 export function getStudentProgress(username: string): StudentGameProgress {
   const cleanUsername = username.trim();
 
@@ -45,12 +57,7 @@ export function getStudentProgress(username: string): StudentGameProgress {
 
   if (all[cleanUsername]) {
     const existing = all[cleanUsername];
-    if (existing.completedLevels && Object.keys(existing.completedLevels).length > 0) {
-      existing.totalScore = Object.values(existing.completedLevels).reduce(
-        (acc, lvl) => acc + (lvl.score || 0),
-        0
-      );
-    }
+    existing.totalScore = calculateStudentTotalScore(existing);
     return existing;
   }
 
@@ -170,10 +177,7 @@ export function submitLevelChallenge(
 
   // Record this level permanently
   prog.completedLevels[levelNumber] = levelResult;
-  prog.totalScore = Object.values(prog.completedLevels).reduce(
-    (acc, lvl) => acc + (lvl.score || 0),
-    0
-  );
+  prog.totalScore = calculateStudentTotalScore(prog);
   prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
   // Advance level if passed (1 up to 9)
@@ -199,10 +203,7 @@ export function submitLevelChallenge(
         if (memberUser.toUpperCase() !== username.toUpperCase()) {
           const memberProg = getStudentProgress(memberUser);
           memberProg.completedLevels[levelNumber] = levelResult;
-          memberProg.totalScore = Object.values(memberProg.completedLevels).reduce(
-            (acc, lvl) => acc + (lvl.score || 0),
-            0
-          );
+          memberProg.totalScore = calculateStudentTotalScore(memberProg);
           memberProg.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
           if (scoreGained >= passThreshold) {
             if (levelNumber === memberProg.currentLevel && levelNumber < 9) {
@@ -266,6 +267,8 @@ export function saveStudentLevelActivity(
     prog.studentActivities = {};
   }
   prog.studentActivities[levelNumber] = submission;
+  // Recalculate totalScore: only includes grades if admin has graded it (act.grade > 0)
+  prog.totalScore = calculateStudentTotalScore(prog);
   prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
   all[username] = prog;
   saveAllStudentsProgress(all);

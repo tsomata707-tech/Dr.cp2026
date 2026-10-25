@@ -13,11 +13,14 @@ import {
   Video,
 } from 'lucide-react';
 import { getVideoBySlot } from '../utils/videoStorage';
+import { getLevelActivityConfig, submitStudentActivity } from '../utils/studentActivityStorage';
+import { getStudentByUsername, getGroupByUsername } from '../data/studentAccounts';
 
 interface ApplicationTaskModalProps {
   levelNumber: number;
   stageTitle: string;
   isCollaborative: boolean;
+  username?: string;
   onCompleteTask: (bonusPoints: number) => void;
   onClose: () => void;
 }
@@ -26,9 +29,12 @@ export const ApplicationTaskModal: React.FC<ApplicationTaskModalProps> = ({
   levelNumber,
   stageTitle,
   isCollaborative,
+  username = 'student',
   onCompleteTask,
   onClose,
 }) => {
+  const activityConfig = getLevelActivityConfig(levelNumber);
+
   // Checklist steps according to Storyboard (المهمة التطبيقية)
   const taskSteps = [
     `1. فتح برنامج Adobe Captivate 2019 (64-Bit).`,
@@ -39,8 +45,10 @@ export const ApplicationTaskModal: React.FC<ApplicationTaskModalProps> = ({
   ];
 
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [submittedFile, setSubmittedFile] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   // Check if admin has uploaded a video for this slot
   const taskVideo = getVideoBySlot('app-task') || getVideoBySlot(`level-${levelNumber}`);
@@ -54,21 +62,57 @@ export const ApplicationTaskModal: React.FC<ApplicationTaskModalProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       setSubmittedFile(file.name);
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!allChecked) {
       alert('يرجى التحقق من تنفيذ جميع خطوات المهمة التطبيقية المحددة في القائمة أولاً.');
       return;
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      onCompleteTask(50); // +50 XP bonus
-    }, 600);
+
+    if (selectedFile) {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const fileUrl = reader.result as string;
+        const student = getStudentByUsername(username);
+        const groupMeta = getGroupByUsername(username);
+
+        await submitStudentActivity({
+          fileUrl,
+          fileName: selectedFile.name,
+          fileType: selectedFile.name.endsWith('.pdf') ? 'pdf' : selectedFile.name.endsWith('.mp4') ? 'video' : 'image',
+          fileSize: selectedFile.size,
+          uploadedAt: new Date().toISOString(),
+          studentUsername: username,
+          studentFullName: student?.fullName || username,
+          groupCode: groupMeta?.code || 'G1',
+          levelNumber,
+          activityTitle: activityConfig.activityTitle,
+          maxPoints: activityConfig.maxPoints || 50,
+          status: 'pending',
+          grade: null,
+        });
+
+        setIsSubmitting(false);
+        setUploadSuccess(true);
+        setTimeout(() => {
+          onCompleteTask(0); // 0 immediate points; grade is credited by Admin from "نشاط الطلاب"
+          onClose();
+        }, 1500);
+      };
+      reader.readAsDataURL(selectedFile);
+    } else {
+      setTimeout(() => {
+        setIsSubmitting(false);
+        onCompleteTask(0);
+        onClose();
+      }, 600);
+    }
   };
 
   return (
@@ -96,10 +140,14 @@ export const ApplicationTaskModal: React.FC<ApplicationTaskModalProps> = ({
         {/* Task Title */}
         <div className="mb-5">
           <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal']">
-            المهمة التطبيقية: {stageTitle}
+            {activityConfig.activityTitle || `المهمة التطبيقية: ${stageTitle}`}
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
-            المطلوب منك تنفيذ الخطوات التطبيقية التالية في برنامج <strong className="text-[#ffd700]">Adobe Captivate 2019</strong> على جهازك، ثم تأكيد التسليم لحصد نقاط الإتقان:
+            {activityConfig.instructions || (
+              <>
+                المطلوب منك تنفيذ الخطوات التطبيقية التالية في برنامج <strong className="text-[#ffd700]">Adobe Captivate 2019</strong> على جهازك، ثم تأكيد التسليم لحصد نقاط الإتقان:
+              </>
+            )}
           </p>
         </div>
 
@@ -191,7 +239,13 @@ export const ApplicationTaskModal: React.FC<ApplicationTaskModalProps> = ({
               className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs sm:text-sm shadow-lg flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4 text-slate-950" />
-              <span>{isSubmitting ? 'جارٍ التسليم...' : 'تسليم المهمة (+50 ⭐)'}</span>
+              <span>
+                {isSubmitting
+                  ? 'جارٍ التسليم...'
+                  : uploadSuccess
+                  ? 'تم التسليم بنجاح ⏳'
+                  : `تسليم المهمة (تعتمد الدرجة من المشرف)`}
+              </span>
             </button>
           </div>
         </div>

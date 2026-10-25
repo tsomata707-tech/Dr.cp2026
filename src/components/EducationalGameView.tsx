@@ -26,6 +26,8 @@ import {
   Play,
   Home,
   Upload,
+  Download,
+  Clock,
   FileText,
   Trash2,
   Image as ImageIcon,
@@ -40,6 +42,12 @@ import {
   updateStudentAvatar,
   saveStudentLevelActivity,
 } from '../utils/gameStorage';
+import {
+  getLevelActivityConfig,
+  submitStudentActivity,
+  deleteStudentActivity,
+  subscribeToLevelActivityConfigs,
+} from '../utils/studentActivityStorage';
 import { useEducationalVideos } from '../utils/videoStorage';
 import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
@@ -235,6 +243,36 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     setStudentActivity(progress.studentActivities?.[selectedLevelNum] || null);
   }, [selectedLevelNum, progress]);
 
+  // Dynamic Level Activity Config (Title, Instructions, MaxPoints) customized by Admin
+  const [levelActivityConfig, setLevelActivityConfig] = useState<import('../types').LevelActivityConfig>(() =>
+    getLevelActivityConfig(selectedLevelNum)
+  );
+
+  useEffect(() => {
+    setLevelActivityConfig(getLevelActivityConfig(selectedLevelNum));
+    const unsub = subscribeToLevelActivityConfigs((allConfigs) => {
+      if (allConfigs[selectedLevelNum]) {
+        setLevelActivityConfig(allConfigs[selectedLevelNum]);
+      }
+    });
+    return () => unsub();
+  }, [selectedLevelNum]);
+
+  // Live listener when Admin grades the activity
+  useEffect(() => {
+    const handleGraded = (e: any) => {
+      if (e.detail?.username?.toLowerCase() === username.toLowerCase()) {
+        const updated = getStudentProgress(username);
+        setProgress(updated);
+        if (e.detail.levelNumber === selectedLevelNum) {
+          setStudentActivity(e.detail.submission || updated.studentActivities?.[selectedLevelNum] || null);
+        }
+      }
+    };
+    window.addEventListener('cp_student_activity_graded', handleGraded);
+    return () => window.removeEventListener('cp_student_activity_graded', handleGraded);
+  }, [username, selectedLevelNum]);
+
   // Handle uploading special activity (Video, Image, or PDF)
   const handleUploadActivity = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -245,33 +283,41 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     const fileType: 'video' | 'image' | 'pdf' = isVid ? 'video' : isPdf ? 'pdf' : 'image';
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const fileUrl = reader.result as string;
+      const cfg = getLevelActivityConfig(selectedLevelNum);
       const submission: StudentActivitySubmission = {
         fileUrl,
         fileName: file.name,
         fileType,
         fileSize: file.size,
         uploadedAt: new Date().toISOString(),
+        studentUsername: username,
+        studentFullName: studentInfo?.fullName || username,
+        groupCode,
+        levelNumber: selectedLevelNum,
+        activityTitle: cfg.activityTitle,
+        maxPoints: cfg.maxPoints || 50,
+        status: 'pending',
+        grade: null,
       };
 
-      const updatedProg = saveStudentLevelActivity(username, selectedLevelNum, submission);
+      const saved = await submitStudentActivity(submission);
+      const updatedProg = getStudentProgress(username);
       setProgress(updatedProg);
-      setStudentActivity(submission);
+      setStudentActivity(saved);
     };
     reader.readAsDataURL(file);
     e.target.value = '';
   };
 
-  const handleRemoveActivity = () => {
-    if (progress.studentActivities && progress.studentActivities[selectedLevelNum]) {
-      const updatedProg = { ...progress };
-      if (updatedProg.studentActivities) {
-        delete updatedProg.studentActivities[selectedLevelNum];
-      }
-      setProgress(updatedProg);
-      setStudentActivity(null);
+  const handleRemoveActivity = async () => {
+    if (studentActivity?.id) {
+      await deleteStudentActivity(studentActivity.id);
     }
+    const updatedProg = getStudentProgress(username);
+    setProgress(updatedProg);
+    setStudentActivity(null);
   };
 
   // Finish Level Click: triggers 5-second loading bar
@@ -711,6 +757,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     videoType: 'file',
                     partNumber: idx + 1,
                     partTitle: v.title,
+                    partCustomTitle: v.partCustomTitle,
                     addedAt: v.addedAt || new Date().toISOString(),
                     isActive: true,
                   })),
@@ -1040,10 +1087,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     </span>
                   </div>
                   <h3 className="text-lg sm:text-xl font-black text-white font-['Tajawal'] mt-1">
-                    نشاطك الخاص (المستوى {selectedLevelNum})
+                    {levelActivityConfig?.activityTitle || `نشاط المستوى ${selectedLevelNum}`}
                   </h3>
                   <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
-                    {currentLevelDef.activityPrompt || 'قم برفع ملف تطبيقك العملي أو مخرج التدريب لهذا المستوى. يقبل النظام جميع امتدادات الفيديو، الصور، ومستندات PDF.'}
+                    {levelActivityConfig?.instructions || currentLevelDef.activityPrompt || 'قم برفع ملف تطبيقك العملي أو مخرج التدريب لهذا المستوى. يقبل النظام جميع امتدادات الفيديو، الصور، ومستندات PDF.'}
                   </p>
                 </div>
               </div>
@@ -1052,7 +1099,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               <input
                 ref={activityFileInputRef}
                 type="file"
-                accept="image/*,.pdf,video/*"
+                accept="image/*,.pdf,video/*,.cptx,.zip"
                 onChange={handleUploadActivity}
                 className="hidden"
                 id={`activity-upload-input-${selectedLevelNum}`}
@@ -1070,10 +1117,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 </div>
                 <div>
                   <h4 className="text-sm sm:text-base font-black text-white font-['Tajawal']">
-                    اضغط هنا لرفع نشاطك الخاص
+                    اضغط هنا لرفع {levelActivityConfig?.activityTitle || 'نشاطك الخاص'}
                   </h4>
                   <p className="text-xs text-slate-400 mt-1 font-['Cairo']">
-                    يقبل جميع امتدادات الفيديو (MP4, WebM, ...) والصور (PNG, JPG, ...) وملفات الـ PDF
+                    يقبل جميع امتدادات الفيديو (MP4, WebM, ...) والصور (PNG, JPG, ...) وملفات الـ PDF وملفات المشاريع (.cptx, .zip)
                   </p>
                 </div>
                 <button
@@ -1085,7 +1132,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 </button>
               </div>
             ) : (
-              /* If Activity Is Uploaded: Preview and Metadata */
+              /* If Activity Is Uploaded: Preview, Download and Status */
               <div className="mt-5 p-5 rounded-2xl bg-slate-950/80 border border-emerald-500/50 space-y-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -1097,8 +1144,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                         {studentActivity.fileName}
                       </h4>
                       <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono mt-0.5">
-                        <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-emerald-300 font-bold">
-                          {studentActivity.fileType.toUpperCase()}
+                        <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-emerald-300 font-bold uppercase">
+                          {studentActivity.fileType}
                         </span>
                         {studentActivity.fileSize && (
                           <span>{(studentActivity.fileSize / (1024 * 1024)).toFixed(2)} MB</span>
@@ -1108,7 +1155,17 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                    {/* Direct Download Button */}
+                    <a
+                      href={studentActivity.fileUrl}
+                      download={studentActivity.fileName}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/50 text-emerald-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>تحميل الملف</span>
+                    </a>
+
                     <button
                       type="button"
                       onClick={() => activityFileInputRef.current?.click()}
@@ -1160,6 +1217,44 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Admin Grading Status & Feedback Notice */}
+                {studentActivity.status === 'graded' || (studentActivity.grade !== null && studentActivity.grade !== undefined) ? (
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-teal-950/80 to-emerald-950/90 border-2 border-emerald-400 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 flex items-center justify-center text-xl shrink-0">
+                        ⭐
+                      </div>
+                      <div>
+                        <div className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal']">
+                          تم تقييم النشاط ورصد الدرجة بنجاح من المشرف
+                        </div>
+                        {studentActivity.feedback ? (
+                          <div className="text-xs text-slate-200 mt-0.5">
+                            ملاحظة المشرف: <span className="font-bold text-white">{studentActivity.feedback}</span>
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-slate-300 mt-0.5">
+                            تم اعتماد النشاط وإضافة درجاته تلقائياً إلى رصيد نقاطك الذهبية (XP).
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="px-4 py-2 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 font-black text-base font-['Outfit'] shrink-0 shadow-md">
+                      {studentActivity.grade} / {studentActivity.maxPoints || levelActivityConfig?.maxPoints || 50} XP ⭐
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 text-amber-300 font-bold font-['Cairo']">
+                      <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>تم تسليم الملف بنجاح وهو الآن بانتظار تقييم واعتماد المشرف (لا تُضاف أي درجات إلا بعد رصد الدرجة) ⏳</span>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-400/50 text-amber-300 text-[11px] font-mono shrink-0">
+                      قيد المراجعة
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 

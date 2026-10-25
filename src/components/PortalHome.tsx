@@ -683,6 +683,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
           levelNumber={studentGame.currentLevel}
           stageTitle={currentLevelDef.title}
           isCollaborative={isCollaborative}
+          username={username}
           onCompleteTask={handleTaskComplete}
           onClose={() => setShowTaskModal(false)}
         />

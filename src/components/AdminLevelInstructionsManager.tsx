@@ -26,6 +26,7 @@ import {
   addMediaToLevel,
   removeMediaFromLevel,
   replaceMediaInLevel,
+  updateMediaItemInLevel,
 } from '../data/gameLevelsData';
 import { LevelMediaItem, LevelQuestion } from '../types';
 
@@ -177,6 +178,15 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     const updated = removeMediaFromLevel(selectedLevelNum, videoId);
     setLevels([...updated]);
     showToast('تم حذف الفيديو بنجاح');
+  };
+
+  // Update Video Part Custom Title / Question Topic
+  const handleUpdateVideoCustomTitle = (videoId: string, customTitle: string) => {
+    const updated = updateMediaItemInLevel(selectedLevelNum, videoId, {
+      partCustomTitle: customTitle.trim() || undefined,
+    });
+    setLevels([...updated]);
+    showToast('تم حفظ مسمى جزء الفيديو حسب السؤال بنجاح ✅');
   };
 
   // Handle Image or PDF Upload (Up to 5)

@@ -130,6 +130,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
     window.addEventListener('student-login-recorded', handleLocalLogin);
     window.addEventListener('cp_student_profile_updated', handleProgressUpdate);
     window.addEventListener('cp_student_progress_reset', handleProgressUpdate);
+    window.addEventListener('cp_student_activity_graded', handleProgressUpdate);
 
     return () => {
       unsubProgress();
@@ -137,6 +138,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       window.removeEventListener('student-login-recorded', handleLocalLogin);
       window.removeEventListener('cp_student_profile_updated', handleProgressUpdate);
       window.removeEventListener('cp_student_progress_reset', handleProgressUpdate);
+      window.removeEventListener('cp_student_activity_graded', handleProgressUpdate);
     };
   }, []);
 

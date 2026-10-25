@@ -78,8 +78,8 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
                 </span>
 
                 {hasMultipleParts && (
-                  <span className="px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 text-[10px] font-bold">
-                    الجزء {selectedPartIndex + 1} من {videos.length}
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 text-[10px] font-bold">
+                    {currentVideo.partCustomTitle || (currentVideo.partNumber ? `الجزء ${currentVideo.partNumber}` : `الجزء ${selectedPartIndex + 1}`)}
                   </span>
                 )}
 
@@ -91,8 +91,8 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
               </div>
 
               {hasMultipleParts && (
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  {currentVideo.partTitle || currentVideo.title}
+                <p className="text-[11px] text-slate-300 mt-0.5 font-bold">
+                  {currentVideo.partCustomTitle ? `${currentVideo.partCustomTitle}: ${currentVideo.title}` : (currentVideo.partTitle || currentVideo.title)}
                 </p>
               )}
             </div>
@@ -151,7 +151,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
             {videos.map((vid, idx) => {
               const isSelected = idx === selectedPartIndex;
-              const partLabel = vid.partNumber ? `الجزء ${vid.partNumber}` : `الجزء ${idx + 1}`;
+              const partLabel = vid.partCustomTitle || (vid.partNumber ? `الجزء ${vid.partNumber}` : `الجزء ${idx + 1}`);
 
               return (
                 <button
@@ -167,7 +167,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
                   <div className="flex items-center justify-between w-full">
                     <span className="text-xs font-black font-['Tajawal'] flex items-center gap-1">
                       <Play className={`w-3 h-3 ${isSelected ? 'text-amber-400 fill-amber-400' : 'text-slate-400'}`} />
-                      <span>{partLabel}</span>
+                      <span className="truncate">{partLabel}</span>
                     </span>
 
                     {isSelected && (
@@ -175,7 +175,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
                     )}
                   </div>
 
-                  <p className="text-[10px] text-slate-400 line-clamp-1 truncate w-full">
+                  <p className="text-[10px] text-slate-300 line-clamp-1 truncate w-full font-bold">
                     {vid.title}
                   </p>
 
