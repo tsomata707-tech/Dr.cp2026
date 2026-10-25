@@ -611,9 +611,15 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                   />
                 </div>
 
-                <p className="text-xs font-bold text-white truncate" title={vid.title}>
-                  {vid.title}
-                </p>
+                <div className="pt-2">
+                  <input
+                    type="text"
+                    defaultValue={vid.partCustomTitle || ''}
+                    onBlur={(e) => handleUpdateVideoCustomTitle(vid.id, e.target.value)}
+                    placeholder={vid.title}
+                    className="w-full px-2 py-1 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
 
                 <div className="flex items-center gap-2 pt-2 border-t border-slate-900">
                   <button

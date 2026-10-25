@@ -103,7 +103,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
     const isAdminUser = rawInput.toLowerCase() === 'admin';
     if (!isAdminUser) {
       if (!firstName.trim() || !fatherName.trim() || !familyName.trim()) {
-        setError('⚠️ إلزامي: يرجى إكمال جميع خانات اسم الطالب الثلاثي (الاسم، اسم الأب، واللقب/العائلة) - لا يمكن إتمام تسجيل الدخول إلا بإكمال جميع الخانات الثلاث.');
+        setError('يرجى إكمال جميع خانات اسم الطالب الثلاثي (الاسم، اسم الأب، واللقب/العائلة)');
         return;
       }
     }
@@ -273,17 +273,14 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
             </div>
           </div>
 
-          {/* Tripartite Name Section (3 Distinct Boxes: الاسم، اسم الأب، اللقب/العائلة) - Mandatory for Students */}
+          {/* Tripartite Name Section (3 Distinct Boxes: الاسم، اسم الأب، اللقب/العائلة) */}
           {username.trim().toLowerCase() !== 'admin' && (
             <div className="p-3.5 rounded-xl bg-gradient-to-br from-blue-950/40 via-indigo-950/30 to-purple-950/30 border border-blue-500/30 space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-blue-300 font-['Cairo'] flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-                  اسم الطالب الثلاثي (إلزامي لإتمام الدخول):
+                  <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                  اسم الطالب الثلاثي:
                 </label>
-                <span className="text-[10px] text-amber-300/90 font-medium px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
-                  مقسم إلى 3 خانات
-                </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -332,11 +329,6 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
                   />
                 </div>
               </div>
-
-              <p className="text-[10px] text-slate-400 leading-normal flex items-center gap-1 pt-0.5">
-                <span className="text-blue-400">ℹ️</span>
-                يجب ملء الخانات الثلاث ليظهر اسمك كاملاً بجوار اسم المستخدم في الشات والشيتات والمستويات.
-              </p>
             </div>
           )}
 

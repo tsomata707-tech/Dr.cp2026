@@ -5,6 +5,7 @@ import { getStudentProgress } from '../utils/gameStorage';
 import { CARTOON_AVATARS } from '../data/gameLevelsData';
 import { getGroupByUsername } from '../data/studentAccounts';
 import { CollaborativeNotificationBell } from './CollaborativeNotificationBell';
+import { formatStudentDisplayName } from '../utils/studentNameStorage';
 
 interface NavbarProps {
   isLoggedIn?: boolean;
@@ -100,7 +101,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               ) : (
                 <User className="w-3.5 h-3.5 text-amber-400" />
               )}
-              <span className="font-mono font-bold">{username}</span>
+              <span className="font-bold text-slate-200 font-['Cairo'] tracking-wide">
+                {formatStudentDisplayName(username)}
+              </span>
               {username?.toLowerCase() === 'admin' ? (
                 <span className="px-2 py-0.5 rounded-md bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 text-[11px] font-bold">
                   مشرف (قراءة فقط 👁️)
