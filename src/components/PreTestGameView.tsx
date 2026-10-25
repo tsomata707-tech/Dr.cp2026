@@ -494,14 +494,14 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     : `🏎️ لعبة توصيل الأسئلة بالسيارة: ${testLabel}`;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-['Cairo'] pb-16 relative overflow-hidden select-none">
-      {/* Dynamic Background Asphalt / Neon Tracks */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/40 via-slate-950 to-black pointer-events-none" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b10_1px,transparent_1px),linear-gradient(to_bottom,#1e293b10_1px,transparent_1px)] bg-[size:3rem_3rem] pointer-events-none" />
+    <div className="min-h-screen bg-sky-50 text-slate-900 font-['Cairo'] pb-16 relative overflow-hidden select-none">
+      {/* Dynamic Background Light Sky & White Gaming Tracks */}
+      <div className="absolute inset-0 bg-gradient-to-br from-sky-100 via-white to-cyan-50 pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0284c715_1px,transparent_1px),linear-gradient(to_bottom,#0284c715_1px,transparent_1px)] bg-[size:3rem_3rem] pointer-events-none" />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10 pt-6">
         {/* Top Header Bar */}
-        <header className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/80 border-2 border-slate-800 backdrop-blur-md shadow-2xl mb-6">
+        <header className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-white/95 border-2 border-sky-300 backdrop-blur-md shadow-lg mb-6">
           <div className="flex items-center gap-3">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg ${
               isBoxGame

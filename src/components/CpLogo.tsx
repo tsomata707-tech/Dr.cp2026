@@ -11,11 +11,12 @@ export const CpLogo: React.FC<CpLogoProps> = ({
   showText = true,
   className = '',
 }) => {
+  // Increased font sizes by +2 and enlarged frames for superior visibility
   const sizeMap = {
-    sm: { box: 'w-8 h-8', text: 'text-sm', title: 'text-sm', sub: 'text-[9px]' },
-    md: { box: 'w-11 h-11', text: 'text-lg', title: 'text-base', sub: 'text-[10px]' },
-    lg: { box: 'w-16 h-16', text: 'text-2xl', title: 'text-xl', sub: 'text-xs' },
-    xl: { box: 'w-24 h-24', text: 'text-4xl', title: 'text-2xl', sub: 'text-sm' },
+    sm: { box: 'w-10 h-10', text: 'text-lg', title: 'text-base', sub: 'text-[10px]' },
+    md: { box: 'w-14 h-14', text: 'text-2xl', title: 'text-lg', sub: 'text-xs' },
+    lg: { box: 'w-20 h-20', text: 'text-4xl', title: 'text-2xl', sub: 'text-sm' },
+    xl: { box: 'w-28 h-28', text: 'text-6xl', title: 'text-3xl', sub: 'text-base' },
   };
 
   const current = sizeMap[size];
@@ -25,62 +26,84 @@ export const CpLogo: React.FC<CpLogoProps> = ({
       className={`inline-flex items-center gap-3 select-none ${className}`}
       id="cp-permanent-logo"
     >
-      {/* Visual Hexagon / Rounded Icon Badge with Golden Border */}
+      {/* Visual Tech Icon Badge in White & Sky Blue Palette */}
       <div className="relative group">
-        {/* Glow halo behind icon */}
-        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#d4af37]/40 via-[#9333ea]/30 to-[#00f2fe]/30 blur-md opacity-75 group-hover:opacity-100 transition-opacity" />
+        {/* Soft Sky & Cyan Ambient Glow */}
+        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-sky-400/30 via-cyan-300/30 to-blue-400/30 blur-md opacity-80 group-hover:opacity-100 transition-opacity" />
 
-        {/* Icon Frame */}
+        {/* Icon Frame: Crisp White & Sky Tint with Sky-400 Border */}
         <div
-          className={`${current.box} relative rounded-2xl bg-gradient-to-br from-[#181428] via-[#0d0a17] to-[#05040a] p-[2px] border-2 border-[#d4af37] shadow-[0_0_20px_rgba(212,175,55,0.35)] flex items-center justify-center`}
+          className={`${current.box} relative rounded-2xl bg-gradient-to-br from-white via-sky-50 to-cyan-50 p-[2.5px] border-2 border-sky-400 shadow-[0_4px_16px_rgba(2,132,199,0.25)] flex items-center justify-center transition-transform hover:scale-105 duration-300`}
         >
-          {/* Subtle Cyber Inner Texture */}
-          <div className="w-full h-full rounded-[12px] bg-slate-950/80 flex items-center justify-center overflow-hidden relative">
+          {/* Inner Badge Surface */}
+          <div className="w-full h-full rounded-[13px] bg-gradient-to-b from-white via-sky-50/90 to-sky-100/70 flex items-center justify-center overflow-hidden relative shadow-inner">
+            {/* Subtle Tech Blueprint Circles (Sky Blue) */}
             <svg
-              className="absolute inset-0 w-full h-full opacity-20 pointer-events-none"
+              className="absolute inset-0 w-full h-full opacity-30 pointer-events-none"
               viewBox="0 0 100 100"
               fill="none"
-              stroke="#d4af37"
+              stroke="#0284c7"
               strokeWidth="1.5"
             >
               <circle cx="50" cy="50" r="42" strokeDasharray="4 6" />
-              <path d="M10 50h80M50 10v80" strokeOpacity="0.3" />
+              <path d="M10 50h80M50 10v80" strokeOpacity="0.35" />
             </svg>
 
-            {/* "Cp" Monogram: C first (Capital), p second (small) */}
+            {/* "Cp" Monogram:
+                - Enlarged font size (+2) via current.text
+                - Letter 'C' in warm golden-amber (#d97706)
+                - Letter 'p' in deep vibrant sky-blue (#0284c7)
+                - Solid, permanent colors with inline styles so 'p' is NEVER white or invisible!
+            */}
             <div
               dir="ltr"
-              className="relative z-10 flex flex-row items-baseline justify-center font-black tracking-normal select-none"
+              className={`relative z-10 flex flex-row items-baseline justify-center font-black tracking-normal select-none ${current.text}`}
             >
-              <span className="bg-gradient-to-r from-[#ffd700] via-[#ff9a3c] to-[#ff6b8b] bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,215,0,0.5)] font-['Outfit'] leading-none">
+              <span
+                className="cp-letter-c font-['Outfit'] font-black leading-none drop-shadow-[0_1px_3px_rgba(217,119,6,0.35)]"
+                style={{
+                  color: '#d97706',
+                  WebkitTextFillColor: '#d97706',
+                  background: 'none',
+                  textShadow: '0 1px 2px rgba(217,119,6,0.25)',
+                }}
+              >
                 C
               </span>
-              <span className="bg-gradient-to-r from-[#00f2fe] via-[#4facfe] to-[#b06ab3] bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(79,172,254,0.5)] font-['Outfit'] leading-none ml-0.5">
+              <span
+                className="cp-letter-p font-['Outfit'] font-black leading-none ml-0.5 drop-shadow-[0_1px_3px_rgba(2,132,199,0.35)]"
+                style={{
+                  color: '#0284c7',
+                  WebkitTextFillColor: '#0284c7',
+                  background: 'none',
+                  textShadow: '0 1px 2px rgba(2,132,199,0.25)',
+                }}
+              >
                 p
               </span>
             </div>
           </div>
         </div>
 
-        {/* Small Golden Corner Accent */}
-        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#f6d365] shadow-[0_0_6px_#f6d365]" />
+        {/* Small Golden Corner Accent Gem */}
+        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 border-2 border-white shadow-[0_0_8px_#f59e0b]" />
       </div>
 
-      {/* Accompanying Label */}
+      {/* Accompanying Label (for Navbar & Headers) */}
       {showText && (
         <div className="flex flex-col text-right leading-tight">
           <div className="flex items-center gap-1.5">
             <span
               dir="ltr"
-              className={`${current.title} font-black tracking-wide text-white font-['Outfit']`}
+              className={`${current.title} font-black tracking-wide text-sky-950 font-['Outfit']`}
             >
               Cp
             </span>
-            <span className="text-[11px] px-1.5 py-0.5 rounded-full border border-[#d4af37]/40 bg-[#d4af37]/10 text-amber-300 font-semibold font-['Cairo']">
+            <span className="text-[11px] px-2 py-0.5 rounded-full border border-sky-300 bg-sky-100/90 text-sky-800 font-bold font-['Cairo'] shadow-xs">
               سي بي
             </span>
           </div>
-          <span className={`${current.sub} text-slate-400/80 font-['Cairo'] font-medium`}>
+          <span className={`${current.sub} text-sky-700 font-['Cairo'] font-bold`}>
             بوابة الأنظمة الذكية
           </span>
         </div>

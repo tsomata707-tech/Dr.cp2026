@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Eye, EyeOff, ArrowLeft, ShieldAlert, KeyRound, Check, Sparkles, HelpCircle, ArrowRight } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, ArrowLeft, ShieldAlert, KeyRound, Check, Sparkles, HelpCircle, ArrowRight, Gamepad2, Trophy, Target } from 'lucide-react';
 import { CpLogo } from './CpLogo';
 import { WhatsAppSupport } from './WhatsAppSupport';
 import { getPortalUsers, getAdminSettings, addActivityLog } from '../utils/adminStorage';
@@ -207,6 +207,19 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
         id="login-card"
         className="relative rounded-3xl bg-white/95 backdrop-blur-2xl border-2 border-sky-300 shadow-[0_15px_45px_rgba(2,132,199,0.18)] p-6 sm:p-8 text-right overflow-hidden transition-all duration-300"
       >
+        {/* Interactive Gaming Watermark Icons in Card Background */}
+        <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden" aria-hidden="true">
+          <div className="absolute -top-6 -right-6 text-sky-400/15 transform rotate-12">
+            <Gamepad2 className="w-40 h-40 stroke-[1.2]" />
+          </div>
+          <div className="absolute -bottom-6 -left-6 text-cyan-400/15 transform -rotate-12">
+            <Trophy className="w-36 h-36 stroke-[1.2]" />
+          </div>
+          <div className="absolute top-1/2 -right-8 text-sky-300/15 transform rotate-45">
+            <Target className="w-28 h-28 stroke-[1.2]" />
+          </div>
+        </div>
+
         {/* Top Back to Splash Button */}
         {onBackToSplash && (
           <button

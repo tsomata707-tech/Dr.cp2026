@@ -69,20 +69,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-16 font-['Cairo',_sans-serif] text-right" dir="rtl">
       {/* Admin Top Header Banner with Horizontal Navigation Tabs */}
-      <div className="bg-gradient-to-r from-slate-900 via-[#0d122b] to-slate-900 border-2 border-amber-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-white/95 border-2 border-sky-300 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-sky-200/20 rounded-full blur-3xl pointer-events-none" />
         
         {/* Top Header Information & Exit Button */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10 pb-5 border-b border-slate-800/80">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10 pb-5 border-b border-sky-100">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.2)] shrink-0">
+            <div className="w-14 h-14 rounded-2xl bg-sky-100 border-2 border-sky-300 flex items-center justify-center text-sky-700 shadow-sm shrink-0">
               <ShieldCheck className="w-8 h-8" />
             </div>
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold mb-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 border border-sky-300 text-sky-900 text-xs font-bold mb-1">
                 <span>لوحة التحكم السيادية المركزية للأدمن</span>
               </div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white font-['Tajawal'] tracking-tight">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-sky-950 font-['Tajawal'] tracking-tight">
                 إدارة المنظومة والمستخدمين والاختبارات
               </h1>
             </div>
@@ -91,9 +91,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
           <div className="flex items-center gap-3">
             <button
               onClick={onExitAdmin}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer shadow-md hover:border-amber-400"
+              className="px-4 py-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-900 border-2 border-sky-300 font-bold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer shadow-sm hover:border-sky-500"
             >
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 text-sky-700" />
               <span>العودة للمنصة الرئيسية</span>
             </button>
           </div>
@@ -101,18 +101,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
 
         {/* Horizontal Navigation Tabs Bar - All tabs horizontal at top */}
         <div className="mt-5 pt-2">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-amber-500/40 scrollbar-track-slate-900">
-            {/* TAB 1: اليوزر (المطلوب في تبويبة جديدة) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-sky-400 scrollbar-track-sky-100">
+            {/* TAB 1: اليوزر */}
             <button
               type="button"
               onClick={() => setActiveTab('users')}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'users'
-                  ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-lg shadow-blue-500/30 ring-2 ring-blue-400/50'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
+                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
             >
-              <Users className="w-4 h-4 text-blue-300" />
+              <Users className="w-4 h-4 text-sky-700" />
               <span>اليوزر</span>
             </button>
 
@@ -123,26 +123,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
               onClick={() => setActiveTab('collab_chat')}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'collab_chat'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-lg shadow-cyan-500/30 ring-2 ring-cyan-400/50'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40'
+                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
             >
-              <MessageSquare className="w-4 h-4 text-cyan-400" />
+              <MessageSquare className="w-4 h-4 text-sky-700" />
               <span>شات مجموعات التعاون (G3 & G4) 💬</span>
             </button>
 
-            {/* TAB: نشاط الطلاب (المطلوب في تبويبة جديدة باسم نشاط الطلاب) */}
+            {/* TAB: نشاط الطلاب */}
             <button
               type="button"
               id="admin-tab-student-activities"
               onClick={() => setActiveTab('student_activities')}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'student_activities'
-                  ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400/50'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-emerald-300 border border-emerald-500/40'
+                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
             >
-              <FolderCheck className="w-4 h-4 text-emerald-400" />
+              <FolderCheck className="w-4 h-4 text-sky-700" />
               <span>نشاط الطلاب 📁</span>
             </button>
 
@@ -152,11 +152,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
               onClick={() => setActiveTab('level_instructions')}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'level_instructions'
-                  ? 'bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 text-slate-950 shadow-lg shadow-amber-500/30 ring-2 ring-amber-400/50'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-amber-300 border border-amber-500/40'
+                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
             >
-              <Layers className="w-4 h-4 text-amber-400" />
+              <Layers className="w-4 h-4 text-sky-700" />
               <span>تعديل الليفل والأهداف</span>
             </button>
 
@@ -164,10 +164,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             <button
               type="button"
               onClick={() => setActiveTab('tests_settings')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'tests_settings'
-                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-lg shadow-amber-500/20 font-black ring-2 ring-amber-400/50'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
+                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
             >
               <Settings className={`w-4 h-4 ${activeTab === 'tests_settings' ? 'animate-spin' : ''}`} />
@@ -178,13 +178,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             <button
               type="button"
               onClick={() => setActiveTab('students_audit')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'students_audit'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 shadow-lg shadow-emerald-500/20 font-black ring-2 ring-emerald-400/50'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
+                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
             >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <FileSpreadsheet className="w-4 h-4 text-sky-700" />
               <span>سجل الدخول والنتائج والشيتات</span>
             </button>
 
@@ -192,13 +192,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             <button
               type="button"
               onClick={() => setActiveTab('site_title')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'site_title'
-                  ? 'bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 text-slate-950 shadow-lg shadow-amber-500/25 font-black ring-2 ring-amber-400/50'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
+                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
             >
-              <Type className="w-4 h-4 text-amber-400" />
+              <Type className="w-4 h-4 text-sky-700" />
               <span>تعديل عنوان الموقع</span>
             </button>
 
@@ -206,13 +206,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             <button
               type="button"
               onClick={() => setActiveTab('splash')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'splash'
-                  ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 font-bold ring-2 ring-amber-400/50'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
+                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
             >
-              <ImageIcon className="w-4 h-4" />
+              <ImageIcon className="w-4 h-4 text-sky-700" />
               <span>شاشة البداية والصورة</span>
             </button>
 
@@ -220,13 +220,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             <button
               type="button"
               onClick={() => setActiveTab('instructions_standards')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'instructions_standards'
-                  ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 font-bold ring-2 ring-amber-400/50'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
+                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
             >
-              <BookOpen className="w-4 h-4" />
+              <BookOpen className="w-4 h-4 text-sky-700" />
               <span>الأهداف والمعايير</span>
             </button>
 
@@ -234,13 +234,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             <button
               type="button"
               onClick={() => setActiveTab('videos')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'videos'
-                  ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 font-bold ring-2 ring-amber-400/50'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
+                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
             >
-              <Video className="w-4 h-4" />
+              <Video className="w-4 h-4 text-sky-700" />
               <span>إدارة الفيديوهات</span>
             </button>
 
@@ -248,13 +248,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             <button
               type="button"
               onClick={() => setActiveTab('supervisors')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'supervisors'
-                  ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 font-bold ring-2 ring-amber-400/50'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
+                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
             >
-              <Award className="w-4 h-4" />
+              <Award className="w-4 h-4 text-sky-700" />
               <span>لوحة المشرفين</span>
             </button>
           </div>

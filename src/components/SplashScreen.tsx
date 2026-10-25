@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, KeyRound, Award, ArrowLeft } from 'lucide-react';
+import {
+  GraduationCap,
+  KeyRound,
+  Award,
+  ArrowLeft,
+  Gamepad2,
+  Trophy,
+  Target,
+  Crown,
+  Puzzle,
+  Sparkles,
+  Star,
+  Zap,
+} from 'lucide-react';
 import { CpLogo } from './CpLogo';
 import { getSplashImageUrl } from '../utils/splashStorage';
 import { getSiteTitleConfig, SiteTitleConfig } from '../utils/siteTitleStorage';
@@ -41,12 +54,70 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter, onOpenAdmin
 
       {/* Main Glass Container in White & Sky Blue */}
       <div className="relative w-full rounded-3xl bg-white/95 backdrop-blur-2xl border-2 border-sky-300 shadow-[0_15px_45px_rgba(2,132,199,0.18)] p-6 sm:p-10 flex flex-col items-center overflow-hidden">
-        {/* Subtle decorative sky background circuit */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-sky-200/40 to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-cyan-200/40 to-transparent rounded-full blur-3xl pointer-events-none" />
+        
+        {/* ========================================================
+            🎮 INTERACTIVE GAMING ENVIRONMENT BACKGROUND WATERMARKS
+            ======================================================== */}
+        <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden" aria-hidden="true">
+          {/* Top-Right: Game Controller Watermark */}
+          <div className="absolute -top-6 -right-6 text-sky-400/20 transform rotate-12 transition-transform hover:rotate-6">
+            <Gamepad2 className="w-48 h-48 stroke-[1.2]" />
+          </div>
+
+          {/* Top-Left: Trophy Watermark */}
+          <div className="absolute -top-6 -left-6 text-cyan-400/20 transform -rotate-12">
+            <Trophy className="w-44 h-44 stroke-[1.2]" />
+          </div>
+
+          {/* Mid-Right: Target & Bullseye Watermark */}
+          <div className="absolute top-1/3 -right-8 text-sky-300/20 transform rotate-45">
+            <Target className="w-36 h-36 stroke-[1.2]" />
+          </div>
+
+          {/* Bottom-Right: Puzzle Piece Watermark */}
+          <div className="absolute bottom-10 -right-6 text-cyan-400/20 transform rotate-12">
+            <Puzzle className="w-40 h-40 stroke-[1.2]" />
+          </div>
+
+          {/* Bottom-Left: Crown of Honor Watermark */}
+          <div className="absolute bottom-10 -left-6 text-sky-400/20 transform -rotate-12">
+            <Crown className="w-40 h-40 stroke-[1.2]" />
+          </div>
+
+          {/* Scattered Interactive Gaming Micro Particles (Stars, Energy, Sparkles) */}
+          <div className="absolute top-1/4 left-1/5 text-amber-400/40 animate-pulse">
+            <Star className="w-8 h-8 fill-amber-300/30" />
+          </div>
+          <div className="absolute top-1/5 right-1/4 text-sky-500/30 animate-pulse">
+            <Sparkles className="w-7 h-7" />
+          </div>
+          <div className="absolute bottom-1/4 right-1/5 text-amber-500/30 animate-bounce">
+            <Zap className="w-8 h-8 fill-amber-300/25" />
+          </div>
+          <div className="absolute bottom-1/3 left-1/4 text-cyan-500/35 animate-pulse">
+            <Award className="w-8 h-8" />
+          </div>
+
+          {/* Subtle Ambient Glow Spheres */}
+          <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-sky-200/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-cyan-200/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        </div>
+
+        {/* Floating Interactive Gaming Corner Badges inside the card */}
+        <div className="relative z-10 w-full flex items-center justify-between gap-2 mb-4">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-sky-100/90 border border-sky-300 text-sky-950 text-[11px] font-black shadow-sm">
+            <Gamepad2 className="w-3.5 h-3.5 text-sky-700 animate-pulse" />
+            <span>بيئة ألعاب تفاعلية</span>
+          </div>
+
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-100/90 border border-cyan-300 text-cyan-950 text-[11px] font-black shadow-sm">
+            <Trophy className="w-3.5 h-3.5 text-amber-500" />
+            <span>نقاط ومستويات XP</span>
+          </div>
+        </div>
 
         {/* Top Badges */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-6 z-10">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-5 z-10">
           {titleConfig.topBadge1 && (
             <span className="px-3.5 py-1 rounded-full bg-sky-100 border border-sky-300 text-sky-950 text-xs font-bold flex items-center gap-1.5 shadow-sm">
               <GraduationCap className="w-4 h-4 text-sky-700" />
@@ -62,15 +133,22 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter, onOpenAdmin
         </div>
 
         {/* 1. Large Environment Logo */}
-        <div className="relative mb-4 group cursor-pointer" onClick={onEnter}>
+        <div className="relative mb-3 group cursor-pointer z-10" onClick={onEnter}>
           <div className="absolute -inset-3 bg-gradient-to-r from-sky-400 via-cyan-400 to-blue-400 rounded-3xl blur-md opacity-50 group-hover:opacity-85 transition-all duration-500" />
           <div className="relative p-3 rounded-2xl bg-sky-50 border-2 border-sky-300 shadow-md">
             <CpLogo size="lg" showText={false} />
           </div>
         </div>
 
+        {/* 🎮 Interactive Gaming Highlight Banner 🎮 */}
+        <div className="relative z-10 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-sky-100 via-cyan-50 to-sky-100 border-2 border-sky-300 text-sky-950 text-xs sm:text-sm font-black mb-3 shadow-sm">
+          <Gamepad2 className="w-4 h-4 text-sky-600 animate-bounce" />
+          <span>بيئة التعلم القائمة على الألعاب الرقمية التفاعلية</span>
+          <Target className="w-4 h-4 text-rose-500" />
+        </div>
+
         {/* 2. Main Title */}
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-sky-950 font-['Tajawal'] tracking-tight mb-3 text-center max-w-4xl leading-relaxed">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-sky-950 font-['Tajawal'] tracking-tight mb-3 text-center max-w-4xl leading-relaxed relative z-10">
           {titleConfig.mainTitle}
         </h1>
 
@@ -91,7 +169,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter, onOpenAdmin
           <div className="absolute inset-0 bg-gradient-to-t from-sky-900/40 via-transparent to-transparent opacity-60 pointer-events-none" />
           <div className="absolute bottom-2 inset-x-2 text-center">
             <span className="text-[11px] font-bold text-sky-950 bg-white/95 px-3 py-1 rounded-full border border-sky-300 inline-block shadow">
-              🚀 بيئة تعليمية تفاعلية قائمة على الألعاب
+              🎮 بيئة تعليمية تفاعلية قائمة على الألعاب
             </span>
           </div>
         </div>
