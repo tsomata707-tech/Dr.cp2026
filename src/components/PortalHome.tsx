@@ -731,23 +731,22 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       )}
 
       {/* Smart Resume Card (باسفل الصفحة: يتابع من مكان ما توقف في الاختبارات وحسب ما يراه النظام) */}
-      <div className="rounded-3xl bg-gradient-to-r from-[#0d122b] via-[#090d20] to-[#0d122b] border-2 border-[#ffd700]/70 p-6 sm:p-8 shadow-[0_0_40px_rgba(255,215,0,0.25)] relative overflow-hidden animate-fadeIn">
-        <div className="absolute top-0 right-0 w-64 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="rounded-3xl bg-white border-2 border-slate-300 p-6 sm:p-8 shadow-md relative overflow-hidden animate-fadeIn">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative z-10">
           <div className="space-y-1.5 text-right max-w-2xl">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-amber-950/80 border border-amber-500/60 text-[#ffd700] text-xs font-black">
+              <span className="px-3 py-1 rounded-full bg-amber-100 border-2 border-amber-400 text-amber-950 text-xs font-black shadow-xs">
                 {smartResume.stepLabel}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-950/70 border border-emerald-500/50 text-emerald-300 text-[11px] font-bold">
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 border-2 border-emerald-400 text-emerald-950 text-[11px] font-bold shadow-xs">
                 المسار الموصى به 🧭
               </span>
             </div>
-            <h3 className="text-lg sm:text-xl font-black text-white font-['Tajawal'] tracking-tight">
+            <h3 className="text-lg sm:text-xl font-black text-[#0f2942] font-['Tajawal'] tracking-tight">
               {smartResume.title}
             </h3>
             {smartResume.description ? (
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-['Cairo']">
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-['Cairo'] font-semibold">
                 {smartResume.description}
               </p>
             ) : null}
@@ -757,7 +756,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
             type="button"
             id="btn-smart-resume-tests"
             onClick={smartResume.action}
-            className={`w-full md:w-auto min-w-[260px] px-8 py-4 rounded-2xl bg-gradient-to-r ${smartResume.gradient} ${smartResume.textColor} font-black text-sm sm:text-base shadow-[0_0_30px_rgba(255,215,0,0.35)] border-2 border-amber-300/60 transition-all cursor-pointer flex items-center justify-center gap-3 transform hover:-translate-y-0.5 active:translate-y-0`}
+            className="w-full md:w-auto min-w-[260px] px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 text-slate-950 font-black text-sm sm:text-base shadow-md border-2 border-amber-300 transition-all cursor-pointer flex items-center justify-center gap-3 transform hover:-translate-y-0.5 active:translate-y-0"
           >
             <span>{smartResume.buttonText}</span>
             <ArrowLeft className="w-5 h-5 shrink-0" />
@@ -773,9 +772,9 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
           type="button"
           onClick={onLogout}
           id="btn-portal-bottom-logout"
-          className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-red-500/40 bg-red-950/30 hover:bg-red-900/40 text-red-300 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+          className="w-full sm:w-auto px-6 py-3 rounded-xl border-2 border-rose-300 bg-rose-100 hover:bg-rose-200 text-rose-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-4 h-4 text-rose-700" />
           <span>تسجيل الخروج والعودة لصفحة البداية</span>
         </button>
       </div>

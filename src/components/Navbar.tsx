@@ -123,10 +123,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent('cp_navigate_to_student_home'))}
               id="btn-navbar-student-home"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-[#ffd700] bg-amber-500/15 hover:bg-amber-500/30 text-[#ffd700] hover:text-white text-xs font-black transition-all cursor-pointer shadow-[0_0_12px_rgba(255,215,0,0.25)]"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-2 border-amber-400 bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-black transition-all cursor-pointer shadow-sm"
               title="العودة للصفحة الخاصة بالطالب (الرئيسية)"
             >
-              <Home className="w-3.5 h-3.5 text-[#ffd700]" />
+              <Home className="w-3.5 h-3.5 text-amber-700" />
               <span className="hidden sm:inline">العودة للرئيسية 🏠</span>
               <span className="sm:hidden">🏠</span>
             </button>
@@ -135,9 +135,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={onLogout}
               id="btn-logout-header"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/40 bg-red-950/20 hover:bg-red-900/40 text-red-300 text-xs font-semibold transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-2 border-rose-300 bg-rose-100 hover:bg-rose-200 text-rose-950 text-xs font-bold transition-all cursor-pointer shadow-sm"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3.5 h-3.5 text-rose-700" />
               <span>تسجيل خروج</span>
             </button>
           </div>
@@ -148,10 +148,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={onOpenAdminLogin}
               id="btn-navbar-admin-login"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#d4af37]/60 bg-[#151226] hover:bg-[#1f1a38] text-amber-300 text-xs font-bold transition-all cursor-pointer shadow-[0_0_10px_rgba(212,175,55,0.15)]"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-2 border-amber-500 bg-slate-900 hover:bg-slate-800 text-amber-300 text-xs font-bold transition-all cursor-pointer shadow-sm"
               title="دخول المشرف (لوحة الأدمن)"
             >
-              <KeyRound className="w-3.5 h-3.5 text-[#ffd700]" />
+              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
               <span>لوحة الأدمن</span>
             </button>
           </div>

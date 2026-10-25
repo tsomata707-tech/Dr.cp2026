@@ -97,14 +97,17 @@ p, label, li {
   color: #475569 !important; /* slate-600 */
 }
 
-/* Accent texts: Deep vibrant sky blue */
-[class*="text-amber-300"],
-[class*="text-amber-400"],
-[class*="text-yellow-300"],
-[class*="text-yellow-400"],
-[class*="text-[#ffd700]"],
-[class*="text-[#d4af37]"] {
-  color: #0369a1 !important; /* deep sky-700 */
+/* Accent texts: Maintain vibrant gold for trophies, stars, and XP badges */
+:not(.badge-gold-on-black *):not(svg):not([class*="text-amber-"]):not([class*="text-yellow-"]):not([class*="text-[#ffd700]"]) [class*="text-amber-300"] {
+  color: #d97706 !important;
+}
+
+/* Allow gold/amber and yellow icons to retain brilliant golden tone */
+.text-amber-300, .text-amber-400, .text-amber-500,
+.text-yellow-300, .text-yellow-400,
+.text-\[\#ffd700\], .text-\[\#d4af37\] {
+  color: #d97706 !important;
+  -webkit-text-fill-color: #d97706 !important;
 }
 
 [class*="text-purple-300"],
@@ -114,15 +117,12 @@ p, label, li {
   color: #0284c7 !important; /* sky-600 */
 }
 
-/* 6. Soft Borders: Replace dark borders with gentle slate/sky borders */
-[class*="border-slate-9"],
-[class*="border-slate-8"],
-[class*="border-slate-7"],
-[class*="border-gray-9"],
-[class*="border-gray-8"],
-[class*="border-[#d4af37]"],
-[class*="border-[#ffd700]"],
-[class*="border-amber-500"] {
+/* 6. Soft Borders: Replace dark borders with gentle slate/sky borders (keep golden and badge borders intact) */
+:not(.badge-gold-on-black):not([class*="badge-gold-inf"]) [class*="border-slate-9"],
+:not(.badge-gold-on-black) [class*="border-slate-8"],
+:not(.badge-gold-on-black) [class*="border-slate-7"],
+:not(.badge-gold-on-black) [class*="border-gray-9"],
+:not(.badge-gold-on-black) [class*="border-gray-8"] {
   border-color: #cbd5e1 !important; /* slate-300 */
 }
 
@@ -231,3 +231,48 @@ div[class*="fixed"][class*="inset-0"][class*="bg-"] {
   opacity: 1 !important;
   visibility: visible !important;
 }
+
+/* 13. Academic Badges: Solid Black Background + Golden Text */
+.badge-gold-on-black,
+span.badge-gold-on-black,
+div.badge-gold-on-black {
+  background-color: #050811 !important;
+  background: #050811 !important;
+  color: #fbbf24 !important;
+  border: 1.5px solid #d97706 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+.badge-gold-on-black *,
+span.badge-gold-on-black *,
+div.badge-gold-on-black * {
+  color: #fbbf24 !important;
+  -webkit-text-fill-color: #fbbf24 !important;
+}
+
+.badge-gold-on-black svg,
+span.badge-gold-on-black svg {
+  color: #fbbf24 !important;
+  stroke: #fbbf24 !important;
+}
+
+/* 14. Honor Board Cards: Distinct Gray Borders */
+.honor-board-card-gray-border,
+div.honor-board-card-gray-border {
+  border: 2px solid #cbd5e1 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06) !important;
+}
+
+.honor-board-card-gray-border:hover {
+  border-color: #94a3b8 !important;
+}
+
+/* 15. Thesis Title in Researcher Card: Deep Pitch Black (نص عنوان الرسالة باللون الأسود القاتم) */
+.thesis-title-black-text,
+#honor-board-research-title .thesis-title-black-text,
+#honor-board-research-title span.thesis-title-black-text {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  font-weight: 900 !important;
+}
+

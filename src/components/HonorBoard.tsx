@@ -70,7 +70,7 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
   return (
     <section className="space-y-6 text-right font-['Cairo',_sans-serif]" id="honor-board-section">
       {/* View Switcher Tabs: مشرفي المشروع vs أوائل الطلاب */}
-      <div className="flex items-center justify-center gap-2 sm:gap-3 p-1 sm:p-1.5 rounded-2xl bg-sky-100/90 border-2 border-sky-300 max-w-xl mx-auto shadow-md">
+      <div className="flex items-center justify-center gap-2 sm:gap-3 p-1 sm:p-1.5 rounded-2xl bg-slate-200/80 border-2 border-slate-300 max-w-xl mx-auto shadow-sm">
         <button
           type="button"
           onClick={() => setActiveView('supervisors')}
@@ -187,7 +187,7 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
                   return (
                     <div
                       key={stu.id}
-                      className={`relative rounded-2xl bg-white border-2 border-sky-300 p-5 flex flex-col items-center text-center shadow-md transition-transform hover:-translate-y-1`}
+                      className={`relative rounded-2xl bg-white border-2 border-slate-300 p-5 flex flex-col items-center text-center shadow-md transition-transform hover:-translate-y-1 honor-board-card-gray-border`}
                     >
                       {isFirst && (
                         <div className="absolute -top-3 right-1/2 translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 text-white text-[10px] font-black font-['Cairo'] shadow-md flex items-center gap-1">
@@ -234,7 +234,7 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
 
           {/* Real Ranking Table (if active students exist) */}
           {realHonorStudents.length > 0 && (
-            <div className="rounded-3xl bg-white border-2 border-sky-300 p-4 sm:p-6 shadow-xl">
+            <div className="rounded-3xl bg-white border-2 border-slate-300 p-4 sm:p-6 shadow-md honor-board-card-gray-border">
               <h3 className="text-sm sm:text-base font-black text-sky-950 font-['Tajawal'] flex items-center gap-2 mb-4">
                 <UserCheck className="w-5 h-5 text-sky-600 shrink-0" />
                 <span>قائمة المتصدرين الحقيقيين لمجموعات البحث (G1, G2, G3, G4)</span>

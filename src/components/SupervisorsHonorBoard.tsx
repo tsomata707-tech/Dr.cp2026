@@ -78,8 +78,8 @@ export const SupervisorsHonorBoard: React.FC<SupervisorsHonorBoardProps> = ({
       {/* Outer Golden & Emerald Ambient Aura */}
       <div className="absolute -inset-4 sm:-inset-6 rounded-[40px] bg-gradient-to-r from-[#ffd700]/25 via-purple-600/15 to-emerald-500/20 blur-3xl opacity-80 pointer-events-none" />
 
-      {/* Main Large Glassmorphic Card (بطاقة كبيرة زجاجية فخمة) */}
-      <div className="relative rounded-3xl bg-[#090b1c]/95 backdrop-blur-2xl border-2 border-[#ffd700]/80 shadow-[0_0_60px_rgba(212,175,55,0.35),0_30px_70px_rgba(0,0,0,0.9)] p-4 sm:p-7 lg:p-9 max-h-[92vh] overflow-y-auto">
+      {/* Main Large Card with Gray Border */}
+      <div className="relative rounded-3xl bg-[#f4f7fb]/95 backdrop-blur-2xl border-2 border-slate-300 shadow-[0_15px_45px_rgba(15,23,42,0.12)] p-4 sm:p-7 lg:p-9 max-h-[92vh] overflow-y-auto">
         {/* Close Button if rendered as Modal */}
         {isModal && onClose && (
           <button
@@ -97,10 +97,10 @@ export const SupervisorsHonorBoard: React.FC<SupervisorsHonorBoardProps> = ({
         <div className="hidden sm:block absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-[#ffd700] rounded-bl-3xl pointer-events-none" />
 
         {/* 1. Header Section */}
-        <div className="flex flex-col items-center text-center pb-4 sm:pb-6 border-b border-[#ffd700]/30 relative z-10">
+        <div className="flex flex-col items-center text-center pb-4 sm:pb-6 border-b border-slate-300 relative z-10">
           {/* Logo with Golden Laurel Crown */}
           <div className="relative mb-2 sm:mb-3">
-            <div className="p-2 sm:p-3 rounded-2xl bg-gradient-to-b from-[#141a38] to-[#0c1024] border-2 border-[#ffd700] shadow-[0_0_30px_rgba(255,215,0,0.45)]">
+            <div className="p-2 sm:p-3 rounded-2xl bg-white border-2 border-slate-300 shadow-md">
               <CpLogo size="md" showText={false} />
             </div>
             <div className="absolute -top-3 -right-3 sm:-top-3.5 sm:-right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-amber-500 via-[#ffd700] to-yellow-200 text-slate-950 flex items-center justify-center text-xs sm:text-base shadow-[0_0_15px_rgba(255,215,0,0.6)] animate-bounce">
@@ -108,26 +108,26 @@ export const SupervisorsHonorBoard: React.FC<SupervisorsHonorBoardProps> = ({
             </div>
           </div>
 
-          {/* Academic Affiliation Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mb-2 sm:mb-2.5">
-            <span className="px-3 sm:px-4 py-1 rounded-full bg-blue-950/80 border border-blue-400/50 text-blue-200 text-[11px] sm:text-xs font-bold flex items-center gap-1.5 shadow-sm">
-              <GraduationCap className="w-3.5 h-3.5 text-blue-400" />
+          {/* Academic Affiliation Badges: Black Background + Golden Text */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+            <span className="badge-gold-on-black px-3.5 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
               <span>{config.university}</span>
             </span>
-            <span className="px-3 sm:px-4 py-1 rounded-full bg-amber-950/80 border border-[#ffd700] text-[#ffd700] text-[11px] sm:text-xs font-black flex items-center gap-1.5 shadow-sm">
-              <Award className="w-3.5 h-3.5 text-[#ffd700]" />
+            <span className="badge-gold-on-black px-3.5 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-black flex items-center gap-1.5 shadow-sm">
+              <Award className="w-3.5 h-3.5 text-amber-400" />
               <span>رسالة ماجستير في تكنولوجيا التعليم</span>
             </span>
           </div>
 
-          {/* 🌟 DISTINCTIVE GOLDEN TITLE 🌟 */}
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffeaa7] via-[#ffd700] to-[#f39c12] drop-shadow-[0_4px_25px_rgba(255,215,0,0.65)] font-['Tajawal'] tracking-tight mb-1.5 max-w-3xl leading-snug">
+          {/* 🌟 DISTINCTIVE BOARD TITLE 🌟 */}
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#0f2942] font-['Tajawal'] tracking-tight mb-2 max-w-3xl leading-snug">
             {config.boardTitle}
           </h1>
 
           {/* Subtitle / Department Dedication */}
           {config.boardSubtitle ? (
-            <p className="text-xs sm:text-sm text-slate-200 max-w-2xl leading-relaxed font-medium px-2">
+            <p className="text-xs sm:text-sm text-slate-700 max-w-2xl leading-relaxed font-bold px-2">
               {config.boardSubtitle}
             </p>
           ) : null}
@@ -135,21 +135,21 @@ export const SupervisorsHonorBoard: React.FC<SupervisorsHonorBoardProps> = ({
 
         {/* 🌟 2. TOP SECTION: اسم وصورة حكمت في الأعلى 🌟 */}
         <div className="my-5 sm:my-6 relative z-10" id="honor-board-top-researcher">
-          <div className="relative rounded-3xl bg-gradient-to-r from-[#111a33]/90 via-[#0e1629]/95 to-[#132230]/90 border-2 border-emerald-400/60 shadow-[0_10px_30px_rgba(16,185,129,0.2)] p-4 sm:p-6 transition-all">
-            {/* Ambient emerald & gold badge */}
-            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 text-[11px] sm:text-xs font-black">
-              <Crown className="w-3.5 h-3.5 text-amber-300" />
+          <div className="relative rounded-3xl bg-white border-2 border-slate-300 shadow-md p-4 sm:p-6 transition-all honor-board-card-gray-border">
+            {/* Ambient gold & black badge */}
+            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 flex items-center gap-1.5 px-3 py-1 rounded-full badge-gold-on-black text-[11px] sm:text-xs font-black shadow-sm">
+              <Crown className="w-3.5 h-3.5 text-amber-400" />
               <span>الباحثة ومصممة البيئة</span>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 text-center sm:text-right">
-              {/* Hikmat Photo in Golden Glowing Circular Frame */}
+              {/* Hikmat Photo in Golden Frame */}
               <div className="relative shrink-0">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1.5 bg-gradient-to-tr from-amber-400 via-[#ffd700] to-emerald-400 shadow-[0_0_25px_rgba(255,215,0,0.5)]">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1.5 bg-gradient-to-tr from-amber-400 via-[#ffd700] to-yellow-300 shadow-md">
                   <img
                     src={researcher.imageUrl}
                     alt={researcher.name}
-                    className="w-full h-full rounded-full object-cover border-2 border-slate-950"
+                    className="w-full h-full rounded-full object-cover border-2 border-white"
                     onError={(e) => {
                       const target = e.currentTarget;
                       target.src =
@@ -165,26 +165,39 @@ export const SupervisorsHonorBoard: React.FC<SupervisorsHonorBoardProps> = ({
               {/* Hikmat Name, Academic Title & Research Info */}
               <div className="flex-1 space-y-2">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                  <span className="px-3 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-xs font-bold">
+                  <span className="badge-gold-on-black px-3 py-0.5 rounded-full text-xs font-bold shadow-xs">
                     {researcher.role || 'الباحثة ومعدة الدراسة'}
                   </span>
-                  <span className="px-3 py-0.5 rounded-full bg-blue-950/70 border border-blue-400/40 text-blue-200 text-xs font-bold">
+                  <span className="badge-gold-on-black px-3 py-0.5 rounded-full text-xs font-bold shadow-xs">
                     {researcher.degree || 'ماجستير في تكنولوجيا التعليم'}
                   </span>
                 </div>
 
-                <h2 className="text-lg sm:text-2xl font-black text-white font-['Tajawal'] tracking-wide">
+                <h2 className="text-lg sm:text-2xl font-black text-[#0f2942] font-['Tajawal'] tracking-wide">
                   {researcher.name}
                 </h2>
 
-                <p className="text-xs sm:text-sm text-slate-200 font-medium">
+                <p className="text-xs sm:text-sm text-slate-700 font-bold">
                   {researcher.title}
                 </p>
 
+                {/* 🌟 DISTINCTIVE THESIS TITLE BANNER (عنوان الرسالة) 🌟 */}
                 {config.researchTitle && (
-                  <div className="mt-2 text-[11px] sm:text-xs text-amber-200 bg-[#ffd700]/10 border border-[#ffd700]/30 rounded-xl px-3 py-2 flex items-start gap-2 text-right">
-                    <BookOpen className="w-4 h-4 text-[#ffd700] shrink-0 mt-0.5" />
-                    <span><strong>عنوان الرسالة:</strong> {config.researchTitle}</span>
+                  <div className="mt-3 text-xs sm:text-sm bg-slate-100/90 border-2 border-slate-300 rounded-xl p-3 sm:p-4 flex items-start gap-2.5 text-right shadow-xs" id="honor-board-research-title">
+                    <div className="w-7 h-7 rounded-lg bg-black flex items-center justify-center shrink-0 mt-0.5 border border-amber-500 shadow-xs">
+                      <BookOpen className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <div className="flex-1 leading-relaxed">
+                      <span className="inline-block px-2.5 py-0.5 rounded-md badge-gold-on-black font-black text-[11px] ml-2 shadow-xs">
+                        عنوان الرسالة:
+                      </span>
+                      <span
+                        className="font-black text-black font-['Tajawal'] text-xs sm:text-sm leading-relaxed tracking-wide thesis-title-black-text"
+                        style={{ color: '#000000', WebkitTextFillColor: '#000000' }}
+                      >
+                        {config.researchTitle}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -196,10 +209,10 @@ export const SupervisorsHonorBoard: React.FC<SupervisorsHonorBoardProps> = ({
           {/* Title centered in a styled frame with only the word 'إشراف' */}
           <div className="flex items-center justify-center mb-4 sm:mb-6 relative">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-slate-800/80" />
+              <div className="w-full border-t border-slate-300" />
             </div>
-            <div className="relative inline-flex items-center justify-center px-8 py-2 rounded-2xl bg-gradient-to-r from-[#121832] via-[#1a2348] to-[#121832] border-2 border-[#ffd700]/70 text-[#ffd700] shadow-[0_0_25px_rgba(255,215,0,0.25)]">
-              <h3 className="text-base sm:text-lg font-black font-['Tajawal'] tracking-wide">
+            <div className="relative inline-flex items-center justify-center px-8 py-2 rounded-2xl bg-white border-2 border-slate-300 text-[#0f2942] shadow-sm">
+              <h3 className="text-base sm:text-lg font-black font-['Tajawal'] tracking-wide text-[#0f2942]">
                 إشراف
               </h3>
             </div>
@@ -210,17 +223,17 @@ export const SupervisorsHonorBoard: React.FC<SupervisorsHonorBoardProps> = ({
             {supervisorsList.map((card) => (
               <div
                 key={card.id}
-                className={`relative rounded-2xl bg-gradient-to-b from-[#121832]/95 via-[#0b1024]/95 to-[#080c1c]/95 border-2 border-slate-700/80 hover:border-[#ffd700] shadow-[0_12px_32px_rgba(0,0,0,0.7)] hover:shadow-[0_0_30px_rgba(255,215,0,0.35)] transition-all duration-300 p-4 sm:p-5 flex flex-col items-center text-center group hover:-translate-y-1 ${getCardWidthClass(
+                className={`relative rounded-2xl bg-white border-2 border-slate-300 hover:border-slate-400 shadow-md hover:shadow-lg transition-all duration-300 p-4 sm:p-5 flex flex-col items-center text-center group hover:-translate-y-1 honor-board-card-gray-border ${getCardWidthClass(
                   supervisorsList.length
                 )}`}
               >
                 {/* Supervisor Photo */}
                 <div className="relative my-2 sm:my-3">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 sm:p-1.5 bg-gradient-to-tr from-amber-500 via-[#ffd700] to-yellow-200 shadow-[0_0_20px_rgba(255,215,0,0.45)] group-hover:scale-105 transition-transform duration-300">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 sm:p-1.5 bg-gradient-to-tr from-amber-500 via-[#ffd700] to-yellow-200 shadow-md group-hover:scale-105 transition-transform duration-300">
                     <img
                       src={card.imageUrl}
                       alt={card.name}
-                      className="w-full h-full rounded-full object-cover border-2 border-slate-950"
+                      className="w-full h-full rounded-full object-cover border-2 border-white"
                       onError={(e) => {
                         const target = e.currentTarget;
                         target.src =
@@ -234,17 +247,17 @@ export const SupervisorsHonorBoard: React.FC<SupervisorsHonorBoardProps> = ({
                 </div>
 
                 {/* Role Tag */}
-                <span className="px-2.5 py-0.5 rounded-full bg-purple-950/80 border border-purple-400/50 text-purple-200 text-[10px] sm:text-[11px] font-bold mb-1.5 sm:mb-2 font-['Cairo']">
+                <span className="badge-gold-on-black px-3 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold mb-2 font-['Cairo'] shadow-xs">
                   {card.role}
                 </span>
 
                 {/* Doctor's Name */}
-                <h4 className="text-sm sm:text-base font-black text-white font-['Tajawal'] tracking-tight leading-snug">
+                <h4 className="text-sm sm:text-base font-black text-[#0f2942] font-['Tajawal'] tracking-tight leading-snug">
                   {card.name}
                 </h4>
 
                 {/* Academic Title */}
-                <p className="text-[11px] sm:text-xs text-slate-300 mt-1.5 font-medium leading-relaxed font-['Cairo']">
+                <p className="text-[11px] sm:text-xs text-slate-700 mt-1.5 font-bold leading-relaxed font-['Cairo']">
                   {card.title}
                 </p>
               </div>

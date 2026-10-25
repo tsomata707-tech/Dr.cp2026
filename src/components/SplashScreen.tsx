@@ -50,17 +50,17 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter, onOpenAdmin
       <div className="relative w-full rounded-3xl bg-[#f4f7fb]/95 backdrop-blur-2xl border border-slate-300 shadow-[0_10px_35px_rgba(15,23,42,0.08)] p-6 sm:p-10 flex flex-col items-center overflow-hidden">
         
 
-        {/* Top Badges */}
+        {/* Top Badges: Black Background + Golden Text */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-5 z-10">
           {titleConfig.topBadge1 && (
-            <span className="px-3.5 py-1 rounded-full bg-sky-100 border border-sky-300 text-sky-950 text-xs font-bold flex items-center gap-1.5 shadow-sm">
-              <GraduationCap className="w-4 h-4 text-sky-700" />
+            <span className="badge-gold-on-black px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-md">
+              <GraduationCap className="w-4 h-4 text-amber-400" />
               <span>{titleConfig.topBadge1}</span>
             </span>
           )}
           {titleConfig.topBadge2 && (
-            <span className="px-3 py-1 rounded-full bg-cyan-100 border border-cyan-300 text-cyan-950 text-xs font-bold flex items-center gap-1.5 shadow-sm">
-              <Award className="w-3.5 h-3.5 text-cyan-700" />
+            <span className="badge-gold-on-black px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-md">
+              <Award className="w-4 h-4 text-amber-400" />
               <span>{titleConfig.topBadge2}</span>
             </span>
           )}

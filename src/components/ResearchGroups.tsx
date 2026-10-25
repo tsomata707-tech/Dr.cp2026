@@ -235,31 +235,29 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                 key={group.id}
                 id={`group-card-${group.code}`}
                 onClick={() => handleGroupClick(group)}
-                className={`rounded-2xl p-5 border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between relative overflow-hidden bg-gradient-to-b ${
-                  group.bgGradient
-                } ${
+                className={`rounded-2xl p-5 border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between relative overflow-hidden bg-white shadow-md ${
                   isSelected
-                    ? `${group.borderClass} shadow-[0_0_25px_rgba(212,175,55,0.3)] ring-2 ring-[#ffd700]/50`
-                    : 'border-slate-800 hover:border-[#d4af37]/60'
+                    ? 'border-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.25)] ring-2 ring-amber-400'
+                    : 'border-slate-300 hover:border-sky-400'
                 }`}
               >
                 {/* Status Badges */}
                 {isAdmin ? (
                   <div className={`absolute top-3 left-3 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 shadow-md ${
                     isSelected
-                      ? 'bg-[#ffd700] text-slate-950 border border-amber-300'
-                      : 'bg-emerald-950/80 border border-emerald-500 text-emerald-300'
+                      ? 'bg-amber-500 text-slate-950 border border-amber-300'
+                      : 'bg-emerald-100 border border-emerald-400 text-emerald-900'
                   }`}>
                     <Eye className="w-3 h-3" />
                     <span>{isSelected ? 'المجموعة المحددة حالياً' : 'متاح للأدمن (استعراض)'}</span>
                   </div>
                 ) : isLockedForUser ? (
-                  <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-red-950/80 border border-red-500 text-red-300 text-[10px] font-black flex items-center gap-1 shadow-md">
-                    <Lock className="w-3 h-3 text-red-400" />
+                  <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-rose-100 border border-rose-300 text-rose-900 text-[10px] font-black flex items-center gap-1 shadow-md">
+                    <Lock className="w-3 h-3 text-rose-700" />
                     <span>🔒 مغلق لطلاب المجموعات الأخرى</span>
                   </div>
                 ) : isSelected ? (
-                  <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-[#ffd700] text-slate-950 text-[10px] font-black flex items-center gap-1 shadow-md">
+                  <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black flex items-center gap-1 shadow-md">
                     <CheckCircle2 className="w-3 h-3 stroke-[3]" />
                     <span>⭐ مجموعتك المصرح بها فقط</span>
                   </div>
@@ -267,46 +265,46 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
 
                 <div>
                   {/* Top Badges */}
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="px-2.5 py-0.5 rounded-lg bg-slate-950 font-mono font-bold text-amber-300 text-xs border border-slate-700">
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <span className="px-2.5 py-0.5 rounded-lg bg-sky-900 font-mono font-bold text-white text-xs border border-sky-700 shadow-xs">
                       {group.code}
                     </span>
                     <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border shadow-xs ${
                         group.learningMode === 'تنافسي'
-                          ? 'bg-amber-950/70 border-amber-500/60 text-amber-300'
-                          : 'bg-cyan-950/70 border-cyan-500/60 text-cyan-300'
+                          ? 'bg-amber-100 border-amber-400 text-amber-950'
+                          : 'bg-cyan-100 border-cyan-400 text-cyan-950'
                       }`}
                     >
                       {group.learningMode === 'تنافسي' ? '⚡ نمط تنافسي' : '🤝 نمط تعاوني'}
                     </span>
                     <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border shadow-xs ${
                         group.feedbackMode === 'فورية'
-                          ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-300'
-                          : 'bg-purple-950/70 border-purple-500/60 text-purple-300'
+                          ? 'bg-emerald-100 border-emerald-400 text-emerald-950'
+                          : 'bg-purple-100 border-purple-400 text-purple-950'
                       }`}
                     >
                       {group.feedbackMode === 'فورية' ? '🎯 تغذية فورية' : '⏳ تغذية مرجئة'}
                     </span>
                   </div>
 
-                  <h3 className="text-sm sm:text-base font-black text-white font-['Tajawal'] leading-snug">
+                  <h3 className="text-base sm:text-lg font-black text-[#0f2942] font-['Tajawal'] leading-snug">
                     {group.name}
                   </h3>
-                  <p className="text-xs text-amber-200/90 font-semibold font-['Cairo'] mt-1">
+                  <p className="text-xs text-sky-900 font-bold font-['Cairo'] mt-1">
                     {group.tagline}
                   </p>
-                  <p className="text-xs text-slate-300 font-['IBM_Plex_Sans_Arabic'] mt-2 leading-relaxed">
+                  <p className="text-xs text-slate-700 font-semibold font-['IBM_Plex_Sans_Arabic'] mt-2 leading-relaxed">
                     {group.description}
                   </p>
 
                   {/* Rules & Features List */}
-                  <div className="my-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5 text-xs text-slate-300">
+                  <div className="my-3 p-3.5 rounded-xl bg-sky-50 border border-sky-200 space-y-1.5 text-xs text-slate-800 shadow-inner">
                     {group.rules.map((rule, idx) => (
                       <div key={idx} className="flex items-start gap-2">
-                        <span className="text-[#ffd700] text-sm leading-none">•</span>
-                        <span className="leading-tight">{rule}</span>
+                        <span className="text-amber-600 font-black text-sm leading-none">•</span>
+                        <span className="leading-tight font-medium">{rule}</span>
                       </div>
                     ))}
                   </div>

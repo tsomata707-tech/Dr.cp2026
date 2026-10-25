@@ -165,17 +165,17 @@ export const AdminSiteTitleManager: React.FC = () => {
         </div>
 
         <div className="p-6 rounded-2xl bg-[#0e142a]/90 border border-blue-500/30 text-center space-y-3">
-          {/* Top Badges Preview */}
+          {/* Top Badges Preview: Black Background + Golden Text */}
           <div className="flex flex-wrap items-center justify-center gap-2">
             {topBadge1 && (
-              <span className="px-3 py-1 rounded-full bg-blue-950/80 border border-blue-400/50 text-blue-300 text-xs font-bold flex items-center gap-1.5">
-                <GraduationCap className="w-3.5 h-3.5 text-blue-400" />
+              <span className="badge-gold-on-black px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
                 <span>{topBadge1}</span>
               </span>
             )}
             {topBadge2 && (
-              <span className="px-3 py-1 rounded-full bg-amber-950/80 border border-[#ffd700]/50 text-amber-300 text-xs font-bold flex items-center gap-1.5">
-                <Award className="w-3.5 h-3.5 text-[#ffd700]" />
+              <span className="badge-gold-on-black px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <Award className="w-3.5 h-3.5 text-amber-400" />
                 <span>{topBadge2}</span>
               </span>
             )}
