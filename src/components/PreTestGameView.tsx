@@ -927,26 +927,8 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                           {option}
                         </p>
 
-                        {isSelected && !isStackedLayout && (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between w-full">
-                            {mode === 'post' && isImmediate ? (
-                              optIdx === currentQ.correctIndex ? (
-                                <span className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
-                                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                  <span>إجابة صحيحة • النتيجة: 1/1</span>
-                                </span>
-                              ) : (
-                                <span className="text-xs font-black text-rose-300 flex items-center gap-1.5">
-                                  <X className="w-4 h-4 text-rose-400" />
-                                  <span>إجابة خاطئة • النتيجة: 0/1</span>
-                                </span>
-                              )
-                            ) : (
-                              <span className="text-xs font-black text-sky-400 flex items-center gap-1.5">
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>تم اختيار وتثبيت هذه المحطة</span>
-                              </span>
-                            )}
+                        {isSelected && (
+                          <div className={`shrink-0 flex items-center ${isStackedLayout ? '' : 'mt-3 pt-3 border-t border-slate-800/80 justify-between w-full'}`}>
                             <RacingCarGraphic scale={0.7} isDriving={isDrivingToStation === optIdx} />
                           </div>
                         )}
@@ -997,11 +979,9 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                             </span>
                           </div>
 
-                          {!isStackedLayout && (
-                            <div className="shrink-0">
-                              <MysteryBoxGraphic isSelected={isSelected} index={optIdx} />
-                            </div>
-                          )}
+                          <div className="shrink-0">
+                            <MysteryBoxGraphic isSelected={isSelected} index={optIdx} />
+                          </div>
                         </div>
 
                         {/* Optional Answer Image - Balanced & Layout Preserving */}
