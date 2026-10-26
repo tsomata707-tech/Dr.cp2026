@@ -77,7 +77,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter, onOpenAdmin
         {/* 🎮 Interactive Gaming Highlight Banner 🎮 */}
         <div className="relative z-10 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-sky-100 via-cyan-50 to-sky-100 border-2 border-sky-300 text-sky-950 text-xs sm:text-sm font-black mb-3 shadow-sm">
           <Gamepad2 className="w-4 h-4 text-sky-600 animate-bounce" />
-          <span>بيئة التعلم القائمة على الألعاب الرقمية التفاعلية</span>
+          <span>بيئة التعلم القائمة على الألعاب التعليمية الالكترونيه</span>
           <Target className="w-4 h-4 text-rose-500" />
         </div>
 
