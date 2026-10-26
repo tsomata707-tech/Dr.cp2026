@@ -529,10 +529,10 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                 type="button"
                 onClick={onBackToInstructions}
                 id="btn-pretest-back-to-home"
-                className="px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-amber-200 hover:text-[#ffd700] text-xs font-bold border border-amber-500/30 flex items-center gap-1.5 transition cursor-pointer shadow-md"
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 text-xs font-black font-['Cairo'] border border-slate-300 flex items-center gap-1.5 transition cursor-pointer shadow-sm"
                 title="العودة للرئيسية (صفحة الطالب وبياناته)"
               >
-                <Home className="w-4 h-4 text-amber-400" />
+                <Home className="w-4 h-4 text-slate-700" />
                 <span>العودة للرئيسية 🏠</span>
               </button>
             )}
@@ -540,10 +540,10 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
             <button
               type="button"
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition cursor-pointer"
+              className="p-2.5 rounded-xl bg-slate-100 text-slate-800 hover:text-slate-950 hover:bg-slate-200 border border-slate-300 transition cursor-pointer shadow-sm"
               title={soundEnabled ? 'كتم المؤثرات الصوتية' : 'تفعيل الصوت'}
             >
-              {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-600" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
             </button>
           </div>
         </header>
