@@ -205,7 +205,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
       {/* Main Login Card in Soft Matte Off-White */}
       <div
         id="login-card"
-        className="relative rounded-3xl bg-[#f4f7fb]/95 backdrop-blur-2xl border border-slate-300 shadow-[0_10px_35px_rgba(15,23,42,0.08)] p-6 sm:p-8 text-right overflow-hidden transition-all duration-300"
+        className="relative rounded-3xl bg-[#f4f7fb]/95 backdrop-blur-2xl border border-slate-300 shadow-[0_10px_35px_rgba(15,23,42,0.08)] p-6 sm:p-8 text-right overflow-hidden transition-all duration-300 font-['Cairo',_sans-serif]"
       >
 
         {/* Top Back to Splash Button */}
@@ -213,7 +213,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
           <button
             type="button"
             onClick={onBackToSplash}
-            className="inline-flex items-center gap-1.5 text-xs text-sky-700 hover:text-sky-900 font-bold transition-colors mb-3 cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs text-sky-700 hover:text-sky-900 font-bold transition-colors mb-3 cursor-pointer font-['Cairo',_sans-serif]"
           >
             <ArrowRight className="w-3.5 h-3.5" />
             <span>العودة لشاشة البداية</span>
@@ -223,18 +223,18 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
         {/* Header with CP Logo & Dynamic Site Title */}
         <div className="flex flex-col items-center justify-center text-center pb-5 border-b border-sky-100">
           <CpLogo size="lg" showText={false} className="mb-2" />
-          <h1 className="text-xl sm:text-2xl font-black text-sky-950 tracking-wide font-['Tajawal'] mb-1">
+          <h1 className="text-xl sm:text-2xl font-black text-sky-950 tracking-tight font-['Cairo',_sans-serif] mb-1">
             تسجيل الدخول
           </h1>
           {titleConfig.mainTitle && (
-            <p className="text-xs text-sky-800 font-bold max-w-sm line-clamp-2 leading-relaxed mt-1">
+            <p className="text-xs text-sky-800 font-bold max-w-sm line-clamp-2 leading-relaxed mt-1 font-['Cairo',_sans-serif]">
               {titleConfig.mainTitle}
             </p>
           )}
         </div>
 
         {/* Login Form */}
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4" id="form-login">
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4 font-['Cairo',_sans-serif]" id="form-login">
           {error && (
             <div
               className="p-3 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold flex items-center gap-2 animate-shake"
@@ -249,7 +249,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
           <div className="space-y-1.5" id="group-username">
             <label
               htmlFor="input-username"
-              className="block text-xs font-bold text-slate-800 font-['Cairo'] tracking-wide"
+              className="block text-xs font-bold text-slate-800 font-['Cairo',_sans-serif] tracking-wide"
             >
               اسم المستخدم (كود الدخول)
             </label>
@@ -263,7 +263,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="أدخل اسم المستخدم (مثال: G1_Cp_01)"
-                className="w-full h-12 pr-11 pl-4 rounded-xl bg-sky-50/70 text-slate-900 text-sm placeholder:text-slate-400 border-2 border-sky-200 hover:border-sky-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-400/30 focus:outline-none transition-all text-right font-mono font-bold"
+                className="w-full h-12 pr-11 pl-4 rounded-xl bg-sky-50/70 text-slate-900 text-sm placeholder:text-slate-400 border-2 border-sky-200 hover:border-sky-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-400/30 focus:outline-none transition-all text-right font-['Cairo',_sans-serif] font-bold"
               />
               <div
                 className="absolute top-1/2 -translate-y-1/2 right-3 w-7 h-7 rounded-lg bg-sky-100 border border-sky-200 flex items-center justify-center text-sky-600 pointer-events-none group-focus-within:border-sky-500 group-focus-within:text-sky-700 transition-colors"
@@ -337,7 +337,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
           <div className="space-y-1.5" id="group-password">
             <label
               htmlFor="input-password"
-              className="block text-xs font-bold text-slate-800 font-['Cairo'] tracking-wide"
+              className="block text-xs font-bold text-slate-800 font-['Cairo',_sans-serif] tracking-wide"
             >
               كلمة المرور
             </label>
@@ -350,7 +350,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess, onOpenAdmi
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="أدخل كلمة المرور"
-                className="w-full h-12 pr-11 pl-11 rounded-xl bg-sky-50/70 text-slate-900 text-sm placeholder:text-slate-400 border-2 border-sky-200 hover:border-sky-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-400/30 focus:outline-none transition-all text-right font-mono font-bold"
+                className="w-full h-12 pr-11 pl-11 rounded-xl bg-sky-50/70 text-slate-900 text-sm placeholder:text-slate-400 border-2 border-sky-200 hover:border-sky-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-400/30 focus:outline-none transition-all text-right font-['Cairo',_sans-serif] font-bold"
               />
               <div
                 className="absolute top-1/2 -translate-y-1/2 right-3 w-7 h-7 rounded-lg bg-sky-100 border border-sky-200 flex items-center justify-center text-sky-600 pointer-events-none group-focus-within:border-sky-500 group-focus-within:text-sky-700 transition-colors"

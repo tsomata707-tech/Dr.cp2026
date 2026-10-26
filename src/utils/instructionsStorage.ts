@@ -21,7 +21,7 @@ export interface SiteInstructionsConfig {
   updatedAt: string;
 }
 
-const INSTRUCTIONS_STORAGE_KEY = 'cp_site_instructions_and_standards_v3';
+const INSTRUCTIONS_STORAGE_KEY = 'cp_site_instructions_and_standards_v5';
 
 export const DEFAULT_INSTRUCTIONS_CONFIG: SiteInstructionsConfig = {
   guidanceNotice: 'ابدأ بالاختبار القبلي للانطلاق في باقي المستويات التعليمية التفاعلية.',
@@ -32,10 +32,10 @@ export const DEFAULT_INSTRUCTIONS_CONFIG: SiteInstructionsConfig = {
     {
       id: 'pretest',
       title: 'الاختبار القبلي (المستوى التمهيدي)',
-      tag: '⭐ البداية الإلزامية',
-      tagColor: 'bg-amber-950 text-[#ffd700] border-[#ffd700]/60',
-      borderColor: 'border-[#ffd700]/60',
-      bgColor: 'from-amber-950/40 via-yellow-950/20 to-slate-950/70',
+      tag: '⭐ نقطة الانطلاق الإلزامية',
+      tagColor: 'bg-sky-950/90 text-sky-200 border-sky-400/80',
+      borderColor: 'border-sky-400/80',
+      bgColor: 'from-slate-900 via-sky-950/70 to-slate-950',
       iconKey: 'pretest',
       text: 'ادخل الاختبار القبلي أولاً ثم تابع باقي المستويات. صُمم الاختبار القبلي على هيئة لعبة أسئلة تفاعلية ممتعة لتشخيص مهاراتك القبلية وتحديد نقطة انطلاقك.',
       bullets: [
@@ -48,10 +48,10 @@ export const DEFAULT_INSTRUCTIONS_CONFIG: SiteInstructionsConfig = {
     {
       id: 'goals',
       title: 'الأهداف التعليمية والمهارية',
-      tag: 'الهدف الرئيسي',
-      tagColor: 'bg-blue-950 text-blue-300 border-blue-500/50',
-      borderColor: 'border-blue-500/40',
-      bgColor: 'from-blue-950/40 to-slate-950/60',
+      tag: '🎯 الأهداف الرئيسية',
+      tagColor: 'bg-emerald-950/90 text-emerald-200 border-emerald-400/80',
+      borderColor: 'border-emerald-400/80',
+      bgColor: 'from-slate-900 via-teal-950/70 to-slate-950',
       iconKey: 'goals',
       text: 'تنمية مهارات إنتاج وتصميم الوسائط المتعددة التفاعلية باستخدام برنامج Adobe Captivate 2019 وتعزيز التقبل التكنولوجي للتعلم القائم على الألعاب.',
       bullets: [
@@ -65,9 +65,9 @@ export const DEFAULT_INSTRUCTIONS_CONFIG: SiteInstructionsConfig = {
       id: 'points',
       title: 'نظام النقاط التراكمي (XP)',
       tag: '⭐ رصيد XP',
-      tagColor: 'bg-amber-950 text-[#ffd700] border-[#ffd700]/50',
-      borderColor: 'border-[#ffd700]/50',
-      bgColor: 'from-amber-950/30 to-slate-950/60',
+      tagColor: 'bg-blue-950/90 text-blue-200 border-blue-400/80',
+      borderColor: 'border-blue-400/70',
+      bgColor: 'from-slate-900 via-blue-950/60 to-slate-950',
       iconKey: 'points',
       text: 'تحصل على نقاط ذهبية (XP) عند حل الأنشطة والمهام التعليمية. الإجابة الصحيحة والسريعة تمنحك نقاطاً أكثر لتعزيز ترتيبك وإنجازك.',
       bullets: [
@@ -81,9 +81,9 @@ export const DEFAULT_INSTRUCTIONS_CONFIG: SiteInstructionsConfig = {
       id: 'badges',
       title: 'نظام الشارات والأوسمة',
       tag: '🏅 أوسمة شرف',
-      tagColor: 'bg-purple-950 text-purple-300 border-purple-500/50',
-      borderColor: 'border-purple-500/50',
-      bgColor: 'from-purple-950/30 to-slate-950/60',
+      tagColor: 'bg-purple-950/90 text-purple-200 border-purple-400/80',
+      borderColor: 'border-purple-400/70',
+      bgColor: 'from-slate-900 via-purple-950/60 to-slate-950',
       iconKey: 'badges',
       text: 'إنجازات محددة تمنحك شارات مميزة تثبت جدارتك مثل "وسام المستكشف التمهيدي"، "خبير التفاعل"، "مهندس الشرائح"، و"نجم الوسائط".',
       bullets: [
@@ -97,9 +97,9 @@ export const DEFAULT_INSTRUCTIONS_CONFIG: SiteInstructionsConfig = {
       id: 'levels',
       title: 'نظام المستويات والترقية',
       tag: '📈 سلم الترقية',
-      tagColor: 'bg-emerald-950 text-emerald-300 border-emerald-500/50',
-      borderColor: 'border-emerald-500/50',
-      bgColor: 'from-emerald-950/30 to-slate-950/60',
+      tagColor: 'bg-teal-950/90 text-teal-200 border-teal-400/80',
+      borderColor: 'border-teal-400/70',
+      bgColor: 'from-slate-900 via-teal-950/60 to-slate-950',
       iconKey: 'levels',
       text: 'اجمع النقاط وأكمل المهام للانتقال التدريجي من المستوى التمهيدي إلى مستوى "مبتدئ" ثم "ممارس" ثم "متقدم" وصولاً إلى "خبير ومصمم محترف".',
       bullets: [
@@ -118,18 +118,25 @@ export function getSiteInstructionsConfig(): SiteInstructionsConfig {
   try {
     let raw = localStorage.getItem(INSTRUCTIONS_STORAGE_KEY);
     if (!raw) {
+      raw = localStorage.getItem('cp_site_instructions_and_standards_v3');
+    }
+    if (!raw) {
       raw = localStorage.getItem('cp_site_instructions_and_standards_v1');
     }
     if (!raw) {
       saveSiteInstructionsConfig(DEFAULT_INSTRUCTIONS_CONFIG);
       return DEFAULT_INSTRUCTIONS_CONFIG;
     }
-    const cleanedRaw = raw
+    let cleanedRaw = raw
       .replace(/خريطة التعلم/g, 'بيئة الألعاب')
       .replace(/خريطة الألعاب/g, 'بيئة الألعاب')
       .replace(/بيئة الألعاب \(خريطة التعلم\)/g, 'بيئة الألعاب')
       .replace(/بيئة التعلم \(خريطة التعلم\)/g, 'بيئة الألعاب')
-      .replace(/خريطة/g, 'بيئة الألعاب');
+      .replace(/خريطة/g, 'بيئة الألعاب')
+      .replace(/bg-amber-950/g, 'bg-sky-950/90')
+      .replace(/from-amber-950\/[0-9]+/g, 'from-slate-900')
+      .replace(/via-yellow-950\/[0-9]+/g, 'via-sky-950/70')
+      .replace(/to-slate-950\/[0-9]+/g, 'to-slate-950');
 
     const parsed = JSON.parse(cleanedRaw);
     if (!parsed.cards || !Array.isArray(parsed.cards) || parsed.cards.length === 0) {

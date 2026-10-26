@@ -39,15 +39,15 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
   const getCardIcon = (iconKey: string) => {
     switch (iconKey) {
       case 'pretest':
-        return <Gamepad2 className="w-6 h-6 text-amber-400" />;
+        return <Gamepad2 className="w-6 h-6 text-sky-400" />;
       case 'goals':
-        return <Target className="w-6 h-6 text-blue-400" />;
+        return <Target className="w-6 h-6 text-emerald-400" />;
       case 'points':
-        return <Star className="w-6 h-6 text-[#ffd700]" />;
+        return <Star className="w-6 h-6 text-blue-300" />;
       case 'badges':
         return <Award className="w-6 h-6 text-purple-400" />;
       case 'levels':
-        return <TrendingUp className="w-6 h-6 text-emerald-400" />;
+        return <TrendingUp className="w-6 h-6 text-teal-400" />;
       default:
         return <BookOpen className="w-6 h-6 text-cyan-400" />;
     }
@@ -58,23 +58,23 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
   return (
     <div className="relative w-full max-w-5xl mx-auto z-10 font-['Cairo',_sans-serif] text-right py-4 animate-fadeIn">
       {/* Background Ambient Glow */}
-      <div className="absolute -inset-3 rounded-3xl bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-emerald-500/15 blur-xl opacity-70 pointer-events-none" />
+      <div className="absolute -inset-3 rounded-3xl bg-gradient-to-r from-sky-600/20 via-blue-600/20 to-teal-500/15 blur-xl opacity-70 pointer-events-none" />
 
       {/* Main Glass Container */}
-      <div className="relative rounded-3xl bg-[#0b0e1e]/95 backdrop-blur-2xl border-2 border-blue-500/40 p-6 sm:p-10 shadow-[0_0_40px_rgba(37,99,235,0.2)] overflow-hidden">
+      <div className="relative rounded-3xl bg-[#0b0e1e]/95 backdrop-blur-2xl border-2 border-sky-500/40 p-6 sm:p-10 shadow-[0_0_40px_rgba(14,165,233,0.2)] overflow-hidden">
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-3 py-1 rounded-full bg-blue-950/80 border border-blue-500/50 text-blue-300 text-xs font-bold flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-blue-400" />
+              <span className="px-3 py-1 rounded-full bg-sky-950/80 border border-sky-500/50 text-sky-300 text-xs font-bold flex items-center gap-1.5 font-['Cairo',_sans-serif]">
+                <BookOpen className="w-3.5 h-3.5 text-sky-400" />
                 دليل قواعد ومعايير البيئة التعليمية
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white font-['Tajawal'] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-white font-['Cairo',_sans-serif] tracking-tight">
               {config.siteTitle}
             </h1>
-            <p className="text-sm text-slate-300 mt-1">
+            <p className="text-sm text-slate-200 mt-1 font-medium font-['Cairo',_sans-serif]">
               {config.siteDescription}
             </p>
           </div>
@@ -84,8 +84,8 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer font-['Cairo',_sans-serif] ${
+                activeTab === 'all' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
               }`}
             >
               الكل
@@ -95,12 +95,10 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
                 key={c.id}
                 type="button"
                 onClick={() => setActiveTab(c.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer font-['Cairo',_sans-serif] ${
                   activeTab === c.id
-                    ? c.id === 'pretest'
-                      ? 'bg-[#ffd700] text-slate-950 font-black'
-                      : 'bg-blue-600 text-white'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-sky-600 text-white shadow-sm'
+                    : 'text-slate-300 hover:text-white'
                 }`}
               >
                 {c.title.split(' ')[0]}
@@ -109,16 +107,16 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
           </div>
         </div>
 
-        {/* GUIDANCE NOTICE BANNER (Prominent requirement) */}
-        <div className="my-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/80 via-yellow-950/50 to-slate-950 border-2 border-[#ffd700] shadow-[0_0_30px_rgba(255,215,0,0.25)] flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ffd700] to-amber-500 flex items-center justify-center text-slate-950 shrink-0 shadow-lg">
+        {/* GUIDANCE NOTICE BANNER (بداية الانطلاق - خلفية كحلية زرقاء عالية الوضوح) */}
+        <div className="my-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950/90 to-slate-900 border-2 border-sky-400 shadow-[0_0_30px_rgba(56,189,248,0.25)] flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white shrink-0 shadow-lg">
             <Sparkles className="w-6 h-6 animate-pulse" />
           </div>
           <div className="flex-1">
-            <span className="text-xs font-black text-[#ffd700] block mb-1">
-              خطوة البداية:
+            <span className="text-xs font-black text-sky-300 block mb-1 font-['Cairo',_sans-serif]">
+              خطوة البداية (نقطة الانطلاق):
             </span>
-            <p className="text-sm sm:text-base font-black text-white font-['Tajawal'] leading-relaxed">
+            <p className="text-sm sm:text-base font-bold text-white font-['Cairo',_sans-serif] leading-relaxed">
               {config.guidanceNotice}
             </p>
           </div>
@@ -126,39 +124,51 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 
         {/* The Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 my-6">
-          {filteredCards.map((card) => (
-            <div
-              key={card.id}
-              className={`rounded-2xl bg-gradient-to-br ${card.bgColor} border-2 ${card.borderColor} p-6 shadow-lg flex flex-col justify-between hover:scale-[1.01] transition-transform`}
-            >
-              <div>
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 shadow">
-                      {getCardIcon(card.iconKey)}
+          {filteredCards.map((card) => {
+            const safeBg = card.bgColor?.includes('amber-950')
+              ? 'from-slate-900 via-sky-950/70 to-slate-950'
+              : card.bgColor;
+            const safeBorder = card.borderColor?.includes('#ffd700')
+              ? 'border-sky-400/80'
+              : card.borderColor;
+            const safeTag = card.tagColor?.includes('amber-950')
+              ? 'bg-sky-950/90 text-sky-200 border-sky-400/80'
+              : card.tagColor;
+
+            return (
+              <div
+                key={card.id}
+                className={`rounded-2xl bg-gradient-to-br ${safeBg} border-2 ${safeBorder} p-6 shadow-lg flex flex-col justify-between hover:scale-[1.01] transition-transform`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-slate-950/90 border border-slate-700/80 shadow">
+                        {getCardIcon(card.iconKey)}
+                      </div>
+                      <h3 className="text-lg sm:text-xl font-black text-white font-['Cairo',_sans-serif] tracking-tight">{card.title}</h3>
                     </div>
-                    <h3 className="text-lg font-black text-white font-['Tajawal']">{card.title}</h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${safeTag}`}>
+                      {card.tag}
+                    </span>
                   </div>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${card.tagColor}`}>
-                    {card.tag}
-                  </span>
-                </div>
 
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed mb-4 font-medium">
-                  {card.text}
-                </p>
+                  <p className="text-sm text-slate-100 leading-relaxed mb-4 font-semibold font-['Cairo',_sans-serif]">
+                    {card.text}
+                  </p>
 
-                <div className="space-y-2 pt-2 border-t border-slate-800/80">
-                  {card.bullets.map((bullet, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
-                      <span>{bullet}</span>
-                    </div>
-                  ))}
+                  <div className="space-y-2 pt-2 border-t border-slate-800">
+                    {card.bullets.map((bullet, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-slate-200 font-medium font-['Cairo',_sans-serif]">
+                        <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                        <span>{bullet}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Bottom Action Button: الانتقال إلى بيئة الألعاب */}

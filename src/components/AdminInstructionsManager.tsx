@@ -404,7 +404,7 @@ export const AdminInstructionsManager: React.FC = () => {
                     onClick={() => setActiveEditingCardId(c.id)}
                     className={`p-3 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center gap-1.5 relative group ${
                       isSelected
-                        ? 'bg-gradient-to-br from-amber-950/80 to-[#120e26] border-[#ffd700] text-white shadow-[0_0_15px_rgba(255,215,0,0.3)] scale-[1.02]'
+                        ? 'bg-gradient-to-br from-sky-950/90 to-[#0c1326] border-sky-400 text-white shadow-[0_0_15px_rgba(56,189,248,0.3)] scale-[1.02]'
                         : 'bg-[#0d1021] border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
                     }`}
                   >

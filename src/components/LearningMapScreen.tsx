@@ -137,22 +137,22 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
         {/* PRE-TEST (المستوى التمهيدي: الاختبار القبلي) CARD */}
         <div className="mt-6 mb-2">
           {!progress.preTestResult?.completed ? (
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/80 via-yellow-950/40 to-slate-950 border-2 border-[#ffd700] shadow-[0_0_30px_rgba(255,215,0,0.3)] flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn">
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 border-2 border-sky-400 shadow-[0_0_30px_rgba(56,189,248,0.25)] flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn">
               <div className="flex items-center gap-4 text-right">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#ffd700] to-amber-500 text-slate-950 flex items-center justify-center font-black text-2xl shadow-lg shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white flex items-center justify-center font-black text-2xl shadow-lg shrink-0">
                   <Gamepad2 className="w-8 h-8 animate-pulse" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2.5 py-0.5 rounded-full bg-amber-950 border border-amber-500/60 text-[#ffd700] text-[10px] font-black">
+                    <span className="px-2.5 py-0.5 rounded-full bg-sky-900/90 border border-sky-400 text-sky-200 text-[10px] font-black font-['Cairo',_sans-serif]">
                       المستوى التمهيدي: الخطوة الأولى
                     </span>
-                    <span className="text-xs text-amber-300 font-bold">مطلوب للبدء</span>
+                    <span className="text-xs text-sky-300 font-bold font-['Cairo',_sans-serif]">مطلوب للبدء</span>
                   </div>
-                  <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">
+                  <h3 className="text-base sm:text-lg font-black text-white font-['Cairo',_sans-serif]">
                     لعبة الاختبار القبلي (Adobe Captivate 2019)
                   </h3>
-                  <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-200 mt-0.5 leading-relaxed font-['Cairo',_sans-serif]">
                     ادخل الاختبار القبلي أولاً ثم تابع باقي المستويات. صُمم على شكل لعبة أسئلة تفاعلية لتشخيص مهاراتك وفتح المرحلة 1.
                   </p>
                 </div>
@@ -223,7 +223,7 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
                   onClick={() => handleStageClick(lvl)}
                   className={`relative p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between group ${
                     isCurrent
-                      ? 'bg-gradient-to-br from-amber-950/60 to-[#141126] border-[#ffd700] shadow-[0_0_25px_rgba(255,215,0,0.35)] scale-105 z-20'
+                      ? 'bg-gradient-to-br from-blue-950/90 via-slate-900 to-sky-950 border-sky-400 shadow-[0_0_25px_rgba(56,189,248,0.35)] scale-105 z-20'
                       : isCompleted
                       ? 'bg-gradient-to-br from-emerald-950/40 to-[#09151c] border-emerald-500/70 hover:border-emerald-400 hover:scale-102'
                       : 'bg-[#080b18]/70 border-slate-800/80 opacity-55 hover:opacity-75'
@@ -465,10 +465,10 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
             </div>
 
             <div className="text-center">
-              <span className="px-3 py-0.5 rounded-full bg-amber-950 border border-amber-500 text-[#ffd700] text-xs font-black">
+              <span className="px-3 py-0.5 rounded-full bg-sky-900/90 border border-sky-400 text-sky-200 text-xs font-black font-['Cairo',_sans-serif]">
                 المستوى التمهيدي
               </span>
-              <h3 className="text-xl font-black text-white font-['Tajawal'] mt-2">
+              <h3 className="text-xl font-black text-white font-['Cairo',_sans-serif] mt-2">
                 ادخل الاختبار القبلي أولاً!
               </h3>
             </div>
@@ -517,10 +517,10 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
             </div>
 
             <div className="text-center">
-              <span className="px-3 py-0.5 rounded-full bg-amber-950 border border-amber-500 text-amber-300 text-xs font-black">
+              <span className="px-3 py-0.5 rounded-full bg-blue-900/90 border border-blue-400 text-blue-200 text-xs font-black font-['Cairo',_sans-serif]">
                 المرحلة {lockedStageAlert.levelNumber}
               </span>
-              <h3 className="text-xl font-black text-white font-['Tajawal'] mt-2">
+              <h3 className="text-xl font-black text-white font-['Cairo',_sans-serif] mt-2">
                 يجب إتمام المرحلة السابقة أولاً!
               </h3>
             </div>
