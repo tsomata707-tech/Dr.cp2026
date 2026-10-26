@@ -96,6 +96,26 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
     localStorage.setItem(`cp_active_portal_section_${username}`, activeMainSection);
   }, [activeMainSection, username]);
 
+  // Strict Post-Test Lock Guard Enforcement across all students and groups
+  useEffect(() => {
+    if (activeMainSection === 'posttest') {
+      const isAdminUser = username.trim().toLowerCase() === 'admin';
+      const currentProg = getStudentProgress(username);
+      const preDone = Boolean(currentProg.preTestResult?.completed);
+      const completedLevelsCount = Object.keys(currentProg.completedLevels || {}).length;
+      const levelsDone = completedLevelsCount >= 9;
+
+      if (!isAdminUser && (!preDone || !levelsDone)) {
+        alert('⚠️ عذراً، الاختبار البعدي مغلق! لا يمكن الدخول للاختبار البعدي إلا بعد اجتياز الاختبار القبلي وإتمام جميع المستويات التعليمية التسعة بنجاح.');
+        if (!preDone) {
+          setActiveMainSection('pretest');
+        } else {
+          setActiveMainSection('game');
+        }
+      }
+    }
+  }, [activeMainSection, username]);
+
   // Floating welcome card upon login for 15 seconds with loading bar
   const [showWelcomeFloatingCard, setShowWelcomeFloatingCard] = useState<boolean>(true);
 

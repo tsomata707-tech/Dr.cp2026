@@ -131,9 +131,17 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
             const safeBorder = card.borderColor?.includes('#ffd700')
               ? 'border-sky-400/80'
               : card.borderColor;
-            const safeTag = card.tagColor?.includes('amber-950')
-              ? 'bg-sky-950/90 text-sky-200 border-sky-400/80'
-              : card.tagColor;
+            
+            const badgeClass =
+              card.id === 'pretest'
+                ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black border border-sky-300 shadow-md px-3 py-1 rounded-xl text-xs'
+                : card.id === 'goals'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black border border-emerald-300 shadow-md px-3 py-1 rounded-xl text-xs'
+                : card.id === 'points'
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black border border-blue-300 shadow-md px-3 py-1 rounded-xl text-xs'
+                : card.id === 'badges'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black border border-purple-300 shadow-md px-3 py-1 rounded-xl text-xs'
+                : 'bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-black border border-amber-300 shadow-md px-3 py-1 rounded-xl text-xs';
 
             return (
               <div
@@ -148,7 +156,7 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
                       </div>
                       <h3 className="text-lg sm:text-xl font-black text-white font-['Cairo',_sans-serif] tracking-tight">{card.title}</h3>
                     </div>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${safeTag}`}>
+                    <span className={badgeClass}>
                       {card.tag}
                     </span>
                   </div>

@@ -223,8 +223,8 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
           </div>
         </div>
 
-        {/* The 4 Groups Grid - All 4 groups visible normally */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* The 4 Groups Grid - All 4 groups visible normally with clean flex layout and zero overlaps */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-5">
           {RESEARCH_GROUPS_DATA.map((group) => {
             const isAssignedToUser = isAdmin ? true : (userGroupMeta ? group.id === userGroupMeta.id : true);
             const isSelected = group.id === selectedGroupId;
@@ -235,82 +235,80 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                 key={group.id}
                 id={`group-card-${group.code}`}
                 onClick={() => handleGroupClick(group)}
-                className={`rounded-2xl p-5 border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between relative overflow-hidden bg-white shadow-md ${
+                className={`rounded-2xl p-5 border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between bg-white shadow-md hover:shadow-xl ${
                   isSelected
-                    ? 'border-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.25)] ring-2 ring-amber-400'
+                    ? 'border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.25)] ring-2 ring-amber-400/80'
                     : 'border-slate-300 hover:border-sky-400'
                 }`}
               >
-                {/* Status Badges */}
-                {isAdmin ? (
-                  <div className={`absolute top-3 left-3 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 shadow-md ${
-                    isSelected
-                      ? 'bg-amber-500 text-slate-950 border border-amber-300'
-                      : 'bg-emerald-100 border border-emerald-400 text-emerald-900'
-                  }`}>
-                    <Eye className="w-3 h-3" />
-                    <span>{isSelected ? 'المجموعة المحددة حالياً' : 'متاح للأدمن (استعراض)'}</span>
-                  </div>
-                ) : isLockedForUser ? (
-                  <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-rose-100 border border-rose-300 text-rose-900 text-[10px] font-black flex items-center gap-1 shadow-md">
-                    <Lock className="w-3 h-3 text-rose-700" />
-                    <span>🔒 مغلق لطلاب المجموعات الأخرى</span>
-                  </div>
-                ) : isSelected ? (
-                  <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black flex items-center gap-1 shadow-md">
-                    <CheckCircle2 className="w-3 h-3 stroke-[3]" />
-                    <span>⭐ مجموعتك المصرح بها فقط</span>
-                  </div>
-                ) : null}
-
                 <div>
-                  {/* Top Badges */}
-                  <div className="flex flex-wrap items-center gap-2 mb-3">
-                    <span className="px-2.5 py-1 rounded-lg bg-slate-200 font-black text-slate-900 text-xs border border-slate-300 shadow-xs font-['Cairo']">
-                      {group.code}
-                    </span>
-                    <span
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-black border border-slate-300 bg-slate-100 text-slate-900 font-['Cairo'] shadow-xs"
-                    >
-                      {group.learningMode === 'تنافسي' ? '⚡ نمط تنافسي' : '🤝 نمط تعاوني'}
-                    </span>
-                    <span
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-black border border-slate-300 bg-slate-100 text-slate-900 font-['Cairo'] shadow-xs"
-                    >
-                      {group.feedbackMode === 'فورية' ? '🎯 تغذية فورية' : '⏳ تغذية مرجئة'}
-                    </span>
+                  {/* Top Badges Header: Clean Flex Wrap with Zero Collisions */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-3 py-1 rounded-xl bg-slate-900 font-black text-amber-300 text-xs shadow-sm font-['Cairo']">
+                        {group.code}
+                      </span>
+                      <span className="px-3 py-1 rounded-xl text-xs font-black border border-blue-300 bg-blue-50 text-blue-950 font-['Cairo'] shadow-xs">
+                        {group.learningMode === 'تنافسي' ? '⚡ نمط تنافسي' : '🤝 نمط تعاوني'}
+                      </span>
+                      <span className="px-3 py-1 rounded-xl text-xs font-black border border-purple-300 bg-purple-50 text-purple-950 font-['Cairo'] shadow-xs">
+                        {group.feedbackMode === 'فورية' ? '🎯 تغذية فورية' : '⏳ تغذية مرجئة'}
+                      </span>
+                    </div>
+
+                    {/* Status Badge in Flex Flow */}
+                    {isAdmin ? (
+                      <span className={`px-3 py-1 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-xs shrink-0 ${
+                        isSelected
+                          ? 'bg-amber-100 text-amber-950 border-2 border-amber-500 font-black'
+                          : 'bg-emerald-100 text-emerald-950 border border-emerald-400 font-black'
+                      }`}>
+                        <Eye className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>{isSelected ? 'المجموعة المحددة حالياً 👁️' : 'متاح للأدمن (استعراض) 👁️'}</span>
+                      </span>
+                    ) : isLockedForUser ? (
+                      <span className="px-3 py-1 rounded-xl bg-rose-100 border border-rose-300 text-rose-950 text-xs font-black flex items-center gap-1.5 shadow-xs shrink-0">
+                        <Lock className="w-3.5 h-3.5 text-rose-700" />
+                        <span>🔒 مغلق لطلاب المجموعات الأخرى</span>
+                      </span>
+                    ) : isSelected ? (
+                      <span className="px-3 py-1 rounded-xl bg-amber-100 border-2 border-amber-500 text-amber-950 text-xs font-black flex items-center gap-1.5 shadow-xs shrink-0">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-700 stroke-[3]" />
+                        <span>⭐ مجموعتك المصرح بها فقط</span>
+                      </span>
+                    ) : null}
                   </div>
 
-                  {/* Group Title Box: Light Gray Background, Bold Black Cairo Font */}
-                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-200 border border-slate-300 inline-block mb-2">
+                  {/* Group Title Box: Prominent Light Gray Badge */}
+                  <div className="px-4 py-2 rounded-xl bg-slate-100 border-2 border-slate-300 inline-block mb-2 shadow-xs">
                     <h3 className="text-base sm:text-lg font-black text-slate-900 font-['Cairo'] leading-snug">
                       المجموعة {group.code}: {group.name}
                     </h3>
                   </div>
-                  <p className="text-xs text-slate-800 font-bold font-['Cairo'] mt-1">
+
+                  <p className="text-xs sm:text-sm text-sky-950 font-black font-['Cairo'] mt-1">
                     {group.tagline}
                   </p>
-                  <p className="text-xs text-slate-700 font-semibold font-['Cairo'] mt-2 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-800 font-bold font-['Cairo'] mt-1.5 leading-relaxed">
                     {group.description}
                   </p>
 
                   {/* Rules & Features List */}
-                  <div className="my-3 p-3.5 rounded-xl bg-sky-50 border border-sky-200 space-y-1.5 text-xs text-slate-800 shadow-inner">
+                  <div className="my-4 p-4 rounded-xl bg-sky-50/90 border border-sky-200 space-y-2 text-xs text-slate-900 shadow-inner">
                     {group.rules.map((rule, idx) => (
                       <div key={idx} className="flex items-start gap-2">
-                        <span className="text-amber-600 font-black text-sm leading-none">•</span>
-                        <span className="leading-tight font-medium">{rule}</span>
+                        <span className="text-amber-600 font-black text-base leading-none">•</span>
+                        <span className="leading-relaxed font-bold text-slate-800">{rule}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Group Stats Footer */}
-                <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3">
-                    <span className="text-slate-400">
-                      الطلاب: <strong className="text-white ">{group.membersCount} طالب</strong>
-                    </span>
+                {/* Group Stats & Action Footer */}
+                <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-slate-800 font-bold">
+                    <Users className="w-4 h-4 text-slate-600" />
+                    <span>الطلاب: <strong className="text-slate-900 font-black">{group.membersCount} طالباً</strong></span>
                   </div>
 
                   <button
@@ -319,34 +317,29 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                       e.stopPropagation();
                       handleGroupClick(group);
                     }}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                      isLockedForUser
-                        ? 'bg-slate-900 hover:bg-red-950/70 text-slate-300 hover:text-red-300 border border-slate-700 hover:border-red-500/50 shadow-sm'
-                        : isSelected
-                        ? 'bg-[#d4af37] hover:bg-amber-400 text-slate-950 font-black shadow-md'
-                        : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700'
+                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-sm ${
+                      isAdmin
+                        ? 'bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40'
+                        : isLockedForUser
+                        ? 'bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300'
+                        : 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 border border-amber-300'
                     }`}
                   >
                     {isAdmin ? (
                       <>
-                        <Eye className="w-3.5 h-3.5 text-amber-300" />
+                        <Eye className="w-4 h-4 text-amber-300" />
                         <span>{isSelected ? 'استعراض هذه المجموعة الآن' : 'اختيار واستعراض المجموعة'}</span>
-                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <ArrowLeft className="w-4 h-4" />
                       </>
                     ) : isLockedForUser ? (
                       <>
-                        <Lock className="w-3 h-3 text-red-400" />
-                        <span>دخول المجموعة</span>
-                      </>
-                    ) : isSelected ? (
-                      <>
-                        <span>دخول بيئة مجموعتي</span>
-                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <Lock className="w-3.5 h-3.5 text-rose-600" />
+                        <span>دخول المجموعة (مغلق)</span>
                       </>
                     ) : (
                       <>
-                        <span>اختيار مجموعتي</span>
-                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>دخول بيئة مجموعتي</span>
+                        <ArrowLeft className="w-4 h-4" />
                       </>
                     )}
                   </button>

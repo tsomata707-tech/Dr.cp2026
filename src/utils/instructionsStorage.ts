@@ -33,7 +33,7 @@ export const DEFAULT_INSTRUCTIONS_CONFIG: SiteInstructionsConfig = {
       id: 'pretest',
       title: 'الاختبار القبلي (المستوى التمهيدي)',
       tag: '⭐ نقطة الانطلاق الإلزامية',
-      tagColor: 'bg-sky-950/90 text-sky-200 border-sky-400/80',
+      tagColor: 'bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black border border-sky-300 shadow-md',
       borderColor: 'border-sky-400/80',
       bgColor: 'from-slate-900 via-sky-950/70 to-slate-950',
       iconKey: 'pretest',
@@ -49,7 +49,7 @@ export const DEFAULT_INSTRUCTIONS_CONFIG: SiteInstructionsConfig = {
       id: 'goals',
       title: 'الأهداف التعليمية والمهارية',
       tag: '🎯 الأهداف الرئيسية',
-      tagColor: 'bg-emerald-950/90 text-emerald-200 border-emerald-400/80',
+      tagColor: 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black border border-emerald-300 shadow-md',
       borderColor: 'border-emerald-400/80',
       bgColor: 'from-slate-900 via-teal-950/70 to-slate-950',
       iconKey: 'goals',
@@ -65,7 +65,7 @@ export const DEFAULT_INSTRUCTIONS_CONFIG: SiteInstructionsConfig = {
       id: 'points',
       title: 'نظام النقاط التراكمي (XP)',
       tag: '⭐ رصيد XP',
-      tagColor: 'bg-blue-950/90 text-blue-200 border-blue-400/80',
+      tagColor: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black border border-blue-300 shadow-md',
       borderColor: 'border-blue-400/70',
       bgColor: 'from-slate-900 via-blue-950/60 to-slate-950',
       iconKey: 'points',
@@ -81,7 +81,7 @@ export const DEFAULT_INSTRUCTIONS_CONFIG: SiteInstructionsConfig = {
       id: 'badges',
       title: 'نظام الشارات والأوسمة',
       tag: '🏅 أوسمة شرف',
-      tagColor: 'bg-purple-950/90 text-purple-200 border-purple-400/80',
+      tagColor: 'bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black border border-purple-300 shadow-md',
       borderColor: 'border-purple-400/70',
       bgColor: 'from-slate-900 via-purple-950/60 to-slate-950',
       iconKey: 'badges',
@@ -97,8 +97,8 @@ export const DEFAULT_INSTRUCTIONS_CONFIG: SiteInstructionsConfig = {
       id: 'levels',
       title: 'نظام المستويات والترقية',
       tag: '📈 سلم الترقية',
-      tagColor: 'bg-teal-950/90 text-teal-200 border-teal-400/80',
-      borderColor: 'border-teal-400/70',
+      tagColor: 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black border border-amber-300 shadow-md',
+      borderColor: 'border-amber-400/70',
       bgColor: 'from-slate-900 via-teal-950/60 to-slate-950',
       iconKey: 'levels',
       text: 'اجمع النقاط وأكمل المهام للانتقال التدريجي من المستوى التمهيدي إلى مستوى "مبتدئ" ثم "ممارس" ثم "متقدم" وصولاً إلى "خبير ومصمم محترف".',
@@ -133,7 +133,12 @@ export function getSiteInstructionsConfig(): SiteInstructionsConfig {
       .replace(/بيئة الألعاب \(خريطة التعلم\)/g, 'بيئة الألعاب')
       .replace(/بيئة التعلم \(خريطة التعلم\)/g, 'بيئة الألعاب')
       .replace(/خريطة/g, 'بيئة الألعاب')
-      .replace(/bg-amber-950/g, 'bg-sky-950/90')
+      .replace(/bg-sky-950\/[0-9]+/g, 'bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black border border-sky-300 shadow-md')
+      .replace(/bg-emerald-950\/[0-9]+/g, 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black border border-emerald-300 shadow-md')
+      .replace(/bg-blue-950\/[0-9]+/g, 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black border border-blue-300 shadow-md')
+      .replace(/bg-purple-950\/[0-9]+/g, 'bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black border border-purple-300 shadow-md')
+      .replace(/bg-teal-950\/[0-9]+/g, 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black border border-amber-300 shadow-md')
+      .replace(/bg-amber-950\/[0-9]+/g, 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black border border-amber-300 shadow-md')
       .replace(/from-amber-950\/[0-9]+/g, 'from-slate-900')
       .replace(/via-yellow-950\/[0-9]+/g, 'via-sky-950/70')
       .replace(/to-slate-950\/[0-9]+/g, 'to-slate-950');
