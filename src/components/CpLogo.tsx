@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { getSiteTitleConfig } from '../utils/siteTitleStorage';
 
 interface CpLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -11,12 +12,30 @@ export const CpLogo: React.FC<CpLogoProps> = ({
   showText = true,
   className = '',
 }) => {
-  // Increased font sizes by +2 and enlarged frames for superior visibility
+  const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(() => {
+    try {
+      const cfg = getSiteTitleConfig();
+      return cfg.customLogoUrl || null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      const cfg = e.detail || getSiteTitleConfig();
+      setCustomLogoUrl(cfg.customLogoUrl || null);
+    };
+    window.addEventListener('cp_site_title_updated', handleUpdate);
+    return () => window.removeEventListener('cp_site_title_updated', handleUpdate);
+  }, []);
+
+  // Increased font sizes and enlarged logo container box by 50% for superior image clarity
   const sizeMap = {
-    sm: { box: 'w-10 h-10', text: 'text-lg', title: 'text-base', sub: 'text-[10px]' },
-    md: { box: 'w-14 h-14', text: 'text-2xl', title: 'text-lg', sub: 'text-xs' },
-    lg: { box: 'w-20 h-20', text: 'text-4xl', title: 'text-2xl', sub: 'text-sm' },
-    xl: { box: 'w-28 h-28', text: 'text-6xl', title: 'text-3xl', sub: 'text-base' },
+    sm: { box: 'w-14 h-14', text: 'text-xl', title: 'text-base', sub: 'text-[10px]' },
+    md: { box: 'w-20 h-20', text: 'text-3xl', title: 'text-lg', sub: 'text-xs' },
+    lg: { box: 'w-28 h-28', text: 'text-5xl', title: 'text-2xl', sub: 'text-sm' },
+    xl: { box: 'w-36 h-36', text: 'text-7xl', title: 'text-3xl', sub: 'text-base' },
   };
 
   const current = sizeMap[size];
@@ -37,51 +56,56 @@ export const CpLogo: React.FC<CpLogoProps> = ({
         >
           {/* Inner Badge Surface */}
           <div className="w-full h-full rounded-[13px] bg-gradient-to-b from-white via-sky-50/90 to-sky-100/70 flex items-center justify-center overflow-hidden relative shadow-inner">
-            {/* Subtle Tech Blueprint Circles (Sky Blue) */}
-            <svg
-              className="absolute inset-0 w-full h-full opacity-30 pointer-events-none"
-              viewBox="0 0 100 100"
-              fill="none"
-              stroke="#0284c7"
-              strokeWidth="1.5"
-            >
-              <circle cx="50" cy="50" r="42" strokeDasharray="4 6" />
-              <path d="M10 50h80M50 10v80" strokeOpacity="0.35" />
-            </svg>
+            {customLogoUrl ? (
+              <img
+                src={customLogoUrl}
+                alt="شعار الموقع"
+                className="w-full h-full object-cover rounded-[13px]"
+              />
+            ) : (
+              <>
+                {/* Subtle Tech Blueprint Circles (Sky Blue) */}
+                <svg
+                  className="absolute inset-0 w-full h-full opacity-30 pointer-events-none"
+                  viewBox="0 0 100 100"
+                  fill="none"
+                  stroke="#0284c7"
+                  strokeWidth="1.5"
+                >
+                  <circle cx="50" cy="50" r="42" strokeDasharray="4 6" />
+                  <path d="M10 50h80M50 10v80" strokeOpacity="0.35" />
+                </svg>
 
-            {/* "Cp" Monogram:
-                - Enlarged font size (+2) via current.text
-                - Letter 'C' in warm golden-amber (#d97706)
-                - Letter 'p' in deep vibrant sky-blue (#0284c7)
-                - Solid, permanent colors with inline styles so 'p' is NEVER white or invisible!
-            */}
-            <div
-              dir="ltr"
-              className={`relative z-10 flex flex-row items-baseline justify-center font-black tracking-normal select-none ${current.text}`}
-            >
-              <span
-                className="cp-letter-c font-['Outfit'] font-black leading-none drop-shadow-[0_1px_3px_rgba(217,119,6,0.35)]"
-                style={{
-                  color: '#d97706',
-                  WebkitTextFillColor: '#d97706',
-                  background: 'none',
-                  textShadow: '0 1px 2px rgba(217,119,6,0.25)',
-                }}
-              >
-                C
-              </span>
-              <span
-                className="cp-letter-p font-['Outfit'] font-black leading-none ml-0.5 drop-shadow-[0_1px_3px_rgba(2,132,199,0.35)]"
-                style={{
-                  color: '#0284c7',
-                  WebkitTextFillColor: '#0284c7',
-                  background: 'none',
-                  textShadow: '0 1px 2px rgba(2,132,199,0.25)',
-                }}
-              >
-                p
-              </span>
-            </div>
+                {/* "Cp" Monogram */}
+                <div
+                  dir="ltr"
+                  className={`relative z-10 flex flex-row items-baseline justify-center font-black tracking-normal select-none ${current.text}`}
+                >
+                  <span
+                    className="cp-letter-c font-['Outfit'] font-black leading-none drop-shadow-[0_1px_3px_rgba(217,119,6,0.35)]"
+                    style={{
+                      color: '#d97706',
+                      WebkitTextFillColor: '#d97706',
+                      background: 'none',
+                      textShadow: '0 1px 2px rgba(217,119,6,0.25)',
+                    }}
+                  >
+                    C
+                  </span>
+                  <span
+                    className="cp-letter-p font-['Outfit'] font-black leading-none ml-0.5 drop-shadow-[0_1px_3px_rgba(2,132,199,0.35)]"
+                    style={{
+                      color: '#0284c7',
+                      WebkitTextFillColor: '#0284c7',
+                      background: 'none',
+                      textShadow: '0 1px 2px rgba(2,132,199,0.25)',
+                    }}
+                  >
+                    p
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

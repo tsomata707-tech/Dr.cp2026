@@ -154,7 +154,7 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
 
             {/* If No Real Students Scored Yet */}
             {realHonorStudents.length === 0 ? (
-              <div className="mt-8 p-8 rounded-2xl bg-sky-50/70 border border-sky-200 text-center space-y-3">
+              <div className="mt-8 p-8 rounded-2xl bg-sky-50/70 border border-sky-300 text-center space-y-3">
                 <div className="w-16 h-16 rounded-full bg-sky-100 border border-sky-300 text-sky-600 flex items-center justify-center mx-auto text-2xl">
                   ⭐
                 </div>
@@ -162,7 +162,7 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
                   لوحة الشرف مستعدة لتسجيل أوائل المتميزين!
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-700 max-w-lg mx-auto leading-relaxed font-medium">
-                  تم مسح كافة البيانات الوهمية. ابدأ الآن بالدخول إلى الأنشطة وحل تحديات المستويات ليكون اسمك ورصيدك الفعلي أول المتصدرين في لوحة الشرف الأكاديمية.
+                  في انتظار تسجيل أوائل الطلاب المتميزين بناءً على تفاعلهم الفعلي وحل أنشطة ومحاكاة بيئة الألعاب التعليمية.
                 </p>
               </div>
             ) : (

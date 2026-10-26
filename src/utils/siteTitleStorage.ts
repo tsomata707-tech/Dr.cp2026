@@ -6,6 +6,7 @@ export interface SiteTitleConfig {
   topBadge1: string;
   topBadge2: string;
   footerUniversity: string;
+  customLogoUrl?: string;
 }
 
 export const DEFAULT_SITE_TITLE_CONFIG: SiteTitleConfig = {
@@ -16,6 +17,7 @@ export const DEFAULT_SITE_TITLE_CONFIG: SiteTitleConfig = {
   topBadge1: 'رسالة ماجستير في تكنولوجيا التعليم',
   topBadge2: 'Adobe Captivate 2019',
   footerUniversity: 'جامعة طنطا - كلية التربية النوعية',
+  customLogoUrl: '',
 };
 
 const SITE_TITLE_STORAGE_KEY = 'cp_site_title_config_v1';

@@ -27,6 +27,7 @@ export const AdminSiteTitleManager: React.FC = () => {
   const [topBadge1, setTopBadge1] = useState<string>(config.topBadge1);
   const [topBadge2, setTopBadge2] = useState<string>(config.topBadge2);
   const [footerUniversity, setFooterUniversity] = useState<string>(config.footerUniversity);
+  const [customLogoUrl, setCustomLogoUrl] = useState<string>(config.customLogoUrl || '');
   const [whatsappNumber, setWhatsappNumber] = useState<string>(() => getAdminSettings().whatsappNumber || '+201091473136');
 
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -42,6 +43,7 @@ export const AdminSiteTitleManager: React.FC = () => {
       setTopBadge1(updated.topBadge1);
       setTopBadge2(updated.topBadge2);
       setFooterUniversity(updated.footerUniversity);
+      setCustomLogoUrl(updated.customLogoUrl || '');
     };
 
     window.addEventListener('cp_site_title_updated', handleSync);
@@ -51,6 +53,31 @@ export const AdminSiteTitleManager: React.FC = () => {
   const showNotification = (text: string, type: 'success' | 'error' = 'success') => {
     setFeedbackMsg({ text, type });
     setTimeout(() => setFeedbackMsg(null), 4000);
+  };
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.match(/^image\/(jpeg|jpg|png|webp|svg\+xml)$/i)) {
+      showNotification('يرجى اختيار صورة صالحة (JPG, PNG, WebP, SVG)', 'error');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      showNotification('حجم الصورة كبير، يرجى اختيار صورة أقل من 2 ميجابايت', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      if (base64) {
+        setCustomLogoUrl(base64);
+        showNotification('تم اختيار وتجهيز شعار الموقع بنجاح! لا تنسَ الضغط على "حفظ وتحديث".');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -69,6 +96,7 @@ export const AdminSiteTitleManager: React.FC = () => {
           topBadge1: topBadge1.trim(),
           topBadge2: topBadge2.trim(),
           footerUniversity: footerUniversity.trim(),
+          customLogoUrl: customLogoUrl.trim(),
         },
         true
       );
@@ -81,7 +109,7 @@ export const AdminSiteTitleManager: React.FC = () => {
         }
       }
 
-      showNotification('✓ تم حفظ وتحديث عنوان الموقع ورقم الواتساب بنجاح ومزامنته للجميع فوراً');
+      showNotification('✓ تم حفظ وتحديث عنوان الشعار والموقع بنجاح ومزامنته للجميع فوراً');
     } finally {
       setTimeout(() => {
         setIsSaving(false);
@@ -97,6 +125,7 @@ export const AdminSiteTitleManager: React.FC = () => {
     setTopBadge1(def.topBadge1);
     setTopBadge2(def.topBadge2);
     setFooterUniversity(def.footerUniversity);
+    setCustomLogoUrl('');
     showNotification('✓ تم استعادة العنوان والبيانات الافتراضية بنجاح ومزامنتها');
   };
 
@@ -206,8 +235,46 @@ export const AdminSiteTitleManager: React.FC = () => {
       <form onSubmit={handleSave} className="p-6 rounded-3xl bg-[#090c1e] border border-slate-800 space-y-5 shadow-xl">
         <h3 className="text-base font-bold text-white flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-[#ffd700]" />
-          <span>حقول تعديل العنوان والنصوص</span>
+          <span>تخصيص شعار الموقع (لوجو المنصة) وعناوين النصوص</span>
         </h3>
+
+        {/* Custom Logo Image Upload Field */}
+        <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+          <label className="block text-xs sm:text-sm font-bold text-slate-200">
+            شعار الموقع المخصص (صورة اللوجو في شريط التنقل العلوي):
+          </label>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="w-24 h-24 rounded-2xl bg-slate-900 border-2 border-sky-400 flex items-center justify-center overflow-hidden shrink-0 shadow-md">
+              {customLogoUrl ? (
+                <img src={customLogoUrl} alt="معاينة الشعار" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-sm font-black text-amber-400 font-['Outfit']">Cp</span>
+              )}
+            </div>
+            <div className="flex-1 space-y-2 w-full">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="w-full text-xs text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-600 file:text-white hover:file:bg-sky-500 file:cursor-pointer cursor-pointer"
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-slate-400">
+                  يرجى اختيار صورة مربعة واضحة (PNG أو JPG أو WebP أقل من 2 ميجابايت).
+                </span>
+                {customLogoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomLogoUrl('')}
+                    className="text-xs text-rose-400 hover:text-rose-300 font-bold underline cursor-pointer"
+                  >
+                    إزالة الشعار والعودة للوجو الافتراضي (Cp)
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* 1. Main Title Field */}
         <div>
