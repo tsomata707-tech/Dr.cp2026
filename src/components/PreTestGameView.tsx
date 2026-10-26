@@ -715,8 +715,24 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               </div>
 
               {/* Question Text */}
-              <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white leading-relaxed text-right font-['Tajawal'] tracking-wide">
-                {currentQ.question}
+              <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white leading-relaxed text-right font-['Tajawal'] tracking-wide whitespace-pre-line">
+                {(() => {
+                  const qText = currentQ.question || '';
+                  const questionNumber = currentIndex + 1;
+                  const isStackedLayout =
+                    currentQ.layout === 'stacked' ||
+                    [2, 6, 13, 51].includes(questionNumber) ||
+                    [2, 6, 13, 51].some((num) => currentQ.id === `pt-${num}` || currentQ.id === `post-${num}` || currentQ.id === `${num}`);
+
+                  if (!isStackedLayout) return qText;
+
+                  return qText
+                    .replace(/\s*\|\s*/g, '\n')
+                    .replace(/\s+(أ\.)/g, '\n$1')
+                    .replace(/\s+(ب\.)/g, '\n$1')
+                    .replace(/\s+(ج\.)/g, '\n$1')
+                    .replace(/\s+(د\.)/g, '\n$1');
+                })()}
               </h2>
 
               {/* Question Image (if attached) */}
@@ -872,23 +888,27 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                         key={optIdx}
                         data-station-index={optIdx}
                         onClick={() => handleDriveCarToStation(optIdx)}
-                        className={`p-4 sm:p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer relative overflow-hidden flex flex-col justify-between ${
-                          isStackedLayout ? 'min-h-[90px]' : 'min-h-[110px]'
+                        className={`p-4 sm:p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer relative overflow-hidden flex ${
+                          isStackedLayout ? 'flex-row items-center gap-4 min-h-[72px]' : 'flex-col justify-between min-h-[110px]'
                         } ${stationBg}`}
                       >
-                        <div className="flex items-center justify-between mb-2 sm:mb-3">
+                        <div className={`flex items-center gap-3 ${isStackedLayout ? 'shrink-0' : 'justify-between mb-2 sm:mb-3 w-full'}`}>
                           <div className="flex items-center gap-2">
-                            <span className={`w-7 h-7 rounded-xl text-xs font-black flex items-center justify-center border shadow-sm ${bayBadge}`}>
+                            <span className={`w-8 h-8 rounded-xl text-xs font-black flex items-center justify-center border shadow-sm ${bayBadge}`}>
                               {letter}
                             </span>
-                            <span className="text-[11px] font-black text-slate-400">
-                              محطة رقم {optIdx + 1}
-                            </span>
+                            {!isStackedLayout && (
+                              <span className="text-[11px] font-black text-slate-400">
+                                محطة رقم {optIdx + 1}
+                              </span>
+                            )}
                           </div>
 
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/60 border border-slate-800 text-[10px] font-bold text-slate-300">
-                            <span>🅿️ موقف</span>
-                          </div>
+                          {!isStackedLayout && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/60 border border-slate-800 text-[10px] font-bold text-slate-300">
+                              <span>🅿️ موقف</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Optional Answer Image - Balanced & Layout Preserving */}
@@ -903,12 +923,12 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                           </div>
                         )}
 
-                        <p className="text-sm sm:text-base font-bold text-right leading-relaxed flex-1 font-['Cairo']">
+                        <p className={`text-sm sm:text-base font-bold text-right leading-relaxed flex-1 font-['Cairo'] ${isStackedLayout ? '' : 'mt-2'}`}>
                           {option}
                         </p>
 
-                        {isSelected && (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                        {isSelected && !isStackedLayout && (
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between w-full">
                             {mode === 'post' && isImmediate ? (
                               optIdx === currentQ.correctIndex ? (
                                 <span className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
@@ -966,43 +986,47 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                       <div
                         key={optIdx}
                         onClick={() => handleSelectBox(optIdx)}
-                        className={`p-4 sm:p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between ${
-                          isStackedLayout ? 'min-h-[110px]' : 'min-h-[140px]'
-                        } relative overflow-hidden group ${boxCardStyle}`}
+                        className={`p-4 sm:p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer relative overflow-hidden flex ${
+                          isStackedLayout ? 'flex-row items-center gap-4 min-h-[72px]' : 'flex-col justify-between min-h-[140px]'
+                        } group ${boxCardStyle}`}
                       >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-1 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-300 text-xs font-black">
-                            📦 الصندوق رقم {boxNumber}
-                          </span>
+                        <div className={`flex items-center gap-3 ${isStackedLayout ? 'shrink-0' : 'justify-between mb-3 w-full'}`}>
+                          <div className="flex items-center gap-2">
+                            <span className="px-3 py-1.5 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-300 text-xs font-black">
+                              {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || boxNumber}
+                            </span>
+                          </div>
+
+                          {!isStackedLayout && (
+                            <div className="shrink-0">
+                              <MysteryBoxGraphic isSelected={isSelected} index={optIdx} />
+                            </div>
+                          )}
                         </div>
 
-                        <div className="shrink-0">
-                          <MysteryBoxGraphic isSelected={isSelected} index={optIdx} />
-                        </div>
-                      </div>
+                        {/* Optional Answer Image - Balanced & Layout Preserving */}
+                        {optImage && (
+                          <div className="w-full h-32 sm:h-40 mb-3 rounded-xl overflow-hidden border border-amber-500/40 bg-black/70 p-2 flex justify-center items-center shadow-inner group-hover:border-amber-400/70 transition-colors">
+                            <img
+                              src={optImage}
+                              alt={`صورة الخيار رقم ${boxNumber}`}
+                              className="max-h-full max-w-full object-contain rounded-lg hover:scale-105 transition-transform"
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
 
-                      {/* Optional Answer Image - Balanced & Layout Preserving */}
-                      {optImage && (
-                        <div className="w-full h-32 sm:h-40 mb-3 rounded-xl overflow-hidden border border-amber-500/40 bg-black/70 p-2 flex justify-center items-center shadow-inner group-hover:border-amber-400/70 transition-colors">
-                          <img
-                            src={optImage}
-                            alt={`صورة الخيار رقم ${boxNumber}`}
-                            className="max-h-full max-w-full object-contain rounded-lg hover:scale-105 transition-transform"
-                            loading="lazy"
-                          />
+                        {/* Answer text displayed clearly */}
+                        <div className={`flex-1 ${isStackedLayout ? '' : 'p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-right'}`}>
+                          {!isStackedLayout && (
+                            <span className="text-[11px] font-bold text-amber-300/80 block mb-1">
+                              الإجابة داخل الصندوق:
+                            </span>
+                          )}
+                          <p className="text-sm sm:text-base font-black text-white leading-relaxed font-['Cairo']">
+                            {option}
+                          </p>
                         </div>
-                      )}
-
-                      {/* Answer text displayed clearly on the box */}
-                      <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-right">
-                        <span className="text-[11px] font-bold text-amber-300/80 block mb-1">
-                          الإجابة داخل الصندوق:
-                        </span>
-                        <p className="text-sm font-black text-white leading-relaxed">
-                          {option}
-                        </p>
-                      </div>
 
                       {isSelected && (
                         <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-bold">
