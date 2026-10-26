@@ -140,7 +140,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ username, onNaviga
 
             <div>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">
-                <span className="px-3 py-0.5 rounded-full bg-blue-950 border border-blue-500/50 text-blue-300 text-xs font-bold font-mono">
+                <span className="px-3 py-0.5 rounded-full bg-blue-950 border border-blue-500/50 text-blue-300 text-xs font-bold ">
                   {username}
                 </span>
                 {groupMeta && (
@@ -150,7 +150,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ username, onNaviga
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-black text-white font-['Tajawal'] font-mono">
+              <h1 className="text-2xl sm:text-3xl font-black text-white font-['Tajawal'] ">
                 {username}
               </h1>
               <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-lg">
@@ -226,7 +226,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ username, onNaviga
               <Trophy className="w-4 h-4 text-[#ffd700]" />
               <span>تقدمك للمستوى التالي (L{Math.min(10, progress.currentLevel + 1)}):</span>
             </span>
-            <span className="text-xs font-mono font-bold text-amber-300">
+            <span className="text-xs  font-bold text-amber-300">
               {levelProgressPercentage}% مكتمل
             </span>
           </div>
@@ -236,7 +236,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ username, onNaviga
               style={{ width: `${levelProgressPercentage}%` }}
             />
           </div>
-          <div className="flex justify-between items-center text-[10px] text-slate-400 mt-1.5 font-mono">
+          <div className="flex justify-between items-center text-[10px] text-slate-400 mt-1.5 ">
             <span>المستوى الحالي: L{progress.currentLevel}</span>
             <span>المستوى التالي: L{Math.min(10, progress.currentLevel + 1)}</span>
           </div>
@@ -280,7 +280,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ username, onNaviga
                   >
                     {lvl.badgeName}
                   </span>
-                  <span className="text-[10px] text-slate-400 mt-1 font-mono">
+                  <span className="text-[10px] text-slate-400 mt-1 ">
                     L{lvl.levelNumber}: {lvl.shortTitle}
                   </span>
                   <span

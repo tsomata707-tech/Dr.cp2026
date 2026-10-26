@@ -213,7 +213,7 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
                     {activeToast.role === 'admin' ? '👑 مشرف المنظومة (Admin)' : activeToast.sender}
                   </span>
                 </div>
-                <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
+                <span className="text-[10px] text-slate-400  block mt-0.5">
                   {activeToast.timestamp}
                 </span>
               </div>
@@ -283,7 +283,7 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
                           {n.groupCode}
                         </span>
                       </span>
-                      <span className="text-slate-500 font-mono text-[9px]">{n.timestamp}</span>
+                      <span className="text-slate-500  text-[9px]">{n.timestamp}</span>
                     </div>
                     <p className="text-xs text-slate-300 line-clamp-1">{n.text}</p>
                   </div>

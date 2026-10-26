@@ -446,8 +446,8 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
               <span>جدول العبارات والخطوات</span>
             </div>
             <span className="text-slate-400 text-xs">
-              تم توصيل: <strong className="text-amber-400 font-mono">{placedCount}</strong> من{' '}
-              <strong className="text-white font-mono">{defaultPairs.length}</strong>
+              تم توصيل: <strong className="text-amber-400 ">{placedCount}</strong> من{' '}
+              <strong className="text-white ">{defaultPairs.length}</strong>
             </span>
           </div>
 
@@ -479,7 +479,7 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
                     >
                       {/* Row Index */}
                       <td className="p-3 align-middle text-center">
-                        <span className="w-7 h-7 rounded-xl bg-slate-800 border border-slate-700 text-amber-300 font-mono font-bold text-xs flex items-center justify-center mx-auto">
+                        <span className="w-7 h-7 rounded-xl bg-slate-800 border border-slate-700 text-amber-300  font-bold text-xs flex items-center justify-center mx-auto">
                           {rowIdx + 1}
                         </span>
                       </td>
@@ -654,7 +654,7 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
           <div className="pt-3 border-t border-slate-800 flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
             <span className="text-xs text-slate-300 font-bold">النتيجة المقدرة لسؤال التوصيل:</span>
             <div className="flex items-center gap-2">
-              <span className={`px-2.5 py-0.5 rounded-lg font-mono font-black text-xs border ${
+              <span className={`px-2.5 py-0.5 rounded-lg  font-black text-xs border ${
                 matchingScore === 1
                   ? 'bg-emerald-500 text-slate-950 border-emerald-300'
                   : 'bg-slate-900 text-amber-300 border-slate-700'
@@ -666,7 +666,7 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
         ) : (
           <div className="pt-3 border-t border-slate-800 flex items-center justify-between px-4 py-2 rounded-xl bg-slate-950/60 text-xs text-slate-400">
             <span>سؤال التوصيل التفاعلي</span>
-            <span className="font-mono text-emerald-400 font-bold">
+            <span className=" text-emerald-400 font-bold">
               {placedCount === defaultPairs.length ? 'اكتمل التوصيل ✓' : `${placedCount}/${defaultPairs.length} مكتمل`}
             </span>
           </div>

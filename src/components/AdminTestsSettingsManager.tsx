@@ -1076,7 +1076,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               <span>🏎️ الاختبار القبلي (Pre-Test)</span>
             </span>
             <span
-              className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold ${
+              className={`px-2.5 py-0.5 rounded-full text-xs  font-bold ${
                 activeTab === 'pretest' ? 'bg-slate-950 text-[#ffd700]' : 'bg-slate-900 text-slate-300'
               }`}
             >
@@ -1108,7 +1108,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               <span>🎯 الاختبار البعدي (Post-Test)</span>
             </span>
             <span
-              className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold ${
+              className={`px-2.5 py-0.5 rounded-full text-xs  font-bold ${
                 activeTab === 'posttest' ? 'bg-slate-950 text-white' : 'bg-slate-900 text-slate-300'
               }`}
             >
@@ -1140,7 +1140,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               <span>🎮 أسئلة الـ 9 مراحل (ليفلات / مستويات)</span>
             </span>
             <span
-              className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold ${
+              className={`px-2.5 py-0.5 rounded-full text-xs  font-bold ${
                 activeTab === 'levels' ? 'bg-slate-950 text-cyan-300' : 'bg-slate-900 text-slate-300'
               }`}
             >
@@ -1760,7 +1760,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                             title="تحديد هذا الخيار كإجابة صحيحة"
                           />
                         )}
-                        <span className="w-6 h-6 rounded-lg bg-slate-900 text-slate-300 text-xs font-mono font-bold flex items-center justify-center shrink-0">
+                        <span className="w-6 h-6 rounded-lg bg-slate-900 text-slate-300 text-xs  font-bold flex items-center justify-center shrink-0">
                           {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][idx] || idx + 1}
                         </span>
                         <input
@@ -1868,7 +1868,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   max="200"
                   value={formPoints}
                   onChange={(e) => setFormPoints(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[#ffd700] text-sm font-black font-mono outline-none text-center"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[#ffd700] text-sm font-black  outline-none text-center"
                 />
               </div>
 
@@ -2126,7 +2126,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
       {/* Top Header of the Question Card */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
         <div className="flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-300 font-mono font-black text-xs flex items-center justify-center shrink-0">
+          <span className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-300  font-black text-xs flex items-center justify-center shrink-0">
             #{index}
           </span>
           {levelBadge && (
@@ -2134,7 +2134,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
               {levelBadge}
             </span>
           )}
-          <span className="px-2.5 py-0.5 rounded-lg bg-amber-950/70 border border-amber-500/40 text-amber-300 font-mono text-[11px] font-bold">
+          <span className="px-2.5 py-0.5 rounded-lg bg-amber-950/70 border border-amber-500/40 text-amber-300  text-[11px] font-bold">
             +{question.points} XP
           </span>
           {question.imageUrl && (
@@ -2405,7 +2405,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                         className="w-4 h-4 text-emerald-500 accent-emerald-500 cursor-pointer shrink-0"
                         title="تحديد هذا الخيار كإجابة صحيحة"
                       />
-                      <span className="w-6 h-6 rounded-lg bg-slate-900 text-slate-300 text-xs font-mono font-bold flex items-center justify-center shrink-0">
+                      <span className="w-6 h-6 rounded-lg bg-slate-900 text-slate-300 text-xs  font-bold flex items-center justify-center shrink-0">
                         {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || optIdx + 1}
                       </span>
                       <input
@@ -2511,7 +2511,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                 type="number"
                 value={draftPoints}
                 onChange={(e) => setDraftPoints(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-amber-300 font-mono font-bold text-center text-xs outline-none"
+                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-amber-300  font-bold text-center text-xs outline-none"
               />
             </div>
             <div className="sm:col-span-3">
@@ -2613,7 +2613,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                   <div className="flex items-center justify-between gap-2 w-full">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`w-5 h-5 rounded-md text-[10px] font-mono font-black flex items-center justify-center shrink-0 ${
+                        className={`w-5 h-5 rounded-md text-[10px]  font-black flex items-center justify-center shrink-0 ${
                           isCorrect ? 'bg-emerald-500 text-slate-950' : 'bg-slate-900 text-slate-400'
                         }`}
                       >

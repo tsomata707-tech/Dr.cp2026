@@ -56,7 +56,7 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
           </span>
 
           {groupMeta && (
-            <span className="px-3.5 py-1.5 rounded-full bg-purple-950/80 border border-purple-500/60 text-purple-200 text-xs font-bold shadow-[0_0_15px_rgba(168,85,247,0.25)]">
+            <span className="px-3.5 py-1.5 rounded-full bg-slate-200 border border-slate-300 text-slate-900 text-xs font-black font-['Cairo'] shadow-sm">
               المجموعة {groupMeta.code}: {groupMeta.name}
             </span>
           )}
@@ -73,7 +73,7 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
         {/* Welcome Message + Username Only (In Large Font) */}
         <div className="mb-6">
           <h2 className="text-3xl sm:text-4xl font-black text-white font-['Tajawal'] tracking-tight">
-            مرحباً بك <span className="text-[#ffd700] font-mono">{username}</span>
+            مرحباً بك <span className="text-[#ffd700] font-['Cairo'] font-bold">{username}</span>
           </h2>
         </div>
 

@@ -428,7 +428,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                       : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 border-slate-700/80 hover:border-slate-500'
                   }`}
                 >
-                  <span className="text-base sm:text-lg font-mono font-bold">L{lvlNum}</span>
+                  <span className="text-base sm:text-lg  font-bold">L{lvlNum}</span>
                   <span className="text-[10px] font-normal truncate max-w-full px-1">
                     المستوى {lvlNum}
                   </span>
@@ -524,7 +524,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
               rows={6}
               value={instructionsDraft}
               onChange={(e) => setInstructionsDraft(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-cyan-400 text-white text-xs leading-relaxed focus:outline-none transition-colors font-mono"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-cyan-400 text-white text-xs leading-relaxed focus:outline-none transition-colors "
               placeholder="1. تصفح الفيديوهات والصور التوضيحية...\n2. أجب عن أسئلة المستوى التفاعلية...\n3. ارفع نشاطك الخاص بأسفل الصفحة واضغط إنهاء المستوى..."
             />
           </div>
@@ -558,7 +558,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="px-3 py-1 rounded-full bg-purple-950/80 border border-purple-500/50 text-purple-300 text-xs font-bold font-mono">
+            <span className="px-3 py-1 rounded-full bg-purple-950/80 border border-purple-500/50 text-purple-300 text-xs font-bold ">
               {currentVideos.length} / 5 فيديوهات
             </span>
             <button
@@ -598,7 +598,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                     <Video className="w-3.5 h-3.5 text-purple-400" />
                     <span>فيديو {idx + 1}</span>
                   </span>
-                  <span className="text-[10px] text-slate-500 font-mono">
+                  <span className="text-[10px] text-slate-500 ">
                     {vid.format || 'MP4'}
                   </span>
                 </div>
@@ -689,7 +689,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-bold font-mono">
+            <span className="px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-bold ">
               {currentImages.length} / 5 ملفات
             </span>
             <button
@@ -733,7 +733,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                     )}
                     <span>{img.type === 'pdf' ? `مستند PDF (${idx + 1})` : `صورة ${idx + 1}`}</span>
                   </span>
-                  <span className="text-[10px] text-slate-500 font-mono uppercase">
+                  <span className="text-[10px] text-slate-500  uppercase">
                     {img.type === 'pdf' ? 'PDF' : img.format?.split('/')[1] || 'IMG'}
                   </span>
                 </div>
@@ -839,7 +839,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-xl bg-amber-500/10 border border-amber-400/40 text-amber-300 font-mono font-bold text-xs flex items-center justify-center shrink-0">
+                  <span className="w-7 h-7 rounded-xl bg-amber-500/10 border border-amber-400/40 text-amber-300  font-bold text-xs flex items-center justify-center shrink-0">
                     {qIdx + 1}
                   </span>
                   <h4 className="text-sm font-bold text-white">
@@ -983,7 +983,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                     setEditingQuestion({ ...editingQuestion, imageUrl: e.target.value })
                   }
                   placeholder="https://... أو رفع ملف"
-                  className="flex-1 px-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-400 font-mono"
+                  className="flex-1 px-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-400 "
                 />
                 <label className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold cursor-pointer transition flex items-center gap-1 shrink-0">
                   <span>📁 رفع ملف</span>

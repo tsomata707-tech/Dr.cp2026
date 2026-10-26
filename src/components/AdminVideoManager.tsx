@@ -414,7 +414,7 @@ export const AdminVideoManager: React.FC = () => {
               <span className="px-3 py-1 rounded-full bg-blue-950/80 border border-blue-400 text-blue-300 text-xs font-bold font-['Cairo']">
                 فيديو المرحلة: مقدمة في إنتاج وتصميم الوسائط المتعددة
               </span>
-              <span className="px-3 py-1 rounded-full bg-purple-950/80 border border-purple-400 text-purple-300 text-xs font-bold font-mono">
+              <span className="px-3 py-1 rounded-full bg-purple-950/80 border border-purple-400 text-purple-300 text-xs font-bold">
                 {level1Videos.length} من 5 أجزاء مرفوعة
               </span>
             </div>
@@ -494,7 +494,7 @@ export const AdminVideoManager: React.FC = () => {
                     <span className="font-bold text-amber-300 block truncate">
                       {v.partTitle || v.title}
                     </span>
-                    <span className="text-[10px] font-mono text-slate-400">
+                    <span className="text-[10px] font-bold text-slate-400">
                       ⏱️ {v.duration}
                     </span>
                   </div>
@@ -572,7 +572,7 @@ export const AdminVideoManager: React.FC = () => {
                         <div>
                           <div className="flex items-center gap-1.5">
                             <span className="leading-snug">{v.title}</span>
-                            <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-mono font-bold">
+                            <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-bold">
                               {v.partNumber ? `الجزء ${v.partNumber}` : 'الجزء 1'}
                             </span>
                           </div>
@@ -608,7 +608,7 @@ export const AdminVideoManager: React.FC = () => {
                     </td>
 
                     {/* Duration */}
-                    <td className="py-4 pr-3 font-mono text-slate-300 text-xs">
+                    <td className="py-4 pr-3 font-bold text-slate-300 text-xs">
                       {v.duration || '05:00'}
                     </td>
 
@@ -749,7 +749,7 @@ export const AdminVideoManager: React.FC = () => {
                     </div>
 
                     {fileName ? (
-                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs font-bold font-mono">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs font-bold">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                         <span>الملف المختار: {fileName}</span>
                       </div>
@@ -789,7 +789,7 @@ export const AdminVideoManager: React.FC = () => {
                       value={videoUrl}
                       onChange={(e) => handleUrlChange(e.target.value)}
                       placeholder="https://www.youtube.com/watch?v=... أو رابط مباشر"
-                      className="w-full h-12 pr-11 pl-4 rounded-xl bg-[#070914] text-white text-xs sm:text-sm border-2 border-slate-700 focus:border-blue-500 focus:outline-none font-mono"
+                      className="w-full h-12 pr-11 pl-4 rounded-xl bg-[#070914] text-white text-xs sm:text-sm border-2 border-slate-700 focus:border-blue-500 focus:outline-none"
                     />
                     <div className="absolute top-1/2 -translate-y-1/2 right-3.5 text-slate-400 pointer-events-none">
                       <LinkIcon className="w-4 h-4" />
@@ -892,7 +892,7 @@ export const AdminVideoManager: React.FC = () => {
                   </div>
                 </div>
 
-                <span className="font-mono text-xs font-bold text-amber-300 bg-amber-950/80 border border-amber-500/40 px-3 py-1.5 rounded-xl shadow-sm">
+                <span className="text-xs font-bold text-amber-300 bg-amber-950/80 border border-amber-500/40 px-3 py-1.5 rounded-xl shadow-sm">
                   {actualDuration}
                 </span>
               </div>
@@ -905,7 +905,7 @@ export const AdminVideoManager: React.FC = () => {
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>معاينة الجزء الفورية قبل النشر:</span>
                     </span>
-                    <span className="font-mono text-[11px]">{actualDuration}</span>
+                    <span className="font-bold text-[11px]">{actualDuration}</span>
                   </div>
 
                   <div className="relative aspect-video max-h-44 rounded-xl overflow-hidden bg-black border border-slate-700 mx-auto">
@@ -963,7 +963,7 @@ export const AdminVideoManager: React.FC = () => {
           <div className="w-full max-w-4xl rounded-3xl bg-[#090b1c] border-2 border-blue-500/70 p-5 sm:p-7 text-right shadow-2xl relative">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
               <div>
-                <span className="text-xs text-amber-300 font-bold font-mono">
+                <span className="text-xs text-amber-300 font-bold">
                   {previewVideo.targetSlotName}
                 </span>
                 <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-0.5">

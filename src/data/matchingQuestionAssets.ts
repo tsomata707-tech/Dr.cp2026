@@ -147,7 +147,7 @@ export const MATCHING_ASSETS_Q8 = {
       <!-- Shortcut badge -->
       <g transform="translate(225, 45)">
         <rect width="70" height="34" rx="8" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
-        <text x="12" y="22" fill="#34d399" font-family="monospace" font-size="13" font-weight="bold">Ctrl+N</text>
+        <text x="12" y="22" fill="#34d399" font-family="sans-serif" font-size="13" font-weight="bold">Ctrl+N</text>
       </g>
       <rect x="225" y="90" width="70" height="60" rx="8" fill="#042f2e" stroke="#059669"/>
       <text x="235" y="115" fill="#a7f3d0" font-family="sans-serif" font-size="11" font-weight="bold">مشروع</text>
@@ -175,7 +175,7 @@ export const MATCHING_ASSETS_Q8 = {
       <!-- Shortcut badge -->
       <g transform="translate(195, 45)">
         <rect width="90" height="34" rx="8" fill="#1e293b" stroke="#60a5fa" stroke-width="1.5"/>
-        <text x="18" y="22" fill="#93c5fd" font-family="monospace" font-size="13" font-weight="bold">Ctrl+O</text>
+        <text x="18" y="22" fill="#93c5fd" font-family="sans-serif" font-size="13" font-weight="bold">Ctrl+O</text>
       </g>
       <g transform="translate(195, 90)">
         <rect width="90" height="60" rx="8" fill="#172554" stroke="#2563eb"/>
@@ -205,7 +205,7 @@ export const MATCHING_ASSETS_Q8 = {
       <!-- Shortcut badge -->
       <g transform="translate(190, 45)">
         <rect width="95" height="34" rx="8" fill="#1e1138" stroke="#c084fc" stroke-width="1.5"/>
-        <text x="22" y="22" fill="#e9d5ff" font-family="monospace" font-size="13" font-weight="bold">Ctrl+S</text>
+        <text x="22" y="22" fill="#e9d5ff" font-family="sans-serif" font-size="13" font-weight="bold">Ctrl+S</text>
       </g>
       <g transform="translate(190, 90)">
         <rect width="95" height="60" rx="8" fill="#2e1065" stroke="#7e22ce"/>
@@ -239,7 +239,7 @@ export const MATCHING_ASSETS_Q8 = {
       <!-- Shortcut badge -->
       <g transform="translate(190, 45)">
         <rect width="95" height="34" rx="8" fill="#1c0f0a" stroke="#fb923c" stroke-width="1.5"/>
-        <text x="32" y="22" fill="#fed7aa" font-family="monospace" font-size="13" font-weight="bold">F11</text>
+        <text x="32" y="22" fill="#fed7aa" font-family="sans-serif" font-size="13" font-weight="bold">F11</text>
       </g>
       <g transform="translate(190, 90)">
         <rect width="95" height="60" rx="8" fill="#431407" stroke="#ea580c"/>

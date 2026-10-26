@@ -192,17 +192,17 @@ export default function App() {
       {/* Footer Note */}
       <footer className="relative z-10 py-5 text-center border-t border-slate-900/80 backdrop-blur-sm bg-black/40">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-center">
-          <div className="inline-flex flex-wrap items-center justify-center gap-2.5 px-6 py-2.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 text-sm sm:text-base font-bold text-slate-300 shadow-md">
+          <div className="inline-flex flex-wrap items-center justify-center gap-2.5 px-6 py-2.5 rounded-2xl bg-slate-200 border border-slate-300 text-sm sm:text-base font-black text-slate-900 font-['Cairo'] shadow-md">
             <span>حقوق التصميم والنشر</span>
-            <span className="text-slate-600 hidden sm:inline">:</span>
+            <span className="text-slate-500 hidden sm:inline">:</span>
             <a
               href="https://mail.google.com/mail/?view=cm&fs=1&to=tsomata.707@gmail.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 underline underline-offset-4 font-mono font-bold transition-all hover:scale-105 cursor-pointer"
+              className="inline-flex items-center gap-2 text-slate-900 hover:text-black underline underline-offset-4 font-black font-['Cairo'] transition-all hover:scale-105 cursor-pointer"
               title="إرسال رسالة إلى tsomata.707@gmail.com عبر بريد Gmail"
             >
-              <Mail className="w-4.5 h-4.5 text-amber-400 shrink-0" />
+              <Mail className="w-4.5 h-4.5 text-slate-900 shrink-0" />
               <span>tsomata.707@gmail.com</span>
             </a>
           </div>

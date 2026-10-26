@@ -735,10 +735,10 @@ export const AdminStudentsAuditManager: React.FC = () => {
                   key={grp}
                   type="button"
                   onClick={() => handleExportGroupSheet(grp)}
-                  className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs border border-slate-700 transition cursor-pointer flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-900 font-black font-['Cairo'] text-xs border border-slate-300 transition cursor-pointer flex items-center gap-1.5 shadow-sm"
                   title={`تصدير شيت مجموعة ${grp} كاملة (15 طالب)`}
                 >
-                  <Download className="w-3.5 h-3.5 text-amber-400" />
+                  <Download className="w-3.5 h-3.5 text-slate-800" />
                   <span>شيت {grp}</span>
                 </button>
               ))}
@@ -790,7 +790,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
         <div className="p-4 rounded-2xl bg-[#090b17] border border-slate-800 flex items-center justify-between">
           <div>
             <span className="text-xs text-slate-400 font-bold block mb-1">الطلاب المسجلين</span>
-            <span className="text-2xl font-black text-white font-mono">{totalCount}</span>
+            <span className="text-2xl font-black text-white ">{totalCount}</span>
             <span className="text-[11px] text-slate-500 block">4 مجموعات بحثية</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center font-bold">
@@ -801,7 +801,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
         <div className="p-4 rounded-2xl bg-[#090b17] border border-emerald-500/30 flex items-center justify-between">
           <div>
             <span className="text-xs text-emerald-300 font-bold block mb-1">الدخول الفعلي</span>
-            <span className="text-2xl font-black text-emerald-400 font-mono">{activeLoginsCount}</span>
+            <span className="text-2xl font-black text-emerald-400 ">{activeLoginsCount}</span>
             <span className="text-[11px] text-slate-400 block">نسبة {Math.round((activeLoginsCount / totalCount) * 100)}%</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-950/60 text-emerald-400 flex items-center justify-center font-bold border border-emerald-500/30">
@@ -812,7 +812,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
         <div className="p-4 rounded-2xl bg-[#090b17] border border-amber-500/30 flex items-center justify-between">
           <div>
             <span className="text-xs text-amber-300 font-bold block mb-1">إنجاز القبلي</span>
-            <span className="text-2xl font-black text-amber-400 font-mono">{preTestDoneCount}</span>
+            <span className="text-2xl font-black text-amber-400 ">{preTestDoneCount}</span>
             <span className="text-[11px] text-slate-400 block">نسبة {Math.round((preTestDoneCount / totalCount) * 100)}%</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-950/60 text-amber-400 flex items-center justify-center font-bold border border-amber-500/30">
@@ -823,7 +823,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
         <div className="p-4 rounded-2xl bg-[#090b17] border border-purple-500/30 flex items-center justify-between">
           <div>
             <span className="text-xs text-purple-300 font-bold block mb-1">إنجاز البعدي</span>
-            <span className="text-2xl font-black text-purple-400 font-mono">{postTestDoneCount}</span>
+            <span className="text-2xl font-black text-purple-400 ">{postTestDoneCount}</span>
             <span className="text-[11px] text-slate-400 block">نسبة {Math.round((postTestDoneCount / totalCount) * 100)}%</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-purple-950/60 text-purple-400 flex items-center justify-center font-bold border border-purple-500/30">
@@ -901,18 +901,18 @@ export const AdminStudentsAuditManager: React.FC = () => {
                   className="hover:bg-slate-900/60 transition-colors"
                 >
                   {/* Index */}
-                  <td className="p-3.5 text-center text-slate-500 font-mono font-bold">
+                  <td className="p-3.5 text-center text-slate-500  font-bold">
                     {idx + 1}
                   </td>
 
                   {/* Username & Avatar */}
                   <td className="p-3.5">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-amber-300 font-mono text-xs shrink-0">
+                      <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-amber-300  text-xs shrink-0">
                         {s.username.split('_')[0]}
                       </div>
                       <div>
-                        <span className="font-mono font-black text-white text-xs block">
+                        <span className=" font-black text-white text-xs block">
                           {s.username}
                         </span>
                         <span className="text-[10px] text-slate-400">
@@ -925,15 +925,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
                   {/* Group Code */}
                   <td className="p-3.5 text-center">
                     <span
-                      className={`inline-block px-2.5 py-0.5 rounded-lg text-[11px] font-black font-mono border ${
-                        s.groupCode === 'G1'
-                          ? 'bg-amber-950/60 border-amber-500/50 text-amber-300'
-                          : s.groupCode === 'G2'
-                          ? 'bg-purple-950/60 border-purple-500/50 text-purple-300'
-                          : s.groupCode === 'G3'
-                          ? 'bg-blue-950/60 border-blue-500/50 text-blue-300'
-                          : 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
-                      }`}
+                      className="inline-block px-2.5 py-1 rounded-lg text-[11px] font-black font-['Cairo'] bg-slate-200 border border-slate-300 text-slate-900 shadow-xs"
                     >
                       {s.groupCode}
                     </span>
@@ -947,7 +939,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
                           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                           <span>دخول فعلي ({s.totalLogins} مرات)</span>
                         </div>
-                        <div className="text-[10px] text-slate-400 font-mono">
+                        <div className="text-[10px] text-slate-400 ">
                           آخر دخول: {s.lastLogin}
                         </div>
                         <div className="text-[10px] text-slate-500 flex items-center gap-1">
@@ -970,13 +962,13 @@ export const AdminStudentsAuditManager: React.FC = () => {
                   <td className="p-3.5 text-center">
                     {s.preTestCompleted ? (
                       <div className="inline-block p-1.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-center">
-                        <div className="font-mono font-black text-amber-300 text-xs">
+                        <div className=" font-black text-amber-300 text-xs">
                           {s.preTestScore} / {s.preTestMaxScore} ({s.preTestPercentage}%)
                         </div>
                         <div className="text-[10px] font-bold text-emerald-400">
                           {s.preTestPassed ? '✓ مجتاز' : 'لم يجتز'}
                         </div>
-                        <div className="text-[9px] text-slate-400 font-mono">
+                        <div className="text-[9px] text-slate-400 ">
                           {s.preTestDate.split(' ')[0]}
                         </div>
                       </div>
@@ -988,10 +980,10 @@ export const AdminStudentsAuditManager: React.FC = () => {
                   {/* 10 Stages */}
                   <td className="p-3.5 text-center">
                     <div className="inline-block p-1.5 rounded-xl bg-blue-950/40 border border-blue-500/40 text-center">
-                      <div className="font-mono font-black text-blue-300 text-xs">
+                      <div className=" font-black text-blue-300 text-xs">
                         {s.completedLevelsCount} / 10 مراحل
                       </div>
-                      <div className="text-[10px] font-mono text-cyan-300 font-bold">
+                      <div className="text-[10px]  text-cyan-300 font-bold">
                         {s.totalLevelsScore} XP
                       </div>
                     </div>
@@ -1001,13 +993,13 @@ export const AdminStudentsAuditManager: React.FC = () => {
                   <td className="p-3.5 text-center">
                     {s.postTestCompleted ? (
                       <div className="inline-block p-1.5 rounded-xl bg-purple-950/40 border border-purple-500/40 text-center">
-                        <div className="font-mono font-black text-purple-300 text-xs">
+                        <div className=" font-black text-purple-300 text-xs">
                           {s.postTestScore} / {s.postTestMaxScore} ({s.postTestPercentage}%)
                         </div>
                         <div className="text-[10px] font-bold text-emerald-400">
                           {s.postTestPassed ? '✓ مجتاز' : 'لم يجتز'}
                         </div>
-                        <div className="text-[9px] text-slate-400 font-mono">
+                        <div className="text-[9px] text-slate-400 ">
                           {s.postTestDate.split(' ')[0]}
                         </div>
                       </div>
@@ -1082,19 +1074,19 @@ export const AdminStudentsAuditManager: React.FC = () => {
             <div className="grid grid-cols-3 gap-2.5 text-center">
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
                 <span className="text-[10px] text-amber-300 font-bold block">القبلي</span>
-                <span className="text-xs font-black text-white font-mono block mt-0.5">
+                <span className="text-xs font-black text-white  block mt-0.5">
                   {inspectStudent.preTestCompleted ? `${inspectStudent.preTestScore}/${inspectStudent.preTestMaxScore || 53}` : 'لم يتم'}
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
                 <span className="text-[10px] text-blue-300 font-bold block">المراحل</span>
-                <span className="text-xs font-black text-white font-mono block mt-0.5">
+                <span className="text-xs font-black text-white  block mt-0.5">
                   {inspectStudent.completedLevelsCount} / 10
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
                 <span className="text-[10px] text-purple-300 font-bold block">البعدي</span>
-                <span className="text-xs font-black text-white font-mono block mt-0.5">
+                <span className="text-xs font-black text-white  block mt-0.5">
                   {inspectStudent.postTestCompleted ? `${inspectStudent.postTestScore}/${inspectStudent.postTestMaxScore || 53}` : 'لم يتم'}
                 </span>
               </div>
@@ -1108,7 +1100,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
                     <Award className="w-4 h-4 text-purple-400" />
                     <span>نتائج أسئلة الاختبار البعدي (0/1 عند الخطأ، 1/1 عند الصواب):</span>
                   </h4>
-                  <span className="text-[11px] font-mono font-black text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded-lg border border-purple-500/40">
+                  <span className="text-[11px]  font-black text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded-lg border border-purple-500/40">
                     {inspectStudent.postTestScore} / {inspectStudent.postTestMaxScore || 53}
                   </span>
                 </div>
@@ -1119,7 +1111,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
                     return (
                       <div
                         key={q.id || qIdx}
-                        className={`p-1 rounded-lg text-center border font-mono text-[10px] ${
+                        className={`p-1 rounded-lg text-center border  text-[10px] ${
                           isRight
                             ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300 font-bold'
                             : 'bg-rose-950/80 border-rose-500/60 text-rose-300 font-bold'
@@ -1150,11 +1142,11 @@ export const AdminStudentsAuditManager: React.FC = () => {
                       className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs"
                     >
                       <div className="flex items-center gap-2.5">
-                        <span className="w-6 h-6 rounded-lg bg-emerald-950/80 text-emerald-300 font-mono font-bold flex items-center justify-center text-[10px] border border-emerald-500/30">
+                        <span className="w-6 h-6 rounded-lg bg-emerald-950/80 text-emerald-300  font-bold flex items-center justify-center text-[10px] border border-emerald-500/30">
                           {sIdx + 1}
                         </span>
                         <div>
-                          <span className="font-mono text-white font-bold block text-xs">
+                          <span className=" text-white font-bold block text-xs">
                             {sess.timestamp}
                           </span>
                           <span className="text-[10px] text-slate-400">{sess.device}</span>

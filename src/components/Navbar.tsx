@@ -109,8 +109,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   مشرف (قراءة فقط 👁️)
                 </span>
               ) : groupMeta ? (
-                <span className="px-2 py-0.5 rounded-md bg-cyan-100 border border-cyan-400 text-cyan-900 text-[11px] font-bold">
-                  {groupMeta.name}
+                <span className="px-2.5 py-0.5 rounded-md bg-slate-200 border border-slate-300 text-slate-900 text-[11px] font-black font-['Cairo']">
+                  المجموعة {groupMeta.code}: {groupMeta.name}
                 </span>
               ) : null}
             </div>
@@ -123,10 +123,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent('cp_navigate_to_student_home'))}
               id="btn-navbar-student-home"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-2 border-amber-400 bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-black transition-all cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-2 border-slate-300 bg-slate-200 hover:bg-slate-300 text-slate-900 text-xs font-black font-['Cairo'] transition-all cursor-pointer shadow-sm"
               title="العودة للصفحة الخاصة بالطالب (الرئيسية)"
             >
-              <Home className="w-3.5 h-3.5 text-amber-700" />
+              <Home className="w-3.5 h-3.5 text-slate-900" />
               <span className="hidden sm:inline">العودة للرئيسية 🏠</span>
               <span className="sm:hidden">🏠</span>
             </button>

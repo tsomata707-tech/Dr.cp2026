@@ -201,7 +201,7 @@ export const GameLevelUnlockLoader: React.FC<GameLevelUnlockLoaderProps> = ({
               <Gamepad2 className="w-4 h-4 text-[#ffd700] animate-bounce" />
               <span>تحميل المرحلة {levelNumber}</span>
             </span>
-            <span className="text-xs text-amber-300 font-mono font-bold">
+            <span className="text-xs text-amber-300  font-bold">
               {badgeEmoji}
             </span>
           </div>
@@ -345,7 +345,7 @@ export const GameLevelUnlockLoader: React.FC<GameLevelUnlockLoaderProps> = ({
           </div>
 
           {/* Numbers 1% to 100% on the sides */}
-          <div className="flex items-center justify-between text-xs font-mono font-black text-slate-400 mt-2 px-1">
+          <div className="flex items-center justify-between text-xs  font-black text-slate-400 mt-2 px-1">
             <span className="text-slate-500">1%</span>
             <div className="flex items-center gap-1">
               <Zap className="w-3.5 h-3.5 text-[#ffd700] animate-bounce" />

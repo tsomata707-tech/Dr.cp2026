@@ -100,7 +100,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
 
           <div className="flex items-center gap-2">
             {currentVideo.duration && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-950/70 border border-amber-500/50 text-amber-300 text-xs font-bold font-mono">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-950/70 border border-amber-500/50 text-amber-300 text-xs font-bold ">
                 <Clock className="w-3.5 h-3.5 text-amber-400" />
                 <span>المدة الفعلية: {currentVideo.duration}</span>
               </span>
@@ -142,7 +142,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
               <span>أجزاء الشرح المتاحة (بحد أقصى ٥ أجزاء):</span>
             </div>
 
-            <div className="text-[11px] text-slate-400 font-mono">
+            <div className="text-[11px] text-slate-400 ">
               اختر الجزء للمشاهدة المباشرة
             </div>
           </div>
@@ -180,7 +180,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
                   </p>
 
                   {vid.duration && (
-                    <span className="text-[10px] font-mono text-amber-300/90 bg-black/40 px-1.5 py-0.5 rounded w-fit mt-0.5">
+                    <span className="text-[10px]  text-amber-300/90 bg-black/40 px-1.5 py-0.5 rounded w-fit mt-0.5">
                       ⏱️ {vid.duration}
                     </span>
                   )}

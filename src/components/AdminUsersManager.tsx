@@ -320,7 +320,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
               <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal'] tracking-tight">
                 إدارة المستخدمين (اليوزر)
               </h2>
-              <span className="px-3 py-0.5 rounded-full bg-blue-950/80 border border-blue-500/60 text-blue-300 text-xs font-bold font-mono">
+              <span className="px-3 py-0.5 rounded-full bg-blue-950/80 border border-blue-500/60 text-blue-300 text-xs font-bold">
                 {totalCount} حساب
               </span>
             </div>
@@ -365,32 +365,32 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="p-3.5 rounded-2xl bg-[#0d122b] border border-blue-500/30 shadow-md">
           <span className="text-[11px] font-bold text-slate-400 block mb-1">إجمالي الحسابات</span>
-          <span className="text-xl sm:text-2xl font-black text-white font-mono">{totalCount}</span>
+          <span className="text-xl sm:text-2xl font-black text-white">{totalCount}</span>
         </div>
 
         <div className="p-3.5 rounded-2xl bg-[#091a1a] border border-emerald-500/30 shadow-md">
           <span className="text-[11px] font-bold text-emerald-300/80 block mb-1">حسابات نشطة</span>
-          <span className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">{activeCount}</span>
+          <span className="text-xl sm:text-2xl font-black text-emerald-400">{activeCount}</span>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-[#1b1429] border border-amber-500/30 shadow-md">
-          <span className="text-[11px] font-bold text-amber-300/80 block mb-1">المجموعة G1 (تنافسي/فوري)</span>
-          <span className="text-xl sm:text-2xl font-black text-amber-400 font-mono">{g1Count}</span>
+        <div className="p-3.5 rounded-2xl bg-slate-200 border border-slate-300 shadow-md">
+          <span className="text-[11px] font-black text-slate-900 font-['Cairo'] block mb-1">المجموعة G1 (تنافسي/فوري)</span>
+          <span className="text-xl sm:text-2xl font-black text-slate-900 font-['Cairo']">{g1Count}</span>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-[#1d1029] border border-purple-500/30 shadow-md">
-          <span className="text-[11px] font-bold text-purple-300/80 block mb-1">المجموعة G2 (تنافسي/مرجأ)</span>
-          <span className="text-xl sm:text-2xl font-black text-purple-400 font-mono">{g2Count}</span>
+        <div className="p-3.5 rounded-2xl bg-slate-200 border border-slate-300 shadow-md">
+          <span className="text-[11px] font-black text-slate-900 font-['Cairo'] block mb-1">المجموعة G2 (تنافسي/مرجأ)</span>
+          <span className="text-xl sm:text-2xl font-black text-slate-900 font-['Cairo']">{g2Count}</span>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-[#091829] border border-cyan-500/30 shadow-md">
-          <span className="text-[11px] font-bold text-cyan-300/80 block mb-1">المجموعة G3 (تعاوني/فوري)</span>
-          <span className="text-xl sm:text-2xl font-black text-cyan-400 font-mono">{g3Count}</span>
+        <div className="p-3.5 rounded-2xl bg-slate-200 border border-slate-300 shadow-md">
+          <span className="text-[11px] font-black text-slate-900 font-['Cairo'] block mb-1">المجموعة G3 (تعاوني/فوري)</span>
+          <span className="text-xl sm:text-2xl font-black text-slate-900 font-['Cairo']">{g3Count}</span>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-[#1e0f21] border border-pink-500/30 shadow-md">
-          <span className="text-[11px] font-bold text-pink-300/80 block mb-1">المجموعة G4 (تعاوني/مرجأ)</span>
-          <span className="text-xl sm:text-2xl font-black text-pink-400 font-mono">{g4Count}</span>
+        <div className="p-3.5 rounded-2xl bg-slate-200 border border-slate-300 shadow-md">
+          <span className="text-[11px] font-black text-slate-900 font-['Cairo'] block mb-1">المجموعة G4 (تعاوني/مرجأ)</span>
+          <span className="text-xl sm:text-2xl font-black text-slate-900 font-['Cairo']">{g4Count}</span>
         </div>
       </div>
 
@@ -434,10 +434,10 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
           <button
             type="button"
             onClick={() => setSelectedGroupFilter('G1')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-black font-['Cairo'] transition-all cursor-pointer ${
               selectedGroupFilter === 'G1'
-                ? 'bg-amber-500 text-slate-950 font-black shadow-md'
-                : 'bg-slate-900 text-amber-300 hover:text-white border border-slate-800'
+                ? 'bg-slate-300 text-slate-950 shadow-md border border-slate-400'
+                : 'bg-slate-200 text-slate-900 hover:bg-slate-300 border border-slate-300'
             }`}
           >
             G1 (تنافسي/فوري)
@@ -446,10 +446,10 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
           <button
             type="button"
             onClick={() => setSelectedGroupFilter('G2')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-black font-['Cairo'] transition-all cursor-pointer ${
               selectedGroupFilter === 'G2'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'bg-slate-900 text-purple-300 hover:text-white border border-slate-800'
+                ? 'bg-slate-300 text-slate-950 shadow-md border border-slate-400'
+                : 'bg-slate-200 text-slate-900 hover:bg-slate-300 border border-slate-300'
             }`}
           >
             G2 (تنافسي/مرجأ)
@@ -458,10 +458,10 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
           <button
             type="button"
             onClick={() => setSelectedGroupFilter('G3')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-black font-['Cairo'] transition-all cursor-pointer ${
               selectedGroupFilter === 'G3'
-                ? 'bg-cyan-600 text-white shadow-md'
-                : 'bg-slate-900 text-cyan-300 hover:text-white border border-slate-800'
+                ? 'bg-slate-300 text-slate-950 shadow-md border border-slate-400'
+                : 'bg-slate-200 text-slate-900 hover:bg-slate-300 border border-slate-300'
             }`}
           >
             G3 (تعاوني/فوري)
@@ -470,10 +470,10 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
           <button
             type="button"
             onClick={() => setSelectedGroupFilter('G4')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-black font-['Cairo'] transition-all cursor-pointer ${
               selectedGroupFilter === 'G4'
-                ? 'bg-pink-600 text-white shadow-md'
-                : 'bg-slate-900 text-pink-300 hover:text-white border border-slate-800'
+                ? 'bg-slate-300 text-slate-950 shadow-md border border-slate-400'
+                : 'bg-slate-200 text-slate-900 hover:bg-slate-300 border border-slate-300'
             }`}
           >
             G4 (تعاوني/مرجأ)
@@ -522,14 +522,14 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                     }`}
                   >
                     {/* Index */}
-                    <td className="py-3 px-4 text-center text-slate-500 font-mono text-[11px]">
+                    <td className="py-3 px-4 text-center text-slate-500 font-bold text-[11px]">
                       {index + 1}
                     </td>
 
                     {/* Username */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-white text-xs sm:text-sm bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-700">
+                        <span className="font-bold text-white text-xs sm:text-sm bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-700">
                           {user.username}
                         </span>
                         {isSupervisor && (
@@ -550,7 +550,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                       {user.groupCode ? (
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-amber-300 text-xs">
+                            <span className="px-2.5 py-0.5 rounded-lg bg-slate-200 border border-slate-300 font-black text-slate-900 font-['Cairo'] text-xs inline-block">
                               {meta?.name || user.groupName || user.groupCode}
                             </span>
                           </div>
@@ -567,7 +567,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
 
                     {/* Password with View Toggle */}
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-1.5 font-mono">
+                      <div className="flex items-center gap-1.5">
                         <span className="bg-slate-950 px-2 py-1 rounded border border-slate-800 text-amber-300 font-bold tracking-wider text-xs">
                           {isPwVisible ? user.password : '••••••••'}
                         </span>
@@ -725,7 +725,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                   type="text"
                   disabled
                   value={editingUser.username}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-400 font-mono text-xs cursor-not-allowed"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-400 font-bold text-xs cursor-not-allowed"
                 />
               </div>
 
@@ -745,7 +745,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                   type="text"
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-mono text-xs outline-none focus:border-amber-400"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-bold text-xs outline-none focus:border-amber-400"
                   required
                 />
               </div>
@@ -814,7 +814,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
                     placeholder="مثال: G1_Cp_16 أو student1"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold text-xs outline-none focus:border-blue-500"
                     required
                   />
                 </div>
@@ -828,7 +828,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="مثال: Cp@9116 أو 123456"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-mono text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-bold text-xs outline-none focus:border-blue-500"
                     required
                   />
                 </div>

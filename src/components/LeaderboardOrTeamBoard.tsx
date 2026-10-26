@@ -79,10 +79,10 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="px-3 py-0.5 rounded-full bg-purple-900/60 border border-purple-400/50 text-purple-200 text-xs font-bold">
+                  <span className="px-3.5 py-1 rounded-full bg-slate-200 border border-slate-300 text-slate-900 text-xs font-black font-['Cairo'] shadow-sm">
                     المعالجة التجريبية: التعلم التعاوني المشترك
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-bold">
+                  <span className="px-3.5 py-1 rounded-full bg-slate-200 border border-slate-300 text-slate-900 text-xs font-black font-['Cairo'] shadow-sm">
                     {groupMeta?.name}
                   </span>
                 </div>
@@ -111,7 +111,7 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
                 <Target className="w-4 h-4 text-purple-400" />
                 <span>التقدم الجماعي نحو الهدف العام للفريق:</span>
               </span>
-              <span className="text-xs font-black text-[#ffd700] font-mono">
+              <span className="text-xs font-black text-[#ffd700] ">
                 {teamProgressPercentage}% مكتمل
               </span>
             </div>
@@ -173,7 +173,7 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-black text-white font-mono">{st.username}</span>
+                      <span className="text-xs font-black text-white ">{st.username}</span>
                       {st.isMe && (
                         <span className="px-1.5 py-0.2 rounded bg-[#ffd700] text-slate-950 text-[9px] font-black">
                           أنت
@@ -181,13 +181,13 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
                       )}
                     </div>
                     <span className="text-[10px] text-purple-300 font-bold block">{st.avatar.title}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-slate-400 ">
                       ساهم بـ: {st.completedLevels} مراحل
                     </span>
                   </div>
                 </div>
 
-                <div className="text-left font-mono">
+                <div className="text-left ">
                   <span className="text-xs font-black text-[#ffd700]">+{st.score} XP</span>
                   <span className="text-[9px] text-slate-500 block">لصالح الفريق</span>
                 </div>
@@ -213,10 +213,10 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="px-3 py-0.5 rounded-full bg-amber-900/60 border border-[#ffd700]/50 text-amber-200 text-xs font-bold">
+                <span className="px-3.5 py-1 rounded-full bg-slate-200 border border-slate-300 text-slate-900 text-xs font-black font-['Cairo'] shadow-sm">
                   المعالجة التجريبية: التنافس التفاعلي الفردي
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-bold">
+                <span className="px-3.5 py-1 rounded-full bg-slate-200 border border-slate-300 text-slate-900 text-xs font-black font-['Cairo'] shadow-sm">
                   {groupMeta?.name}
                 </span>
               </div>
@@ -236,7 +236,7 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
               <span className="text-3xl font-black text-white font-['Outfit']">
                 #{myRank}
               </span>
-              <span className="text-xs text-slate-400 font-mono">من أصل 15</span>
+              <span className="text-xs text-slate-400 ">من أصل 15</span>
             </div>
           </div>
         </div>
@@ -248,7 +248,7 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
             <div className="p-4 rounded-2xl bg-slate-900/90 border-2 border-slate-400 text-center flex flex-col items-center order-2 sm:order-1 shadow-md">
               <span className="text-2xl mb-1">🥈</span>
               <span className="text-xs font-bold text-slate-300">المركز الثاني</span>
-              <span className="text-sm font-black text-white mt-1 font-mono">{sortedStudents[1].username}</span>
+              <span className="text-sm font-black text-white mt-1 ">{sortedStudents[1].username}</span>
               <span className="text-xs text-amber-300 font-bold font-['Outfit']">{sortedStudents[1].score} XP</span>
             </div>
           )}
@@ -260,7 +260,7 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
               <span className="px-2 py-0.5 rounded-full bg-[#ffd700] text-slate-950 text-[10px] font-black mb-1">
                 بطل الصدارة
               </span>
-              <span className="text-base font-black text-white font-mono">{sortedStudents[0].username}</span>
+              <span className="text-base font-black text-white ">{sortedStudents[0].username}</span>
               <span className="text-sm text-[#ffd700] font-black font-['Outfit'] mt-1">{sortedStudents[0].score} XP</span>
             </div>
           )}
@@ -270,7 +270,7 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
             <div className="p-4 rounded-2xl bg-slate-900/90 border-2 border-amber-700 text-center flex flex-col items-center order-3 shadow-md">
               <span className="text-2xl mb-1">🥉</span>
               <span className="text-xs font-bold text-amber-500">المركز الثالث</span>
-              <span className="text-sm font-black text-white mt-1 font-mono">{sortedStudents[2].username}</span>
+              <span className="text-sm font-black text-white mt-1 ">{sortedStudents[2].username}</span>
               <span className="text-xs text-amber-300 font-bold font-['Outfit']">{sortedStudents[2].score} XP</span>
             </div>
           )}
@@ -296,7 +296,7 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
             >
               {/* Rank & Student */}
               <div className="flex items-center gap-3">
-                <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs font-mono shrink-0 ${
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs  shrink-0 ${
                   idx === 0
                     ? 'bg-[#ffd700] text-slate-950 font-bold'
                     : idx === 1
@@ -314,7 +314,7 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
 
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-black text-white font-mono">{st.username}</span>
+                    <span className="text-xs sm:text-sm font-black text-white ">{st.username}</span>
                     {st.isMe && (
                       <span className="px-2 py-0.5 rounded-full bg-[#ffd700] text-slate-950 text-[10px] font-black">
                         أنت
@@ -328,8 +328,8 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
               {/* Progress and Score */}
               <div className="flex items-center gap-4 text-left">
                 <div className="hidden sm:block text-right">
-                  <span className="text-[10px] text-slate-400 block font-mono">المراحل المكتملة</span>
-                  <span className="text-xs font-bold text-emerald-400 font-mono">
+                  <span className="text-[10px] text-slate-400 block ">المراحل المكتملة</span>
+                  <span className="text-xs font-bold text-emerald-400 ">
                     {st.completedLevels} / 10
                   </span>
                 </div>

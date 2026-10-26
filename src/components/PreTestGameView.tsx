@@ -512,14 +512,10 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-black text-white font-['Tajawal']">
+                <h1 className="text-base sm:text-lg font-black text-sky-950 font-['Tajawal']">
                   {gameTitle}
                 </h1>
-                <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
-                  isBoxGame
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                    : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                }`}>
+                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full border bg-slate-200 border-slate-300 text-slate-900 font-['Cairo']">
                   {isBoxGame ? 'اللعبة 2: الصناديق' : 'اللعبة 1: سيارة السباق'}
                 </span>
               </div>
@@ -631,7 +627,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                 </select>
               </div>
             )}
-            <span className="text-slate-400 font-mono">
+            <span className="text-slate-400 ">
               {progressPercent}%
             </span>
           </div>
@@ -802,7 +798,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
 
                   <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-xl border border-white/10">
                     <span className="text-xs font-bold text-slate-300">النتيجة:</span>
-                    <span className={`px-2.5 py-0.5 rounded-lg font-mono font-black text-sm border shadow-sm ${
+                    <span className={`px-2.5 py-0.5 rounded-lg  font-black text-sm border shadow-sm ${
                       (answeredState === 'selected' || answeredState === 'evaluating') && chosenAnswers[currentQ.id] === currentQ.correctIndex
                         ? 'bg-emerald-500 text-slate-950 border-emerald-300'
                         : 'bg-slate-900 text-amber-300 border-slate-700'
@@ -996,7 +992,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                               <span>تم اختيار وتثبيت هذا الصندوق</span>
                             </span>
                           )}
-                          <span className="font-mono text-[11px] text-slate-400">Box #{boxNumber}</span>
+                          <span className="text-[11px] font-bold text-slate-400">صندوق #{boxNumber}</span>
                         </div>
                       )}
                     </div>
@@ -1032,7 +1028,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                         <span className="text-sm font-black text-white">
                           {chosenAnswers[currentQ.id] === currentQ.correctIndex ? 'إجابة صحيحة! أحسنت ✓' : 'إجابة خاطئة ✗'}
                         </span>
-                        <span className={`px-2.5 py-0.5 rounded-lg text-xs font-mono font-black ${
+                        <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black ${
                           chosenAnswers[currentQ.id] === currentQ.correctIndex
                             ? 'bg-emerald-500 text-slate-950'
                             : 'bg-rose-600 text-white'
@@ -1116,10 +1112,10 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                 النتيجة النهائية لـ {testLabel} ({finalResult ? finalResult.maxScore : questions.length} سؤالاً)
               </span>
               <div className="flex items-center justify-center gap-3">
-                <span className="text-4xl sm:text-5xl font-black text-[#ffd700] font-mono drop-shadow">
+                <span className="text-4xl sm:text-5xl font-black text-[#ffd700] drop-shadow">
                   {finalResult ? finalResult.score : 0}
                 </span>
-                <span className="text-2xl font-bold text-slate-400 font-mono">
+                <span className="text-2xl font-bold text-slate-400">
                   / {finalResult ? finalResult.maxScore : questions.length}
                 </span>
               </div>

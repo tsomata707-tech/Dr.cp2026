@@ -204,9 +204,9 @@ export const CaptivateSimulator: React.FC<CaptivateSimulatorProps> = ({
         {/* Captivate Window Menu Bar & Quick Tools */}
         <div className="bg-[#151126] px-4 py-2.5 border-b border-[#d4af37]/30 flex items-center justify-between text-xs">
           <div className="flex items-center gap-3">
-            <span className="font-mono font-bold text-amber-300">Adobe Captivate 2019 (64-Bit)</span>
+            <span className="font-bold text-amber-300">Adobe Captivate 2019 (64-Bit)</span>
             <span className="hidden sm:inline text-slate-500">|</span>
-            <span className="hidden sm:inline text-slate-400 font-mono text-[11px]">
+            <span className="hidden sm:inline text-slate-400 text-[11px] font-medium">
               Project_Module_{currentModule.number}.cptx
             </span>
           </div>
@@ -288,7 +288,7 @@ export const CaptivateSimulator: React.FC<CaptivateSimulatorProps> = ({
         {/* Center Active Stage Area */}
         <div className="relative min-h-[320px] p-6 sm:p-8 flex flex-col items-center justify-center text-center bg-gradient-to-b from-[#0b0914] via-[#0f0c1d] to-[#080610]">
           {/* Simulated Digital Timer on Screen */}
-          <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-[#d4af37]/60 text-amber-300 font-mono text-xs shadow-md">
+          <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-[#d4af37]/60 text-amber-300 font-bold text-xs shadow-md">
             <Clock className="w-3.5 h-3.5 animate-pulse" />
             <span>المؤقت: {timeLeft}s</span>
             <button
@@ -307,7 +307,7 @@ export const CaptivateSimulator: React.FC<CaptivateSimulatorProps> = ({
                 <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-purple-900/60 text-purple-200">
                   سؤال تقييمي تفاعلي (Quiz Slide)
                 </span>
-                <span className="text-xs text-amber-300 font-mono">درجة: 25 نقطة</span>
+                <span className="text-xs text-amber-300 font-bold">درجة: 25 نقطة</span>
               </div>
 
               <h4 className="text-sm font-bold text-white font-['Tajawal'] leading-relaxed">
@@ -416,7 +416,7 @@ export const CaptivateSimulator: React.FC<CaptivateSimulatorProps> = ({
 
         {/* Timeline Strip (مسار الزمن) */}
         <div className="bg-[#0b0914] p-3 border-t border-[#d4af37]/30 text-xs space-y-2">
-          <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+          <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
             <div className="flex items-center gap-2">
               <span className="text-amber-400 font-bold">مسار الزمن (Timeline):</span>
               <span className="text-white">00:{timelineSec < 10 ? `0${timelineSec}` : timelineSec} ثانية / 00:15</span>

@@ -152,9 +152,9 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
             </div>
 
             <p className="text-sm text-slate-200 leading-relaxed font-['IBM_Plex_Sans_Arabic']">
-              طالبنا العزيز (<strong className="text-[#ffd700] font-mono">{currentUsername}</strong>)، أنت مقيد رسمياً في:
+              طالبنا العزيز (<strong className="text-white font-bold font-['Cairo']">{currentUsername}</strong>)، أنت مقيد رسمياً في:
               <br />
-              <span className="inline-block mt-2 px-3 py-1.5 rounded-xl bg-amber-950/80 border border-[#d4af37] text-amber-300 font-black text-xs shadow-sm">
+              <span className="inline-block mt-2 px-3.5 py-1.5 rounded-xl bg-slate-200 border border-slate-300 text-slate-900 font-black font-['Cairo'] text-xs shadow-sm">
                 ⭐ {userGroupMeta?.name} ({userGroupMeta?.code})
               </span>
             </p>
@@ -173,7 +173,7 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                     if (onEnterGroup) onEnterGroup();
                   }
                 }}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-lg"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-900 border border-slate-400 font-black font-['Cairo'] text-xs transition-all cursor-pointer shadow-lg"
               >
                 الانتقال إلى مجموعتي الخاصة ({userGroupMeta?.code}) 🚀
               </button>
@@ -190,30 +190,30 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
       )}
 
       {/* Section Header */}
-      <div className="rounded-3xl bg-[#0b0914] border-2 border-[#d4af37] p-6 sm:p-8 shadow-[0_0_35px_rgba(212,175,55,0.2)] text-right">
+      <div className="rounded-3xl bg-[#0b0914] border-2 border-slate-300 p-6 sm:p-8 shadow-sm text-right">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#d4af37]/20 border border-[#d4af37] text-amber-300 flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-slate-200 border border-slate-300 text-slate-900 flex items-center justify-center shrink-0">
               <Users className="w-6 h-6 stroke-[2]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold px-3 py-0.5 rounded-full bg-[#d4af37]/15 border border-[#d4af37] text-amber-300 font-['Cairo']">
+                <span className="text-xs font-black px-3.5 py-1 rounded-xl bg-slate-200 border border-slate-300 text-slate-900 font-['Cairo']">
                   المجموعات التجريبية الأربعة للدراسة
                 </span>
               </div>
               <h2 className="text-lg sm:text-2xl font-black text-white font-['Tajawal'] mt-1">
                 الأربع جروبات: التفاعل بين نمط التعلم ونمط التغذية الراجعة
               </h2>
-              <p className="text-xs text-slate-300 mt-1 font-['IBM_Plex_Sans_Arabic']">
+              <p className="text-xs text-slate-300 mt-1 font-['Cairo']">
                 {isAdmin ? (
                   <span className="text-emerald-400 font-bold flex items-center gap-1.5">
                     <Eye className="w-4 h-4 text-emerald-400 inline" />
                     <span>حساب المشرف (admin): مصرح لك بقراءة كامل الموقع والدخول واستعراض أي مجموعة من المجموعات الأربعة.</span>
                   </span>
                 ) : userGroupMeta ? (
-                  <span className="text-amber-300 font-bold">
-                    أنت مسجل في مجموعة: {userGroupMeta.name} ومصرح لك بدخولها فقط
+                  <span className="inline-block mt-1 px-3 py-1 rounded-xl bg-slate-200 border border-slate-300 text-slate-900 font-black font-['Cairo'] text-xs">
+                    أنت مسجل في مجموعة: {userGroupMeta.name} ({userGroupMeta.code}) ومصرح لك بدخولها فقط
                   </span>
                 ) : (
                   'التصميم التجريبي (2×2): النمط التنافسي والتعاوني مقابل التغذية الراجعة الفورية والمرجئة'
@@ -266,36 +266,31 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                 <div>
                   {/* Top Badges */}
                   <div className="flex flex-wrap items-center gap-2 mb-3">
-                    <span className="px-2.5 py-0.5 rounded-lg bg-sky-900 font-mono font-bold text-white text-xs border border-sky-700 shadow-xs">
+                    <span className="px-2.5 py-1 rounded-lg bg-slate-200 font-black text-slate-900 text-xs border border-slate-300 shadow-xs font-['Cairo']">
                       {group.code}
                     </span>
                     <span
-                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border shadow-xs ${
-                        group.learningMode === 'تنافسي'
-                          ? 'bg-amber-100 border-amber-400 text-amber-950'
-                          : 'bg-cyan-100 border-cyan-400 text-cyan-950'
-                      }`}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-black border border-slate-300 bg-slate-100 text-slate-900 font-['Cairo'] shadow-xs"
                     >
                       {group.learningMode === 'تنافسي' ? '⚡ نمط تنافسي' : '🤝 نمط تعاوني'}
                     </span>
                     <span
-                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border shadow-xs ${
-                        group.feedbackMode === 'فورية'
-                          ? 'bg-emerald-100 border-emerald-400 text-emerald-950'
-                          : 'bg-purple-100 border-purple-400 text-purple-950'
-                      }`}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-black border border-slate-300 bg-slate-100 text-slate-900 font-['Cairo'] shadow-xs"
                     >
                       {group.feedbackMode === 'فورية' ? '🎯 تغذية فورية' : '⏳ تغذية مرجئة'}
                     </span>
                   </div>
 
-                  <h3 className="text-base sm:text-lg font-black text-[#0f2942] font-['Tajawal'] leading-snug">
-                    {group.name}
-                  </h3>
-                  <p className="text-xs text-sky-900 font-bold font-['Cairo'] mt-1">
+                  {/* Group Title Box: Light Gray Background, Bold Black Cairo Font */}
+                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-200 border border-slate-300 inline-block mb-2">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 font-['Cairo'] leading-snug">
+                      المجموعة {group.code}: {group.name}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-800 font-bold font-['Cairo'] mt-1">
                     {group.tagline}
                   </p>
-                  <p className="text-xs text-slate-700 font-semibold font-['IBM_Plex_Sans_Arabic'] mt-2 leading-relaxed">
+                  <p className="text-xs text-slate-700 font-semibold font-['Cairo'] mt-2 leading-relaxed">
                     {group.description}
                   </p>
 
@@ -314,7 +309,7 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                 <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-3">
                     <span className="text-slate-400">
-                      الطلاب: <strong className="text-white font-mono">{group.membersCount} طالب</strong>
+                      الطلاب: <strong className="text-white ">{group.membersCount} طالب</strong>
                     </span>
                   </div>
 

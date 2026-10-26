@@ -457,7 +457,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               🤝 إشعار الفريق التعاوني الفوري (إجابة مشتركة للفريق):
             </span>
             <span>
-              لقد قام صديقك في مجموعتك التعاونية، وهو المستخدم <strong className="text-amber-300 font-mono underline">{teammateAnswerInfo.completedBy}</strong>، بالإجابة وإتمام هذا المستوى مسبقاً! إجاباتكم الفريقية مسجلة ومشتركة.
+              لقد قام صديقك في مجموعتك التعاونية، وهو المستخدم <strong className="text-amber-300 font-bold underline">{teammateAnswerInfo.completedBy}</strong>، بالإجابة وإتمام هذا المستوى مسبقاً! إجاباتكم الفريقية مسجلة ومشتركة.
             </span>
           </div>
         </div>
@@ -521,19 +521,15 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 </span>
                 {userGroupMeta && (
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold border font-['Cairo'] shadow-sm ${
-                      userGroupMeta.feedbackMode === 'فورية'
-                        ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300'
-                        : 'bg-purple-950/80 border-purple-500/60 text-purple-300'
-                    }`}
+                    className="px-3.5 py-1 rounded-full text-xs font-black font-['Cairo'] bg-slate-200 border border-slate-300 text-slate-900 shadow-sm"
                   >
-                    {userGroupMeta.name}
+                    المجموعة {userGroupMeta.code}: {userGroupMeta.name}
                   </span>
                 )}
               </div>
 
               <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal'] mt-1 flex items-center gap-2">
-                <span className="text-[#ffd700] font-mono">{username}</span>
+                <span className="text-[#ffd700] font-black">{username}</span>
               </h2>
 
               <p className="text-xs text-slate-300 font-['Cairo'] mt-0.5 max-w-md line-clamp-1">
@@ -661,7 +657,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 </span>
 
                 {/* Sub status tag */}
-                <span className="text-[9px] mt-1 font-mono">
+                <span className="text-[9px] mt-1 font-bold">
                   {isCompleted
                     ? 'مكتمل ومتقن'
                     : isCurrent
@@ -794,7 +790,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   {imgItem.type === 'pdf' ? (
                     <div className="w-full h-24 rounded-lg bg-rose-500/15 border border-rose-500/40 flex flex-col items-center justify-center text-rose-300">
                       <FileText className="w-8 h-8" />
-                      <span className="text-[10px] font-mono font-bold mt-1">PDF مستند</span>
+                      <span className="text-[10px] font-bold mt-1">مستند PDF</span>
                     </div>
                   ) : (
                     <img
@@ -836,7 +832,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               <span className="text-xs text-slate-300 font-['Cairo']">
                 الطلاب المتصلين بالغرفة الآن:
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#ffd700]/20 border border-[#ffd700] text-[#ffd700] text-xs font-black font-mono">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#ffd700]/20 border border-[#ffd700] text-[#ffd700] text-xs font-black">
                 {(Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[]).filter((s) => s.isOnline).length || 1} من 15
               </span>
             </div>
@@ -875,7 +871,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               <span className="truncate font-['Cairo'] text-slate-200">
                 {roomState.liveEvents[0].text}
               </span>
-              <span className="text-[9px] font-mono text-slate-500 mr-auto shrink-0">
+              <span className="text-[9px] font-medium text-slate-500 mr-auto shrink-0">
                 {roomState.liveEvents[0].time}
               </span>
             </div>
@@ -951,7 +947,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                       </h4>
                     </div>
                   </div>
-                  <span className="text-xs font-mono text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-lg border border-amber-500/40 shrink-0">
+                  <span className="text-xs font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-lg border border-amber-500/40 shrink-0">
                     +{q.points} XP
                   </span>
                 </div>
@@ -1007,7 +1003,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                       >
                         <div className="flex items-center justify-between gap-3 w-full">
                           <span className="leading-relaxed font-medium">{opt}</span>
-                          <span className="w-5 h-5 rounded-full border border-slate-600 flex items-center justify-center shrink-0 text-[10px] font-mono">
+                          <span className="w-5 h-5 rounded-full border border-slate-600 flex items-center justify-center shrink-0 text-[10px] font-bold">
                             {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || String.fromCharCode(65 + optIdx)}
                           </span>
                         </div>
@@ -1042,7 +1038,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                                     </span>
                                   ))}
                                 </span>
-                                <span className="text-[9px] font-mono font-bold text-amber-300">
+                                <span className="text-[9px] font-bold text-amber-300">
                                   ({votersForThisOpt.length} أصوات)
                                 </span>
                               </div>
@@ -1140,10 +1136,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                       {studentActivity.fileType === 'video' ? '🎬' : studentActivity.fileType === 'pdf' ? '📄' : '🖼️'}
                     </span>
                     <div>
-                      <h4 className="text-sm font-bold text-white font-mono truncate max-w-xs sm:max-w-md">
+                      <h4 className="text-sm font-bold text-white truncate max-w-xs sm:max-w-md">
                         {studentActivity.fileName}
                       </h4>
-                      <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono mt-0.5">
+                      <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
                         <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-emerald-300 font-bold uppercase">
                           {studentActivity.fileType}
                         </span>
@@ -1204,7 +1200,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                       <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/50 text-rose-300 flex items-center justify-center mx-auto text-2xl font-bold">
                         PDF
                       </div>
-                      <p className="text-xs text-slate-300 font-mono">{studentActivity.fileName}</p>
+                      <p className="text-xs text-slate-300 font-bold">{studentActivity.fileName}</p>
                       <a
                         href={studentActivity.fileUrl}
                         target="_blank"
@@ -1250,7 +1246,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                       <Clock className="w-4 h-4 text-amber-400 shrink-0" />
                       <span>تم تسليم الملف بنجاح وهو الآن بانتظار تقييم واعتماد المشرف (لا تُضاف أي درجات إلا بعد رصد الدرجة) ⏳</span>
                     </div>
-                    <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-400/50 text-amber-300 text-[11px] font-mono shrink-0">
+                    <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-400/50 text-amber-300 text-[11px] font-bold shrink-0">
                       قيد المراجعة
                     </span>
                   </div>
@@ -1418,7 +1414,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
                 {/* Table showing activities, status, and points earned according to Storyboard */}
                 <div className="p-4 rounded-2xl bg-[#090714] border border-purple-500/40 space-y-2.5">
-                  <div className="space-y-1.5 font-mono text-xs">
+                  <div className="space-y-1.5 font-['Cairo'] text-xs">
                       {feedbackModal.levelDef.questions.map((q, idx) => {
                         const isCorrect = feedbackModal.result.answers[q.id] === q.correctIndex;
                         return (
@@ -1432,14 +1428,14 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                             {/* Only show result if not a student in deferred mode, or if admin */}
                             {isImmediateGroup || isAdmin ? (
                               <span
-                                className={`font-black font-mono ${
+                                className={`font-black ${
                                   isCorrect ? 'text-emerald-400' : 'text-red-400'
                                 }`}
                               >
                                 {isCorrect ? '✔️ +50 نقطة' : '❌ 0 نقطة'}
                               </span>
                             ) : (
-                              <span className="text-emerald-400 font-mono text-[10px] bg-slate-950 px-2.5 py-0.5 rounded border border-emerald-900/50">
+                              <span className="text-emerald-400 font-bold text-[10px] bg-slate-950 px-2.5 py-0.5 rounded border border-emerald-900/50">
                                 مكتمل ✓
                               </span>
                             )}

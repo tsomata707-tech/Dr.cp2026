@@ -73,7 +73,7 @@ export const ProgressBoardView: React.FC<ProgressBoardViewProps> = ({ username, 
               style={{ width: `${overallPercentage}%` }}
             />
           </div>
-          <span className="text-[10px] text-slate-400 font-mono block mt-1">
+          <span className="text-[10px] text-slate-400  block mt-1">
             {completedCount} من 10 مراحل مكتملة
           </span>
         </div>
@@ -106,7 +106,7 @@ export const ProgressBoardView: React.FC<ProgressBoardViewProps> = ({ username, 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-3">
                   <span
-                    className={`w-8 h-8 rounded-xl font-mono text-xs font-black flex items-center justify-center border ${
+                    className={`w-8 h-8 rounded-xl  text-xs font-black flex items-center justify-center border ${
                       isCompleted
                         ? 'bg-emerald-600 text-white border-emerald-400'
                         : isCurrent
@@ -132,17 +132,17 @@ export const ProgressBoardView: React.FC<ProgressBoardViewProps> = ({ username, 
                 {/* Status description */}
                 <div className="text-[11px] font-bold mb-2">
                   {isCompleted ? (
-                    <span className="text-emerald-400 font-mono flex items-center gap-1">
+                    <span className="text-emerald-400  flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3" />
                       ✔️ مكتملة بنجاح (+{levelScore} XP)
                     </span>
                   ) : isCurrent ? (
-                    <span className="text-[#ffd700] font-mono flex items-center gap-1 animate-pulse">
+                    <span className="text-[#ffd700]  flex items-center gap-1 animate-pulse">
                       <Sparkles className="w-3 h-3" />
                       ⚙️ جارية الآن ({levelPercent}%)
                     </span>
                   ) : (
-                    <span className="text-slate-500 font-mono flex items-center gap-1">
+                    <span className="text-slate-500  flex items-center gap-1">
                       <Lock className="w-3 h-3" />
                       🔒 مقفلة (تتطلب إتمام السابق)
                     </span>

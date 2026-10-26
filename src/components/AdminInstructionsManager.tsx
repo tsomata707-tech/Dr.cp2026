@@ -371,7 +371,7 @@ export const AdminInstructionsManager: React.FC = () => {
                 </label>
               </div>
 
-              <span className="text-[11px] text-emerald-400 font-mono">
+              <span className="text-[11px] text-emerald-400 font-bold">
                 {config.pretestRequiredBeforeLevels ? '✓ مفعّل إجبارياً' : 'اختياري'}
               </span>
             </div>
@@ -726,7 +726,7 @@ export const AdminInstructionsManager: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-slate-400 font-mono">ID: {q.id}</span>
+                      <span className="text-xs text-slate-400 font-semibold">رقم: {q.id}</span>
                       <button
                         type="button"
                         onClick={() => handleDeleteQuestion(q.id)}

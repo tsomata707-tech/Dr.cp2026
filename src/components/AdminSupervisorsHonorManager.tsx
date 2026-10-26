@@ -356,7 +356,7 @@ export const AdminSupervisorsHonorManager: React.FC = () => {
                   }))
                 }
                 placeholder="https://..."
-                className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 text-xs font-mono outline-none"
+                className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 text-xs  outline-none"
               />
             </div>
           </div>
@@ -492,7 +492,7 @@ export const AdminSupervisorsHonorManager: React.FC = () => {
                   <span className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-400 text-amber-300 font-black text-xs font-['Cairo'] shadow-sm">
                     {card.cardLabel || `المشرف ${idx + 1}`}
                   </span>
-                  <span className="text-[11px] text-slate-400 font-mono">
+                  <span className="text-[11px] text-slate-400 ">
                     #{idx + 1}
                   </span>
                 </div>

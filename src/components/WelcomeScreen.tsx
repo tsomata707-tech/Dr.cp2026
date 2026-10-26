@@ -85,14 +85,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                   <span>تم التحقق من بياناتك</span>
                 </span>
                 {groupMeta && (
-                  <span className="px-3.5 py-1 rounded-full bg-purple-950/80 border border-purple-500/60 text-purple-200 text-xs font-bold shadow-sm">
+                  <span className="px-3.5 py-1 rounded-full bg-slate-200 border border-slate-300 text-slate-900 text-xs font-black font-['Cairo'] shadow-sm">
                     المجموعة {groupMeta.code}: {groupMeta.name}
                   </span>
                 )}
               </div>
 
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white font-['Tajawal'] tracking-tight">
-                مرحباً بك <span className="text-[#ffd700] font-mono">{username}</span>
+                مرحباً بك <span className="text-[#ffd700] font-['Cairo'] font-bold">{username}</span>
               </h1>
             </div>
           </div>

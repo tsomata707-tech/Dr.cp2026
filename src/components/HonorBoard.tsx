@@ -145,7 +145,7 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] text-slate-600 block font-['Cairo'] font-bold">حسابك الحالي المسجل</span>
-                    <span className="text-xs font-black text-sky-950 font-mono">{currentUsername}</span>
+                    <span className="text-xs font-black text-sky-950 ">{currentUsername}</span>
                     <span className="text-[10px] text-emerald-700 block font-bold">تسجيل دخول حقيقي</span>
                   </div>
                 </div>
@@ -208,16 +208,18 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
                       </div>
 
                       <h3 className="text-sm sm:text-base font-black text-sky-950 font-['Tajawal']">{stu.username}</h3>
-                      <span className="text-xs text-sky-700 font-bold mt-0.5">{stu.groupName}</span>
+                      <span className="inline-block px-2.5 py-0.5 rounded-md bg-slate-200 border border-slate-300 text-slate-900 font-black font-['Cairo'] text-xs mt-1">
+                        {stu.groupName}
+                      </span>
 
                       <div className="mt-4 w-full grid grid-cols-2 gap-2 text-center text-xs">
                         <div className="p-2 rounded-xl bg-sky-50 border border-sky-200">
                           <span className="text-[10px] text-slate-600 block font-['Cairo'] font-bold">النقاط الفعلية</span>
-                          <span className="font-black text-sky-900 font-mono text-xs sm:text-sm">{stu.points} ⭐</span>
+                          <span className="font-black text-sky-900  text-xs sm:text-sm">{stu.points} ⭐</span>
                         </div>
                         <div className="p-2 rounded-xl bg-sky-50 border border-sky-200">
                           <span className="text-[10px] text-slate-600 block font-['Cairo'] font-bold">الموديولات المكتملة</span>
-                          <span className="font-bold text-emerald-700 font-mono text-xs sm:text-sm">{stu.completedLevels} / 10</span>
+                          <span className="font-bold text-emerald-700  text-xs sm:text-sm">{stu.completedLevels} / 10</span>
                         </div>
                       </div>
 
@@ -262,15 +264,19 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
                             : 'text-slate-200'
                         }`}
                       >
-                        <td className="py-3 px-3 sm:px-4 font-mono font-bold text-amber-400">
+                        <td className="py-3 px-3 sm:px-4  font-bold text-amber-400">
                           {stu.rank === 1 ? '🥇 1' : stu.rank === 2 ? '🥈 2' : stu.rank === 3 ? '🥉 3' : `#${stu.rank}`}
                         </td>
-                        <td className="py-3 px-3 sm:px-4 font-bold text-white font-mono">{stu.username}</td>
-                        <td className="py-3 px-3 sm:px-4 text-slate-300">{stu.groupName}</td>
-                        <td className="py-3 px-3 sm:px-4 text-center font-mono font-bold text-amber-300">
+                        <td className="py-3 px-3 sm:px-4 font-bold text-white ">{stu.username}</td>
+                        <td className="py-3 px-3 sm:px-4">
+                          <span className="inline-block px-2 py-0.5 rounded bg-slate-200 border border-slate-300 text-slate-900 font-black font-['Cairo'] text-[11px]">
+                            {stu.groupName}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 sm:px-4 text-center  font-bold text-amber-300">
                           {stu.points}
                         </td>
-                        <td className="py-3 px-3 sm:px-4 text-center font-mono text-emerald-400">
+                        <td className="py-3 px-3 sm:px-4 text-center  text-emerald-400">
                           {stu.completedLevels} / 9
                         </td>
                         <td className="py-3 px-3 sm:px-4">

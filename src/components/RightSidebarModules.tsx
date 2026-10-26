@@ -63,18 +63,18 @@ export const RightSidebarModules: React.FC<RightSidebarModulesProps> = ({
       className="w-full lg:w-80 shrink-0 space-y-3"
       aria-label="العناوين الرئيسية للمقرر التعليمي"
     >
-      {/* Sidebar Header Card with Golden Rim */}
-      <div className="p-4 rounded-2xl bg-[#0d0b17]/95 border-2 border-[#d4af37]/60 shadow-[0_0_25px_rgba(212,175,55,0.15)] text-right relative overflow-hidden backdrop-blur-xl">
+      {/* Sidebar Header Card */}
+      <div className="p-4 rounded-2xl bg-[#0d0b17]/95 border-2 border-slate-300 shadow-sm text-right relative overflow-hidden backdrop-blur-xl">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#d4af37]/15 border border-[#d4af37]/40 text-amber-300 font-['Cairo']">
+          <span className="text-[11px] font-black px-2.5 py-1 rounded-xl bg-slate-200 border border-slate-300 text-slate-900 font-['Cairo']">
             10 وحدات تدريبية
           </span>
-          <div className="flex items-center gap-1.5 text-xs text-slate-300 font-bold font-['Cairo']">
-            <BookOpen className="w-4 h-4 text-[#ffd700]" />
+          <div className="flex items-center gap-1.5 text-xs text-slate-900 font-black font-['Cairo'] bg-slate-200 border border-slate-300 px-3 py-1 rounded-xl">
+            <BookOpen className="w-4 h-4 text-slate-900" />
             <span>العناوين الرئيسية للمقرر</span>
           </div>
         </div>
-        <p className="text-[11px] text-slate-400 mt-2 font-['IBM_Plex_Sans_Arabic'] leading-relaxed">
+        <p className="text-[11px] text-slate-300 mt-2 font-['Cairo'] font-bold leading-relaxed">
           إنتاج وتصميم الوسائط المتعددة ببرنامج Adobe Captivate 2019
         </p>
       </div>
@@ -104,7 +104,7 @@ export const RightSidebarModules: React.FC<RightSidebarModulesProps> = ({
                 {isFullyDone ? (
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 ) : (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900/90 border border-slate-700/60 text-slate-400 group-hover:text-amber-300 transition-colors">
+                  <span className="text-[10px]  px-1.5 py-0.5 rounded bg-slate-900/90 border border-slate-700/60 text-slate-400 group-hover:text-amber-300 transition-colors">
                     {completedCount}/{totalObjectives}
                   </span>
                 )}
@@ -126,7 +126,7 @@ export const RightSidebarModules: React.FC<RightSidebarModulesProps> = ({
                     >
                       {module.shortTitle}
                     </span>
-                    <span className="text-[10px] font-mono font-bold text-[#d4af37]/80">
+                    <span className="text-[10px]  font-bold text-[#d4af37]/80">
                       .{module.number}
                     </span>
                   </div>

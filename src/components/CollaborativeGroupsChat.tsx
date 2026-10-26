@@ -271,7 +271,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
           </h2>
         </div>
         <p className="text-sm text-slate-300 leading-relaxed font-['IBM_Plex_Sans_Arabic']">
-          أنت مسجل في المجموعة البحثية التنافسية (<strong className="text-amber-300 font-mono">{currentUsername}</strong> - {userGroupMeta?.name}).
+          أنت مسجل في المجموعة البحثية التنافسية (<strong className="text-white font-bold font-['Cairo']">{currentUsername}</strong> - <span className="text-slate-900 bg-slate-200 px-2 py-0.5 rounded font-['Cairo'] font-black text-xs inline-block">{userGroupMeta?.name}</span>).
           <br />
           وفقاً لضوابط العزل التجريبي للدراسة، يتنافس طلاب المجموعات التنافسية فردياً دون غرف محادثة تشاركية.
         </p>
@@ -318,9 +318,9 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
             </div>
 
             <p className="text-sm text-slate-200 leading-relaxed font-['IBM_Plex_Sans_Arabic']">
-              طالبنا العزيز (<strong className="text-[#ffd700] font-mono">{currentUsername}</strong>)، أنت مقيد رسمياً في:
+              طالبنا العزيز (<strong className="text-white font-bold font-['Cairo']">{currentUsername}</strong>)، أنت مقيد رسمياً في:
               <br />
-              <span className="inline-block mt-2 px-3 py-1.5 rounded-xl bg-cyan-950/80 border border-cyan-400 text-cyan-300 font-black text-xs shadow-sm">
+              <span className="inline-block mt-2 px-3 py-1.5 rounded-xl bg-slate-200 border border-slate-300 text-slate-900 font-black font-['Cairo'] text-xs shadow-sm">
                 🤝 {userCollabGroup ? COLLABORATIVE_GROUPS_DEF[userCollabGroup]?.name : 'غير مسجل'}
               </span>
             </p>
@@ -416,7 +416,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
             onClick={() => setAdminModeTab('G4')}
             className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 transition-all cursor-pointer ${
               adminModeTab === 'G4'
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] ring-2 ring-purple-400'
+                ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-[0_0_20px_rgba(147,51,234,0.4)] ring-2 ring-purple-400'
                 : 'bg-slate-800 text-slate-300 hover:text-white border border-slate-700'
             }`}
           >
@@ -442,7 +442,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                 }`}>
                   {effectiveMode === 'G3' ? '⚡ نمط التعاون الفوري (G3)' : '⏳ نمط التعاون المرجأ (G4)'}
                 </span>
-                <span className="text-xs font-bold px-3 py-0.5 rounded-full bg-amber-950/80 border border-[#ffd700] text-amber-300 font-['Cairo']">
+                <span className="text-xs font-black px-3.5 py-1 rounded-xl bg-slate-200 border border-slate-300 text-slate-900 font-['Cairo']">
                   5 مجموعات ثلاثية معزولة تماماً (3 طلاب + المشرف لكل فريق)
                 </span>
               </div>
@@ -518,30 +518,32 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
 
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 text-cyan-300 font-mono font-black text-sm flex items-center justify-center shadow-inner">
+                    <span className="w-10 h-10 rounded-xl bg-slate-200 border border-slate-300 text-slate-900 font-black font-['Cairo'] text-sm flex items-center justify-center shadow-inner">
                       {group.code}
                     </span>
                     <div>
-                      <h3 className="text-base font-black text-white font-['Tajawal']">
-                        {group.name}
-                      </h3>
-                      <span className="text-[11px] text-cyan-300/90 font-bold font-['Cairo']">
+                      <div className="px-2.5 py-0.5 rounded-lg bg-slate-200 border border-slate-300 inline-block mb-1">
+                        <h3 className="text-sm sm:text-base font-black text-slate-900 font-['Cairo']">
+                          {group.name}
+                        </h3>
+                      </div>
+                      <span className="block text-[11px] text-slate-300 font-bold font-['Cairo']">
                         3 طلاب + المشرف (عزل كامل)
                       </span>
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-300 font-['IBM_Plex_Sans_Arabic'] mt-2 leading-relaxed">
+                  <p className="text-xs text-slate-300 font-['Cairo'] mt-2 leading-relaxed">
                     {group.description}
                   </p>
 
                   <div className="mt-3 p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5 text-xs text-slate-300">
-                    <div className="text-[11px] font-bold text-amber-300 mb-1 flex items-center gap-1">
+                    <div className="text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1 font-['Cairo']">
                       <Users className="w-3.5 h-3.5" />
                       <span>أعضاء الفريق (3 طلاب):</span>
                     </div>
                     {group.members.map((memberUser) => (
-                      <div key={memberUser} className="flex items-center justify-between font-mono text-slate-200 text-xs">
+                      <div key={memberUser} className="flex items-center justify-between  text-slate-200 text-xs">
                         <span className="flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-cyan-400" />
                           <span>{memberUser}</span>
@@ -551,7 +553,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                         )}
                       </div>
                     ))}
-                    <div className="pt-1.5 border-t border-slate-800 flex items-center justify-between font-mono text-xs text-emerald-400">
+                    <div className="pt-1.5 border-t border-slate-800 flex items-center justify-between  text-xs text-emerald-400">
                       <span className="flex items-center gap-1.5">
                         <Crown className="w-3.5 h-3.5 text-amber-400" />
                         <span>مشرف المنظومة (Admin)</span>
@@ -593,7 +595,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
             {/* Modal Header */}
             <div className="px-6 py-4 bg-[#110e26] border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 text-cyan-300 font-mono font-black text-sm flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 text-cyan-300  font-black text-sm flex items-center justify-center">
                   {activeChatModalGroup}
                 </div>
                 <div>
@@ -626,7 +628,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                 if (isSystem) {
                   return (
                     <div key={msg.id} className="flex justify-center my-2">
-                      <span className="px-4 py-1 rounded-full bg-cyan-950/70 border border-cyan-500/40 text-cyan-300 text-[11px] font-bold font-mono">
+                      <span className="px-4 py-1 rounded-full bg-cyan-950/70 border border-cyan-500/40 text-cyan-300 text-[11px] font-bold ">
                         {msg.text}
                       </span>
                     </div>
@@ -636,9 +638,9 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                 return (
                   <div key={msg.id} className={`flex flex-col ${isMe ? 'items-start' : 'items-end'}`}>
                     <div className="flex items-center gap-2 mb-1 px-1">
-                      <span className="text-[10px] text-slate-400 font-mono">{msg.timestamp}</span>
+                      <span className="text-[10px] text-slate-400 ">{msg.timestamp}</span>
                       <span
-                        className={`text-xs font-bold font-mono px-2 py-0.5 rounded-md ${
+                        className={`text-xs font-bold  px-2 py-0.5 rounded-md ${
                           isMsgAdmin
                             ? 'bg-amber-950 text-amber-300 border border-amber-500/50'
                             : 'bg-slate-800 text-cyan-300'

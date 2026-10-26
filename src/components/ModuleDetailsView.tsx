@@ -101,7 +101,7 @@ export const ModuleDetailsView: React.FC<ModuleDetailsViewProps> = ({
             <span className="text-[11px] text-slate-400 font-['Cairo']">معدل الإتقان</span>
             <div className="flex items-baseline gap-1 my-1">
               <span className="text-2xl font-black text-amber-300 font-['Outfit']">{percentage}%</span>
-              <span className="text-[10px] text-slate-500 font-mono">
+              <span className="text-[10px] text-slate-500 ">
                 ({completedCount}/{total})
               </span>
             </div>
@@ -212,7 +212,7 @@ export const ModuleDetailsView: React.FC<ModuleDetailsViewProps> = ({
                   {/* Objective Text & Details */}
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <span className="text-xs font-mono font-bold text-[#ffd700] px-2 py-0.5 rounded bg-[#ffd700]/10 border border-[#d4af37]/40">
+                      <span className="text-xs  font-bold text-[#ffd700] px-2 py-0.5 rounded bg-[#ffd700]/10 border border-[#d4af37]/40">
                         الهدف {obj.code}
                       </span>
                       <span
@@ -300,7 +300,7 @@ export const ModuleDetailsView: React.FC<ModuleDetailsViewProps> = ({
 
             <div className="p-4 rounded-2xl bg-[#120f22] border border-slate-800">
               <span className="text-xs text-slate-400 font-bold">العام الأكاديمي والبرمجية:</span>
-              <p className="text-sm font-bold text-amber-300 mt-1 font-mono">{RESEARCH_INFO.software}</p>
+              <p className="text-sm font-bold text-amber-300 mt-1 ">{RESEARCH_INFO.software}</p>
               <span className="text-[11px] text-slate-400">{RESEARCH_INFO.year}</span>
             </div>
           </div>

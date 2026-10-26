@@ -508,7 +508,7 @@ export const AdminStudentActivitiesManager: React.FC = () => {
                           <span className="text-base font-black text-white font-['Tajawal']">
                             {student?.fullName || sub.studentFullName || sub.studentUsername}
                           </span>
-                          <span className="text-xs font-mono text-slate-400">
+                          <span className="text-xs  text-slate-400">
                             (@{sub.studentUsername})
                           </span>
                           <span className="px-2 py-0.5 rounded-full bg-blue-950 border border-blue-500 text-blue-300 text-[10px] font-bold">
@@ -522,7 +522,7 @@ export const AdminStudentActivitiesManager: React.FC = () => {
                           <span>•</span>
                           <span className="truncate max-w-xs">{sub.activityTitle || `نشاط المستوى ${sub.levelNumber}`}</span>
                           <span>•</span>
-                          <span className="font-mono text-[11px]">
+                          <span className=" text-[11px]">
                             {new Date(sub.uploadedAt).toLocaleString('ar-EG')}
                           </span>
                         </div>
@@ -550,15 +550,15 @@ export const AdminStudentActivitiesManager: React.FC = () => {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-slate-300">اسم الملف المرفوع:</span>
-                        <span className="text-xs font-mono font-bold text-white bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-700">
+                        <span className="text-xs  font-bold text-white bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-700">
                           {sub.fileName}
                         </span>
                         {sub.fileSize && (
-                          <span className="text-[11px] text-slate-400 font-mono">
+                          <span className="text-[11px] text-slate-400 ">
                             ({(sub.fileSize / (1024 * 1024)).toFixed(2)} MB)
                           </span>
                         )}
-                        <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-emerald-400 text-[10px] font-bold uppercase font-mono">
+                        <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-emerald-400 text-[10px] font-bold uppercase ">
                           {sub.fileType}
                         </span>
                       </div>
@@ -613,7 +613,7 @@ export const AdminStudentActivitiesManager: React.FC = () => {
                         <span>تقييم المشرف ورصد الدرجة (تُضاف الدرجة فورياً لرصيد الطالب عند الحفظ):</span>
                       </span>
                       {sub.gradedAt && (
-                        <span className="text-[10px] text-slate-400 font-mono">
+                        <span className="text-[10px] text-slate-400 ">
                           آخر رصد: {new Date(sub.gradedAt).toLocaleString('ar-EG')}
                         </span>
                       )}
@@ -712,7 +712,7 @@ export const AdminStudentActivitiesManager: React.FC = () => {
                 <span className="px-3 py-1 rounded-full bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold">
                   معاينة ملف نشاط المستوى {previewSubmission.levelNumber}
                 </span>
-                <span className="text-xs text-white font-bold font-mono">
+                <span className="text-xs text-white font-bold ">
                   {previewSubmission.fileName}
                 </span>
               </div>
@@ -744,7 +744,7 @@ export const AdminStudentActivitiesManager: React.FC = () => {
                   <div className="w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-500 text-rose-300 flex items-center justify-center mx-auto text-3xl font-bold">
                     PDF
                   </div>
-                  <h4 className="text-sm font-bold text-white font-mono">
+                  <h4 className="text-sm font-bold text-white ">
                     {previewSubmission.fileName}
                   </h4>
                   <div className="flex items-center justify-center gap-3 pt-2">

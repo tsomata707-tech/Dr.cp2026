@@ -264,23 +264,23 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
                   {/* Status Indicator */}
                   <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-bold">
                     {isCompleted ? (
-                      <span className="text-emerald-400 flex items-center gap-1 font-mono">
+                      <span className="text-emerald-400 flex items-center gap-1 ">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         مكتملة ومتقنة
                       </span>
                     ) : isCurrent ? (
-                      <span className="text-[#ffd700] flex items-center gap-1 font-mono animate-pulse">
+                      <span className="text-[#ffd700] flex items-center gap-1  animate-pulse">
                         <Sparkles className="w-3.5 h-3.5" />
                         المرحلة الحالية (مفتوحة)
                       </span>
                     ) : (
-                      <span className="text-slate-500 flex items-center gap-1 font-mono">
+                      <span className="text-slate-500 flex items-center gap-1 ">
                         <Lock className="w-3 h-3 text-slate-500" />
                         قيد الانتظار
                       </span>
                     )}
 
-                    <span className="text-amber-300 font-mono">{lvl.badgeEmoji}</span>
+                    <span className="text-amber-300 ">{lvl.badgeEmoji}</span>
                   </div>
                 </div>
               );

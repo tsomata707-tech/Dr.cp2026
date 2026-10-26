@@ -273,7 +273,7 @@ export const AdminSplashManager: React.FC = () => {
                 value={customInputUrl}
                 onChange={(e) => setCustomInputUrl(e.target.value)}
                 placeholder="https://example.com/student-suit-captivate.jpg"
-                className="flex-1 h-11 px-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-[#ffd700] text-xs text-white placeholder-slate-500 focus:outline-none text-left font-mono"
+                className="flex-1 h-11 px-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-[#ffd700] text-xs text-white placeholder-slate-500 focus:outline-none text-left "
               />
               <button
                 type="submit"

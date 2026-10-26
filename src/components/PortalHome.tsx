@@ -281,7 +281,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
           setActiveMainSection('posttest');
           window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
         },
-        gradient: 'from-purple-600 via-pink-600 to-rose-600',
+        gradient: 'from-purple-700 via-indigo-700 to-blue-700',
         textColor: 'text-white',
       };
     }
@@ -318,17 +318,17 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
                   جلسة تعليمية نشطة
                 </span>
                 {userGroupMeta ? (
-                  <span className="px-2.5 py-0.5 rounded-full bg-blue-950/80 border border-blue-400/50 text-blue-300 text-xs font-bold font-['Cairo']">
-                    {userGroupMeta.name}
+                  <span className="px-3.5 py-1 rounded-full bg-slate-200 border border-slate-300 text-slate-900 text-xs font-black font-['Cairo'] shadow-sm">
+                    المجموعة {userGroupMeta.code}: {userGroupMeta.name}
                   </span>
                 ) : (
-                  <span className="text-xs text-[#ffd700] font-semibold font-['Cairo']">
+                  <span className="text-xs text-white font-semibold font-['Cairo']">
                     {RESEARCH_INFO.software}
                   </span>
                 )}
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-white font-['Tajawal'] mt-1">
-                بيئة الألعاب التعليمية الإلكترونية: مرحباً بك، <span className="text-[#ffd700] font-mono">{username}</span>
+                بيئة الألعاب التعليمية الإلكترونية: مرحباً بك، <span className="text-[#ffd700] ">{username}</span>
               </h1>
               <p className="text-xs text-slate-300 mt-1 font-['Cairo']">
                 جامعة طنطا - كلية التربية النوعية • قسم تكنولوجيا التعليم
@@ -435,7 +435,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
               onClick={() => setActiveMainSection('posttest')}
               className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
                 activeMainSection === 'posttest'
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.45)]'
+                  ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-[0_0_15px_rgba(168,85,247,0.45)]'
                   : studentGame.postTestResult?.completed
                   ? 'text-emerald-300 hover:text-white hover:bg-slate-900 border border-emerald-500/30'
                   : 'text-purple-300 hover:text-white hover:bg-slate-900 border border-purple-500/30'

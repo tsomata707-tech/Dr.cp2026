@@ -190,7 +190,7 @@ export const AdminSiteTitleManager: React.FC = () => {
             <Eye className="w-4 h-4 text-amber-400" />
             <span>معاينة حية لشاشة البداية (كيف تظهر للطلاب أعلى صورة الدخول):</span>
           </span>
-          <span className="text-[11px] text-slate-400 font-mono">Live Preview</span>
+          <span className="text-[11px] text-slate-400 ">Live Preview</span>
         </div>
 
         <div className="p-6 rounded-2xl bg-[#0e142a]/90 border border-blue-500/30 text-center space-y-3">
@@ -365,7 +365,7 @@ export const AdminSiteTitleManager: React.FC = () => {
             value={whatsappNumber}
             onChange={(e) => setWhatsappNumber(e.target.value)}
             placeholder="+201091473136"
-            className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-emerald-300 font-mono text-xs outline-none text-left"
+            className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-emerald-300  text-xs outline-none text-left"
             dir="ltr"
           />
           <span className="text-[11px] text-slate-500 mt-1 block">

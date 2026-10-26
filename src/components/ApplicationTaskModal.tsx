@@ -159,7 +159,7 @@ export const ApplicationTaskModal: React.FC<ApplicationTaskModalProps> = ({
                 <Video className="w-4 h-4 text-blue-400" />
                 <span>فيديو شرح المهمة التطبيقية: {taskVideo.title}</span>
               </span>
-              <span className="text-[10px] text-slate-400 font-mono">{taskVideo.duration}</span>
+              <span className="text-[10px] text-slate-400 ">{taskVideo.duration}</span>
             </div>
             <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-slate-800">
               {taskVideo.videoType === 'youtube' || taskVideo.videoUrl.includes('youtube.com') || taskVideo.videoUrl.includes('youtu.be') ? (

@@ -81,7 +81,7 @@ export const GamingLineArtBackground: React.FC = () => {
           {/* Pixelated Coin / Mystery Block */}
           <g transform="translate(240, 20)">
             <rect x="0" y="0" width="40" height="40" rx="6" fill="#fef08a" fillOpacity="0.3" stroke="#eab308" strokeWidth="2" />
-            <text x="20" y="27" fill="#854d0e" stroke="none" fontSize="22" fontWeight="bold" fontFamily="monospace" textAnchor="middle">?</text>
+            <text x="20" y="27" fill="#854d0e" stroke="none" fontSize="22" fontWeight="bold" fontFamily="'Cairo', sans-serif" textAnchor="middle">?</text>
           </g>
         </g>
 
@@ -162,7 +162,7 @@ export const GamingLineArtBackground: React.FC = () => {
 
         {/* Right Side HUD System Data */}
         <g transform="translate(1450, 520)">
-          <text x="0" y="0" fill="#0284c7" stroke="none" fontSize="10" fontWeight="bold" fontFamily="monospace" opacity="0.6">
+          <text x="0" y="0" fill="#0284c7" stroke="none" fontSize="10" fontWeight="bold" fontFamily="'Cairo', sans-serif" opacity="0.6">
             AI_GAMING_ENVIRONMENT // READY
           </text>
           <rect x="0" y="8" width="220" height="6" rx="3" fill="#0284c7" fillOpacity="0.1" />

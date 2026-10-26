@@ -92,7 +92,7 @@ export const FirebaseStatusModal: React.FC<FirebaseStatusModalProps> = ({ isOpen
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div className="p-3 rounded-xl bg-[#080d1e] border border-slate-800 space-y-1">
               <span className="text-slate-400 block font-bold">معرّف المشروع (Project ID)</span>
-              <span className="font-mono text-[#ffd700] font-black break-all">
+              <span className=" text-[#ffd700] font-black break-all">
                 {diagnostics?.projectId || 'new-project-56330'}
               </span>
             </div>
@@ -108,7 +108,7 @@ export const FirebaseStatusModal: React.FC<FirebaseStatusModalProps> = ({ isOpen
 
           <div className="p-3 rounded-xl bg-[#080d1e] border border-slate-800 space-y-1 text-xs">
             <span className="text-slate-400 block font-bold">رابط الخادم المباشر (Database URL)</span>
-            <span className="font-mono text-cyan-300 break-all text-[11px]">
+            <span className=" text-cyan-300 break-all text-[11px]">
               https://new-project-56330-default-rtdb.firebaseio.com
             </span>
           </div>
@@ -121,9 +121,9 @@ export const FirebaseStatusModal: React.FC<FirebaseStatusModalProps> = ({ isOpen
             </div>
             <ol className="list-decimal list-inside text-slate-300 space-y-1 pr-1 text-[11px] leading-relaxed">
               <li>افتح موقع <strong className="text-white">console.firebase.google.com</strong> وسجل دخولك بحسابك.</li>
-              <li>اختر مشروعك: <strong className="text-amber-300 font-mono">new-project-56330</strong>.</li>
+              <li>اختر مشروعك: <strong className="text-amber-300 ">new-project-56330</strong>.</li>
               <li>من القائمة الجانبية (Build) اضغط على: <strong className="text-white">Realtime Database</strong>.</li>
-              <li>ستشاهد أمامك مباشرة مسار البيانات الحية (<span className="text-emerald-300 font-mono">system/onlineTest</span> و <span className="text-purple-300 font-mono">groupRooms</span>) تتحدث وتُسجل لحظياً مع كل تفاعل باللعبة!</li>
+              <li>ستشاهد أمامك مباشرة مسار البيانات الحية (<span className="text-emerald-300 ">system/onlineTest</span> و <span className="text-purple-300 ">groupRooms</span>) تتحدث وتُسجل لحظياً مع كل تفاعل باللعبة!</li>
             </ol>
           </div>
         </div>

@@ -61,7 +61,7 @@ export const LevelTransitionLoader5s: React.FC<LevelTransitionLoader5sProps> = (
               <Rocket className="w-10 h-10 sm:w-12 sm:h-12 stroke-[2.3]" />
             )}
           </div>
-          <span className="absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-full bg-slate-950 border border-amber-400 text-amber-300 font-mono text-xs font-black shadow">
+          <span className="absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-full bg-slate-950 border border-amber-400 text-amber-300  text-xs font-black shadow">
             {secondsLeft}s
           </span>
         </div>
@@ -91,7 +91,7 @@ export const LevelTransitionLoader5s: React.FC<LevelTransitionLoader5sProps> = (
             />
           </div>
 
-          <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-400 px-1">
+          <div className="flex items-center justify-between text-xs  font-bold text-slate-400 px-1">
             <span className="text-amber-300">{Math.round(progressPercent)}%</span>
             <span>باقي: {secondsLeft} ثوانٍ</span>
           </div>

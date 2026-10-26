@@ -196,7 +196,7 @@ export const DraggableLevelInstructions: React.FC<DraggableLevelInstructionsProp
                 <CheckCircle className="w-3 h-3" />
                 <span>النشاط الخاص مطلوب لإنهاء المستوى</span>
               </span>
-              <span className="text-amber-400 font-mono">L{levelNumber}</span>
+              <span className="text-amber-400 font-bold">المستوى {levelNumber}</span>
             </div>
           </div>
         )}
