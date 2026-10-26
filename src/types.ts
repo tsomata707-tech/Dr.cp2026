@@ -59,6 +59,7 @@ export interface LevelQuestion {
   levelNumber?: number;
   questionType?: 'mcq' | 'matching';
   matchingPairs?: MatchingPairItem[];
+  layout?: 'grid' | 'stacked';
 }
 
 export interface CompletedLevelResult {
@@ -83,6 +84,7 @@ export interface PreTestQuestion {
   imageUrl?: string;
   questionType?: 'mcq' | 'matching';
   matchingPairs?: MatchingPairItem[];
+  layout?: 'grid' | 'stacked';
 }
 
 export interface PreTestResult {

@@ -2036,6 +2036,13 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
   // Confirm delete UI state (no window.confirm!)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  const isStackedLayout =
+    (question as PreTestQuestion).layout === 'stacked' ||
+    [2, 6, 13, 51].includes(index) ||
+    [2, 6, 13, 51].some(
+      (n) => question.id === `pt-${n}` || question.id === `post-${n}` || question.id === `${n}` || question.id === `q-${n}`
+    );
+
   // Sync draft state when question prop changes
   useEffect(() => {
     setDraftQuestion(question.question || '');
@@ -2152,6 +2159,11 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
           {(question.questionType === 'matching' || (Boolean(question.matchingPairs) && (question.matchingPairs?.length ?? 0) > 0) || question.id === 'pt-4' || question.id === 'pt-8') && (
             <span className="px-2.5 py-0.5 rounded-lg bg-fuchsia-950/90 border border-fuchsia-500/60 text-fuchsia-300 font-bold text-[10px] flex items-center gap-1 shadow-sm">
               <span>🔗 سؤال توصيل وترتيب صور</span>
+            </span>
+          )}
+          {isStackedLayout && (
+            <span className="px-2.5 py-0.5 rounded-lg bg-indigo-950/90 border border-indigo-500/60 text-indigo-300 font-bold text-[10px] flex items-center gap-1 shadow-sm" title="خيارات هذا السؤال معروضة رأسياً تحت بعضها في الاختبارين القبلي والبعدي">
+              <span>⬇️ خيارات رأسية (تحت بعضها)</span>
             </span>
           )}
         </div>
@@ -2596,7 +2608,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
           )}
 
           {/* Options Grid with Option Images */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+          <div className={isStackedLayout ? "grid grid-cols-1 gap-2.5 pt-1" : "grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1"}>
             {question.options.map((opt, optIdx) => {
               const isCorrect = optIdx === question.correctIndex;
               const optImg = question.optionImages?.[optIdx];

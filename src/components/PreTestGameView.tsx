@@ -813,131 +813,163 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
             </div>
 
             {/* ANSWER OPTIONS: GAME 1 (STATIONS) OR GAME 2 (BOXES 📦) */}
-            {!isBoxGame ? (
-              /* GAME 1: ANSWER STATIONS FOR RACING CAR (QUESTIONS 1-25) */
-              <div ref={stationsContainerRef} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {currentQ.options.map((option, optIdx) => {
-                  const isSelected = selectedStationIndex === optIdx;
-                  const letter = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || optIdx + 1;
-                  const optImage = currentQ.optionImages?.[optIdx];
-
-                  let stationBg = 'bg-slate-900/90 border-slate-800 text-slate-200 hover:border-slate-600 hover:bg-slate-850';
-                  let bayBadge = 'bg-slate-800 text-slate-300 border-slate-700';
-
-                  if (hoveredStationIndex === optIdx) {
-                    stationBg = 'bg-amber-950/60 border-amber-400 text-white shadow-[0_0_25px_rgba(251,191,36,0.5)] scale-[1.02] ring-2 ring-amber-400/50';
-                  }
-
-                  if (answeredState !== 'idle' && isSelected) {
-                    if (mode === 'post' && isImmediate) {
-                      const isCorrect = optIdx === currentQ.correctIndex;
-                      if (isCorrect) {
-                        stationBg = 'bg-emerald-950/90 border-emerald-400 text-white ring-2 ring-emerald-400/60 shadow-[0_0_30px_rgba(16,185,129,0.4)]';
-                        bayBadge = 'bg-emerald-400 text-slate-950 border-emerald-300 font-bold';
-                      } else {
-                        stationBg = 'bg-rose-950/90 border-rose-500 text-white ring-2 ring-rose-500/60 shadow-[0_0_30px_rgba(244,63,94,0.4)]';
-                        bayBadge = 'bg-rose-500 text-white border-rose-400 font-bold';
-                      }
-                    } else {
-                      // Neutral selection in pretest or deferred groups without revealing correct or wrong!
-                      stationBg = 'bg-sky-950/80 border-sky-400 text-white shadow-[0_0_25px_rgba(56,189,248,0.4)] ring-2 ring-sky-400/50';
-                      bayBadge = 'bg-sky-400 text-slate-950 border-sky-300 font-bold';
-                    }
-                  }
-
+            {(() => {
+              const questionNumber = currentIndex + 1;
+              const isStackedLayout =
+                currentQ.layout === 'stacked' ||
+                [2, 6, 13, 51].includes(questionNumber) ||
+                [2, 6, 13, 51].some((num) => {
+                  if (!currentQ?.id) return false;
                   return (
-                    <div
-                      key={optIdx}
-                      data-station-index={optIdx}
-                      onClick={() => handleDriveCarToStation(optIdx)}
-                      className={`p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[110px] ${stationBg}`}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-7 h-7 rounded-xl text-xs font-black flex items-center justify-center border shadow-sm ${bayBadge}`}>
-                            {letter}
-                          </span>
-                          <span className="text-[11px] font-black text-slate-400">
-                            محطة رقم {optIdx + 1}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/60 border border-slate-800 text-[10px] font-bold text-slate-300">
-                          <span>🅿️ موقف</span>
-                        </div>
-                      </div>
-
-                      {/* Optional Answer Image - Balanced & Layout Preserving */}
-                      {optImage && (
-                        <div className="w-full h-32 sm:h-40 mb-3 rounded-xl overflow-hidden border border-slate-700/80 bg-black/60 p-2 flex justify-center items-center shadow-inner group-hover:border-amber-400/50 transition-colors">
-                          <img
-                            src={optImage}
-                            alt={`صورة الخيار ${letter}`}
-                            className="max-h-full max-w-full object-contain rounded-lg hover:scale-105 transition-transform"
-                            loading="lazy"
-                          />
-                        </div>
-                      )}
-
-                      <p className="text-sm font-bold text-right leading-relaxed flex-1 font-['Cairo']">
-                        {option}
-                      </p>
-
-                      {isSelected && (
-                        <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                          {mode === 'post' && isImmediate ? (
-                            optIdx === currentQ.correctIndex ? (
-                              <span className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                <span>إجابة صحيحة • النتيجة: 1/1</span>
-                              </span>
-                            ) : (
-                              <span className="text-xs font-black text-rose-300 flex items-center gap-1.5">
-                                <X className="w-4 h-4 text-rose-400" />
-                                <span>إجابة خاطئة • النتيجة: 0/1</span>
-                              </span>
-                            )
-                          ) : (
-                            <span className="text-xs font-black text-sky-400 flex items-center gap-1.5">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>تم اختيار وتثبيت هذه المحطة</span>
-                            </span>
-                          )}
-                          <RacingCarGraphic scale={0.7} isDriving={isDrivingToStation === optIdx} />
-                        </div>
-                      )}
-                    </div>
+                    currentQ.id === `pt-${num}` ||
+                    currentQ.id === `post-${num}` ||
+                    currentQ.id === `${num}` ||
+                    currentQ.id === `q-${num}`
                   );
-                })}
-              </div>
-            ) : (
-              /* GAME 2: MYSTERY BOXES 📦 (QUESTIONS 26+) */
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {currentQ.options.map((option, optIdx) => {
-                  const isSelected = selectedStationIndex === optIdx;
-                  const boxNumber = optIdx + 1;
-                  const optImage = currentQ.optionImages?.[optIdx];
+                });
 
-                  let boxCardStyle = 'bg-gradient-to-b from-[#141022] to-[#0c0916] border-slate-800 hover:border-amber-500/60 text-slate-200';
-                  if (isSelected) {
-                    if (mode === 'post' && isImmediate) {
-                      const isCorrect = optIdx === currentQ.correctIndex;
-                      if (isCorrect) {
-                        boxCardStyle = 'bg-gradient-to-b from-emerald-950 via-[#0d2a1c] to-black border-emerald-400 text-white ring-2 ring-emerald-400/50 shadow-[0_0_35px_rgba(16,185,129,0.45)]';
-                      } else {
-                        boxCardStyle = 'bg-gradient-to-b from-rose-950 via-[#2a0d14] to-black border-rose-500 text-white ring-2 ring-rose-500/50 shadow-[0_0_35px_rgba(244,63,94,0.45)]';
-                      }
-                    } else {
-                      boxCardStyle = 'bg-gradient-to-b from-[#241738] via-[#1a122e] to-[#120a22] border-amber-400 text-white ring-2 ring-amber-400/50 shadow-[0_0_30px_rgba(251,191,36,0.35)]';
-                    }
+              return !isBoxGame ? (
+                /* GAME 1: ANSWER STATIONS FOR RACING CAR (QUESTIONS 1-25) */
+                <div
+                  ref={stationsContainerRef}
+                  className={
+                    isStackedLayout
+                      ? "grid grid-cols-1 gap-3.5 sm:gap-4 w-full"
+                      : "grid grid-cols-1 sm:grid-cols-2 gap-4"
                   }
+                >
+                  {currentQ.options.map((option, optIdx) => {
+                    const isSelected = selectedStationIndex === optIdx;
+                    const letter = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || optIdx + 1;
+                    const optImage = currentQ.optionImages?.[optIdx];
 
-                  return (
-                    <div
-                      key={optIdx}
-                      onClick={() => handleSelectBox(optIdx)}
-                      className={`p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[140px] relative overflow-hidden group ${boxCardStyle}`}
-                    >
+                    let stationBg = 'bg-slate-900/90 border-slate-800 text-slate-200 hover:border-slate-600 hover:bg-slate-850';
+                    let bayBadge = 'bg-slate-800 text-slate-300 border-slate-700';
+
+                    if (hoveredStationIndex === optIdx) {
+                      stationBg = 'bg-amber-950/60 border-amber-400 text-white shadow-[0_0_25px_rgba(251,191,36,0.5)] scale-[1.01] ring-2 ring-amber-400/50';
+                    }
+
+                    if (answeredState !== 'idle' && isSelected) {
+                      if (mode === 'post' && isImmediate) {
+                        const isCorrect = optIdx === currentQ.correctIndex;
+                        if (isCorrect) {
+                          stationBg = 'bg-emerald-950/90 border-emerald-400 text-white ring-2 ring-emerald-400/60 shadow-[0_0_30px_rgba(16,185,129,0.4)]';
+                          bayBadge = 'bg-emerald-400 text-slate-950 border-emerald-300 font-bold';
+                        } else {
+                          stationBg = 'bg-rose-950/90 border-rose-500 text-white ring-2 ring-rose-500/60 shadow-[0_0_30px_rgba(244,63,94,0.4)]';
+                          bayBadge = 'bg-rose-500 text-white border-rose-400 font-bold';
+                        }
+                      } else {
+                        // Neutral selection in pretest or deferred groups without revealing correct or wrong!
+                        stationBg = 'bg-sky-950/80 border-sky-400 text-white shadow-[0_0_25px_rgba(56,189,248,0.4)] ring-2 ring-sky-400/50';
+                        bayBadge = 'bg-sky-400 text-slate-950 border-sky-300 font-bold';
+                      }
+                    }
+
+                    return (
+                      <div
+                        key={optIdx}
+                        data-station-index={optIdx}
+                        onClick={() => handleDriveCarToStation(optIdx)}
+                        className={`p-4 sm:p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                          isStackedLayout ? 'min-h-[90px]' : 'min-h-[110px]'
+                        } ${stationBg}`}
+                      >
+                        <div className="flex items-center justify-between mb-2 sm:mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-7 h-7 rounded-xl text-xs font-black flex items-center justify-center border shadow-sm ${bayBadge}`}>
+                              {letter}
+                            </span>
+                            <span className="text-[11px] font-black text-slate-400">
+                              محطة رقم {optIdx + 1}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/60 border border-slate-800 text-[10px] font-bold text-slate-300">
+                            <span>🅿️ موقف</span>
+                          </div>
+                        </div>
+
+                        {/* Optional Answer Image - Balanced & Layout Preserving */}
+                        {optImage && (
+                          <div className="w-full h-32 sm:h-40 mb-3 rounded-xl overflow-hidden border border-slate-700/80 bg-black/60 p-2 flex justify-center items-center shadow-inner group-hover:border-amber-400/50 transition-colors">
+                            <img
+                              src={optImage}
+                              alt={`صورة الخيار ${letter}`}
+                              className="max-h-full max-w-full object-contain rounded-lg hover:scale-105 transition-transform"
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
+
+                        <p className="text-sm sm:text-base font-bold text-right leading-relaxed flex-1 font-['Cairo']">
+                          {option}
+                        </p>
+
+                        {isSelected && (
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                            {mode === 'post' && isImmediate ? (
+                              optIdx === currentQ.correctIndex ? (
+                                <span className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                  <span>إجابة صحيحة • النتيجة: 1/1</span>
+                                </span>
+                              ) : (
+                                <span className="text-xs font-black text-rose-300 flex items-center gap-1.5">
+                                  <X className="w-4 h-4 text-rose-400" />
+                                  <span>إجابة خاطئة • النتيجة: 0/1</span>
+                                </span>
+                              )
+                            ) : (
+                              <span className="text-xs font-black text-sky-400 flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>تم اختيار وتثبيت هذه المحطة</span>
+                              </span>
+                            )}
+                            <RacingCarGraphic scale={0.7} isDriving={isDrivingToStation === optIdx} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* GAME 2: MYSTERY BOXES 📦 (QUESTIONS 26+) */
+                <div
+                  className={
+                    isStackedLayout
+                      ? "grid grid-cols-1 gap-3.5 sm:gap-4 w-full"
+                      : "grid grid-cols-1 sm:grid-cols-2 gap-4"
+                  }
+                >
+                  {currentQ.options.map((option, optIdx) => {
+                    const isSelected = selectedStationIndex === optIdx;
+                    const boxNumber = optIdx + 1;
+                    const optImage = currentQ.optionImages?.[optIdx];
+
+                    let boxCardStyle = 'bg-gradient-to-b from-[#141022] to-[#0c0916] border-slate-800 hover:border-amber-500/60 text-slate-200';
+                    if (isSelected) {
+                      if (mode === 'post' && isImmediate) {
+                        const isCorrect = optIdx === currentQ.correctIndex;
+                        if (isCorrect) {
+                          boxCardStyle = 'bg-gradient-to-b from-emerald-950 via-[#0d2a1c] to-black border-emerald-400 text-white ring-2 ring-emerald-400/50 shadow-[0_0_35px_rgba(16,185,129,0.45)]';
+                        } else {
+                          boxCardStyle = 'bg-gradient-to-b from-rose-950 via-[#2a0d14] to-black border-rose-500 text-white ring-2 ring-rose-500/50 shadow-[0_0_35px_rgba(244,63,94,0.45)]';
+                        }
+                      } else {
+                        boxCardStyle = 'bg-gradient-to-b from-[#241738] via-[#1a122e] to-[#120a22] border-amber-400 text-white ring-2 ring-amber-400/50 shadow-[0_0_30px_rgba(251,191,36,0.35)]';
+                      }
+                    }
+
+                    return (
+                      <div
+                        key={optIdx}
+                        onClick={() => handleSelectBox(optIdx)}
+                        className={`p-4 sm:p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between ${
+                          isStackedLayout ? 'min-h-[110px]' : 'min-h-[140px]'
+                        } relative overflow-hidden group ${boxCardStyle}`}
+                      >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <span className="px-2.5 py-1 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-300 text-xs font-black">
@@ -999,7 +1031,8 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                   );
                 })}
               </div>
-            )}
+            );
+          })()}
 
             {/* SELECTION BANNER / ADMIN NAVIGATION */}
             {(answeredState === 'selected' || isAdmin) && (

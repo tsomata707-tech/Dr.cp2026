@@ -36,6 +36,7 @@ export const DEFAULT_PRETEST_QUESTIONS: PreTestQuestion[] = [
     explanation: 'الوسائط المتعددة تجمع النصوص المكتوبة، الأصوات، الصور الثابتة والمتحركة، الفيديو، مع إمكانية التفاعل الرقمي.',
     points: 1,
     questionType: 'mcq',
+    layout: 'stacked',
   },
   {
     id: 'pt-3',
@@ -98,6 +99,7 @@ export const DEFAULT_PRETEST_QUESTIONS: PreTestQuestion[] = [
     explanation: 'نمط Blank Project يمنح المصمم مساحة عمل بيضاء بأبعاد قابلة للتخصيصل الكامل حسب متطلبات الدرس.',
     points: 1,
     questionType: 'mcq',
+    layout: 'stacked',
   },
 
   // ================= MODULE 2 (Q7 - Q11) =================
@@ -206,6 +208,7 @@ export const DEFAULT_PRETEST_QUESTIONS: PreTestQuestion[] = [
     explanation: 'مشروع VR يتيح إدراج صور وفيديوهات 360 درجة وإضافة نقاط تفاعلية وأسئلة بصرية غامرة.',
     points: 1,
     questionType: 'mcq',
+    layout: 'stacked',
   },
   {
     id: 'pt-14',
@@ -752,6 +755,7 @@ export const DEFAULT_PRETEST_QUESTIONS: PreTestQuestion[] = [
     explanation: 'خاصية Reporting تنقل بيانات درجات الطلاب ونسب إتمامهم وحالة Pass/Fail تلقائياً إلى قاعدة بيانات المنصة.',
     points: 1,
     questionType: 'mcq',
+    layout: 'stacked',
   },
   {
     id: 'pt-52',
@@ -789,7 +793,15 @@ export const DEFAULT_POSTTEST_QUESTIONS: PreTestQuestion[] = JSON.parse(
 
 export function ensureMatchingQuestionsIntegrity(questions: PreTestQuestion[]): PreTestQuestion[] {
   if (!Array.isArray(questions)) return [];
-  return questions;
+  return questions.map((q, idx) => {
+    const questionNumber = idx + 1;
+    if ([2, 6, 13, 51].includes(questionNumber) || ['pt-2', 'pt-6', 'pt-13', 'pt-51'].includes(q.id)) {
+      if (q.layout !== 'stacked') {
+        return { ...q, layout: 'stacked' };
+      }
+    }
+    return q;
+  });
 }
 
 export function getPreTestQuestions(): PreTestQuestion[] {
@@ -797,16 +809,16 @@ export function getPreTestQuestions(): PreTestQuestion[] {
     const raw = localStorage.getItem(PRETEST_QUESTIONS_KEY);
     if (!raw) {
       savePreTestQuestions(DEFAULT_PRETEST_QUESTIONS, false);
-      return DEFAULT_PRETEST_QUESTIONS;
+      return ensureMatchingQuestionsIntegrity(DEFAULT_PRETEST_QUESTIONS);
     }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) {
       savePreTestQuestions(DEFAULT_PRETEST_QUESTIONS, false);
-      return DEFAULT_PRETEST_QUESTIONS;
+      return ensureMatchingQuestionsIntegrity(DEFAULT_PRETEST_QUESTIONS);
     }
-    return parsed;
+    return ensureMatchingQuestionsIntegrity(parsed);
   } catch {
-    return DEFAULT_PRETEST_QUESTIONS;
+    return ensureMatchingQuestionsIntegrity(DEFAULT_PRETEST_QUESTIONS);
   }
 }
 
@@ -903,16 +915,16 @@ export function getPostTestQuestions(): PreTestQuestion[] {
     const raw = localStorage.getItem(POSTTEST_QUESTIONS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return ensureMatchingQuestionsIntegrity(parsed);
     }
     // Automatically copy and sync from PreTest questions if PostTest is empty
     const preQuestions = getPreTestQuestions();
     if (preQuestions && preQuestions.length > 0) {
       savePostTestQuestions(preQuestions, false);
-      return preQuestions;
+      return ensureMatchingQuestionsIntegrity(preQuestions);
     }
     savePostTestQuestions(DEFAULT_PRETEST_QUESTIONS, false);
-    return DEFAULT_PRETEST_QUESTIONS;
+    return ensureMatchingQuestionsIntegrity(DEFAULT_PRETEST_QUESTIONS);
   } catch {
     return getPreTestQuestions();
   }
