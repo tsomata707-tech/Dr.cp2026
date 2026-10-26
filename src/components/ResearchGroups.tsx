@@ -207,8 +207,8 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
               </h2>
               <p className="text-xs text-slate-300 mt-1 font-['Cairo']">
                 {isAdmin ? (
-                  <span className="text-emerald-400 font-bold flex items-center gap-1.5">
-                    <Eye className="w-4 h-4 text-emerald-400 inline" />
+                  <span className="text-blue-400 font-black flex items-center gap-1.5 text-xs sm:text-sm">
+                    <Eye className="w-4 h-4 text-blue-400 inline" />
                     <span>حساب المشرف (admin): مصرح لك بقراءة كامل الموقع والدخول واستعراض أي مجموعة من المجموعات الأربعة.</span>
                   </span>
                 ) : userGroupMeta ? (
