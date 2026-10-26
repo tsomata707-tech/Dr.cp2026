@@ -860,13 +860,26 @@ export function submitPreTestResult(
   const questions = getPreTestQuestions();
   let score = 0;
   let maxScore = 0;
+  const questionScores: Record<string, number> = {};
+  const questionDetails: Record<string, { chosenIndex: number; isCorrect: boolean; answeredAt: string }> = {};
+  const completedAtStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
   questions.forEach((q) => {
     const pts = q.points || 1;
     maxScore += pts;
-    if (chosenAnswers[q.id] === q.correctIndex) {
+    const chosen = chosenAnswers[q.id];
+    const isCorrect = chosen === q.correctIndex;
+    if (isCorrect) {
       score += pts;
+      questionScores[q.id] = pts;
+    } else {
+      questionScores[q.id] = 0;
     }
+    questionDetails[q.id] = {
+      chosenIndex: chosen ?? -1,
+      isCorrect,
+      answeredAt: completedAtStr,
+    };
   });
 
   const finalMaxScore = maxScore > 0 ? maxScore : 53;
@@ -877,7 +890,9 @@ export function submitPreTestResult(
     score,
     maxScore: finalMaxScore,
     answers: chosenAnswers,
-    completedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    questionScores,
+    questionDetails,
+    completedAt: completedAtStr,
     timeSpentSeconds,
     passed,
   };
@@ -975,15 +990,23 @@ export function submitPostTestResult(
   const questions = getPostTestQuestions();
   let score = 0;
   const questionScores: Record<string, number> = {};
+  const questionDetails: Record<string, { chosenIndex: number; isCorrect: boolean; answeredAt: string }> = {};
+  const completedAtStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
   questions.forEach((q) => {
-    const isCorrect = chosenAnswers[q.id] === q.correctIndex;
+    const chosen = chosenAnswers[q.id];
+    const isCorrect = chosen === q.correctIndex;
     if (isCorrect) {
       score += 1; // 1 point per correct answer
       questionScores[q.id] = 1;
     } else {
       questionScores[q.id] = 0;
     }
+    questionDetails[q.id] = {
+      chosenIndex: chosen ?? -1,
+      isCorrect,
+      answeredAt: completedAtStr,
+    };
   });
 
   const maxScore = questions.length > 0 ? questions.length : 53;
@@ -995,7 +1018,8 @@ export function submitPostTestResult(
     maxScore,
     answers: chosenAnswers,
     questionScores,
-    completedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    questionDetails,
+    completedAt: completedAtStr,
     timeSpentSeconds,
     passed,
   };

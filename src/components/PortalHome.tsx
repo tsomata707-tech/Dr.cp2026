@@ -143,6 +143,14 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
     };
     const handleNavToPosttest = () => {
       refreshProgress();
+      const isAdmin = username.trim().toLowerCase() === 'admin';
+      const prog = getStudentProgress(username);
+      const preDone = Boolean(prog.preTestResult?.completed);
+      const levelsDone = Object.keys(prog.completedLevels || {}).length >= 9;
+      if (!isAdmin && (!preDone || !levelsDone)) {
+        alert('⚠️ عذراً، لا يمكن الدخول إلى الاختبار البعدي إلا بعد إتمام الاختبار القبلي وجميع المستويات التعليمية التسعة بنجاح!');
+        return;
+      }
       setActiveMainSection('posttest');
       window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     };
@@ -432,7 +440,16 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
             <button
               type="button"
               id="tab-posttest"
-              onClick={() => setActiveMainSection('posttest')}
+              onClick={() => {
+                const isAdmin = username.trim().toLowerCase() === 'admin';
+                const preDone = Boolean(studentGame.preTestResult?.completed);
+                const levelsDone = Object.keys(studentGame.completedLevels || {}).length >= 9;
+                if (!isAdmin && (!preDone || !levelsDone)) {
+                  alert('⚠️ عذراً، لا يمكن الدخول إلى الاختبار البعدي إلا بعد إتمام الاختبار القبلي وجميع المستويات التعليمية التسعة بنجاح!');
+                  return;
+                }
+                setActiveMainSection('posttest');
+              }}
               className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
                 activeMainSection === 'posttest'
                   ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-[0_0_15px_rgba(168,85,247,0.45)]'

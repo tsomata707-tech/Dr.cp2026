@@ -87,12 +87,19 @@ export interface PreTestQuestion {
   layout?: 'grid' | 'stacked';
 }
 
+export interface QuestionAnswerDetail {
+  chosenIndex: number;
+  isCorrect: boolean;
+  answeredAt: string;
+}
+
 export interface PreTestResult {
   completed: boolean;
   score: number;
   maxScore: number;
   answers: Record<string, number>; // questionId -> chosenIndex
   questionScores?: Record<string, number>; // questionId -> 1 or 0
+  questionDetails?: Record<string, QuestionAnswerDetail>; // questionId -> detail
   completedAt: string;
   timeSpentSeconds: number;
   passed: boolean;

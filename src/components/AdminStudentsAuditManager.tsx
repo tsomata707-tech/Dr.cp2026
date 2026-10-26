@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { generateSixtyStudents, RESEARCH_GROUPS_META, getGroupByUsername, getCollaborativeGroupByUsername } from '../data/studentAccounts';
 import { StudentGameProgress, PreTestResult, CompletedLevelResult } from '../types';
-import { getPostTestQuestions } from '../data/preTestData';
+import { getPostTestQuestions, getPreTestQuestions } from '../data/preTestData';
 import {
   getStudentLoginsAuditMap,
   StudentLoginAudit,
@@ -1092,13 +1092,50 @@ export const AdminStudentsAuditManager: React.FC = () => {
               </div>
             </div>
 
+            {/* Pre-Test Question Breakdown */}
+            {inspectStudent.preTestCompleted && inspectStudent.raw.preTestResult && (
+              <div className="space-y-2 p-3.5 rounded-2xl bg-sky-950/20 border border-sky-500/30">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-sky-300 flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-sky-400" />
+                    <span>نتائج الاختبار القبلي:</span>
+                  </h4>
+                  <span className="text-[11px] font-black text-sky-300 bg-sky-950/80 px-2 py-0.5 rounded-lg border border-sky-500/40">
+                    {inspectStudent.preTestScore} / {inspectStudent.preTestMaxScore || 53}
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 sm:grid-cols-9 gap-1.5 max-h-40 overflow-y-auto pr-1 pt-1">
+                  {getPreTestQuestions().map((q, qIdx) => {
+                    const detail = inspectStudent.raw.preTestResult?.questionDetails?.[q.id];
+                    const isRight = detail ? detail.isCorrect : (inspectStudent.raw.preTestResult?.answers?.[q.id] === q.correctIndex);
+                    const time = detail?.answeredAt ? detail.answeredAt.split(' ')[1] : 'غير متاح';
+                    return (
+                      <div
+                        key={q.id || qIdx}
+                        className={`p-1 rounded-lg text-center border text-[10px] ${
+                          isRight
+                            ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300 font-bold'
+                            : 'bg-rose-950/80 border-rose-500/60 text-rose-300 font-bold'
+                        }`}
+                        title={`سؤال ${qIdx + 1}: ${isRight ? 'صحيح' : 'خطأ'} - وقت الإجابة: ${time}`}
+                      >
+                        <div className="text-[8px] text-slate-400">س{qIdx + 1}</div>
+                        <div>{isRight ? '1/1' : '0/1'}</div>
+                        <div className="text-[7px] opacity-70">{time}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Post-Test Question Breakdown (0/1 or 1/1) */}
             {inspectStudent.postTestCompleted && inspectStudent.raw.postTestResult && (
               <div className="space-y-2 p-3.5 rounded-2xl bg-purple-950/20 border border-purple-500/30">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-black text-purple-300 flex items-center gap-1.5">
                     <Award className="w-4 h-4 text-purple-400" />
-                    <span>نتائج أسئلة الاختبار البعدي (0/1 عند الخطأ، 1/1 عند الصواب):</span>
+                    <span>نتائج الاختبار البعدي:</span>
                   </h4>
                   <span className="text-[11px]  font-black text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded-lg border border-purple-500/40">
                     {inspectStudent.postTestScore} / {inspectStudent.postTestMaxScore || 53}
@@ -1106,20 +1143,22 @@ export const AdminStudentsAuditManager: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-5 sm:grid-cols-9 gap-1.5 max-h-40 overflow-y-auto pr-1 pt-1">
                   {getPostTestQuestions().map((q, qIdx) => {
-                    const itemScore = inspectStudent.raw.postTestResult?.questionScores?.[q.id] ?? (inspectStudent.raw.postTestResult?.answers?.[q.id] === q.correctIndex ? 1 : 0);
-                    const isRight = itemScore === 1;
+                    const detail = inspectStudent.raw.postTestResult?.questionDetails?.[q.id];
+                    const isRight = detail ? detail.isCorrect : (inspectStudent.raw.postTestResult?.answers?.[q.id] === q.correctIndex);
+                    const time = detail?.answeredAt ? detail.answeredAt.split(' ')[1] : 'غير متاح';
                     return (
                       <div
                         key={q.id || qIdx}
-                        className={`p-1 rounded-lg text-center border  text-[10px] ${
+                        className={`p-1 rounded-lg text-center border text-[10px] ${
                           isRight
                             ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300 font-bold'
                             : 'bg-rose-950/80 border-rose-500/60 text-rose-300 font-bold'
                         }`}
-                        title={`سؤال ${qIdx + 1}: ${isRight ? '1/1 (صحيح)' : '0/1 (خطأ)'}`}
+                        title={`سؤال ${qIdx + 1}: ${isRight ? 'صحيح' : 'خطأ'} - وقت الإجابة: ${time}`}
                       >
                         <div className="text-[8px] text-slate-400">س{qIdx + 1}</div>
                         <div>{isRight ? '1/1' : '0/1'}</div>
+                        <div className="text-[7px] opacity-70">{time}</div>
                       </div>
                     );
                   })}
