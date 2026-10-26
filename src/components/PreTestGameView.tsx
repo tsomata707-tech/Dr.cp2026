@@ -708,7 +708,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                       <span>تخطي السؤال ⏩</span>
                     </button>
                   )}
-                  <span className="text-xs text-amber-300 font-bold bg-amber-950/60 px-3 py-1 rounded-lg border border-amber-500/40">
+                  <span className="text-xs text-slate-200 font-bold bg-slate-800/90 px-3 py-1 rounded-lg border border-slate-700">
                     {isBoxGame ? '📦 اختر الصندوق الصحيح' : '🏎️ وجّه السيارة نحو المحطة'}
                   </span>
                 </div>
@@ -992,7 +992,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                       >
                         <div className={`flex items-center gap-3 ${isStackedLayout ? 'shrink-0' : 'justify-between mb-3 w-full'}`}>
                           <div className="flex items-center gap-2">
-                            <span className="px-3 py-1.5 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-300 text-xs font-black">
+                            <span className="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-black">
                               {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || boxNumber}
                             </span>
                           </div>
