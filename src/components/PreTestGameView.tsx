@@ -25,6 +25,7 @@ import {
   Home,
   Package,
   Eye,
+  Clock,
 } from 'lucide-react';
 import { CARTOON_AVATARS } from '../data/gameLevelsData';
 import { getStudentProgress } from '../utils/gameStorage';
@@ -45,8 +46,8 @@ interface PreTestGameViewProps {
   onBackToInstructions?: () => void;
 }
 
-// Retro Web Audio Synthesizer (Engine, Vroom, Box Open, Click, Fanfare)
-function playCarSound(type: 'engine' | 'drive' | 'correct' | 'wrong' | 'click' | 'fanfare' | 'box') {
+// Retro Web Audio Synthesizer (Engine, Vroom, Box Open, Click, Fanfare, Alarm Siren)
+function playCarSound(type: 'engine' | 'drive' | 'correct' | 'wrong' | 'click' | 'fanfare' | 'box' | 'alarm') {
   try {
     const AudioCtx =
       window.AudioContext ||
@@ -54,7 +55,21 @@ function playCarSound(type: 'engine' | 'drive' | 'correct' | 'wrong' | 'click' |
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
 
-    if (type === 'click' || type === 'box') {
+    if (type === 'alarm') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(440, ctx.currentTime + 0.15);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.3);
+      osc.frequency.setValueAtTime(440, ctx.currentTime + 0.45);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.6);
+    } else if (type === 'click' || type === 'box') {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -301,6 +316,38 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
   });
   const [selectedStationIndex, setSelectedStationIndex] = useState<number | null>(null);
 
+  // Student account and session date/time
+  const studentAccount = useMemo(() => getStudentByUsername(username), [username]);
+  const studentFullName =
+    studentAccount?.fullName ||
+    (username.trim().toLowerCase() === 'admin' ? 'المشرف العام (Admin)' : username);
+  const sessionStartTimeStr = useMemo(() => {
+    const now = new Date();
+    return now.toLocaleString('ar-EG', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  }, []);
+
+  // 7-Second Welcome Modal Overlay
+  const [showWelcomeModal, setShowWelcomeModal] = useState<boolean>(true);
+  const [welcomeSeconds, setWelcomeSeconds] = useState<number>(7);
+
+  // 60-Minute Digital Clock Timer (3600 seconds)
+  const [testTimerSeconds, setTestTimerSeconds] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(`cp_${mode}_timer_${username}`);
+      return saved ? parseInt(saved, 10) : 3600;
+    } catch {
+      return 3600;
+    }
+  });
+
   // Dedicated Game Mode & Intro
   const [gameStarted, setGameStarted] = useState(() => {
     try {
@@ -320,6 +367,55 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     localStorage.setItem(`cp_${mode}_started_${username}`, gameStarted.toString());
   }, [gameStarted, username, mode]);
 
+  // Sound settings
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Gamification metrics
+  const [isFinished, setIsFinished] = useState(false);
+  const [finalResult, setFinalResult] = useState<PreTestResult | null>(null);
+
+  // Welcome popup 7-second auto-close timer
+  useEffect(() => {
+    if (!showWelcomeModal) return;
+    if (welcomeSeconds <= 0) {
+      setShowWelcomeModal(false);
+      setGameStarted(true);
+      return;
+    }
+    const timer = setInterval(() => {
+      setWelcomeSeconds((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [showWelcomeModal, welcomeSeconds]);
+
+  // 60-Minute test countdown timer effect (Alarm siren at <= 15s)
+  useEffect(() => {
+    if (showWelcomeModal || !gameStarted || isFinished) return;
+    localStorage.setItem(`cp_${mode}_timer_${username}`, testTimerSeconds.toString());
+
+    if (testTimerSeconds <= 0) {
+      finishGame();
+      return;
+    }
+
+    if (testTimerSeconds <= 15 && soundEnabled) {
+      playCarSound('alarm');
+    }
+
+    const interval = setInterval(() => {
+      setTestTimerSeconds((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [showWelcomeModal, gameStarted, isFinished, testTimerSeconds, username, mode, soundEnabled]);
+
+  // Digital clock formatter (MM:SS)
+  const formatDigitalClock = (totalSecs: number) => {
+    const m = Math.floor(Math.max(0, totalSecs) / 60);
+    const s = Math.max(0, totalSecs) % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   // Interaction State
   const [isDrivingToStation, setIsDrivingToStation] = useState<number | null>(null);
   const [answeredState, setAnsweredState] = useState<'idle' | 'evaluating' | 'selected'>('idle');
@@ -327,13 +423,6 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
   // Dragging connection state (Pointer & Touch supported)
   const [isDraggingCar, setIsDraggingCar] = useState(false);
   const [hoveredStationIndex, setHoveredStationIndex] = useState<number | null>(null);
-
-  // Sound settings
-  const [soundEnabled, setSoundEnabled] = useState(true);
-
-  // Gamification metrics
-  const [isFinished, setIsFinished] = useState(false);
-  const [finalResult, setFinalResult] = useState<PreTestResult | null>(null);
 
   const startTimeRef = useRef<number>(Date.now());
   const carDockRef = useRef<HTMLDivElement>(null);
@@ -361,7 +450,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     currentIndex === 7;
 
   // Play sound wrapper
-  const triggerSound = (type: 'engine' | 'drive' | 'correct' | 'wrong' | 'click' | 'fanfare' | 'box') => {
+  const triggerSound = (type: 'engine' | 'drive' | 'correct' | 'wrong' | 'click' | 'fanfare' | 'box' | 'alarm') => {
     if (soundEnabled) {
       playCarSound(type);
     }
@@ -481,6 +570,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     localStorage.removeItem(`cp_${mode}_index_${username}`);
     localStorage.removeItem(`cp_${mode}_answers_${username}`);
     localStorage.removeItem(`cp_${mode}_started_${username}`);
+    localStorage.removeItem(`cp_${mode}_timer_${username}`);
 
     setFinalResult(submission.result);
     setIsFinished(true);
@@ -495,6 +585,80 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
 
   return (
     <div className="min-h-screen bg-sky-50 text-slate-900 font-['Cairo'] pb-16 relative overflow-hidden select-none">
+      {/* 7-SECOND WELCOME MODAL OVERLAY */}
+      {showWelcomeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300 font-['Cairo']">
+          <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-black border-2 border-sky-400/70 shadow-[0_0_50px_rgba(56,189,248,0.3)] rounded-3xl max-w-lg w-full p-6 sm:p-8 text-white relative overflow-hidden space-y-5">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-400 flex items-center justify-center text-sky-300 shadow-lg">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-black font-['Tajawal'] text-white">
+                    أهلاً بك في {testLabel} 👋
+                  </h3>
+                  <p className="text-xs text-sky-300 font-bold">
+                    منصة الاختبارات والأنشطة التفاعلية
+                  </p>
+                </div>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-mono font-black text-amber-400 text-base shadow-inner">
+                {welcomeSeconds}s
+              </div>
+            </div>
+
+            <div className="space-y-3.5 bg-slate-950/80 p-4 rounded-2xl border border-slate-800 text-right">
+              <div className="flex items-center justify-between text-xs sm:text-sm">
+                <span className="text-slate-400 font-bold">اسم الطالب:</span>
+                <span className="text-emerald-300 font-black text-sm sm:text-base">{studentFullName}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs sm:text-sm">
+                <span className="text-slate-400 font-bold">اسم المستخدم (اليوزر):</span>
+                <span className="text-amber-300 font-mono font-bold">{username}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs sm:text-sm">
+                <span className="text-slate-400 font-bold">تاريخ ووقت البدء:</span>
+                <span className="text-sky-300 font-bold text-xs">{sessionStartTimeStr}</span>
+              </div>
+              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                <span className="text-slate-400 font-bold text-xs">مدة الاختبار المقررة:</span>
+                <span className="px-3 py-1 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-300 font-black text-xs">
+                  ⏱️ 60 دقيقة
+                </span>
+              </div>
+            </div>
+
+            {/* 7-Second Countdown Visual Progress Bar */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center text-[11px] font-bold text-slate-400">
+                <span>سيتم إغلاق النافذة وبدء التايمر خلال {welcomeSeconds} ثوانٍ...</span>
+                <span className="text-amber-400 font-mono">{welcomeSeconds}/7s</span>
+              </div>
+              <div className="h-2.5 w-full bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-sky-400 via-amber-400 to-emerald-400 transition-all duration-1000"
+                  style={{ width: `${(welcomeSeconds / 7) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                triggerSound('click');
+                setShowWelcomeModal(false);
+                setGameStarted(true);
+              }}
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-black text-sm transition-all transform hover:scale-[1.02] shadow-xl shadow-sky-900/40 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Play className="w-4 h-4 fill-white" />
+              <span>بدء الاختبار الآن (الانتقال المباشر)</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Dynamic Background Light Sky & White Gaming Tracks */}
       <div className="absolute inset-0 bg-gradient-to-br from-sky-100 via-white to-cyan-50 pointer-events-none" />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0284c715_1px,transparent_1px),linear-gradient(to_bottom,#0284c715_1px,transparent_1px)] bg-[size:3rem_3rem] pointer-events-none" />
@@ -519,6 +683,23 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                   {isBoxGame ? 'اللعبة 2: الصناديق' : 'اللعبة 1: سيارة السباق'}
                 </span>
               </div>
+            </div>
+          </div>
+
+          {/* 60-Minute Digital Clock Badge in Header */}
+          <div
+            className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border font-black text-sm transition-all ${
+              testTimerSeconds <= 15
+                ? 'bg-rose-950 text-rose-300 border-rose-500 animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.6)] ring-2 ring-rose-500/50'
+                : 'bg-slate-900 text-amber-300 border-amber-500/40 shadow-inner'
+            }`}
+          >
+            <Clock className={`w-4 h-4 ${testTimerSeconds <= 15 ? 'text-rose-400 animate-bounce' : 'text-amber-400'}`} />
+            <div className="flex flex-col text-right">
+              <span className="text-[10px] text-slate-400 leading-none">زمن الاختبار</span>
+              <span className="font-mono text-base font-bold tracking-wider leading-tight">
+                {formatDigitalClock(testTimerSeconds)}
+              </span>
             </div>
           </div>
 
