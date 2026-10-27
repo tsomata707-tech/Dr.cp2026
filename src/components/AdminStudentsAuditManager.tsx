@@ -612,7 +612,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
         s.postTestCompleted ? 'مكتمل' : 'غير مكتمل',
         s.postTestDate,
         s.postTestCompleted ? s.postTestScore : '-',
-        s.postTestCompleted ? s.postTestMaxScore : 53,
+        s.postTestCompleted ? s.postTestMaxScore : computeActualMaxScore(postQuestions),
         s.postTestCompleted ? `${s.postTestPercentage}%` : '-',
         s.postTestCompleted ? (s.postTestPassed ? 'مجتاز بنجاح' : 'لم يجتز') : 'لم يتقدم',
         s.postTestCompleted ? formatDuration(s.postTestTimeSpent) : '-',
@@ -746,7 +746,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       const score = resultData ? resultData.score : 0;
       const maxScore = resultData ? resultData.maxScore : questionsList.length;
       const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
-      const date = resultData ? resultData.completedAt : '-';
+      const date = resultData ? formatEgyptDateTime(resultData.completedAt) : '-';
 
       const qCols = questionsList.flatMap((q) => {
         if (!resultData) {
@@ -2292,8 +2292,8 @@ export const AdminStudentsAuditManager: React.FC = () => {
                       </span>
                     </div>
                     <div className="text-[11px] text-slate-300">
-                      <div>وقت الدخول: <span className="font-bold text-white">{sess.enteredAt}</span></div>
-                      {sess.leftAt && <div>وقت الخروج: <span className="font-bold text-slate-400">{sess.leftAt}</span></div>}
+                      <div>وقت الدخول: <span className="font-bold text-white">{formatEgyptDateTime(sess.enteredAt)}</span></div>
+                      {sess.leftAt && <div>وقت الخروج: <span className="font-bold text-slate-400">{sess.leftAt ? formatEgyptDateTime(sess.leftAt) : '-'}</span></div>}
                     </div>
                     <div className="text-[10px] text-slate-400">{sess.interpretation}</div>
                   </div>
@@ -2415,8 +2415,8 @@ export const AdminStudentsAuditManager: React.FC = () => {
                       </div>
                       {summary?.lastEntry && (
                         <div className="text-left text-[9px] text-slate-400">
-                          <div>دخول: {summary.lastEntry.split(' ')[1]}</div>
-                          {summary.lastExit && <div>خروج: {summary.lastExit.split(' ')[1]}</div>}
+                          <div>دخول: {formatEgyptDateTime(summary.lastEntry).split(',')[1] || formatEgyptDateTime(summary.lastEntry)}</div>
+                          {summary.lastExit && <div>خروج: {formatEgyptDateTime(summary.lastExit).split(',')[1] || formatEgyptDateTime(summary.lastExit)}</div>}
                         </div>
                       )}
                     </div>
