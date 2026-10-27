@@ -479,22 +479,21 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     chooseAnswerWithoutRevealing(boxIdx);
   };
 
-  // Record answer neutral: NO correct/wrong shown to student. Score goes strictly to Admin!
+  // Record answer and evaluate immediate feedback for G1, G3 & Admin
   const chooseAnswerWithoutRevealing = (stationIdx: number) => {
     setChosenAnswers((prev) => ({ ...prev, [currentQ.id]: stationIdx }));
-    
 
-    // In posttest, show feedback to student only if immediate
-    if (mode === 'post' && isImmediate) {
+    // If immediate feedback mode (G1: تنافسي فوري, G3: تعاوني فوري, or Admin), show feedback per question in both Pre-Test and Post-Test
+    if (isImmediate) {
       setAnsweredState('evaluating');
       triggerSound(stationIdx === currentQ.correctIndex ? 'correct' : 'wrong');
-      
+
       // Delay to show feedback before proceeding
       setTimeout(() => {
         setAnsweredState('selected');
       }, 800);
     } else {
-      // In pretest or delayed posttest, no feedback to student
+      // In delayed feedback groups (G2, G4), no immediate feedback per question
       setAnsweredState('selected');
       triggerSound('click');
     }
@@ -957,8 +956,8 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                   </div>
                 </div>
               )}
-              {/* Bottom of Question Card: Post-Test Score Indicator (only for immediate feedback mode) */}
-              {mode === 'post' && isImmediate && (
+              {/* Bottom of Question Card: Score Indicator (for immediate feedback mode in G1, G3 & Admin) */}
+              {isImmediate && (
                 <div className={`mt-5 pt-3.5 border-t-2 flex flex-wrap items-center justify-between gap-2 px-4 py-3 rounded-2xl transition-all ${
                   answeredState === 'selected' || answeredState === 'evaluating'
                     ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
@@ -1048,7 +1047,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                     }
 
                     if (answeredState !== 'idle' && isSelected) {
-                      if (mode === 'post' && isImmediate) {
+                      if (isImmediate) {
                         const isCorrect = optIdx === currentQ.correctIndex;
                         if (isCorrect) {
                           stationBg = 'bg-emerald-950/90 border-emerald-400 text-white ring-2 ring-emerald-400/60 shadow-[0_0_30px_rgba(16,185,129,0.4)]';
@@ -1133,7 +1132,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
 
                     let boxCardStyle = 'bg-gradient-to-b from-[#141022] to-[#0c0916] border-slate-800 hover:border-amber-500/60 text-slate-200';
                     if (isSelected) {
-                      if (mode === 'post' && isImmediate) {
+                      if (isImmediate) {
                         const isCorrect = optIdx === currentQ.correctIndex;
                         if (isCorrect) {
                           boxCardStyle = 'bg-gradient-to-b from-emerald-950 via-[#0d2a1c] to-black border-emerald-400 text-white ring-2 ring-emerald-400/50 shadow-[0_0_35px_rgba(16,185,129,0.45)]';
@@ -1191,7 +1190,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
 
                       {isSelected && (
                         <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-bold">
-                          {mode === 'post' && isImmediate ? (
+                          {isImmediate ? (
                             optIdx === currentQ.correctIndex ? (
                               <span className="flex items-center gap-1.5 text-emerald-300 font-black">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -1222,13 +1221,13 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
             {/* SELECTION BANNER / ADMIN NAVIGATION */}
             {(answeredState === 'selected' || isAdmin) && (
               <div className={`p-4 sm:p-5 rounded-2xl border backdrop-blur-md shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in ${
-                mode === 'post' && isImmediate && answeredState === 'selected'
+                isImmediate && answeredState === 'selected'
                   ? (chosenAnswers[currentQ.id] === currentQ.correctIndex 
                       ? 'bg-emerald-950/95 border-emerald-500/60 shadow-emerald-900/30' 
                       : 'bg-rose-950/95 border-rose-500/60 shadow-rose-900/30')
                   : 'bg-slate-900/95 border-slate-800'
               }`}>
-                {mode === 'post' && isImmediate ? (
+                {isImmediate ? (
                   <div className="flex items-center gap-3 text-right">
                     <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center font-black shrink-0 ${
                       chosenAnswers[currentQ.id] === currentQ.correctIndex
@@ -1274,7 +1273,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                   type="button"
                   onClick={handleNextQuestion}
                   className={`flex items-center gap-2 px-7 py-3 rounded-xl text-xs font-black transition text-white shadow-lg cursor-pointer shrink-0 ${
-                    mode === 'post' && isImmediate
+                    isImmediate
                       ? (chosenAnswers[currentQ.id] === currentQ.correctIndex
                           ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30'
                           : 'bg-rose-600 hover:bg-rose-500 shadow-rose-900/30')

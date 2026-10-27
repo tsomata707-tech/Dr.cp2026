@@ -903,6 +903,9 @@ export function submitPreTestResult(
   }
 
   prog.preTestResult = result;
+  if (!prog.currentLevel || prog.currentLevel < 1) {
+    prog.currentLevel = 1;
+  }
   const badgeName = 'وسام المستكشف التمهيدي (الاختبار القبلي)';
   if (!prog.badges.includes(badgeName)) {
     prog.badges.push(badgeName);
