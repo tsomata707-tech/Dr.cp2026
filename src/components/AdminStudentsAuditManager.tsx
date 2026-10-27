@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { generateSixtyStudents, RESEARCH_GROUPS_META, getGroupByUsername, getCollaborativeGroupByUsername } from '../data/studentAccounts';
 import { getAllTripartiteNames, getStudentTripartiteName } from '../utils/studentNameStorage';
-import { StudentGameProgress, PreTestResult, CompletedLevelResult, StudentTestAccessSummary, TestAccessSession } from '../types';
+import { StudentGameProgress, PreTestResult, CompletedLevelResult, StudentTestAccessSummary, TestAccessSession, PreTestQuestion } from '../types';
 import { getPostTestQuestions, getPreTestQuestions } from '../data/preTestData';
 import { GAME_LEVELS_DATA } from '../data/gameLevelsData';
 import {
@@ -141,21 +141,17 @@ const computeActualMaxScore = (questions: PreTestQuestion[]): number => {
 };
 
 const formatEgyptDateTime = (isoString: string): string => {
-  if (isoString === '-') return '-';
+  if (isoString === '-' || !isoString) return '-';
   try {
-    const date = new Date(isoString);
+    const normalized = isoString.includes('T') ? isoString : isoString.replace(' ', 'T');
+    const date = new Date(normalized);
+    if (isNaN(date.getTime())) return isoString;
     return date.toLocaleString('ar-EG', {
       timeZone: 'Africa/Cairo',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
     });
-  } catch {
-    return isoString;
-  }
+  } catch { return isoString; }
 };
 
 export const AdminStudentsAuditManager: React.FC = () => {
@@ -317,10 +313,14 @@ export const AdminStudentsAuditManager: React.FC = () => {
   const enrichedStudents: EnrichedStudentRow[] = useMemo(() => {
     const canonicalStudents = generateSixtyStudents();
     const tripartiteNames = getAllTripartiteNames();
+    const portalUsers: any[] = (() => {
+      try { return JSON.parse(localStorage.getItem('cp_portal_users_v4') || '[]'); }
+      catch { return []; }
+    })();
 
     return canonicalStudents.map((stud) => {
       const username = stud.username;
-      const nameParts = getCompleteStudentName(username, canonicalStudents, tripartiteNames);
+      const nameParts = getCompleteStudentName(username, portalUsers, tripartiteNames);
       const groupCode = (stud.groupCode || 'G1') as 'G1' | 'G2' | 'G3' | 'G4';
       const meta = RESEARCH_GROUPS_META[groupCode] || {
         name: 'المجموعة',
@@ -661,8 +661,8 @@ export const AdminStudentsAuditManager: React.FC = () => {
         (item.sessions || [])
           .map(
             (sess) =>
-              `[تردد ${sess.visitIndex}: دخول ${sess.enteredAt}${
-                sess.leftAt ? ' - خروج ' + sess.leftAt : ''
+              `[تردد ${sess.visitIndex}: دخول ${formatEgyptDateTime(sess.enteredAt)}${
+                sess.leftAt ? ' - خروج ' + formatEgyptDateTime(sess.leftAt) : ''
               } (${sess.interpretation})]`
           )
           .join(' | ') || 'لا توجد جلسات تردد مسجلة';
@@ -685,9 +685,9 @@ export const AdminStudentsAuditManager: React.FC = () => {
           : item.totalVisits > 0
           ? 'غير مكتمل (قيد الحل/خروج)'
           : 'عدم تردد (لم يدخل)',
-        item.firstEntry || '-',
-        item.lastEntry || '-',
-        item.lastExit || '-',
+        item.firstEntry ? formatEgyptDateTime(item.firstEntry) : '-',
+        item.lastEntry ? formatEgyptDateTime(item.lastEntry) : '-',
+        item.lastExit ? formatEgyptDateTime(item.lastExit) : '-',
         sessionsText,
       ];
     });
