@@ -607,7 +607,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 <span>الأوسمة المكتسبة</span>
               </div>
               <span className="text-xl font-black text-cyan-200 font-['Outfit']">
-                {progress.badges.length} <span className="text-xs text-slate-400">أوسمة</span>
+                {(progress.badges || []).length} <span className="text-xs text-slate-400">أوسمة</span>
               </span>
             </div>
           </div>

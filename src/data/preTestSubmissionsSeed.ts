@@ -305,6 +305,9 @@ export function seedPreTestSubmissions(force: boolean = false): {
 
       prog.preTestResult = preResult;
       prog.lastActive = stud.date;
+      if (!Array.isArray(prog.badges)) {
+        prog.badges = [];
+      }
       if (!prog.badges.includes('وسام المستكشف التمهيدي (الاختبار القبلي)')) {
         prog.badges.push('وسام المستكشف التمهيدي (الاختبار القبلي)');
       }

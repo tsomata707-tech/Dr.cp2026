@@ -369,21 +369,21 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
             <div className="px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-[#080d1e] border border-blue-500/30 text-center sm:text-right">
               <span className="text-[10px] text-slate-400 block font-['Cairo']">النقاط الفعلية</span>
               <span className="text-base sm:text-lg font-black text-amber-300 font-['Outfit']">
-                {studentGame.totalScore} ⭐
+                {studentGame?.totalScore ?? 0} ⭐
               </span>
             </div>
 
             <div className="px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-[#080d1e] border border-purple-500/30 text-center sm:text-right">
               <span className="text-[10px] text-slate-400 block font-['Cairo']">المرحلة الحالية</span>
               <span className="text-base sm:text-lg font-black text-purple-300 font-['Outfit']">
-                L{studentGame.currentLevel} / 9
+                L{studentGame?.currentLevel ?? 1} / 9
               </span>
             </div>
 
             <div className="px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-[#080d1e] border border-emerald-500/30 text-center sm:text-right">
               <span className="text-[10px] text-slate-400 block font-['Cairo']">الأوسمة الفعلية</span>
               <span className="text-base sm:text-lg font-black text-emerald-300 font-['Outfit']">
-                {studentGame.badges.length} 🏅
+                {studentGame?.badges?.length ?? 0} 🏅
               </span>
             </div>
           </div>

@@ -934,6 +934,9 @@ export function submitPreTestResult(
     prog.currentLevel = 1;
   }
   const badgeName = 'وسام المستكشف التمهيدي (الاختبار القبلي)';
+  if (!Array.isArray(prog.badges)) {
+    prog.badges = [];
+  }
   if (!prog.badges.includes(badgeName)) {
     prog.badges.push(badgeName);
   }
@@ -1089,6 +1092,9 @@ export function submitPostTestResult(
   prog.postTestResult = result;
   prog.totalScore += score;
   const badgeName = 'وسام الإتقان والختام (الاختبار البعدي)';
+  if (!Array.isArray(prog.badges)) {
+    prog.badges = [];
+  }
   if (!prog.badges.includes(badgeName)) {
     prog.badges.push(badgeName);
   }

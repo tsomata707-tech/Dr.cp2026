@@ -172,7 +172,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <span className="text-base text-amber-200">⭐ XP</span>
               </div>
               <div className="text-xs text-amber-300/80 mt-1">
-                {progress.badges.length} أوسمة إنجاز مكتسبة
+                {(progress.badges || []).length} أوسمة إنجاز مكتسبة
               </div>
             </div>
           </div>

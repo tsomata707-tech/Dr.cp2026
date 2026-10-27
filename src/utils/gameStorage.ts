@@ -6,6 +6,30 @@ import { syncStudentProgressToFirestore } from './realtimeService';
 
 const GAME_STORAGE_KEY = 'cp_real_game_progress_v4';
 
+export function sanitizeStudentProgress(prog: Partial<StudentGameProgress>, username: string): StudentGameProgress {
+  const cleanUsername = username.trim();
+  const avatarIndex =
+    Math.abs(cleanUsername.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0)) %
+    CARTOON_AVATARS.length;
+
+  const sanitized: StudentGameProgress = {
+    username: cleanUsername,
+    avatarId: prog.avatarId || CARTOON_AVATARS[avatarIndex].id,
+    customPhotoUrl: prog.customPhotoUrl,
+    currentLevel: typeof prog.currentLevel === 'number' && prog.currentLevel >= 1 ? prog.currentLevel : 1,
+    completedLevels: prog.completedLevels && typeof prog.completedLevels === 'object' ? prog.completedLevels : {},
+    totalScore: typeof prog.totalScore === 'number' ? prog.totalScore : 0,
+    hearts: typeof prog.hearts === 'number' ? prog.hearts : 3,
+    badges: Array.isArray(prog.badges) ? prog.badges : [],
+    lastActive: prog.lastActive || 'لم يسجل الدخول بعد',
+    preTestResult: prog.preTestResult,
+    postTestResult: prog.postTestResult,
+    studentActivities: prog.studentActivities && typeof prog.studentActivities === 'object' ? prog.studentActivities : {},
+  };
+
+  return sanitized;
+}
+
 export function getAllStudentsProgress(): Record<string, StudentGameProgress> {
   try {
     const raw = localStorage.getItem(GAME_STORAGE_KEY);
@@ -14,7 +38,14 @@ export function getAllStudentsProgress(): Record<string, StudentGameProgress> {
       localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(cleanReal));
       return cleanReal;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      Object.keys(parsed).forEach((k) => {
+        parsed[k] = sanitizeStudentProgress(parsed[k], k);
+      });
+      return parsed;
+    }
+    return generateCleanRealStudents();
   } catch {
     return generateCleanRealStudents();
   }
@@ -56,8 +87,9 @@ export function getStudentProgress(username: string): StudentGameProgress {
   const all = getAllStudentsProgress();
 
   if (all[cleanUsername]) {
-    const existing = all[cleanUsername];
+    const existing = sanitizeStudentProgress(all[cleanUsername], cleanUsername);
     existing.totalScore = calculateStudentTotalScore(existing);
+    all[cleanUsername] = existing;
     return existing;
   }
 

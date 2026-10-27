@@ -207,7 +207,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ username, onNaviga
           <div className="p-4 sm:p-5 rounded-2xl bg-[#070914] border border-purple-500/40 text-center shadow-inner">
             <span className="text-xs text-slate-400 block font-bold mb-1">الشارات والأوسمة المكتملة</span>
             <span className="text-3xl font-black text-purple-300 font-['Outfit']">
-              {progress.badges.length} <span className="text-sm text-purple-200">🏅</span>
+              {(progress.badges || []).length} <span className="text-sm text-purple-200">🏅</span>
             </span>
           </div>
 
@@ -252,15 +252,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ username, onNaviga
               </h2>
             </div>
             <span className="text-xs text-slate-400 font-bold">
-              {progress.badges.length} من أصل 10 أوسمة
+              {(progress.badges || []).length} من أصل 10 أوسمة
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {GAME_LEVELS_DATA.map((lvl) => {
               const isEarned =
-                progress.badges.includes(lvl.badgeName) ||
-                !!progress.completedLevels[lvl.levelNumber];
+                (progress.badges || []).includes(lvl.badgeName) ||
+                !!(progress.completedLevels || {})[lvl.levelNumber];
               return (
                 <div
                   key={lvl.levelNumber}
