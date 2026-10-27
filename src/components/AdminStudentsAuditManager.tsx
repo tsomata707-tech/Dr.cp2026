@@ -657,6 +657,12 @@ export const AdminStudentsAuditManager: React.FC = () => {
     ];
 
     const rows = filteredVisits.map((item, idx) => {
+      const portalUsersForVisit: any[] = (() => {
+        try { return JSON.parse(localStorage.getItem('cp_portal_users_v4') || '[]'); }
+        catch { return []; }
+      })();
+      const allNamesForVisit = getAllTripartiteNames();
+
       const sessionsText =
         (item.sessions || [])
           .map(
@@ -667,7 +673,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
           )
           .join(' | ') || 'لا توجد جلسات تردد مسجلة';
       
-      const nameParts = getCompleteStudentName(item.username, generateSixtyStudents(), getAllTripartiteNames());
+      const nameParts = getCompleteStudentName(item.username, portalUsersForVisit, allNamesForVisit);
 
       return [
         idx + 1,
@@ -2031,8 +2037,8 @@ export const AdminStudentsAuditManager: React.FC = () => {
                           <td className="p-3 text-[10px] space-y-0.5">
                             {item.firstEntry ? (
                               <>
-                                <div className="text-slate-300">أول دخول: {item.firstEntry}</div>
-                                {item.lastExit && <div className="text-slate-400">آخر خروج: {item.lastExit}</div>}
+                                <div className="text-slate-300">أول دخول: {formatEgyptDateTime(item.firstEntry)}</div>
+                                {item.lastExit && <div className="text-slate-400">آخر خروج: {formatEgyptDateTime(item.lastExit)}</div>}
                               </>
                             ) : (
                               <span className="text-slate-500">-</span>
@@ -2156,7 +2162,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
                       </span>
                       {resultData?.completedAt && (
                         <span className="text-[10px] text-slate-400">
-                          {resultData.completedAt}
+                          {formatEgyptDateTime(resultData.completedAt)}
                         </span>
                       )}
                     </div>
