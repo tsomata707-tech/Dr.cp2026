@@ -447,15 +447,18 @@ function generateCleanRealStudents(): Record<string, StudentGameProgress> {
   return clean;
 }
 
-// Automatic master reset execution on boot to guarantee zero answers/scores
-const MASTER_RESET_TOKEN = 'cp_master_reset_v20261027_clean_zero_answers_v4';
+// Auto-seed pre-test submissions for students who answered the test
+const PRETEST_ANSWERS_SEED_TOKEN = 'cp_pretest_answers_seeded_v20261027_v1';
 if (typeof window !== 'undefined') {
   try {
-    if (localStorage.getItem(MASTER_RESET_TOKEN) !== 'done') {
-      resetAllStudentsToRealCleanState();
-      localStorage.setItem(MASTER_RESET_TOKEN, 'done');
+    if (localStorage.getItem(PRETEST_ANSWERS_SEED_TOKEN) !== 'done') {
+      import('../data/preTestSubmissionsSeed').then(({ seedPreTestSubmissions }) => {
+        seedPreTestSubmissions(true);
+      });
+      localStorage.setItem(PRETEST_ANSWERS_SEED_TOKEN, 'done');
     }
   } catch {
     // Ignore
   }
 }
+

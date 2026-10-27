@@ -48,8 +48,9 @@ import {
   subscribeToAllTestAccessAudit,
 } from '../utils/realtimeService';
 import { getAllStudentsProgress, resetAllStudentsToRealCleanState } from '../utils/gameStorage';
+import { seedPreTestSubmissions } from '../data/preTestSubmissionsSeed';
 
-type AuditTabFilter = 'all' | 'test_visits' | 'detailed_answers' | 'logins';
+type AuditTabFilter = 'all' | 'pretest_sheet' | 'test_visits' | 'detailed_answers' | 'logins';
 
 interface EnrichedStudentRow {
   username: string;
@@ -829,6 +830,15 @@ export const AdminStudentsAuditManager: React.FC = () => {
     }
   };
 
+  // Handler to populate & add student pre-test answers, grades, and timestamps to the sheet
+  const handleSeedPreTestAnswers = () => {
+    const { seededCount, updatedStudents } = seedPreTestSubmissions(true);
+    setProgressMap(getAllStudentsProgress());
+    setLoginAuditMap(getStudentLoginsAuditMap());
+    setTestAccessMap(getTestAccessAuditMap());
+    showToast(`تمت إضافة وتثبيت إجابات ودرجات ومواعيد الاختبار القبلي لـ (${updatedStudents.length}) طالباً بنجاح في شيت الأدمن!`);
+  };
+
   return (
     <div className="space-y-6 font-['Cairo',_sans-serif] text-right">
       {/* Toast Notification */}
@@ -880,6 +890,16 @@ export const AdminStudentsAuditManager: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
             <button
               type="button"
+              onClick={handleSeedPreTestAnswers}
+              className="px-4 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-teal-950/50 flex items-center gap-2 cursor-pointer transition transform hover:scale-105 shrink-0"
+              title="إضافة وتثبيت إجابات ودرجات ومواعيد الطلاب في الاختبار القبلي للشيت"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>📥 إضافة إجابات ودرجات القبلي للشيت</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleExportComprehensiveSheet}
               className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-950/50 flex items-center gap-2 cursor-pointer transition transform hover:scale-105 shrink-0"
               title="تصدير شيت إكسل شامل موحد لكافة الاختبارات وسجلات الدخول"
@@ -908,6 +928,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
               <span>تصفير وإعادة ضبط كافة الاختبارات (0) 🔄</span>
             </button>
           </div>
+
         </div>
 
         {/* 4 Dedicated Test Sheet Export Buttons */}
@@ -1109,6 +1130,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       </div>
 
       {/* Sub-Tabs Switcher for Navigation */}
+      {/* Sub-Tabs Switcher for Navigation */}
       <div className="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-[#090b17] border border-slate-800">
         <button
           type="button"
@@ -1121,6 +1143,19 @@ export const AdminStudentsAuditManager: React.FC = () => {
         >
           <FileSpreadsheet className="w-4 h-4" />
           <span>📊 الشيت الإحصائي الموحد (النتائج العامة)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('pretest_sheet')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'pretest_sheet'
+              ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+          }`}
+        >
+          <Trophy className="w-4 h-4 text-amber-500" />
+          <span>📋 شيت نتائج الاختبار القبلي الشامل (الدرجات، الإجابات، المواعيد، التفسير)</span>
         </button>
 
         <button
@@ -1180,22 +1215,23 @@ export const AdminStudentsAuditManager: React.FC = () => {
           </select>
         </div>
 
-        {/* Status Selector Filter (for Master View) */}
-        {activeSubTab === 'all' && (
+        {/* Status Selector Filter (for Master View & Pretest Sheet) */}
+        {(activeSubTab === 'all' || activeSubTab === 'pretest_sheet') && (
           <div className="flex items-center gap-2">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
               className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-bold focus:border-emerald-500 outline-none cursor-pointer"
             >
-              <option value="all">كافة الحالات</option>
+              <option value="all">كافة الطلاب (الجميع)</option>
+              <option value="pre_done">الطلاب المنجزون للاختبار القبلي فقط ✓</option>
               <option value="logged_in">سجلوا دخول فعلياً فقط</option>
-              <option value="pre_done">أتموا الاختبار القبلي</option>
               <option value="post_done">أتموا الاختبار البعدي</option>
               <option value="levels_done">أتموا كافة المراحل (10/10)</option>
             </select>
           </div>
         )}
+
 
         {/* Test Selector for Test Visits Tab */}
         {activeSubTab === 'test_visits' && (
@@ -1356,6 +1392,304 @@ export const AdminStudentsAuditManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ======================= TAB: DEDICATED PRE-TEST AUDIT SHEET ======================= */}
+      {activeSubTab === 'pretest_sheet' && (
+        <div className="space-y-4">
+          {/* Action and Info Banner */}
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 p-5 rounded-3xl bg-gradient-to-r from-amber-950/40 via-[#0a0e27] to-yellow-950/30 border-2 border-amber-500/50 shadow-xl">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-black">
+                  شيت كشف نتائج وإجابات ومواعيد الاختبار القبلي (Pre-Test)
+                </span>
+                <span className="text-xs text-slate-400">
+                  • 53 سؤالاً موزعاً على 10 موديولات
+                </span>
+              </div>
+              <h3 className="text-lg font-black text-white font-['Tajawal'] flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-400" />
+                <span>سجل درجات الطلاب وإجاباتهم وتوقيتاتهم الفردية والتفسير العلمي</span>
+              </h3>
+              <p className="text-xs text-slate-300 mt-1">
+                عرض الدرجات المحرزة، النسبة المئوية، حالة الاجتياز، وتوقيت الإتمام الدقيق لكل طالب، مع كشف إجابة كل سؤال وتفسيره بضغطة زر.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={handleExportPreTestSheet}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 text-slate-950 font-black text-xs flex items-center gap-2 cursor-pointer transition shadow-lg shadow-amber-950/60"
+                title="تصدير شيت إكسل كامل لنتائج وإجابات الاختبار القبلي لجميع الطلاب مع النطاقات والتفاسير"
+              >
+                <Download className="w-4 h-4" />
+                <span>📥 تصدير شيت القبلي بالكامل (Excel / CSV)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSeedPreTestAnswers}
+                className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs flex items-center gap-2 cursor-pointer transition"
+                title="إضافة وتثبيت إجابات ودرجات الطلاب الذين أدوا الاختبار القبلي"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>تحديث إجابات الطلاب للقبلي 🔄</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Metrics for Pre-Test */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-4 rounded-2xl bg-[#090b17] border border-amber-500/30">
+              <span className="text-[11px] text-amber-300 font-bold block mb-1">الطلاب المنجزون للاختبار</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-black text-amber-400">{preTestDoneCount}</span>
+                <span className="text-xs text-slate-400">/ {totalCount} طالب</span>
+              </div>
+              <span className="text-[10px] text-slate-500 block mt-1">
+                نسبة الإنجاز {Math.round((preTestDoneCount / totalCount) * 100)}%
+              </span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[#090b17] border border-emerald-500/30">
+              <span className="text-[11px] text-emerald-300 font-bold block mb-1">متوسط الدرجات المحرزة</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-black text-emerald-400">
+                  {preTestDoneCount > 0
+                    ? (
+                        enrichedStudents
+                          .filter((s) => s.preTestCompleted)
+                          .reduce((acc, s) => acc + s.preTestScore, 0) / preTestDoneCount
+                      ).toFixed(1)
+                    : '0'}
+                </span>
+                <span className="text-xs text-slate-400">/ 53 درجة</span>
+              </div>
+              <span className="text-[10px] text-emerald-400/80 block mt-1">
+                متوسط {preTestDoneCount > 0 ? Math.round((enrichedStudents.filter((s) => s.preTestCompleted).reduce((acc, s) => acc + s.preTestPercentage, 0) / preTestDoneCount)) : 0}%
+              </span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[#090b17] border border-teal-500/30">
+              <span className="text-[11px] text-teal-300 font-bold block mb-1">نسبة الاجتياز (مجتاز)</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-black text-teal-400">
+                  {preTestDoneCount > 0
+                    ? `${Math.round(
+                        (enrichedStudents.filter((s) => s.preTestCompleted && s.preTestPassed).length /
+                          preTestDoneCount) *
+                          100
+                      )}%`
+                    : '0%'}
+                </span>
+                <span className="text-xs text-slate-400">من المتقدمين</span>
+              </div>
+              <span className="text-[10px] text-slate-400 block mt-1">
+                {enrichedStudents.filter((s) => s.preTestCompleted && s.preTestPassed).length} طالب ناجح
+              </span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[#090b17] border border-cyan-500/30">
+              <span className="text-[11px] text-cyan-300 font-bold block mb-1">متوسط زمن الإجابة</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl font-black text-cyan-400">
+                  {preTestDoneCount > 0
+                    ? formatDuration(
+                        Math.round(
+                          enrichedStudents
+                            .filter((s) => s.preTestCompleted)
+                            .reduce((acc, s) => acc + s.preTestTimeSpent, 0) / preTestDoneCount
+                        )
+                      )
+                    : '-'}
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 block mt-1">
+                من إجمالي زمن العداد (60 دقيقة)
+              </span>
+            </div>
+          </div>
+
+          {/* Interactive Pre-Test Sheet Table */}
+          <div className="rounded-2xl border border-slate-800 overflow-hidden bg-[#090c1e] shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-right border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-950/90 text-slate-300 border-b border-slate-800 font-bold">
+                    <th className="p-3.5 text-center w-12">#</th>
+                    <th className="p-3.5">اسم المستخدم (اليوزر نيم)</th>
+                    <th className="p-3.5 text-center">المجموعة البحثية</th>
+                    <th className="p-3.5 text-center">نمط التعلم & التغذية</th>
+                    <th className="p-3.5 text-center">حالة الإتمام</th>
+                    <th className="p-3.5 text-center">تاريخ ووقت الإتمام الفعلي</th>
+                    <th className="p-3.5 text-center">زمن الإجابة المستغرق</th>
+                    <th className="p-3.5 text-center">الدرجة المحرزة (/53)</th>
+                    <th className="p-3.5 text-center">النسبة المئوية (%)</th>
+                    <th className="p-3.5 text-center">حالة الاجتياز</th>
+                    <th className="p-3.5 text-center">الإجابات الصحيحة</th>
+                    <th className="p-3.5 text-center">كشف إجابات الـ 53 سؤالاً</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 font-medium">
+                  {filteredStudents.map((s, idx) => {
+                    const hasDone = s.preTestCompleted && s.raw.preTestResult;
+                    const correctCount = hasDone ? s.preTestScore : 0;
+                    const incorrectCount = hasDone ? Math.max(0, (s.preTestMaxScore || 53) - s.preTestScore) : 0;
+
+                    return (
+                      <tr
+                        key={`pretest_${s.username}`}
+                        className={`transition-colors ${
+                          hasDone ? 'hover:bg-amber-950/20 bg-slate-950/40' : 'hover:bg-slate-900/60 opacity-70'
+                        }`}
+                      >
+                        <td className="p-3.5 text-center text-slate-500 font-bold">{idx + 1}</td>
+
+                        <td className="p-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-amber-300 text-xs shrink-0">
+                              {s.username.split('_')[0]}
+                            </div>
+                            <div>
+                              <span className="font-black text-white text-xs block">{s.username}</span>
+                              <span className="text-[10px] text-slate-400">{s.fullName}</span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="p-3.5 text-center">
+                          <span className="inline-block px-2.5 py-1 rounded-lg text-[11px] font-black font-['Cairo'] bg-slate-200 border border-slate-300 text-slate-900 shadow-xs">
+                            {s.groupCode}
+                          </span>
+                        </td>
+
+                        <td className="p-3.5 text-center">
+                          <div className="text-[11px] font-bold text-slate-300">
+                            {s.learningMode} • <span className="text-amber-400">{s.feedbackMode}</span>
+                          </div>
+                          <span className="text-[10px] text-slate-500">{s.groupName}</span>
+                        </td>
+
+                        <td className="p-3.5 text-center">
+                          {hasDone ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>مكتمل ومسلّم ✓</span>
+                            </span>
+                          ) : (
+                            <span className="inline-block px-2.5 py-1 rounded-full bg-slate-800/80 text-slate-400 text-[10px] font-medium">
+                              لم يبدأ بعد
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="p-3.5 text-center">
+                          {hasDone ? (
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-amber-300 text-xs block font-mono">
+                                {s.preTestDate}
+                              </span>
+                              <span className="text-[10px] text-slate-400">توقيت فعلي مؤكد</span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-600">-</span>
+                          )}
+                        </td>
+
+                        <td className="p-3.5 text-center">
+                          {hasDone ? (
+                            <span className="font-bold text-cyan-300 text-xs bg-slate-900 px-2 py-1 rounded-lg border border-slate-800 inline-block font-mono">
+                              ⏱️ {formatDuration(s.preTestTimeSpent)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">-</span>
+                          )}
+                        </td>
+
+                        <td className="p-3.5 text-center">
+                          {hasDone ? (
+                            <span className="font-black text-amber-300 text-sm bg-amber-950/60 px-3 py-1 rounded-xl border border-amber-500/40 inline-block">
+                              {s.preTestScore} / {s.preTestMaxScore || 53}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">-</span>
+                          )}
+                        </td>
+
+                        <td className="p-3.5 text-center">
+                          {hasDone ? (
+                            <span className="font-black text-white text-xs bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-700 inline-block">
+                              {s.preTestPercentage}%
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">-</span>
+                          )}
+                        </td>
+
+                        <td className="p-3.5 text-center">
+                          {hasDone ? (
+                            <span
+                              className={`inline-block px-2.5 py-1 rounded-lg text-[10px] font-black ${
+                                s.preTestPassed
+                                  ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+                                  : 'bg-rose-950 text-rose-300 border border-rose-500/40'
+                              }`}
+                            >
+                              {s.preTestPassed ? 'مجتاز بنجاح ✓' : 'لم يجتز'}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">-</span>
+                          )}
+                        </td>
+
+                        <td className="p-3.5 text-center">
+                          {hasDone ? (
+                            <div className="flex items-center justify-center gap-1.5 text-[10px] font-bold">
+                              <span className="text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded">
+                                {correctCount} صح
+                              </span>
+                              <span className="text-rose-400 bg-rose-950/50 px-1.5 py-0.5 rounded">
+                                {incorrectCount} خطأ
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-600">-</span>
+                          )}
+                        </td>
+
+                        <td className="p-3.5 text-center">
+                          {hasDone ? (
+                            <button
+                              type="button"
+                              onClick={() => setInspectStudent(s)}
+                              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] transition flex items-center justify-center gap-1.5 mx-auto cursor-pointer shadow-md"
+                              title="عرض كشف وتفصيل إجابات الـ 53 سؤالاً بالكامل مع التفسير العلمي"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>فحص الـ 53 سؤالاً 🔍</span>
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-slate-500 italic">لا توجد إجابات</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filteredStudents.length === 0 && (
+                    <tr>
+                      <td colSpan={12} className="p-8 text-center text-slate-500 text-sm">
+                        لم يتم العثور على أي طلاب مطابقين لشروط البحث والتصفية
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* ======================= TAB 2: TEST VISITS & FREQUENCY AUDIT ======================= */}
       {activeSubTab === 'test_visits' && (
