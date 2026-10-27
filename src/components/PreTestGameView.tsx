@@ -375,6 +375,41 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
   const [isFinished, setIsFinished] = useState(false);
   const [finalResult, setFinalResult] = useState<PreTestResult | null>(null);
 
+  // Tab/Window Visibility state to pause/resume timer when student leaves/returns to page
+  const [isTabActive, setIsTabActive] = useState<boolean>(
+    () => (typeof document !== 'undefined' ? !document.hidden : true)
+  );
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsTabActive(!document.hidden && document.visibilityState === 'visible');
+    };
+    const handleBlur = () => setIsTabActive(false);
+    const handleFocus = () => setIsTabActive(true);
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  // Warning message state if student attempts to finish before solving all questions
+  const [unansweredWarning, setUnansweredWarning] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (unansweredWarning) {
+      const unanswered = questions.filter((q) => chosenAnswers[q.id] === undefined);
+      if (unanswered.length === 0) {
+        setUnansweredWarning(null);
+      }
+    }
+  }, [chosenAnswers, questions, unansweredWarning]);
+
   // Welcome popup 7-second auto-close timer
   useEffect(() => {
     if (!showWelcomeModal) return;
@@ -390,8 +425,9 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
   }, [showWelcomeModal, welcomeSeconds]);
 
   // 60-Minute test countdown timer effect (Alarm siren at <= 15s)
+  // Automatically PAUSES when student exits site/tab (isTabActive === false)
   useEffect(() => {
-    if (showWelcomeModal || !gameStarted || isFinished) return;
+    if (showWelcomeModal || !gameStarted || isFinished || !isTabActive) return;
     localStorage.setItem(`cp_${mode}_timer_${username}`, testTimerSeconds.toString());
 
     if (testTimerSeconds <= 0) {
@@ -408,7 +444,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [showWelcomeModal, gameStarted, isFinished, testTimerSeconds, username, mode, soundEnabled]);
+  }, [showWelcomeModal, gameStarted, isFinished, isTabActive, testTimerSeconds, username, mode, soundEnabled]);
 
   // Digital clock formatter (MM:SS)
   const formatDigitalClock = (totalSecs: number) => {
@@ -541,6 +577,28 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     }
   };
 
+  // Attempt to finish test - verifies all questions are answered first
+  const handleAttemptFinish = () => {
+    const unanswered = questions.filter((q) => chosenAnswers[q.id] === undefined);
+    if (unanswered.length > 0) {
+      triggerSound('wrong');
+      const firstUnansweredIdx = questions.findIndex((q) => chosenAnswers[q.id] === undefined);
+      const msg = `⚠️ لا يمكنك إنهاء الاختبار وتسليم الإجابات الآن! يجب الإجابة على جميع الأسئلة أولاً (متبقي ${unanswered.length} سؤال بدون إجابة).`;
+      setUnansweredWarning(msg);
+      if (firstUnansweredIdx !== -1) {
+        setCurrentIndex(firstUnansweredIdx);
+        setAnsweredState('idle');
+        setSelectedStationIndex(null);
+        setIsDrivingToStation(null);
+        setHoveredStationIndex(null);
+      }
+      return;
+    }
+
+    setUnansweredWarning(null);
+    finishGame();
+  };
+
   // Next Question
   const handleNextQuestion = () => {
     triggerSound('click');
@@ -552,7 +610,7 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex((prev) => prev + 1);
     } else {
-      finishGame();
+      handleAttemptFinish();
     }
   };
 
@@ -689,14 +747,18 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
           {/* 60-Minute Digital Clock Badge in Header */}
           <div
             className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border font-black text-sm transition-all ${
-              testTimerSeconds <= 15
+              !isTabActive
+                ? 'bg-amber-950/90 text-amber-300 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.5)] ring-2 ring-amber-500/50'
+                : testTimerSeconds <= 15
                 ? 'bg-rose-950 text-rose-300 border-rose-500 animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.6)] ring-2 ring-rose-500/50'
                 : 'bg-slate-900 text-amber-300 border-amber-500/40 shadow-inner'
             }`}
           >
-            <Clock className={`w-4 h-4 ${testTimerSeconds <= 15 ? 'text-rose-400 animate-bounce' : 'text-amber-400'}`} />
+            <Clock className={`w-4 h-4 ${!isTabActive ? 'text-amber-400 animate-pulse' : testTimerSeconds <= 15 ? 'text-rose-400 animate-bounce' : 'text-amber-400'}`} />
             <div className="flex flex-col text-right">
-              <span className="text-[10px] text-slate-400 leading-none">زمن الاختبار</span>
+              <span className="text-[10px] text-slate-400 leading-none">
+                {!isTabActive ? '⏸️ متوقف (خارج الصفحة)' : 'زمن الاختبار'}
+              </span>
               <span className="font-mono text-base font-bold tracking-wider leading-tight">
                 {formatDigitalClock(testTimerSeconds)}
               </span>
@@ -746,69 +808,112 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
           </div>
         )}
 
-        {/* Progress Tracker */}
+        {/* Unanswered Questions Warning Banner */}
+        {unansweredWarning && (
+          <div className="mb-6 p-4 rounded-2xl bg-rose-950/95 border-2 border-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.5)] flex items-center justify-between gap-3 text-white font-['Cairo'] animate-bounce">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-400 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-6 h-6 text-rose-400" />
+              </div>
+              <div>
+                <h4 className="font-black text-rose-200 text-xs sm:text-sm font-['Tajawal']">
+                  {unansweredWarning}
+                </h4>
+                <p className="text-[11px] text-rose-300 mt-0.5">
+                  تم التوجيه تلقائياً لأول سؤال غير مجاب لتتمكن من حله وإتمام الاختبار، والتايمر مستمر في العد.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUnansweredWarning(null)}
+              className="px-3 py-1.5 rounded-xl bg-rose-900/80 hover:bg-rose-800 text-rose-100 text-xs font-black border border-rose-400 transition shrink-0 cursor-pointer"
+            >
+              إغلاق ✕
+            </button>
+          </div>
+        )}
+
+        {/* Progress Tracker & Question Navigation */}
         <div className="mb-6 space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-slate-300">
-              السؤال {currentIndex + 1} من {questions.length}
-            </span>
-            {isAdmin && (
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  disabled={currentIndex === 0}
-                  onClick={() => {
-                    if (currentIndex > 0) {
-                      setCurrentIndex((prev) => prev - 1);
-                      setAnsweredState('idle');
-                      setSelectedStationIndex(null);
-                      setIsDrivingToStation(null);
-                      setHoveredStationIndex(null);
-                    }
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-amber-300 border border-amber-500/30 text-xs font-bold transition cursor-pointer"
-                  title="السؤال السابق"
-                >
-                  ◀️ السابق
-                </button>
-                <button
-                  type="button"
-                  disabled={currentIndex + 1 >= questions.length}
-                  onClick={() => {
-                    if (currentIndex + 1 < questions.length) {
-                      setCurrentIndex((prev) => prev + 1);
-                      setAnsweredState('idle');
-                      setSelectedStationIndex(null);
-                      setIsDrivingToStation(null);
-                      setHoveredStationIndex(null);
-                    }
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-amber-300 border border-amber-500/30 text-xs font-bold transition cursor-pointer"
-                  title="السؤال التالي"
-                >
-                  التالي ▶️
-                </button>
-                <select
-                  value={currentIndex}
-                  onChange={(e) => {
-                    setCurrentIndex(Number(e.target.value));
+          <div className="flex items-center justify-between text-xs font-bold flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-300 font-black">
+                السؤال {currentIndex + 1} من {questions.length}
+              </span>
+              <span className="px-2.5 py-0.5 rounded-lg bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-[11px] font-black">
+                تمت إجابة {Object.keys(chosenAnswers).length} من {questions.length} سؤال
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                disabled={currentIndex === 0}
+                onClick={() => {
+                  if (currentIndex > 0) {
+                    setCurrentIndex((prev) => prev - 1);
                     setAnsweredState('idle');
                     setSelectedStationIndex(null);
                     setIsDrivingToStation(null);
                     setHoveredStationIndex(null);
-                  }}
-                  className="bg-slate-800 border border-amber-500/40 rounded-lg px-2 py-1 text-xs text-amber-300 font-bold cursor-pointer"
-                  title="الانتقال المباشر لأي سؤال"
-                >
-                  {questions.map((q, idx) => (
+                  }
+                }}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-amber-300 border border-amber-500/30 text-xs font-bold transition cursor-pointer"
+                title="السؤال السابق"
+              >
+                ◀️ السابق
+              </button>
+              <button
+                type="button"
+                disabled={currentIndex + 1 >= questions.length}
+                onClick={() => {
+                  if (currentIndex + 1 < questions.length) {
+                    setCurrentIndex((prev) => prev + 1);
+                    setAnsweredState('idle');
+                    setSelectedStationIndex(null);
+                    setIsDrivingToStation(null);
+                    setHoveredStationIndex(null);
+                  }
+                }}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-amber-300 border border-amber-500/30 text-xs font-bold transition cursor-pointer"
+                title="السؤال التالي"
+              >
+                التالي ▶️
+              </button>
+              <select
+                value={currentIndex}
+                onChange={(e) => {
+                  setCurrentIndex(Number(e.target.value));
+                  setAnsweredState('idle');
+                  setSelectedStationIndex(null);
+                  setIsDrivingToStation(null);
+                  setHoveredStationIndex(null);
+                }}
+                className="bg-slate-800 border border-amber-500/40 rounded-lg px-2 py-1 text-xs text-amber-300 font-bold cursor-pointer"
+                title="الانتقال المباشر لأي سؤال"
+              >
+                {questions.map((q, idx) => {
+                  const isDone = chosenAnswers[q.id] !== undefined;
+                  return (
                     <option key={q.id} value={idx}>
-                      سؤال {idx + 1}
+                      {isDone ? '✓ ' : '• '} سؤال {idx + 1}
                     </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <span className="text-slate-400 ">
+                  );
+                })}
+              </select>
+
+              <button
+                type="button"
+                onClick={handleAttemptFinish}
+                className="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs transition shadow-sm cursor-pointer border border-emerald-400"
+                title="إنهاء الاختبار وتسليم كافة الإجابات"
+              >
+                إنهاء الاختبار 📋
+              </button>
+            </div>
+
+            <span className="text-slate-400">
               {progressPercent}%
             </span>
           </div>
