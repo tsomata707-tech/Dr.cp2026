@@ -632,13 +632,13 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
   };
 
   // Finish Game & Record Score
-  const finishGame = () => {
+  const finishGame = async () => {
     const totalTime = Math.round((Date.now() - startTimeRef.current) / 1000);
     let submission;
     if (mode === 'post') {
-      submission = submitPostTestResult(username, chosenAnswers, totalTime);
+      submission = await submitPostTestResult(username, chosenAnswers, totalTime);
     } else {
-      submission = submitPreTestResult(username, chosenAnswers, totalTime);
+      submission = await submitPreTestResult(username, chosenAnswers, totalTime);
     }
     
     // Clear persistence

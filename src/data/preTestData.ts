@@ -837,14 +837,14 @@ export function resetPreTestQuestionsToDefault(): PreTestQuestion[] {
   return DEFAULT_PRETEST_QUESTIONS;
 }
 
-export function submitPreTestResult(
+export async function submitPreTestResult(
   username: string,
   chosenAnswers: Record<string, number>,
   timeSpentSeconds: number
-): {
+): Promise<{
   progress: StudentGameProgress;
   result: PreTestResult;
-} {
+}> {
   const all = getAllStudentsProgress();
   const prog = all[username] || {
     username,
@@ -862,7 +862,7 @@ export function submitPreTestResult(
   let maxScore = 0;
   const questionScores: Record<string, number> = {};
   const questionDetails: Record<string, any> = {};
-  const completedAtStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const completedAtStr = new Date().toISOString(); 
 
   questions.forEach((q, idx) => {
     const pts = q.points || 1;
@@ -924,7 +924,6 @@ export function submitPreTestResult(
     passed,
   };
 
-  // For admin user (Read-only mode): do not commit answers, do not save scores, do not modify database
   if (username.trim().toLowerCase() === 'admin') {
     return { progress: prog, result };
   }
@@ -940,11 +939,11 @@ export function submitPreTestResult(
   if (!prog.badges.includes(badgeName)) {
     prog.badges.push(badgeName);
   }
-  prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  prog.lastActive = new Date().toISOString();
 
   all[username] = prog;
   saveAllStudentsProgress(all);
-  syncStudentProgressToFirestore(prog).catch(() => {});
+  await syncStudentProgressToFirestore(prog);
   try {
     window.dispatchEvent(new CustomEvent('cp_student_profile_updated', { detail: { username } }));
   } catch {}
@@ -1000,14 +999,14 @@ export function resetPostTestQuestionsToDefault(): PreTestQuestion[] {
   return DEFAULT_PRETEST_QUESTIONS;
 }
 
-export function submitPostTestResult(
+export async function submitPostTestResult(
   username: string,
   chosenAnswers: Record<string, number>,
   timeSpentSeconds: number
-): {
+): Promise<{
   progress: StudentGameProgress;
   result: PreTestResult;
-} {
+}> {
   const all = getAllStudentsProgress();
   const prog = all[username] || {
     username,
@@ -1024,7 +1023,7 @@ export function submitPostTestResult(
   let score = 0;
   const questionScores: Record<string, number> = {};
   const questionDetails: Record<string, any> = {};
-  const completedAtStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const completedAtStr = new Date().toISOString();
 
   questions.forEach((q, idx) => {
     const chosen = chosenAnswers[q.id];
@@ -1084,7 +1083,6 @@ export function submitPostTestResult(
     passed,
   };
 
-  // For admin user (Read-only mode): do not commit answers, do not save scores, do not modify database
   if (username.trim().toLowerCase() === 'admin') {
     return { progress: prog, result };
   }
@@ -1098,11 +1096,11 @@ export function submitPostTestResult(
   if (!prog.badges.includes(badgeName)) {
     prog.badges.push(badgeName);
   }
-  prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  prog.lastActive = new Date().toISOString();
 
   all[username] = prog;
   saveAllStudentsProgress(all);
-  syncStudentProgressToFirestore(prog).catch(() => {});
+  await syncStudentProgressToFirestore(prog);
   try {
     window.dispatchEvent(new CustomEvent('cp_student_profile_updated', { detail: { username } }));
   } catch {}

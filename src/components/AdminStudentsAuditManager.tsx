@@ -27,6 +27,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { generateSixtyStudents, RESEARCH_GROUPS_META, getGroupByUsername, getCollaborativeGroupByUsername } from '../data/studentAccounts';
+import { getAllTripartiteNames, getStudentTripartiteName } from '../utils/studentNameStorage';
 import { StudentGameProgress, PreTestResult, CompletedLevelResult, StudentTestAccessSummary, TestAccessSession } from '../types';
 import { getPostTestQuestions, getPreTestQuestions } from '../data/preTestData';
 import { GAME_LEVELS_DATA } from '../data/gameLevelsData';
@@ -59,6 +60,9 @@ type AuditTabFilter = 'all' | 'pretest_sheet' | 'test_visits' | 'detailed_answer
 
 interface EnrichedStudentRow {
   username: string;
+  firstName: string;
+  fatherName: string;
+  familyName: string;
   fullName: string;
   groupCode: string;
   groupName: string;
@@ -94,6 +98,65 @@ interface EnrichedStudentRow {
   lastActive: string;
   raw: StudentGameProgress;
 }
+
+const getCompleteStudentName = (
+  username: string,
+  portalUsers: any[],
+  tripartiteNames: Record<string, any>
+): { firstName: string; fatherName: string; familyName: string; fullName: string } => {
+  const norm = username.trim().toUpperCase();
+  const parts = getStudentTripartiteName(username);
+  if (parts.firstName || parts.fatherName || parts.familyName) {
+    return {
+      firstName: parts.firstName || '-',
+      fatherName: parts.fatherName || '-',
+      familyName: parts.familyName || '-',
+      fullName: `${parts.firstName} ${parts.fatherName} ${parts.familyName}`.trim(),
+    };
+  }
+  const rawMap = tripartiteNames[norm];
+  if (rawMap) {
+    return {
+      firstName: rawMap.firstName || '-',
+      fatherName: rawMap.fatherName || '-',
+      familyName: rawMap.familyName || '-',
+      fullName: `${rawMap.firstName || ''} ${rawMap.fatherName || ''} ${rawMap.familyName || ''}`.trim(),
+    };
+  }
+  const user = portalUsers.find((u) => u.username?.toUpperCase() === norm);
+  if (user?.fullName && user.fullName.trim() !== username) {
+    const tokens = user.fullName.trim().split(/\s+/);
+    return {
+      firstName: tokens[0] || '-',
+      fatherName: tokens[1] || '-',
+      familyName: tokens.slice(2).join(' ') || '-',
+      fullName: user.fullName,
+    };
+  }
+  return { firstName: '-', fatherName: '-', familyName: '-', fullName: username };
+};
+
+const computeActualMaxScore = (questions: PreTestQuestion[]): number => {
+  return questions.reduce((acc, q) => acc + (q.points || 1), 0);
+};
+
+const formatEgyptDateTime = (isoString: string): string => {
+  if (isoString === '-') return '-';
+  try {
+    const date = new Date(isoString);
+    return date.toLocaleString('ar-EG', {
+      timeZone: 'Africa/Cairo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  } catch {
+    return isoString;
+  }
+};
 
 export const AdminStudentsAuditManager: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<AuditTabFilter>('all');
@@ -136,14 +199,23 @@ export const AdminStudentsAuditManager: React.FC = () => {
       ]);
 
       let preTestCount = 0;
+      let missingInCloudCount = 0;
+      const localProgress = getAllStudentsProgress();
 
-      if (cloudProgress && Object.keys(cloudProgress).length > 0) {
-        const mergedProgress = { ...getAllStudentsProgress(), ...cloudProgress };
+      if (cloudProgress) {
+        const mergedProgress = { ...localProgress, ...cloudProgress };
         saveAllStudentsProgress(mergedProgress);
         setProgressMap(mergedProgress);
         preTestCount = Object.values(mergedProgress).filter(
           (p) => p.preTestResult && p.preTestResult.completed
         ).length;
+
+        // Diagnostic: Find students who have local progress but missing in RTDB
+        Object.keys(localProgress).forEach(username => {
+          if (!cloudProgress[username] && localProgress[username].preTestResult?.completed) {
+            missingInCloudCount++;
+          }
+        });
       }
 
       if (cloudLogins && Object.keys(cloudLogins).length > 0) {
@@ -159,10 +231,11 @@ export const AdminStudentsAuditManager: React.FC = () => {
       }
 
       if (!silent) {
-        showToast(
-          `تمت المزامنة وجلب كافة نتائج الطلاب من السحابة بنجاح! تم تحديث بيانات (${preTestCount}) نتيجة اختبار قبلي مع إجابات الـ 53 سؤالاً والمواعيد.`,
-          'success'
-        );
+        let msg = `تمت المزامنة وجلب كافة نتائج الطلاب من السحابة بنجاح! تم تحديث بيانات (${preTestCount}) نتيجة اختبار قبلي.`;
+        if (missingInCloudCount > 0) {
+          msg += ` تنبيه: هناك (${missingInCloudCount}) طالب لديهم نتائج محلياً ولكنها مفقودة في السحابة!`;
+        }
+        showToast(msg, missingInCloudCount > 0 ? 'info' : 'success');
       }
     } catch (err: any) {
       if (!silent) {
@@ -243,9 +316,11 @@ export const AdminStudentsAuditManager: React.FC = () => {
   // Merge the 60 canonical students with real progress and login audit data
   const enrichedStudents: EnrichedStudentRow[] = useMemo(() => {
     const canonicalStudents = generateSixtyStudents();
+    const tripartiteNames = getAllTripartiteNames();
 
     return canonicalStudents.map((stud) => {
       const username = stud.username;
+      const nameParts = getCompleteStudentName(username, canonicalStudents, tripartiteNames);
       const groupCode = (stud.groupCode || 'G1') as 'G1' | 'G2' | 'G3' | 'G4';
       const meta = RESEARCH_GROUPS_META[groupCode] || {
         name: 'المجموعة',
@@ -269,8 +344,8 @@ export const AdminStudentsAuditManager: React.FC = () => {
       // Login metrics
       const hasLoggedIn = !!audit && audit.totalLogins > 0;
       const totalLogins = audit ? audit.totalLogins : 0;
-      const firstLogin = audit ? audit.firstLogin : '-';
-      const lastLogin = audit ? audit.lastLogin : (prog.lastActive && prog.lastActive !== '-' ? prog.lastActive : '-');
+      const firstLogin = audit ? formatEgyptDateTime(audit.firstLogin) : '-';
+      const lastLogin = audit ? formatEgyptDateTime(audit.lastLogin) : (prog.lastActive && prog.lastActive !== '-' ? formatEgyptDateTime(prog.lastActive) : '-');
       const latestDevice = audit && audit.sessions && audit.sessions.length > 0 ? audit.sessions[0].device : '-';
       const sessions = audit && audit.sessions ? audit.sessions : [];
 
@@ -278,20 +353,20 @@ export const AdminStudentsAuditManager: React.FC = () => {
       const pre = prog.preTestResult;
       const preTestCompleted = !!pre?.completed;
       const preTestScore = pre ? pre.score : 0;
-      const preTestMaxScore = pre && pre.maxScore ? pre.maxScore : 53;
+      const preTestMaxScore = pre && pre.maxScore ? pre.maxScore : computeActualMaxScore(getPreTestQuestions());
       const preTestPercentage = preTestMaxScore > 0 ? Math.round((preTestScore / preTestMaxScore) * 100) : 0;
       const preTestPassed = !!pre?.passed;
-      const preTestDate = pre?.completedAt || '-';
+      const preTestDate = pre?.completedAt ? formatEgyptDateTime(pre.completedAt) : '-';
       const preTestTimeSpent = pre?.timeSpentSeconds || 0;
 
       // Post-test metrics
       const post = prog.postTestResult;
       const postTestCompleted = !!post?.completed;
       const postTestScore = post ? post.score : 0;
-      const postTestMaxScore = post && post.maxScore ? post.maxScore : 53;
+      const postTestMaxScore = post && post.maxScore ? post.maxScore : computeActualMaxScore(getPostTestQuestions());
       const postTestPercentage = postTestMaxScore > 0 ? Math.round((postTestScore / postTestMaxScore) * 100) : 0;
       const postTestPassed = !!post?.passed;
-      const postTestDate = post?.completedAt || '-';
+      const postTestDate = post?.completedAt ? formatEgyptDateTime(post.completedAt) : '-';
       const postTestTimeSpent = post?.timeSpentSeconds || 0;
 
       // Levels metrics
@@ -301,7 +376,10 @@ export const AdminStudentsAuditManager: React.FC = () => {
 
       return {
         username,
-        fullName: stud.fullName || username,
+        firstName: nameParts.firstName,
+        fatherName: nameParts.fatherName,
+        familyName: nameParts.familyName,
+        fullName: nameParts.fullName,
         groupCode,
         groupName: meta.name,
         learningMode: meta.learningMode,
@@ -329,7 +407,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
         completedLevelsCount,
         totalLevelsScore,
         levelsDetails: completedLevels,
-        lastActive: prog.lastActive || '-',
+        lastActive: prog.lastActive !== '-' ? formatEgyptDateTime(prog.lastActive) : '-',
         raw: prog,
       };
     });
@@ -393,7 +471,10 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const headers = [
       'م',
       'اسم المستخدم (اليوزر نيم)',
-      'اسم الطالب',
+      'الاسم الأول',
+      'اسم الأب',
+      'اسم العائلة',
+      'الاسم الكامل',
       'المجموعة البحثية',
       'نمط التعلم',
       'نمط التغذية الراجعة',
@@ -437,6 +518,9 @@ export const AdminStudentsAuditManager: React.FC = () => {
       return [
         idx + 1,
         s.username,
+        s.firstName,
+        s.fatherName,
+        s.familyName,
         s.fullName,
         `${s.groupCode} (${s.groupName})`,
         s.learningMode,
@@ -471,13 +555,16 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const headers = [
       'م',
       'اسم المستخدم (اليوزر نيم)',
-      'اسم الطالب',
+      'الاسم الأول',
+      'اسم الأب',
+      'اسم العائلة',
+      'الاسم الكامل',
       'المجموعة البحثية',
       'نمط التعلم',
       'نمط التغذية الراجعة',
       'حالة إتمام الاختبار البعدي',
       'تاريخ ووقت الإتمام الفعلي',
-      'الدرجة المحرزة (/53)',
+      'الدرجة المحرزة',
       'الدرجة العظمى',
       'النسبة المئوية (%)',
       'حالة الاجتياز',
@@ -515,6 +602,9 @@ export const AdminStudentsAuditManager: React.FC = () => {
       return [
         idx + 1,
         s.username,
+        s.firstName,
+        s.fatherName,
+        s.familyName,
         s.fullName,
         `${s.groupCode} (${s.groupName})`,
         s.learningMode,
@@ -551,7 +641,10 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const headers = [
       'م',
       'اسم المستخدم (اليوزر نيم)',
-      'اسم الطالب الكامل',
+      'الاسم الأول',
+      'اسم الأب',
+      'اسم العائلة',
+      'الاسم الكامل',
       'المجموعة البحثية',
       'اسم الاختبار المستهدف',
       'عدد مرات التردد (Frequency)',
@@ -573,11 +666,16 @@ export const AdminStudentsAuditManager: React.FC = () => {
               } (${sess.interpretation})]`
           )
           .join(' | ') || 'لا توجد جلسات تردد مسجلة';
+      
+      const nameParts = getCompleteStudentName(item.username, generateSixtyStudents(), getAllTripartiteNames());
 
       return [
         idx + 1,
         item.username,
-        item.fullName,
+        nameParts.firstName,
+        nameParts.fatherName,
+        nameParts.familyName,
+        nameParts.fullName,
         item.groupCode,
         item.testName,
         item.totalVisits,
@@ -626,7 +724,10 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const headers = [
       'م',
       'اسم المستخدم',
-      'اسم الطالب',
+      'الاسم الأول',
+      'اسم الأب',
+      'اسم العائلة',
+      'الاسم الكامل',
       'المجموعة البحثية',
       'اسم الاختبار',
       'إجمالي الدرجة المحرزة',
@@ -674,6 +775,9 @@ export const AdminStudentsAuditManager: React.FC = () => {
       return [
         idx + 1,
         s.username,
+        s.firstName,
+        s.fatherName,
+        s.familyName,
         s.fullName,
         s.groupCode,
         testLabel,
@@ -694,6 +798,10 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const headers = [
       'م',
       'اسم المستخدم (اليوزر نيم)',
+      'الاسم الأول',
+      'اسم الأب',
+      'اسم العائلة',
+      'الاسم الكامل',
       'المجموعة البحثية',
       'نمط التعلم',
       'نمط التغذية الراجعة',
@@ -706,6 +814,10 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const rows = enrichedStudents.map((s, idx) => [
       idx + 1,
       s.username,
+      s.firstName,
+      s.fatherName,
+      s.familyName,
+      s.fullName,
       `${s.groupCode} (${s.groupName})`,
       s.learningMode,
       s.feedbackMode,
@@ -724,6 +836,10 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const headers = [
       'م',
       'اسم المستخدم (اليوزر نيم)',
+      'الاسم الأول',
+      'اسم الأب',
+      'اسم العائلة',
+      'الاسم الكامل',
       'المجموعة البحثية',
       'حالة الدخول للمنظومة',
       'إجمالي عدد مرات الدخول الفعلي',
@@ -735,6 +851,10 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const rows = enrichedStudents.map((s, idx) => [
       idx + 1,
       s.username,
+      s.firstName,
+      s.fatherName,
+      s.familyName,
+      s.fullName,
       `${s.groupCode} (${s.groupName})`,
       s.hasLoggedIn ? 'سجل دخول فعلياً' : 'لم يسجل دخول بعد',
       s.totalLogins,
@@ -750,14 +870,14 @@ export const AdminStudentsAuditManager: React.FC = () => {
   // Export Collaborative Sheet (شيت خاص بالتعاوني - G3 & G4)
   const handleExportCollaborativeSheet = () => {
     const headers = [
-      'م', 'اسم المستخدم', 'المجموعة البحثية', 'نمط التعاوني', 'تاريخ ووقت أول دخول', 'تاريخ ووقت آخر دخول',
+      'م', 'اسم المستخدم', 'الاسم الأول', 'اسم الأب', 'اسم العائلة', 'الاسم الكامل', 'المجموعة البحثية', 'نمط التعاوني', 'تاريخ ووقت أول دخول', 'تاريخ ووقت آخر دخول',
       'حالة القبلي', 'درجة القبلي (/53)', 'تاريخ ووقت القبلي الفعلي',
       'المراحل المكتملة', 'نقاط المراحل',
       'حالة البعدي', 'درجة البعدي (/53)', 'تاريخ ووقت البعدي الفعلي',
     ];
     const collabStudents = enrichedStudents.filter((s) => s.learningMode === 'تعاوني');
     const rows = collabStudents.map((s, idx) => [
-      idx + 1, s.username, `${s.groupCode} (${s.groupName})`, s.feedbackMode,
+      idx + 1, s.username, s.firstName, s.fatherName, s.familyName, s.fullName, `${s.groupCode} (${s.groupName})`, s.feedbackMode,
       s.firstLogin, s.lastLogin,
       s.preTestCompleted ? 'مكتمل' : 'غير مكتمل', s.preTestCompleted ? s.preTestScore : '-', s.preTestDate,
       `${s.completedLevelsCount} / 10`, s.totalLevelsScore,
@@ -770,7 +890,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
   // Export Individual Group Sheet (شيت لكل مجموعة على حدة: G1, G2, G3, G4 أو مجموعات التعاون الثلاثية G3-A..E و G4-A..E)
   const handleExportGroupSheet = (targetGroupCode: string) => {
     const headers = [
-      'م', 'اسم المستخدم', 'المجموعة', 'نمط التعلم', 'التغذية الراجعة', 'أول دخول', 'آخر دخول',
+      'م', 'اسم المستخدم', 'الاسم الأول', 'اسم الأب', 'اسم العائلة', 'الاسم الكامل', 'المجموعة', 'نمط التعلم', 'التغذية الراجعة', 'أول دخول', 'آخر دخول',
       'حالة القبلي', 'درجة القبلي', 'تاريخ ووقت القبلي الفعلي', 'المراحل المكتملة', 'نقاط المراحل',
       'حالة البعدي', 'درجة البعدي', 'تاريخ ووقت البعدي الفعلي',
     ];
@@ -783,7 +903,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
     });
 
     const rows = groupStudents.map((s, idx) => [
-      idx + 1, s.username, s.groupName, s.learningMode, s.feedbackMode,
+      idx + 1, s.username, s.firstName, s.fatherName, s.familyName, s.fullName, s.groupName, s.learningMode, s.feedbackMode,
       s.firstLogin, s.lastLogin,
       s.preTestCompleted ? 'مكتمل' : '-', s.preTestCompleted ? s.preTestScore : '-', s.preTestDate,
       `${s.completedLevelsCount}/10`, s.totalLevelsScore,
@@ -798,6 +918,10 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const headers = [
       'م',
       'اسم المستخدم (اليوزر نيم)',
+      'الاسم الأول',
+      'اسم الأب',
+      'اسم العائلة',
+      'الاسم الكامل',
       'المجموعة البحثية',
       'نمط التعلم',
       'نمط التغذية الراجعة',
@@ -822,6 +946,10 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const rows = enrichedStudents.map((s, idx) => [
       idx + 1,
       s.username,
+      s.firstName,
+      s.fatherName,
+      s.familyName,
+      s.fullName,
       `${s.groupCode} (${s.groupName})`,
       s.learningMode,
       s.feedbackMode,
