@@ -40,7 +40,7 @@ import {
   subscribeToAllStudentsProgress,
   subscribeToStudentsLoginsAudit,
 } from '../utils/realtimeService';
-import { getAllStudentsProgress } from '../utils/gameStorage';
+import { getAllStudentsProgress, resetAllStudentsToRealCleanState } from '../utils/gameStorage';
 
 type AuditTabFilter = 'all' | 'pretest' | 'posttest' | 'levels' | 'logins';
 
@@ -616,6 +616,19 @@ export const AdminStudentsAuditManager: React.FC = () => {
     }
   };
 
+  // Master Reset Handler: clears all test answers, timers, and scores to zero
+  const handleMasterResetAllData = () => {
+    if (
+      window.confirm(
+        'تأكيد تصفير كافة الاختبارات والنتائج بالكامل؟\n\nسيتم حذف جميع إجابات الطلاب السابقة، وتصفير الدرجات إلى (0)، وإعادة تعيين التايمر والاختبارات لتبدأ من السؤال الأول والدقيقة 60 للجميع كأنه لم يجاوب أحد.'
+      )
+    ) {
+      resetAllStudentsToRealCleanState();
+      setProgressMap(getAllStudentsProgress());
+      showToast('تمت إعادة ضبط وتصفير كافة الإجابات والاختبارات والشيتات بنجاح! تبدأ جميع الاختبارات والحسابات من الصفر الآن.');
+    }
+  };
+
   return (
     <div className="space-y-6 font-['Cairo',_sans-serif] text-right">
       {/* Toast Notification */}
@@ -663,7 +676,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Master Export Buttons */}
+          {/* Quick Master Export & Reset Buttons */}
           <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
             <button
               type="button"
@@ -683,6 +696,16 @@ export const AdminStudentsAuditManager: React.FC = () => {
             >
               {copiedType === 'table' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
               <span>{copiedType === 'table' ? 'تم النسخ!' : 'نسخ كجدول شيت'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleMasterResetAllData}
+              className="px-4 py-3 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-500/70 font-black text-xs flex items-center gap-2 cursor-pointer transition shrink-0 shadow-lg shadow-rose-950/50"
+              title="إعادة ضبط وتصفير كافة إجابات ودرجات الطلاب والاختبارات والتايمر من البداية"
+            >
+              <RefreshCw className="w-4 h-4 text-rose-400" />
+              <span>تصفير وإعادة ضبط كافة الاختبارات (0) 🔄</span>
             </button>
           </div>
         </div>

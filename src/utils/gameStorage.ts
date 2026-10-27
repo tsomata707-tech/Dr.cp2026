@@ -350,19 +350,32 @@ export function resetAllStudentsToRealCleanState(): Record<string, StudentGamePr
   const clean = generateCleanRealStudents();
   localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(clean));
 
-  // Sync each student to Firebase RTDB and clear any local keys
-  Object.values(clean).forEach((prog) => {
-    try {
-      localStorage.removeItem(`cp_pre_index_${prog.username}`);
-      localStorage.removeItem(`cp_pre_answers_${prog.username}`);
-      localStorage.removeItem(`cp_pre_started_${prog.username}`);
-      localStorage.removeItem(`cp_post_index_${prog.username}`);
-      localStorage.removeItem(`cp_post_answers_${prog.username}`);
-      localStorage.removeItem(`cp_post_started_${prog.username}`);
-      localStorage.removeItem(`cp_active_portal_section_${prog.username}`);
-    } catch {
-      // Ignore
+  // Clear global collaborative team answers & student activity submissions
+  try {
+    localStorage.removeItem('cp_collab_team_answers_v1');
+    localStorage.removeItem('cp_student_activities_submissions_v2');
+  } catch {}
+
+  // Remove all test timer, question answer, started, and index keys from localStorage
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith('cp_pre_') ||
+          key.startsWith('cp_post_') ||
+          key.startsWith('cp_active_portal_') ||
+          key.startsWith('cp_collab_'))
+      ) {
+        keysToRemove.push(key);
+      }
     }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+  } catch {}
+
+  // Sync each student clean initial state (0 score, 0 answers, 0 results) to Firebase RTDB
+  Object.values(clean).forEach((prog) => {
     syncStudentProgressToFirestore(prog).catch(() => {});
   });
 
@@ -373,11 +386,11 @@ export function resetAllStudentsToRealCleanState(): Record<string, StudentGamePr
     // Ignore
   }
 
-  addActivityLog('تمت تهيئة وتصفير درجات ونتائج كافة الطلاب بنجاح', 'admin', 'warning');
+  addActivityLog('تمت إعادة ضبط وتصفير جميع درجات وإجابات واختبارات الطلاب بالكامل للبدء من الصفر', 'admin', 'warning');
   return clean;
 }
 
-// Generates clean real initial state for all 60 students (0 mock data, 0 fake scores)
+// Generates clean real initial state for all 60 students (0 answered questions, 0 scores)
 function generateCleanRealStudents(): Record<string, StudentGameProgress> {
   const clean: Record<string, StudentGameProgress> = {};
   const groups = ['G1', 'G2', 'G3', 'G4'] as const;
@@ -402,4 +415,17 @@ function generateCleanRealStudents(): Record<string, StudentGameProgress> {
   });
 
   return clean;
+}
+
+// Automatic master reset execution on boot to guarantee zero answers/scores
+const MASTER_RESET_TOKEN = 'cp_master_reset_v20261027_clean_zero_answers_v4';
+if (typeof window !== 'undefined') {
+  try {
+    if (localStorage.getItem(MASTER_RESET_TOKEN) !== 'done') {
+      resetAllStudentsToRealCleanState();
+      localStorage.setItem(MASTER_RESET_TOKEN, 'done');
+    }
+  } catch {
+    // Ignore
+  }
 }
