@@ -364,21 +364,16 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-3 py-0.5 rounded-full bg-cyan-950 border border-cyan-400 text-cyan-300 text-xs font-black">
-                  📢 صندوق تنبيهات منظومة التعاون المعزولة
+                  📢 التنبيهات المباشرة
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-500 text-emerald-300 text-[11px] font-bold flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>تزامن سحابي حي (Firebase RTDB متصل)</span>
+                  <span>تزامن سحابي حي نشط</span>
                 </span>
               </div>
-              <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-1.5">
-                دورات العمل التشاركي في إنتاج الوسائط المتعددة (3 طلاب + المشرف لكل فريق)
+              <h3 className="text-base sm:text-xl font-black text-white font-['Tajawal'] mt-1.5">
+                مجموعات العمل التعاوني
               </h3>
-              <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed font-['IBM_Plex_Sans_Arabic']">
-                • <strong>عزل تام بين المجموعات:</strong> كل مجموعة تتكون من 3 طلاب فقط والمشرف، ولا يختلطون أو يطلعون على رسائل أو إشعارات المجموعات الأخرى.
-                <br />
-                • <strong>التنبيهات والظرف ✉️🔔:</strong> تصل إشعارات الرسائل والظرف فقط لأعضاء المجموعة الثلاثة والمشرف، مع نغمة صوتية وتنبيه منبثق لحظي.
-              </p>
             </div>
           </div>
 
@@ -563,15 +558,14 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                   </div>
                 </div>
 
-                <div className="pt-4 mt-3 border-t border-slate-800/80 flex items-center justify-between">
-                  <span className="text-xs text-slate-400">شات حي عبر Firebase</span>
+                <div className="pt-4 mt-3 border-t border-slate-800/80 flex items-center justify-end">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleOpenGroupChat(group.code);
                     }}
-                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md ${
+                    className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md ${
                       isMyGroup || isAdmin
                         ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950'
                         : 'bg-slate-800 text-slate-400 hover:bg-slate-700'

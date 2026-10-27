@@ -1910,7 +1910,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>حفظ ومزامنة عبر فايربيس</span>
+                    <span>حفظ ومزامنة التغييرات فوراً</span>
                   </>
                 )}
               </button>

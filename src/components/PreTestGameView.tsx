@@ -39,6 +39,7 @@ import {
 } from '../data/preTestData';
 import { PreTestQuestion, PreTestResult, StudentGameProgress, TestAccessSession } from '../types';
 import { MatchingQuestionTableView } from './MatchingQuestionTableView';
+import { CircularCountdownTimer } from './CircularCountdownTimer';
 import {
   recordTestEntry,
   recordTestExit,
@@ -661,7 +662,18 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     : `🏎️ لعبة توصيل الأسئلة بالسيارة: ${testLabel}`;
 
   return (
-    <div className="min-h-screen bg-sky-50 text-slate-900 font-['Cairo'] pb-16 relative overflow-hidden select-none">
+    <div className="min-h-screen bg-sky-50 text-slate-900 font-['Cairo'] pb-16 relative overflow-x-clip select-none">
+      {/* Floating 60-Minute Circular Countdown Gauge (Follows and stays visible during page scroll) */}
+      {!isFinished && gameStarted && !showWelcomeModal && (
+        <CircularCountdownTimer
+          totalSeconds={3600}
+          remainingSeconds={testTimerSeconds}
+          isPaused={!isTabActive}
+          soundWarningActive={testTimerSeconds <= 15}
+          testTitle={testLabel}
+          unansweredCount={questions.filter((q) => chosenAnswers[q.id] === undefined).length}
+        />
+      )}
       {/* 7-SECOND WELCOME MODAL OVERLAY */}
       {showWelcomeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300 font-['Cairo']">

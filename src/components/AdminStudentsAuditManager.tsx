@@ -864,7 +864,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="px-3 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-xs font-black">
-                  سجل الدخول الفعلي والنتائج • مزامنة فايربيس الحية
+                  سجل الدخول الفعلي والنتائج • التزامن السحابي المباشر
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal'] tracking-tight">

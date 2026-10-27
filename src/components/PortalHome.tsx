@@ -531,22 +531,6 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
 
 
 
-            {/* 9. شاشة الترحيب */}
-            <button
-              type="button"
-              id="tab-welcome"
-              onClick={() => {
-                setShowWelcomeFloatingCard(true);
-                setActiveMainSection('welcome');
-              }}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                activeMainSection === 'welcome'
-                  ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              <span>👋 بطاقة الترحيب</span>
-            </button>
 
             {/* 11. الأربع مجموعات */}
             <button
