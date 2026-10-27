@@ -26,6 +26,7 @@ import {
   Package,
   Eye,
   Clock,
+  BookOpen,
 } from 'lucide-react';
 import { CARTOON_AVATARS } from '../data/gameLevelsData';
 import { getStudentProgress } from '../utils/gameStorage';
@@ -1347,6 +1348,106 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               <div className="p-3 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-xs text-emerald-300 flex items-center justify-center gap-2 mt-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>تم احتساب نتيجتك النهائية واعتمادها بنجاح.</span>
+              </div>
+            </div>
+
+            {/* Detailed Question-by-Question Breakdown Card (Crucial for Deferred Groups G2 & G4 & Full Transperancy) */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-slate-950/90 border-2 border-slate-800 text-right space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-white font-['Tajawal']">
+                      📋 التقرير التفصيلي لإجابات كل سؤال ({testLabel}):
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      بيان تفصيلي بالنطاق/الموديول، نص السؤال، إجابتك المختارة، والإجابة الصحيحة.
+                    </p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold">
+                  {questions.length} سؤالاً
+                </span>
+              </div>
+
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                {questions.map((q, qIdx) => {
+                  const chosenIdx = chosenAnswers[q.id];
+                  const isRight = chosenIdx === q.correctIndex;
+                  const domainName = (q as any).module || (q as any).domain || (() => {
+                    if (qIdx < 6) return 'الموديول 1: التثبيت والوسائط المتعددة';
+                    if (qIdx < 11) return 'الموديول 2: واجهة البرنامج والخصائص';
+                    if (qIdx < 16) return 'الموديول 3: أنماط المشروعات و العروض';
+                    if (qIdx < 21) return 'الموديول 4: الأشكال الذكية والشرائح والألوان';
+                    if (qIdx < 26) return 'الموديول 5: المحاذاة والتحريك والتجميع';
+                    if (qIdx < 31) return 'الموديول 6: بنوك الأسئلة والنتائج والتقويم';
+                    if (qIdx < 37) return 'الموديول 7: الخط الزمني والتغذية الراجعة والفيديو';
+                    if (qIdx < 42) return 'الموديول 8: استيراد عروض PowerPoint';
+                    if (qIdx < 48) return 'الموديول 9: أزرار التفاعل والمحاكاة البرمجية';
+                    return 'الموديول 10: النشر الإلكتروني ومعايير SCORM';
+                  })();
+
+                  const chosenText = chosenIdx !== undefined && chosenIdx >= 0 && q.options[chosenIdx]
+                    ? `${['أ', 'ب', 'ج', 'د', 'هـ'][chosenIdx] || (chosenIdx + 1)}. ${q.options[chosenIdx]}`
+                    : 'لم تتم الإجابة';
+                  const correctText = q.options[q.correctIndex]
+                    ? `${['أ', 'ب', 'ج', 'د', 'هـ'][q.correctIndex] || (q.correctIndex + 1)}. ${q.options[q.correctIndex]}`
+                    : 'الإجابة الأولى';
+
+                  return (
+                    <div
+                      key={q.id || qIdx}
+                      className={`p-3.5 rounded-xl border text-xs space-y-2 transition ${
+                        isRight
+                          ? 'bg-emerald-950/30 border-emerald-500/40'
+                          : 'bg-rose-950/30 border-rose-500/40'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2.5 py-0.5 rounded-lg text-[11px] font-black border ${
+                            isRight
+                              ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                              : 'bg-rose-600 text-white border-rose-400'
+                          }`}>
+                            السؤال #{qIdx + 1}
+                          </span>
+                          <span className="text-[11px] text-amber-300 font-bold bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
+                            {domainName}
+                          </span>
+                        </div>
+                        <span className={`px-2.5 py-0.5 rounded-lg font-black text-xs border ${
+                          isRight
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                        }`}>
+                          النتيجة: {isRight ? '1 / 1 ✓' : '0 / 1 ✗'}
+                        </span>
+                      </div>
+
+                      <p className="text-white font-bold leading-relaxed font-['Cairo']">
+                        {q.question}
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-800/80 text-[11px]">
+                        <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                          <span className="text-slate-400 block font-bold">إجابتك المختارة:</span>
+                          <span className={`font-bold block mt-0.5 ${isRight ? 'text-emerald-300' : 'text-rose-300'}`}>
+                            {chosenText}
+                          </span>
+                        </div>
+                        <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                          <span className="text-slate-400 block font-bold">الإجابة الصحيحة النموذجية:</span>
+                          <span className="text-emerald-300 font-bold block mt-0.5">
+                            {correctText}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

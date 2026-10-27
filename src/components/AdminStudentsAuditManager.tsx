@@ -282,6 +282,13 @@ export const AdminStudentsAuditManager: React.FC = () => {
 
   // 1. Export Pre-Test Sheet
   const handleExportPreTestSheet = () => {
+    const preQuestions = getPreTestQuestions();
+    const qHeaders = preQuestions.flatMap((q, i) => [
+      `س${i + 1} - النطاق/الموديول`,
+      `س${i + 1} - إجابة الطالب`,
+      `س${i + 1} - النتيجة (0/1 أو 1/1)`,
+    ]);
+
     const headers = [
       'م',
       'اسم المستخدم (اليوزر نيم)',
@@ -295,31 +302,61 @@ export const AdminStudentsAuditManager: React.FC = () => {
       'النسبة المئوية (%)',
       'حالة الاجتياز',
       'زمن الإجابة المستغرق',
+      ...qHeaders,
     ];
 
-    const rows = enrichedStudents.map((s, idx) => [
-      idx + 1,
-      s.username,
-      `${s.groupCode} (${s.groupName})`,
-      s.learningMode,
-      s.feedbackMode,
-      s.preTestCompleted ? 'مكتمل' : 'غير مكتمل',
-      s.preTestDate,
-      s.preTestCompleted ? s.preTestScore : '-',
-      s.preTestCompleted ? s.preTestMaxScore : '-',
-      s.preTestCompleted ? `${s.preTestPercentage}%` : '-',
-      s.preTestCompleted ? (s.preTestPassed ? 'مجتاز بنجاح' : 'لم يجتز') : 'لم يتقدم',
-      s.preTestCompleted ? formatDuration(s.preTestTimeSpent) : '-',
-    ]);
+    const rows = enrichedStudents.map((s, idx) => {
+      const qCols = preQuestions.flatMap((q, i) => {
+        if (!s.preTestCompleted || !s.raw.preTestResult) return ['-', '-', '-'];
+        const domain = (q as any).module || (q as any).domain || (() => {
+          if (i < 6) return 'الموديول 1: التثبيت والوسائط المتعددة';
+          if (i < 11) return 'الموديول 2: واجهة البرنامج والخصائص';
+          if (i < 16) return 'الموديول 3: أنماط المشروعات و العروض';
+          if (i < 21) return 'الموديول 4: الأشكال الذكية والشرائح والألوان';
+          if (i < 26) return 'الموديول 5: المحاذاة والتحريك والتجميع';
+          if (i < 31) return 'الموديول 6: بنوك الأسئلة والنتائج والتقويم';
+          if (i < 37) return 'الموديول 7: الخط الزمني والتغذية الراجعة والفيديو';
+          if (i < 42) return 'الموديول 8: استيراد عروض PowerPoint';
+          if (i < 48) return 'الموديول 9: أزرار التفاعل والمحاكاة البرمجية';
+          return 'الموديول 10: النشر الإلكتروني ومعايير SCORM';
+        })();
+        const chosenIdx = s.raw.preTestResult.answers?.[q.id];
+        const chosenText = chosenIdx !== undefined && chosenIdx >= 0 && q.options[chosenIdx]
+          ? `${['أ', 'ب', 'ج', 'د', 'هـ'][chosenIdx] || chosenIdx + 1}. ${q.options[chosenIdx]}`
+          : 'لم تتم الإجابة';
+        const itemScore = s.raw.preTestResult.questionScores?.[q.id] ?? (chosenIdx === q.correctIndex ? 1 : 0);
+        return [domain, chosenText, itemScore === 1 ? '1/1' : '0/1'];
+      });
+
+      return [
+        idx + 1,
+        s.username,
+        `${s.groupCode} (${s.groupName})`,
+        s.learningMode,
+        s.feedbackMode,
+        s.preTestCompleted ? 'مكتمل' : 'غير مكتمل',
+        s.preTestDate,
+        s.preTestCompleted ? s.preTestScore : '-',
+        s.preTestCompleted ? s.preTestMaxScore : '-',
+        s.preTestCompleted ? `${s.preTestPercentage}%` : '-',
+        s.preTestCompleted ? (s.preTestPassed ? 'مجتاز بنجاح' : 'لم يجتز') : 'لم يتقدم',
+        s.preTestCompleted ? formatDuration(s.preTestTimeSpent) : '-',
+        ...qCols,
+      ];
+    });
 
     downloadCsvSheet('شيت_نتائج_الاختبار_القبلي_PreTest_Results', headers, rows);
-    showToast('تم تصدير وتحميل شيت نتائج الاختبار القبلي بنجاح بصيغة Excel / CSV');
+    showToast('تم تصدير وتحميل شيت نتائج الاختبار القبلي بنجاح مع النطاق وإجابات كل سؤال بصيغة Excel / CSV');
   };
 
   // 2. Export Post-Test Sheet
   const handleExportPostTestSheet = () => {
     const postQuestions = getPostTestQuestions();
-    const qHeaders = postQuestions.map((_, i) => `س${i + 1} (النتيجة 0/1 أو 1/1)`);
+    const qHeaders = postQuestions.flatMap((q, i) => [
+      `س${i + 1} - النطاق/الموديول`,
+      `س${i + 1} - إجابة الطالب`,
+      `س${i + 1} - النتيجة (0/1 أو 1/1)`,
+    ]);
 
     const headers = [
       'م',
@@ -338,10 +375,26 @@ export const AdminStudentsAuditManager: React.FC = () => {
     ];
 
     const rows = enrichedStudents.map((s, idx) => {
-      const qScores = postQuestions.map((q) => {
-        if (!s.postTestCompleted || !s.raw.postTestResult) return '-';
-        const itemScore = s.raw.postTestResult.questionScores?.[q.id] ?? (s.raw.postTestResult.answers?.[q.id] === q.correctIndex ? 1 : 0);
-        return itemScore === 1 ? '1/1' : '0/1';
+      const qCols = postQuestions.flatMap((q, i) => {
+        if (!s.postTestCompleted || !s.raw.postTestResult) return ['-', '-', '-'];
+        const domain = (q as any).module || (q as any).domain || (() => {
+          if (i < 6) return 'الموديول 1: التثبيت والوسائط المتعددة';
+          if (i < 11) return 'الموديول 2: واجهة البرنامج والخصائص';
+          if (i < 16) return 'الموديول 3: أنماط المشروعات و العروض';
+          if (i < 21) return 'الموديول 4: الأشكال الذكية والشرائح والألوان';
+          if (i < 26) return 'الموديول 5: المحاذاة والتحريك والتجميع';
+          if (i < 31) return 'الموديول 6: بنوك الأسئلة والنتائج والتقويم';
+          if (i < 37) return 'الموديول 7: الخط الزمني والتغذية الراجعة والفيديو';
+          if (i < 42) return 'الموديول 8: استيراد عروض PowerPoint';
+          if (i < 48) return 'الموديول 9: أزرار التفاعل والمحاكاة البرمجية';
+          return 'الموديول 10: النشر الإلكتروني ومعايير SCORM';
+        })();
+        const chosenIdx = s.raw.postTestResult.answers?.[q.id];
+        const chosenText = chosenIdx !== undefined && chosenIdx >= 0 && q.options[chosenIdx]
+          ? `${['أ', 'ب', 'ج', 'د', 'هـ'][chosenIdx] || chosenIdx + 1}. ${q.options[chosenIdx]}`
+          : 'لم تتم الإجابة';
+        const itemScore = s.raw.postTestResult.questionScores?.[q.id] ?? (chosenIdx === q.correctIndex ? 1 : 0);
+        return [domain, chosenText, itemScore === 1 ? '1/1' : '0/1'];
       });
 
       return [
@@ -357,12 +410,12 @@ export const AdminStudentsAuditManager: React.FC = () => {
         s.postTestCompleted ? `${s.postTestPercentage}%` : '-',
         s.postTestCompleted ? (s.postTestPassed ? 'مجتاز بنجاح' : 'لم يجتز') : 'لم يتقدم',
         s.postTestCompleted ? formatDuration(s.postTestTimeSpent) : '-',
-        ...qScores,
+        ...qCols,
       ];
     });
 
     downloadCsvSheet('شيت_نتائج_الاختبار_البعدي_PostTest_Results', headers, rows);
-    showToast('تم تصدير وتحميل شيت نتائج الاختبار البعدي بنجاح بصيغة Excel / CSV مع درجات كل سؤال (0/1 أو 1/1)');
+    showToast('تم تصدير وتحميل شيت نتائج الاختبار البعدي بنجاح بصيغة Excel / CSV مع النطاق وإجابة كل سؤال (0/1 أو 1/1)');
   };
 
   // 3. Export 10 Stages Game Levels Sheet
@@ -1094,34 +1147,72 @@ export const AdminStudentsAuditManager: React.FC = () => {
 
             {/* Pre-Test Question Breakdown */}
             {inspectStudent.preTestCompleted && inspectStudent.raw.preTestResult && (
-              <div className="space-y-2 p-3.5 rounded-2xl bg-sky-950/20 border border-sky-500/30">
+              <div className="space-y-3 p-4 rounded-2xl bg-sky-950/20 border border-sky-500/30">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-black text-sky-300 flex items-center gap-1.5">
                     <Award className="w-4 h-4 text-sky-400" />
-                    <span>نتائج الاختبار القبلي:</span>
+                    <span>نتائج وتفاصيل إجابات الاختبار القبلي بالكامل:</span>
                   </h4>
-                  <span className="text-[11px] font-black text-sky-300 bg-sky-950/80 px-2 py-0.5 rounded-lg border border-sky-500/40">
-                    {inspectStudent.preTestScore} / {inspectStudent.preTestMaxScore || 53}
+                  <span className="text-[11px] font-black text-sky-300 bg-sky-950/80 px-2.5 py-0.5 rounded-lg border border-sky-500/40">
+                    {inspectStudent.preTestScore} / {inspectStudent.preTestMaxScore || 53} ({inspectStudent.preTestPercentage}%)
                   </span>
                 </div>
-                <div className="grid grid-cols-5 sm:grid-cols-9 gap-1.5 max-h-40 overflow-y-auto pr-1 pt-1">
+                <p className="text-[11px] text-slate-400">
+                  تاريخ وتوقيت الإتمام الفعلي: <span className="text-sky-300 font-bold">{inspectStudent.preTestDate}</span>
+                </p>
+
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                   {getPreTestQuestions().map((q, qIdx) => {
                     const detail = inspectStudent.raw.preTestResult?.questionDetails?.[q.id];
-                    const isRight = detail ? detail.isCorrect : (inspectStudent.raw.preTestResult?.answers?.[q.id] === q.correctIndex);
-                    const time = detail?.answeredAt ? detail.answeredAt.split(' ')[1] : 'غير متاح';
+                    const chosenIdx = inspectStudent.raw.preTestResult?.answers?.[q.id];
+                    const isRight = detail ? detail.isCorrect : (chosenIdx === q.correctIndex);
+                    const domain = (q as any).module || (q as any).domain || (() => {
+                      if (qIdx < 6) return 'الموديول 1: التثبيت والوسائط';
+                      if (qIdx < 11) return 'الموديول 2: الواجهة والخصائص';
+                      if (qIdx < 16) return 'الموديول 3: أنماط المشروعات';
+                      if (qIdx < 21) return 'الموديول 4: الأشكال والشرائح';
+                      if (qIdx < 26) return 'الموديول 5: المحاذاة والتحريك';
+                      if (qIdx < 31) return 'الموديول 6: بنوك الأسئلة';
+                      if (qIdx < 37) return 'الموديول 7: الخط الزمني والتغذية';
+                      if (qIdx < 42) return 'الموديول 8: استيراد PowerPoint';
+                      if (qIdx < 48) return 'الموديول 9: الأزرار والمحاكاة';
+                      return 'الموديول 10: SCORM و HTML5';
+                    })();
+
+                    const chosenText = chosenIdx !== undefined && chosenIdx >= 0 && q.options[chosenIdx]
+                      ? `${['أ', 'ب', 'ج', 'د', 'هـ'][chosenIdx] || chosenIdx + 1}. ${q.options[chosenIdx]}`
+                      : 'لم تتم الإجابة';
+                    const correctText = q.options[q.correctIndex]
+                      ? `${['أ', 'ب', 'ج', 'د', 'هـ'][q.correctIndex] || (q.correctIndex + 1)}. ${q.options[q.correctIndex]}`
+                      : '-';
+
                     return (
                       <div
                         key={q.id || qIdx}
-                        className={`p-1 rounded-lg text-center border text-[10px] ${
+                        className={`p-2.5 rounded-xl border text-[11px] space-y-1 ${
                           isRight
-                            ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300 font-bold'
-                            : 'bg-rose-950/80 border-rose-500/60 text-rose-300 font-bold'
+                            ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200'
+                            : 'bg-rose-950/40 border-rose-500/50 text-rose-200'
                         }`}
-                        title={`سؤال ${qIdx + 1}: ${isRight ? 'صحيح' : 'خطأ'} - وقت الإجابة: ${time}`}
                       >
-                        <div className="text-[8px] text-slate-400">س{qIdx + 1}</div>
-                        <div>{isRight ? '1/1' : '0/1'}</div>
-                        <div className="text-[7px] opacity-70">{time}</div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-black text-white bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
+                              س{qIdx + 1}
+                            </span>
+                            <span className="text-amber-300 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                              {domain}
+                            </span>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded font-black ${isRight ? 'bg-emerald-500 text-slate-950' : 'bg-rose-600 text-white'}`}>
+                            {isRight ? '1/1 ✓' : '0/1 ✗'}
+                          </span>
+                        </div>
+                        <p className="text-white font-bold text-[11px]">{q.question}</p>
+                        <div className="grid grid-cols-2 gap-2 text-[10px] pt-1 border-t border-slate-800/60">
+                          <div><span className="text-slate-400">إجابة الطالب: </span><span className="font-bold">{chosenText}</span></div>
+                          <div><span className="text-slate-400">الإجابة الصحيحة: </span><span className="text-emerald-300 font-bold">{correctText}</span></div>
+                        </div>
                       </div>
                     );
                   })}
@@ -1131,40 +1222,123 @@ export const AdminStudentsAuditManager: React.FC = () => {
 
             {/* Post-Test Question Breakdown (0/1 or 1/1) */}
             {inspectStudent.postTestCompleted && inspectStudent.raw.postTestResult && (
-              <div className="space-y-2 p-3.5 rounded-2xl bg-purple-950/20 border border-purple-500/30">
+              <div className="space-y-3 p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-black text-purple-300 flex items-center gap-1.5">
                     <Award className="w-4 h-4 text-purple-400" />
-                    <span>نتائج الاختبار البعدي:</span>
+                    <span>نتائج وتفاصيل إجابات الاختبار البعدي بالكامل:</span>
                   </h4>
-                  <span className="text-[11px]  font-black text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded-lg border border-purple-500/40">
-                    {inspectStudent.postTestScore} / {inspectStudent.postTestMaxScore || 53}
+                  <span className="text-[11px] font-black text-purple-300 bg-purple-950/80 px-2.5 py-0.5 rounded-lg border border-purple-500/40">
+                    {inspectStudent.postTestScore} / {inspectStudent.postTestMaxScore || 53} ({inspectStudent.postTestPercentage}%)
                   </span>
                 </div>
-                <div className="grid grid-cols-5 sm:grid-cols-9 gap-1.5 max-h-40 overflow-y-auto pr-1 pt-1">
+                <p className="text-[11px] text-slate-400">
+                  تاريخ وتوقيت الإتمام الفعلي: <span className="text-purple-300 font-bold">{inspectStudent.postTestDate}</span>
+                </p>
+
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                   {getPostTestQuestions().map((q, qIdx) => {
                     const detail = inspectStudent.raw.postTestResult?.questionDetails?.[q.id];
-                    const isRight = detail ? detail.isCorrect : (inspectStudent.raw.postTestResult?.answers?.[q.id] === q.correctIndex);
-                    const time = detail?.answeredAt ? detail.answeredAt.split(' ')[1] : 'غير متاح';
+                    const chosenIdx = inspectStudent.raw.postTestResult?.answers?.[q.id];
+                    const isRight = detail ? detail.isCorrect : (chosenIdx === q.correctIndex);
+                    const domain = (q as any).module || (q as any).domain || (() => {
+                      if (qIdx < 6) return 'الموديول 1: التثبيت والوسائط';
+                      if (qIdx < 11) return 'الموديول 2: الواجهة والخصائص';
+                      if (qIdx < 16) return 'الموديول 3: أنماط المشروعات';
+                      if (qIdx < 21) return 'الموديول 4: الأشكال والشرائح';
+                      if (qIdx < 26) return 'الموديول 5: المحاذاة والتحريك';
+                      if (qIdx < 31) return 'الموديول 6: بنوك الأسئلة';
+                      if (qIdx < 37) return 'الموديول 7: الخط الزمني والتغذية';
+                      if (qIdx < 42) return 'الموديول 8: استيراد PowerPoint';
+                      if (qIdx < 48) return 'الموديول 9: الأزرار والمحاكاة';
+                      return 'الموديول 10: SCORM و HTML5';
+                    })();
+
+                    const chosenText = chosenIdx !== undefined && chosenIdx >= 0 && q.options[chosenIdx]
+                      ? `${['أ', 'ب', 'ج', 'د', 'هـ'][chosenIdx] || chosenIdx + 1}. ${q.options[chosenIdx]}`
+                      : 'لم تتم الإجابة';
+                    const correctText = q.options[q.correctIndex]
+                      ? `${['أ', 'ب', 'ج', 'د', 'هـ'][q.correctIndex] || (q.correctIndex + 1)}. ${q.options[q.correctIndex]}`
+                      : '-';
+
                     return (
                       <div
                         key={q.id || qIdx}
-                        className={`p-1 rounded-lg text-center border text-[10px] ${
+                        className={`p-2.5 rounded-xl border text-[11px] space-y-1 ${
                           isRight
-                            ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300 font-bold'
-                            : 'bg-rose-950/80 border-rose-500/60 text-rose-300 font-bold'
+                            ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200'
+                            : 'bg-rose-950/40 border-rose-500/50 text-rose-200'
                         }`}
-                        title={`سؤال ${qIdx + 1}: ${isRight ? 'صحيح' : 'خطأ'} - وقت الإجابة: ${time}`}
                       >
-                        <div className="text-[8px] text-slate-400">س{qIdx + 1}</div>
-                        <div>{isRight ? '1/1' : '0/1'}</div>
-                        <div className="text-[7px] opacity-70">{time}</div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-black text-white bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
+                              س{qIdx + 1}
+                            </span>
+                            <span className="text-amber-300 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                              {domain}
+                            </span>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded font-black ${isRight ? 'bg-emerald-500 text-slate-950' : 'bg-rose-600 text-white'}`}>
+                            {isRight ? '1/1 ✓' : '0/1 ✗'}
+                          </span>
+                        </div>
+                        <p className="text-white font-bold text-[11px]">{q.question}</p>
+                        <div className="grid grid-cols-2 gap-2 text-[10px] pt-1 border-t border-slate-800/60">
+                          <div><span className="text-slate-400">إجابة الطالب: </span><span className="font-bold">{chosenText}</span></div>
+                          <div><span className="text-slate-400">الإجابة الصحيحة: </span><span className="text-emerald-300 font-bold">{correctText}</span></div>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
             )}
+
+            {/* 10 Educational Game Levels Detailed Breakdown */}
+            <div className="space-y-2 p-3.5 rounded-2xl bg-blue-950/20 border border-blue-500/30">
+              <h4 className="text-xs font-black text-blue-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Gamepad2 className="w-4 h-4 text-blue-400" />
+                  <span>نتائج وتقدم المراحل التعليمية العشر (1-10):</span>
+                </span>
+                <span className="text-[11px] text-cyan-300 font-bold">
+                  {inspectStudent.completedLevelsCount} / 10 مراحل مكتملة ({inspectStudent.totalLevelsScore} XP)
+                </span>
+              </h4>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((lvlNum) => {
+                  const lvlDetail = inspectStudent.levelsDetails[lvlNum];
+                  const isDone = !!lvlDetail;
+
+                  return (
+                    <div
+                      key={lvlNum}
+                      className={`p-2 rounded-xl border text-center text-xs space-y-0.5 ${
+                        isDone
+                          ? 'bg-blue-950/80 border-blue-500/60 text-blue-200'
+                          : 'bg-slate-950 border-slate-800 text-slate-500'
+                      }`}
+                    >
+                      <span className="block font-black text-white text-[11px]">المستوى {lvlNum}</span>
+                      {isDone ? (
+                        <>
+                          <span className="block font-bold text-emerald-300 text-[11px]">
+                            {lvlDetail.score} / {lvlDetail.maxScore || 100} XP
+                          </span>
+                          <span className="block text-[9px] text-slate-400 opacity-80">
+                            {lvlDetail.completedAt ? lvlDetail.completedAt.split(' ')[0] : 'مكتمل'}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="block text-[10px] text-slate-500">غير مكتمل</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
             {/* Sessions List */}
             <div className="space-y-2">
