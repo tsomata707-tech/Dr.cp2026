@@ -744,3 +744,53 @@ export function subscribeToCollabGroupTyping(
     return () => {};
   }
 }
+
+/**
+ * Sync student test access audit record to Firebase Realtime Database
+ */
+export async function syncTestAccessAuditToRTDB(
+  username: string,
+  testId: string,
+  summary: any
+): Promise<void> {
+  try {
+    const safeUser = username.trim().replace(/[.#$[\]]/g, '_');
+    const safeTest = testId.trim().replace(/[.#$[\]]/g, '_');
+    const testAuditRef = ref(rtdb, `studentsTestAccessAudit/${safeUser}/${safeTest}`);
+    await rtdbSet(testAuditRef, summary);
+  } catch (err) {
+    console.warn(`Failed to sync test access audit for ${username} - ${testId} to RTDB:`, err);
+  }
+}
+
+/**
+ * Real-time listener for students test access audits from Firebase Realtime Database
+ */
+export function subscribeToAllTestAccessAudit(
+  onUpdate: (map: Record<string, Record<string, any>>) => void
+): () => void {
+  try {
+    const auditRef = ref(rtdb, 'studentsTestAccessAudit');
+    const unsubscribe = onValue(
+      auditRef,
+      (snapshot) => {
+        try {
+          if (snapshot.exists()) {
+            onUpdate(snapshot.val() || {});
+          } else {
+            onUpdate({});
+          }
+        } catch (err) {
+          console.warn('Error handling studentsTestAccessAudit update:', err);
+        }
+      },
+      (error) => {
+        console.warn('RTDB studentsTestAccessAudit error:', error);
+      }
+    );
+    return unsubscribe;
+  } catch (err) {
+    console.warn('Failed to subscribe to studentsTestAccessAudit in RTDB:', err);
+    return () => {};
+  }
+}

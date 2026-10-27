@@ -861,10 +861,10 @@ export function submitPreTestResult(
   let score = 0;
   let maxScore = 0;
   const questionScores: Record<string, number> = {};
-  const questionDetails: Record<string, { chosenIndex: number; isCorrect: boolean; answeredAt: string }> = {};
+  const questionDetails: Record<string, any> = {};
   const completedAtStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
-  questions.forEach((q) => {
+  questions.forEach((q, idx) => {
     const pts = q.points || 1;
     maxScore += pts;
     const chosen = chosenAnswers[q.id];
@@ -875,10 +875,37 @@ export function submitPreTestResult(
     } else {
       questionScores[q.id] = 0;
     }
+
+    const chosenIdx = chosen ?? -1;
+    const chosenText = chosenIdx >= 0 && q.options[chosenIdx]
+      ? `${['أ', 'ب', 'ج', 'د', 'هـ'][chosenIdx] || chosenIdx + 1}. ${q.options[chosenIdx]}`
+      : 'لم تتم الإجابة';
+    const correctText = q.options[q.correctIndex]
+      ? `${['أ', 'ب', 'ج', 'د', 'هـ'][q.correctIndex] || (q.correctIndex + 1)}. ${q.options[q.correctIndex]}`
+      : '-';
+
+    const domain = (q as any).module || (q as any).domain || (() => {
+      if (idx < 6) return 'الموديول 1: التثبيت والوسائط المتعددة';
+      if (idx < 11) return 'الموديول 2: واجهة البرنامج والخصائص';
+      if (idx < 16) return 'الموديول 3: أنماط المشروعات والعروض';
+      if (idx < 21) return 'الموديول 4: الأشكال الذكية والشرائح والألوان';
+      if (idx < 26) return 'الموديول 5: المحاذاة والتحريك والتجميع';
+      if (idx < 31) return 'الموديول 6: بنوك الأسئلة والنتائج والتقويم';
+      if (idx < 37) return 'الموديول 7: الخط الزمني والتغذية الراجعة والفيديو';
+      if (idx < 42) return 'الموديول 8: استيراد عروض PowerPoint';
+      if (idx < 48) return 'الموديول 9: أزرار التفاعل والمحاكاة البرمجية';
+      return 'الموديول 10: النشر الإلكتروني ومعايير SCORM';
+    })();
+
     questionDetails[q.id] = {
-      chosenIndex: chosen ?? -1,
+      chosenIndex: chosenIdx,
       isCorrect,
       answeredAt: completedAtStr,
+      chosenText,
+      correctText,
+      explanation: q.explanation || 'لا يوجد تفسير إضافي',
+      questionText: q.question,
+      domain,
     };
   });
 
@@ -993,10 +1020,10 @@ export function submitPostTestResult(
   const questions = getPostTestQuestions();
   let score = 0;
   const questionScores: Record<string, number> = {};
-  const questionDetails: Record<string, { chosenIndex: number; isCorrect: boolean; answeredAt: string }> = {};
+  const questionDetails: Record<string, any> = {};
   const completedAtStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
-  questions.forEach((q) => {
+  questions.forEach((q, idx) => {
     const chosen = chosenAnswers[q.id];
     const isCorrect = chosen === q.correctIndex;
     if (isCorrect) {
@@ -1005,10 +1032,37 @@ export function submitPostTestResult(
     } else {
       questionScores[q.id] = 0;
     }
+
+    const chosenIdx = chosen ?? -1;
+    const chosenText = chosenIdx >= 0 && q.options[chosenIdx]
+      ? `${['أ', 'ب', 'ج', 'د', 'هـ'][chosenIdx] || chosenIdx + 1}. ${q.options[chosenIdx]}`
+      : 'لم تتم الإجابة';
+    const correctText = q.options[q.correctIndex]
+      ? `${['أ', 'ب', 'ج', 'د', 'هـ'][q.correctIndex] || (q.correctIndex + 1)}. ${q.options[q.correctIndex]}`
+      : '-';
+
+    const domain = (q as any).module || (q as any).domain || (() => {
+      if (idx < 6) return 'الموديول 1: التثبيت والوسائط المتعددة';
+      if (idx < 11) return 'الموديول 2: واجهة البرنامج والخصائص';
+      if (idx < 16) return 'الموديول 3: أنماط المشروعات والعروض';
+      if (idx < 21) return 'الموديول 4: الأشكال الذكية والشرائح والألوان';
+      if (idx < 26) return 'الموديول 5: المحاذاة والتحريك والتجميع';
+      if (idx < 31) return 'الموديول 6: بنوك الأسئلة والنتائج والتقويم';
+      if (idx < 37) return 'الموديول 7: الخط الزمني والتغذية الراجعة والفيديو';
+      if (idx < 42) return 'الموديول 8: استيراد عروض PowerPoint';
+      if (idx < 48) return 'الموديول 9: أزرار التفاعل والمحاكاة البرمجية';
+      return 'الموديول 10: النشر الإلكتروني ومعايير SCORM';
+    })();
+
     questionDetails[q.id] = {
-      chosenIndex: chosen ?? -1,
+      chosenIndex: chosenIdx,
       isCorrect,
       answeredAt: completedAtStr,
+      chosenText,
+      correctText,
+      explanation: q.explanation || 'لا يوجد تفسير إضافي',
+      questionText: q.question,
+      domain,
     };
   });
 

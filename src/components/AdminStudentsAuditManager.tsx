@@ -27,8 +27,9 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { generateSixtyStudents, RESEARCH_GROUPS_META, getGroupByUsername, getCollaborativeGroupByUsername } from '../data/studentAccounts';
-import { StudentGameProgress, PreTestResult, CompletedLevelResult } from '../types';
+import { StudentGameProgress, PreTestResult, CompletedLevelResult, StudentTestAccessSummary, TestAccessSession } from '../types';
 import { getPostTestQuestions, getPreTestQuestions } from '../data/preTestData';
+import { GAME_LEVELS_DATA } from '../data/gameLevelsData';
 import {
   getStudentLoginsAuditMap,
   StudentLoginAudit,
@@ -37,12 +38,18 @@ import {
   copySheetToClipboard,
 } from '../utils/studentAuditStorage';
 import {
+  getTestAccessAuditMap,
+  getAllStudentsTestAccessSummaries,
+  getStudentTestInterpretation,
+} from '../utils/testAccessAuditStorage';
+import {
   subscribeToAllStudentsProgress,
   subscribeToStudentsLoginsAudit,
+  subscribeToAllTestAccessAudit,
 } from '../utils/realtimeService';
 import { getAllStudentsProgress, resetAllStudentsToRealCleanState } from '../utils/gameStorage';
 
-type AuditTabFilter = 'all' | 'pretest' | 'posttest' | 'levels' | 'logins';
+type AuditTabFilter = 'all' | 'test_visits' | 'detailed_answers' | 'logins';
 
 interface EnrichedStudentRow {
   username: string;
@@ -91,6 +98,12 @@ export const AdminStudentsAuditManager: React.FC = () => {
   // Real-time state
   const [progressMap, setProgressMap] = useState<Record<string, StudentGameProgress>>(() => getAllStudentsProgress());
   const [loginAuditMap, setLoginAuditMap] = useState<Record<string, StudentLoginAudit>>(() => getStudentLoginsAuditMap());
+  const [testAccessMap, setTestAccessMap] = useState<Record<string, Record<string, StudentTestAccessSummary>>>(() => getTestAccessAuditMap());
+
+  // Additional test filters for visits and detailed answers
+  const [selectedVisitTestFilter, setSelectedVisitTestFilter] = useState<string>('all');
+  const [detailedAnswersTest, setDetailedAnswersTest] = useState<'pre' | 'post' | number>('pre');
+  const [inspectTestAccessSummary, setInspectTestAccessSummary] = useState<StudentTestAccessSummary | null>(null);
 
   // Copy feedback
   const [copiedType, setCopiedType] = useState<string | null>(null);
@@ -120,25 +133,39 @@ export const AdminStudentsAuditManager: React.FC = () => {
       }
     });
 
-    // 3. Listen to local window events
+    // 3. Listen to Firebase RTDB for test access audits
+    const unsubTestAccess = subscribeToAllTestAccessAudit((map) => {
+      if (map && Object.keys(map).length > 0) {
+        setTestAccessMap((prev) => ({ ...prev, ...map }));
+      }
+    });
+
+    // 4. Listen to local window events
     const handleLocalLogin = () => {
       setLoginAuditMap(getStudentLoginsAuditMap());
     };
     const handleProgressUpdate = () => {
       setProgressMap(getAllStudentsProgress());
     };
+    const handleTestAccessUpdate = () => {
+      setTestAccessMap(getTestAccessAuditMap());
+    };
+
     window.addEventListener('student-login-recorded', handleLocalLogin);
     window.addEventListener('cp_student_profile_updated', handleProgressUpdate);
     window.addEventListener('cp_student_progress_reset', handleProgressUpdate);
     window.addEventListener('cp_student_activity_graded', handleProgressUpdate);
+    window.addEventListener('student-test-access-updated', handleTestAccessUpdate);
 
     return () => {
       unsubProgress();
       unsubAudit();
+      unsubTestAccess();
       window.removeEventListener('student-login-recorded', handleLocalLogin);
       window.removeEventListener('cp_student_profile_updated', handleProgressUpdate);
       window.removeEventListener('cp_student_progress_reset', handleProgressUpdate);
       window.removeEventListener('cp_student_activity_graded', handleProgressUpdate);
+      window.removeEventListener('student-test-access-updated', handleTestAccessUpdate);
     };
   }, []);
 
@@ -280,18 +307,22 @@ export const AdminStudentsAuditManager: React.FC = () => {
 
   // ======================= EXPORT HANDLERS (EXCEL / CSV) =======================
 
-  // 1. Export Pre-Test Sheet
+  // 1. Export Pre-Test Sheet with Question Explanations
   const handleExportPreTestSheet = () => {
     const preQuestions = getPreTestQuestions();
     const qHeaders = preQuestions.flatMap((q, i) => [
       `س${i + 1} - النطاق/الموديول`,
+      `س${i + 1} - نص السؤال`,
       `س${i + 1} - إجابة الطالب`,
+      `س${i + 1} - الإجابة الصحيحة`,
       `س${i + 1} - النتيجة (0/1 أو 1/1)`,
+      `س${i + 1} - التفسير والتغذية الراجعة`,
     ]);
 
     const headers = [
       'م',
       'اسم المستخدم (اليوزر نيم)',
+      'اسم الطالب',
       'المجموعة البحثية',
       'نمط التعلم',
       'نمط التغذية الراجعة',
@@ -307,7 +338,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
 
     const rows = enrichedStudents.map((s, idx) => {
       const qCols = preQuestions.flatMap((q, i) => {
-        if (!s.preTestCompleted || !s.raw.preTestResult) return ['-', '-', '-'];
+        if (!s.preTestCompleted || !s.raw.preTestResult) return ['-', q.question, '-', q.options[q.correctIndex] || '-', '-', q.explanation || '-'];
         const domain = (q as any).module || (q as any).domain || (() => {
           if (i < 6) return 'الموديول 1: التثبيت والوسائط المتعددة';
           if (i < 11) return 'الموديول 2: واجهة البرنامج والخصائص';
@@ -324,13 +355,18 @@ export const AdminStudentsAuditManager: React.FC = () => {
         const chosenText = chosenIdx !== undefined && chosenIdx >= 0 && q.options[chosenIdx]
           ? `${['أ', 'ب', 'ج', 'د', 'هـ'][chosenIdx] || chosenIdx + 1}. ${q.options[chosenIdx]}`
           : 'لم تتم الإجابة';
+        const correctText = q.options[q.correctIndex]
+          ? `${['أ', 'ب', 'ج', 'د', 'هـ'][q.correctIndex] || q.correctIndex + 1}. ${q.options[q.correctIndex]}`
+          : '-';
         const itemScore = s.raw.preTestResult.questionScores?.[q.id] ?? (chosenIdx === q.correctIndex ? 1 : 0);
-        return [domain, chosenText, itemScore === 1 ? '1/1' : '0/1'];
+        const explanation = q.explanation || 'لا يوجد تفسير إضافي';
+        return [domain, q.question, chosenText, correctText, itemScore === 1 ? '1/1' : '0/1', explanation];
       });
 
       return [
         idx + 1,
         s.username,
+        s.fullName,
         `${s.groupCode} (${s.groupName})`,
         s.learningMode,
         s.feedbackMode,
@@ -345,22 +381,26 @@ export const AdminStudentsAuditManager: React.FC = () => {
       ];
     });
 
-    downloadCsvSheet('شيت_نتائج_الاختبار_القبلي_PreTest_Results', headers, rows);
-    showToast('تم تصدير وتحميل شيت نتائج الاختبار القبلي بنجاح مع النطاق وإجابات كل سؤال بصيغة Excel / CSV');
+    downloadCsvSheet('شيت_نتائج_الاختبار_القبلي_مع_التفسير_PreTest_Results', headers, rows);
+    showToast('تم تصدير وتحميل شيت نتائج الاختبار القبلي بنجاح مع إجابات كل سؤال وتفسيرها بالكامل');
   };
 
-  // 2. Export Post-Test Sheet
+  // 2. Export Post-Test Sheet with Question Explanations
   const handleExportPostTestSheet = () => {
     const postQuestions = getPostTestQuestions();
     const qHeaders = postQuestions.flatMap((q, i) => [
       `س${i + 1} - النطاق/الموديول`,
+      `س${i + 1} - نص السؤال`,
       `س${i + 1} - إجابة الطالب`,
+      `س${i + 1} - الإجابة الصحيحة`,
       `س${i + 1} - النتيجة (0/1 أو 1/1)`,
+      `س${i + 1} - التفسير والتغذية الراجعة`,
     ]);
 
     const headers = [
       'م',
       'اسم المستخدم (اليوزر نيم)',
+      'اسم الطالب',
       'المجموعة البحثية',
       'نمط التعلم',
       'نمط التغذية الراجعة',
@@ -376,7 +416,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
 
     const rows = enrichedStudents.map((s, idx) => {
       const qCols = postQuestions.flatMap((q, i) => {
-        if (!s.postTestCompleted || !s.raw.postTestResult) return ['-', '-', '-'];
+        if (!s.postTestCompleted || !s.raw.postTestResult) return ['-', q.question, '-', q.options[q.correctIndex] || '-', '-', q.explanation || '-'];
         const domain = (q as any).module || (q as any).domain || (() => {
           if (i < 6) return 'الموديول 1: التثبيت والوسائط المتعددة';
           if (i < 11) return 'الموديول 2: واجهة البرنامج والخصائص';
@@ -393,13 +433,18 @@ export const AdminStudentsAuditManager: React.FC = () => {
         const chosenText = chosenIdx !== undefined && chosenIdx >= 0 && q.options[chosenIdx]
           ? `${['أ', 'ب', 'ج', 'د', 'هـ'][chosenIdx] || chosenIdx + 1}. ${q.options[chosenIdx]}`
           : 'لم تتم الإجابة';
+        const correctText = q.options[q.correctIndex]
+          ? `${['أ', 'ب', 'ج', 'د', 'هـ'][q.correctIndex] || q.correctIndex + 1}. ${q.options[q.correctIndex]}`
+          : '-';
         const itemScore = s.raw.postTestResult.questionScores?.[q.id] ?? (chosenIdx === q.correctIndex ? 1 : 0);
-        return [domain, chosenText, itemScore === 1 ? '1/1' : '0/1'];
+        const explanation = q.explanation || 'لا يوجد تفسير إضافي';
+        return [domain, q.question, chosenText, correctText, itemScore === 1 ? '1/1' : '0/1', explanation];
       });
 
       return [
         idx + 1,
         s.username,
+        s.fullName,
         `${s.groupCode} (${s.groupName})`,
         s.learningMode,
         s.feedbackMode,
@@ -414,8 +459,163 @@ export const AdminStudentsAuditManager: React.FC = () => {
       ];
     });
 
-    downloadCsvSheet('شيت_نتائج_الاختبار_البعدي_PostTest_Results', headers, rows);
-    showToast('تم تصدير وتحميل شيت نتائج الاختبار البعدي بنجاح بصيغة Excel / CSV مع النطاق وإجابة كل سؤال (0/1 أو 1/1)');
+    downloadCsvSheet('شيت_نتائج_الاختبار_البعدي_مع_التفسير_PostTest_Results', headers, rows);
+    showToast('تم تصدير وتحميل شيت نتائج الاختبار البعدي بنجاح بصيغة Excel / CSV مع إجابة كل سؤال وتفسيرها');
+  };
+
+  // 3. Export Test Visits & Frequency Audit Sheet with Full Academic Interpretation
+  const handleExportTestVisitsSheet = () => {
+    const allVisits = getAllStudentsTestAccessSummaries(
+      selectedVisitTestFilter === 'all' ? undefined : selectedVisitTestFilter
+    );
+    const filteredVisits = allVisits.filter((item) => {
+      if (selectedGroupFilter !== 'all' && item.groupCode !== selectedGroupFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        return item.username.toLowerCase().includes(q) || item.fullName.toLowerCase().includes(q);
+      }
+      return true;
+    });
+
+    const headers = [
+      'م',
+      'اسم المستخدم (اليوزر نيم)',
+      'اسم الطالب الكامل',
+      'المجموعة البحثية',
+      'اسم الاختبار المستهدف',
+      'عدد مرات التردد (Frequency)',
+      'التفسير الأكاديمي والتحليل',
+      'حالة الإتمام',
+      'تاريخ ووقت أول دخول',
+      'تاريخ ووقت آخر دخول',
+      'تاريخ ووقت آخر خروج',
+      'تفاصيل جلسات التردد (دخول وخروج وتفسير)',
+    ];
+
+    const rows = filteredVisits.map((item, idx) => {
+      const sessionsText =
+        (item.sessions || [])
+          .map(
+            (sess) =>
+              `[تردد ${sess.visitIndex}: دخول ${sess.enteredAt}${
+                sess.leftAt ? ' - خروج ' + sess.leftAt : ''
+              } (${sess.interpretation})]`
+          )
+          .join(' | ') || 'لا توجد جلسات تردد مسجلة';
+
+      return [
+        idx + 1,
+        item.username,
+        item.fullName,
+        item.groupCode,
+        item.testName,
+        item.totalVisits,
+        item.interpretation,
+        item.isCompleted
+          ? 'مكتمل بنجاح'
+          : item.totalVisits > 0
+          ? 'غير مكتمل (قيد الحل/خروج)'
+          : 'عدم تردد (لم يدخل)',
+        item.firstEntry || '-',
+        item.lastEntry || '-',
+        item.lastExit || '-',
+        sessionsText,
+      ];
+    });
+
+    downloadCsvSheet('سجل_تردد_الطلاب_على_الاختبارات_مع_التفسير_Frequency_Audit', headers, rows);
+    showToast('تم تصدير شيت تردد الطلاب على الاختبارات مع التفسير والتواريخ بدقة بنجاح');
+  };
+
+  // 4. Export Detailed Answers with Explanations for Any Selected Test
+  const handleExportDetailedAnswersSheet = () => {
+    let questionsList: any[] = [];
+    let testLabel = '';
+    if (detailedAnswersTest === 'pre') {
+      questionsList = getPreTestQuestions();
+      testLabel = 'الاختبار القبلي';
+    } else if (detailedAnswersTest === 'post') {
+      questionsList = getPostTestQuestions();
+      testLabel = 'الاختبار البعدي';
+    } else {
+      const lvlDef =
+        GAME_LEVELS_DATA.find((l) => l.levelNumber === detailedAnswersTest) || GAME_LEVELS_DATA[0];
+      questionsList = lvlDef.questions;
+      testLabel = `تحدي المستوى ${detailedAnswersTest} (${lvlDef.title})`;
+    }
+
+    const qHeaders = questionsList.flatMap((q, i) => [
+      `س${i + 1} - نص السؤال`,
+      `س${i + 1} - إجابة الطالب`,
+      `س${i + 1} - الإجابة الصحيحة`,
+      `س${i + 1} - النتيجة`,
+      `س${i + 1} - التفسير والتغذية الراجعة`,
+    ]);
+
+    const headers = [
+      'م',
+      'اسم المستخدم',
+      'اسم الطالب',
+      'المجموعة البحثية',
+      'اسم الاختبار',
+      'إجمالي الدرجة المحرزة',
+      'الدرجة العظمى',
+      'النسبة المئوية (%)',
+      'تاريخ الإتمام',
+      ...qHeaders,
+    ];
+
+    const rows = filteredStudents.map((s, idx) => {
+      let resultData: any = null;
+      if (detailedAnswersTest === 'pre') resultData = s.raw.preTestResult;
+      else if (detailedAnswersTest === 'post') resultData = s.raw.postTestResult;
+      else resultData = s.raw.completedLevels?.[detailedAnswersTest];
+
+      const score = resultData ? resultData.score : 0;
+      const maxScore = resultData ? resultData.maxScore : questionsList.length;
+      const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+      const date = resultData ? resultData.completedAt : '-';
+
+      const qCols = questionsList.flatMap((q) => {
+        if (!resultData) {
+          return [q.question, 'لم يتقدم للاختبار بعد', q.options[q.correctIndex] || '-', '0/1', q.explanation || '-'];
+        }
+
+        const chosenIdx = resultData.answers?.[q.id];
+        const isRight = chosenIdx === q.correctIndex;
+        const chosenText =
+          chosenIdx !== undefined && chosenIdx >= 0 && q.options[chosenIdx]
+            ? `${['أ', 'ب', 'ج', 'د', 'هـ'][chosenIdx] || chosenIdx + 1}. ${q.options[chosenIdx]}`
+            : 'لم تتم الإجابة';
+        const correctText = q.options[q.correctIndex]
+          ? `${['أ', 'ب', 'ج', 'د', 'هـ'][q.correctIndex] || q.correctIndex + 1}. ${q.options[q.correctIndex]}`
+          : '-';
+
+        return [
+          q.question,
+          chosenText,
+          correctText,
+          isRight ? '1/1' : '0/1',
+          q.explanation || 'لا يوجد تفسير',
+        ];
+      });
+
+      return [
+        idx + 1,
+        s.username,
+        s.fullName,
+        s.groupCode,
+        testLabel,
+        score,
+        maxScore,
+        `${pct}%`,
+        date,
+        ...qCols,
+      ];
+    });
+
+    downloadCsvSheet(`شيت_تفصيل_إجابات_${testLabel}_مع_التفسير`, headers, rows);
+    showToast(`تم استخراج وتحميل شيت تفصيل إجابات ${testLabel} مع التفسير العلمي لكل سؤال بنجاح`);
   };
 
   // 3. Export 10 Stages Game Levels Sheet
@@ -908,6 +1108,48 @@ export const AdminStudentsAuditManager: React.FC = () => {
         </div>
       </div>
 
+      {/* Sub-Tabs Switcher for Navigation */}
+      <div className="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-[#090b17] border border-slate-800">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('all')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'all'
+              ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
+              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+          }`}
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          <span>📊 الشيت الإحصائي الموحد (النتائج العامة)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('test_visits')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'test_visits'
+              ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          <span>⏱️ سجل تردد الطلاب على الاختبارات (بالوقت والتفسير)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('detailed_answers')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'detailed_answers'
+              ? 'bg-purple-500 text-white font-black shadow-md'
+              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>📝 تفصيل إجابات كل سؤال مع التفسير</span>
+        </button>
+      </div>
+
       {/* Filter and Search Bar */}
       <div className="p-4 rounded-2xl bg-[#090b17] border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         {/* Search */}
@@ -917,7 +1159,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث باليوزر نيم (G1_Cp_01 ...) أو المجموعة..."
+            placeholder="ابحث باليوزر نيم (G1_Cp_01 ...) أو اسم الطالب أو المجموعة..."
             className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 text-white text-xs outline-none transition"
           />
         </div>
@@ -938,177 +1180,571 @@ export const AdminStudentsAuditManager: React.FC = () => {
           </select>
         </div>
 
-        {/* Status Selector Filter */}
-        <div className="flex items-center gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-bold focus:border-emerald-500 outline-none cursor-pointer"
-          >
-            <option value="all">كافة الحالات</option>
-            <option value="logged_in">سجلوا دخول فعلياً فقط</option>
-            <option value="pre_done">أتموا الاختبار القبلي</option>
-            <option value="post_done">أتموا الاختبار البعدي</option>
-            <option value="levels_done">أتموا كافة المراحل (10/10)</option>
-          </select>
-        </div>
-      </div>
+        {/* Status Selector Filter (for Master View) */}
+        {activeSubTab === 'all' && (
+          <div className="flex items-center gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-bold focus:border-emerald-500 outline-none cursor-pointer"
+            >
+              <option value="all">كافة الحالات</option>
+              <option value="logged_in">سجلوا دخول فعلياً فقط</option>
+              <option value="pre_done">أتموا الاختبار القبلي</option>
+              <option value="post_done">أتموا الاختبار البعدي</option>
+              <option value="levels_done">أتموا كافة المراحل (10/10)</option>
+            </select>
+          </div>
+        )}
 
-      {/* Main Students & Tests Results Table */}
-      <div className="rounded-2xl border border-slate-800 overflow-hidden bg-[#090c1e] shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-950/90 text-slate-300 border-b border-slate-800 font-bold">
-                <th className="p-3.5 text-center w-12">#</th>
-                <th className="p-3.5">اسم المستخدم (اليوزر نيم)</th>
-                <th className="p-3.5 text-center">المجموعة</th>
-                <th className="p-3.5">تسجيل الدخول الفعلي</th>
-                <th className="p-3.5 text-center">الاختبار القبلي</th>
-                <th className="p-3.5 text-center">المراحل (10)</th>
-                <th className="p-3.5 text-center">الاختبار البعدي</th>
-                <th className="p-3.5 text-center">سجل الجلسات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-medium">
-              {filteredStudents.map((s, idx) => (
-                <tr
-                  key={s.username}
-                  className="hover:bg-slate-900/60 transition-colors"
-                >
-                  {/* Index */}
-                  <td className="p-3.5 text-center text-slate-500  font-bold">
-                    {idx + 1}
-                  </td>
-
-                  {/* Username & Avatar */}
-                  <td className="p-3.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-amber-300  text-xs shrink-0">
-                        {s.username.split('_')[0]}
-                      </div>
-                      <div>
-                        <span className=" font-black text-white text-xs block">
-                          {s.username}
-                        </span>
-                        <span className="text-[10px] text-slate-400">
-                          {s.feedbackMode} • {s.learningMode}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Group Code */}
-                  <td className="p-3.5 text-center">
-                    <span
-                      className="inline-block px-2.5 py-1 rounded-lg text-[11px] font-black font-['Cairo'] bg-slate-200 border border-slate-300 text-slate-900 shadow-xs"
-                    >
-                      {s.groupCode}
-                    </span>
-                  </td>
-
-                  {/* Login Tracking */}
-                  <td className="p-3.5">
-                    {s.hasLoggedIn ? (
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 text-emerald-300 font-bold text-[11px]">
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                          <span>دخول فعلي ({s.totalLogins} مرات)</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400 ">
-                          آخر دخول: {s.lastLogin}
-                        </div>
-                        <div className="text-[10px] text-slate-500 flex items-center gap-1">
-                          {s.latestDevice.includes('Mobile') ? (
-                            <Smartphone className="w-3 h-3 text-slate-400" />
-                          ) : (
-                            <Monitor className="w-3 h-3 text-slate-400" />
-                          )}
-                          <span>{s.latestDevice}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-[11px] text-slate-500 italic">
-                        لم يسجل دخول بعد
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Pre-Test Result */}
-                  <td className="p-3.5 text-center">
-                    {s.preTestCompleted ? (
-                      <div className="inline-block p-1.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-center">
-                        <div className=" font-black text-amber-300 text-xs">
-                          {s.preTestScore} / {s.preTestMaxScore} ({s.preTestPercentage}%)
-                        </div>
-                        <div className="text-[10px] font-bold text-emerald-400">
-                          {s.preTestPassed ? '✓ مجتاز' : 'لم يجتز'}
-                        </div>
-                        <div className="text-[9px] text-slate-400 ">
-                          {s.preTestDate.split(' ')[0]}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-[11px] text-slate-500">لم يكتمل</span>
-                    )}
-                  </td>
-
-                  {/* 10 Stages */}
-                  <td className="p-3.5 text-center">
-                    <div className="inline-block p-1.5 rounded-xl bg-blue-950/40 border border-blue-500/40 text-center">
-                      <div className=" font-black text-blue-300 text-xs">
-                        {s.completedLevelsCount} / 10 مراحل
-                      </div>
-                      <div className="text-[10px]  text-cyan-300 font-bold">
-                        {s.totalLevelsScore} XP
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Post-Test Result */}
-                  <td className="p-3.5 text-center">
-                    {s.postTestCompleted ? (
-                      <div className="inline-block p-1.5 rounded-xl bg-purple-950/40 border border-purple-500/40 text-center">
-                        <div className=" font-black text-purple-300 text-xs">
-                          {s.postTestScore} / {s.postTestMaxScore} ({s.postTestPercentage}%)
-                        </div>
-                        <div className="text-[10px] font-bold text-emerald-400">
-                          {s.postTestPassed ? '✓ مجتاز' : 'لم يجتز'}
-                        </div>
-                        <div className="text-[9px] text-slate-400 ">
-                          {s.postTestDate.split(' ')[0]}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-[11px] text-slate-500">لم يكتمل</span>
-                    )}
-                  </td>
-
-                  {/* Sessions Inspection Button */}
-                  <td className="p-3.5 text-center">
-                    <button
-                      type="button"
-                      onClick={() => setInspectStudent(s)}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1 mx-auto cursor-pointer"
-                      title="عرض سجل الجلسات وتفاصيل الدخول"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>التفاصيل</span>
-                    </button>
-                  </td>
-                </tr>
+        {/* Test Selector for Test Visits Tab */}
+        {activeSubTab === 'test_visits' && (
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedVisitTestFilter}
+              onChange={(e) => setSelectedVisitTestFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-amber-300 text-xs font-bold focus:border-amber-500 outline-none cursor-pointer"
+            >
+              <option value="all">كافة الاختبارات والمستويات</option>
+              <option value="pretest">الاختبار القبلي (Pre-Test)</option>
+              <option value="posttest">الاختبار البعدي (Post-Test)</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvl) => (
+                <option key={lvl} value={`level-${lvl}`}>
+                  تحدي المستوى {lvl}
+                </option>
               ))}
-              {filteredStudents.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="p-8 text-center text-slate-500 text-sm">
-                    لم يتم العثور على أي طلاب مطابقين لشروط البحث والتصفية
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            </select>
+          </div>
+        )}
       </div>
+
+      {/* ======================= TAB 1: MASTER OVERVIEW TABLE ======================= */}
+      {activeSubTab === 'all' && (
+        <div className="rounded-2xl border border-slate-800 overflow-hidden bg-[#090c1e] shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-right border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-950/90 text-slate-300 border-b border-slate-800 font-bold">
+                  <th className="p-3.5 text-center w-12">#</th>
+                  <th className="p-3.5">اسم المستخدم (اليوزر نيم)</th>
+                  <th className="p-3.5 text-center">المجموعة</th>
+                  <th className="p-3.5">تسجيل الدخول الفعلي</th>
+                  <th className="p-3.5 text-center">الاختبار القبلي</th>
+                  <th className="p-3.5 text-center">المراحل (10)</th>
+                  <th className="p-3.5 text-center">الاختبار البعدي</th>
+                  <th className="p-3.5 text-center">سجل الجلسات</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-medium">
+                {filteredStudents.map((s, idx) => (
+                  <tr key={s.username} className="hover:bg-slate-900/60 transition-colors">
+                    {/* Index */}
+                    <td className="p-3.5 text-center text-slate-500 font-bold">{idx + 1}</td>
+
+                    {/* Username & Avatar */}
+                    <td className="p-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-amber-300 text-xs shrink-0">
+                          {s.username.split('_')[0]}
+                        </div>
+                        <div>
+                          <span className="font-black text-white text-xs block">{s.username}</span>
+                          <span className="text-[10px] text-slate-400">
+                            {s.fullName} • {s.feedbackMode} • {s.learningMode}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Group Code */}
+                    <td className="p-3.5 text-center">
+                      <span className="inline-block px-2.5 py-1 rounded-lg text-[11px] font-black font-['Cairo'] bg-slate-200 border border-slate-300 text-slate-900 shadow-xs">
+                        {s.groupCode}
+                      </span>
+                    </td>
+
+                    {/* Login Tracking */}
+                    <td className="p-3.5">
+                      {s.hasLoggedIn ? (
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-emerald-300 font-bold text-[11px]">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>دخول فعلي ({s.totalLogins} مرات)</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400">آخر دخول: {s.lastLogin}</div>
+                          <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                            {s.latestDevice.includes('Mobile') ? (
+                              <Smartphone className="w-3 h-3 text-slate-400" />
+                            ) : (
+                              <Monitor className="w-3 h-3 text-slate-400" />
+                            )}
+                            <span>{s.latestDevice}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-slate-500 italic">لم يسجل دخول بعد</span>
+                      )}
+                    </td>
+
+                    {/* Pre-Test Result */}
+                    <td className="p-3.5 text-center">
+                      {s.preTestCompleted ? (
+                        <div className="inline-block p-1.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-center">
+                          <div className="font-black text-amber-300 text-xs">
+                            {s.preTestScore} / {s.preTestMaxScore} ({s.preTestPercentage}%)
+                          </div>
+                          <div className="text-[10px] font-bold text-emerald-400">
+                            {s.preTestPassed ? '✓ مجتاز' : 'لم يجتز'}
+                          </div>
+                          <div className="text-[9px] text-slate-400">{s.preTestDate.split(' ')[0]}</div>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-slate-500">لم يكتمل</span>
+                      )}
+                    </td>
+
+                    {/* 10 Stages */}
+                    <td className="p-3.5 text-center">
+                      <div className="inline-block p-1.5 rounded-xl bg-blue-950/40 border border-blue-500/40 text-center">
+                        <div className="font-black text-blue-300 text-xs">
+                          {s.completedLevelsCount} / 10 مراحل
+                        </div>
+                        <div className="text-[10px] text-cyan-300 font-bold">{s.totalLevelsScore} XP</div>
+                      </div>
+                    </td>
+
+                    {/* Post-Test Result */}
+                    <td className="p-3.5 text-center">
+                      {s.postTestCompleted ? (
+                        <div className="inline-block p-1.5 rounded-xl bg-purple-950/40 border border-purple-500/40 text-center">
+                          <div className="font-black text-purple-300 text-xs">
+                            {s.postTestScore} / {s.postTestMaxScore} ({s.postTestPercentage}%)
+                          </div>
+                          <div className="text-[10px] font-bold text-emerald-400">
+                            {s.postTestPassed ? '✓ مجتاز' : 'لم يجتز'}
+                          </div>
+                          <div className="text-[9px] text-slate-400">{s.postTestDate.split(' ')[0]}</div>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-slate-500">لم يكتمل</span>
+                      )}
+                    </td>
+
+                    {/* Sessions Inspection Button */}
+                    <td className="p-3.5 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setInspectStudent(s)}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1 mx-auto cursor-pointer"
+                        title="عرض سجل الجلسات وتفاصيل الدخول"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>التفاصيل</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {filteredStudents.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="p-8 text-center text-slate-500 text-sm">
+                      لم يتم العثور على أي طلاب مطابقين لشروط البحث والتصفية
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ======================= TAB 2: TEST VISITS & FREQUENCY AUDIT ======================= */}
+      {activeSubTab === 'test_visits' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-amber-950/20 border border-amber-500/30">
+            <div>
+              <h3 className="text-sm font-black text-amber-300 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-400" />
+                <span>سجل تردد الطلاب على الاختبارات والمستويات مع التفسير والتواريخ</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                تتبع دقيق لكل محاولة دخول أو خروج للطالب على أي اختبار مع حساب عدد مرات التردد وتفسير الحالة الأكاديمية
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleExportTestVisitsSheet}
+              className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-2 cursor-pointer transition shadow-md shrink-0"
+            >
+              <Download className="w-4 h-4" />
+              <span>تصدير شيت تردد الاختبارات (Excel / CSV)</span>
+            </button>
+          </div>
+
+          <div className="rounded-2xl border border-slate-800 overflow-hidden bg-[#090c1e] shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-right border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-950/90 text-slate-300 border-b border-slate-800 font-bold">
+                    <th className="p-3 text-center w-10">#</th>
+                    <th className="p-3">الطالب</th>
+                    <th className="p-3 text-center">المجموعة</th>
+                    <th className="p-3">الاختبار المستهدف</th>
+                    <th className="p-3 text-center">عدد مرات التردد</th>
+                    <th className="p-3">التفسير والتحليل الأكاديمي</th>
+                    <th className="p-3 text-center">حالة الإتمام</th>
+                    <th className="p-3">مواقيت الدخول والخروج</th>
+                    <th className="p-3 text-center">الجلسات</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 font-medium">
+                  {getAllStudentsTestAccessSummaries(
+                    selectedVisitTestFilter === 'all' ? undefined : selectedVisitTestFilter
+                  )
+                    .filter((item) => {
+                      if (selectedGroupFilter !== 'all' && item.groupCode !== selectedGroupFilter) return false;
+                      if (searchQuery.trim()) {
+                        const q = searchQuery.toLowerCase().trim();
+                        return item.username.toLowerCase().includes(q) || item.fullName.toLowerCase().includes(q);
+                      }
+                      return true;
+                    })
+                    .map((item, idx) => {
+                      const visits = item.totalVisits;
+                      return (
+                        <tr key={`${item.username}_${item.testId}`} className="hover:bg-slate-900/60 transition-colors">
+                          <td className="p-3 text-center text-slate-500 font-bold">{idx + 1}</td>
+                          <td className="p-3">
+                            <span className="font-bold text-white block">{item.username}</span>
+                            <span className="text-[10px] text-slate-400">{item.fullName}</span>
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-black bg-slate-200 text-slate-900">
+                              {item.groupCode}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <span className="font-bold text-amber-300">{item.testName}</span>
+                          </td>
+                          <td className="p-3 text-center">
+                            <span
+                              className={`inline-block px-2.5 py-1 rounded-lg text-xs font-black ${
+                                visits === 0
+                                  ? 'bg-slate-800 text-slate-400'
+                                  : visits === 1
+                                  ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+                                  : visits === 2
+                                  ? 'bg-amber-950 text-amber-300 border border-amber-500/40'
+                                  : 'bg-rose-950 text-rose-300 border border-rose-500/40'
+                              }`}
+                            >
+                              {visits === 0 ? 'عدم تردد (0)' : `${visits} مرات تردد`}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <span className="text-[11px] text-slate-200 block">{item.interpretation}</span>
+                          </td>
+                          <td className="p-3 text-center">
+                            {item.isCompleted ? (
+                              <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">
+                                مكتمل بنجاح ✓
+                              </span>
+                            ) : visits > 0 ? (
+                              <span className="inline-block px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 text-[10px] font-bold">
+                                قيد الإجراء / خروج ⏳
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-500">لم يبدأ بعد</span>
+                            )}
+                          </td>
+                          <td className="p-3 text-[10px] space-y-0.5">
+                            {item.firstEntry ? (
+                              <>
+                                <div className="text-slate-300">أول دخول: {item.firstEntry}</div>
+                                {item.lastExit && <div className="text-slate-400">آخر خروج: {item.lastExit}</div>}
+                              </>
+                            ) : (
+                              <span className="text-slate-500">-</span>
+                            )}
+                          </td>
+                          <td className="p-3 text-center">
+                            {item.sessions && item.sessions.length > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => setInspectTestAccessSummary(item)}
+                                className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/30 text-[10px] font-bold cursor-pointer"
+                              >
+                                عرض الجلسات ({item.sessions.length})
+                              </button>
+                            ) : (
+                              <span className="text-slate-600 text-[10px]">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================= TAB 3: DETAILED ANSWERS WITH EXPLANATIONS ======================= */}
+      {activeSubTab === 'detailed_answers' && (
+        <div className="space-y-4">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30">
+            <div>
+              <h3 className="text-sm font-black text-purple-300 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-purple-400" />
+                <span>شيت تفصيل إجابة كل سؤال مع التفسير العلمي والتغذية الراجعة</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                عرض إجابة كل طالب لكل سؤال على حدة بجانب الإجابة الصحيحة وحالة الإجابة والشرح والتفسير الكامل
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={detailedAnswersTest}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'pre' || val === 'post') setDetailedAnswersTest(val);
+                  else setDetailedAnswersTest(parseInt(val, 10));
+                }}
+                className="px-3 py-2 rounded-xl bg-slate-950 border border-purple-500/50 text-purple-200 text-xs font-bold outline-none cursor-pointer"
+              >
+                <option value="pre">الاختبار القبلي (53 سؤال)</option>
+                <option value="post">الاختبار البعدي (53 سؤال)</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvl) => (
+                  <option key={lvl} value={lvl}>
+                    تحدي المستوى {lvl}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={handleExportDetailedAnswersSheet}
+                className="px-4 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-white font-black text-xs flex items-center gap-2 cursor-pointer transition shadow-md shrink-0"
+              >
+                <Download className="w-4 h-4" />
+                <span>تصدير شيت الأسئلة والتفسير (Excel / CSV)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Students Question Breakdown Cards */}
+          <div className="space-y-3">
+            {filteredStudents.map((s, idx) => {
+              let resultData: any = null;
+              let qList: any[] = [];
+              if (detailedAnswersTest === 'pre') {
+                resultData = s.raw.preTestResult;
+                qList = getPreTestQuestions();
+              } else if (detailedAnswersTest === 'post') {
+                resultData = s.raw.postTestResult;
+                qList = getPostTestQuestions();
+              } else {
+                const lvlDef =
+                  GAME_LEVELS_DATA.find((l) => l.levelNumber === detailedAnswersTest) || GAME_LEVELS_DATA[0];
+                resultData = s.raw.completedLevels?.[detailedAnswersTest];
+                qList = lvlDef.questions;
+              }
+
+              const isCompleted = !!resultData;
+              const score = resultData ? resultData.score : 0;
+              const maxScore = resultData ? resultData.maxScore : qList.length;
+
+              return (
+                <div
+                  key={s.username}
+                  className="p-4 rounded-2xl bg-[#090c1e] border border-slate-800 space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-6 h-6 rounded-lg bg-slate-800 text-slate-300 font-bold flex items-center justify-center text-xs">
+                        {idx + 1}
+                      </span>
+                      <span className="font-black text-white text-sm">{s.username}</span>
+                      <span className="text-xs text-slate-400">({s.fullName})</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-slate-200 text-slate-900">
+                        {s.groupCode}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2.5 py-1 rounded-lg text-xs font-black ${
+                          isCompleted
+                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-slate-800 text-slate-400'
+                        }`}
+                      >
+                        {isCompleted ? `الدرجة: ${score} / ${maxScore}` : 'لم يتقدم للاختبار بعد'}
+                      </span>
+                      {resultData?.completedAt && (
+                        <span className="text-[10px] text-slate-400">
+                          {resultData.completedAt}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Individual Question Answers with Explanations */}
+                  {isCompleted ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 max-h-72 overflow-y-auto pr-1">
+                      {qList.map((q, qIdx) => {
+                        const chosenIdx = resultData.answers?.[q.id];
+                        const isRight = chosenIdx === q.correctIndex;
+                        const chosenText =
+                          chosenIdx !== undefined && chosenIdx >= 0 && q.options[chosenIdx]
+                            ? `${['أ', 'ب', 'ج', 'د', 'هـ'][chosenIdx] || chosenIdx + 1}. ${q.options[chosenIdx]}`
+                            : 'لم تتم الإجابة';
+                        const correctText = q.options[q.correctIndex]
+                          ? `${['أ', 'ب', 'ج', 'د', 'هـ'][q.correctIndex] || q.correctIndex + 1}. ${q.options[q.correctIndex]}`
+                          : '-';
+
+                        return (
+                          <div
+                            key={q.id || qIdx}
+                            className={`p-2.5 rounded-xl border text-[11px] space-y-1 ${
+                              isRight
+                                ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
+                                : 'bg-rose-950/30 border-rose-500/40 text-rose-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-white bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
+                                سؤال {qIdx + 1}
+                              </span>
+                              <span
+                                className={`px-2 py-0.5 rounded font-black ${
+                                  isRight ? 'bg-emerald-500 text-slate-950' : 'bg-rose-600 text-white'
+                                }`}
+                              >
+                                {isRight ? '1/1 ✓' : '0/1 ✗'}
+                              </span>
+                            </div>
+                            <p className="text-white font-bold text-[11px] line-clamp-2">{q.question}</p>
+                            <div className="space-y-0.5 text-[10px] pt-1 border-t border-slate-800/80">
+                              <div>
+                                <span className="text-slate-400">إجابة الطالب: </span>
+                                <span className="font-bold">{chosenText}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400">الإجابة الصحيحة: </span>
+                                <span className="text-emerald-300 font-bold">{correctText}</span>
+                              </div>
+                            </div>
+                            {q.explanation && (
+                              <div className="mt-1 p-1.5 rounded-lg bg-slate-900/90 border border-slate-700/60 text-[10px] text-amber-200">
+                                <span className="font-black text-amber-400">التفسير: </span>
+                                <span>{q.explanation}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-3 text-center rounded-xl bg-slate-950 border border-slate-800 text-slate-500 text-xs">
+                      لا توجد إجابات مسجلة لهذا الطالب على هذا الاختبار حتى الآن
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ======================= TEST ACCESS SESSIONS INSPECTION MODAL ======================= */}
+      {inspectTestAccessSummary && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setInspectTestAccessSummary(null);
+          }}
+        >
+          <div
+            className="relative w-full max-w-lg rounded-3xl bg-[#0f142e] border-2 border-amber-500/80 p-6 shadow-2xl space-y-4 text-right my-auto max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white font-['Tajawal']">
+                    سجل جلسات تردد الطالب: {inspectTestAccessSummary.username}
+                  </h3>
+                  <span className="text-xs text-slate-400">
+                    {inspectTestAccessSummary.testName} • إجمالي {inspectTestAccessSummary.totalVisits} مرات تردد
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectTestAccessSummary(null)}
+                className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-amber-950/30 border border-amber-500/40 text-xs text-amber-200">
+              <span className="font-bold text-amber-400 block mb-0.5">التفسير الأكاديمي والتحليل:</span>
+              <p>{inspectTestAccessSummary.interpretation}</p>
+            </div>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {inspectTestAccessSummary.sessions && inspectTestAccessSummary.sessions.length > 0 ? (
+                inspectTestAccessSummary.sessions.map((sess, idx) => (
+                  <div
+                    key={sess.id || idx}
+                    className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-amber-300">
+                        التردد رقم {sess.visitIndex || idx + 1}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          sess.status === 'completed'
+                            ? 'bg-emerald-950 text-emerald-300'
+                            : 'bg-amber-950 text-amber-300'
+                        }`}
+                      >
+                        {sess.status === 'completed' ? 'تم الإتمام' : 'خروج / استئناف'}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-300">
+                      <div>وقت الدخول: <span className="font-bold text-white">{sess.enteredAt}</span></div>
+                      {sess.leftAt && <div>وقت الخروج: <span className="font-bold text-slate-400">{sess.leftAt}</span></div>}
+                    </div>
+                    <div className="text-[10px] text-slate-400">{sess.interpretation}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center rounded-xl bg-slate-950 border border-slate-800 text-slate-500 text-xs">
+                  لا توجد جلسات تردد مسجلة
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-slate-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setInspectTestAccessSummary(null)}
+                className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs cursor-pointer"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ======================= INDIVIDUAL STUDENT SESSION MODAL ======================= */}
       {inspectStudent && (
@@ -1168,6 +1804,55 @@ export const AdminStudentsAuditManager: React.FC = () => {
               </div>
             </div>
 
+            {/* Test Entry & Frequency Breakdown with Interpretation (سجل تردد الطالب على الاختبارات) */}
+            <div className="space-y-2 p-3.5 rounded-2xl bg-amber-950/20 border border-amber-500/30">
+              <h4 className="text-xs font-black text-amber-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <span>سجل تردد الطالب على الاختبارات مع التفسير والتواريخ:</span>
+                </span>
+              </h4>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                {['pretest', 'posttest', 'level-1', 'level-2', 'level-3', 'level-4', 'level-5', 'level-6', 'level-7', 'level-8', 'level-9'].map((tId) => {
+                  const summary = testAccessMap[inspectStudent.username]?.[tId];
+                  const tName =
+                    tId === 'pretest'
+                      ? 'الاختبار القبلي'
+                      : tId === 'posttest'
+                      ? 'الاختبار البعدي'
+                      : `المستوى ${tId.replace('level-', '')}`;
+                  const visits = summary ? summary.totalVisits : 0;
+                  const interp = summary ? summary.interpretation : 'عدم تردد - لم يدخل الاختبار مطلقاً';
+                  return (
+                    <div
+                      key={tId}
+                      className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] flex items-center justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white">{tName}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                              visits > 0 ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-400'
+                            }`}
+                          >
+                            {visits > 0 ? `${visits} مرات تردد` : 'عدم تردد'}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-300 block mt-0.5">{interp}</span>
+                      </div>
+                      {summary?.lastEntry && (
+                        <div className="text-left text-[9px] text-slate-400">
+                          <div>دخول: {summary.lastEntry.split(' ')[1]}</div>
+                          {summary.lastExit && <div>خروج: {summary.lastExit.split(' ')[1]}</div>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Pre-Test Question Breakdown */}
             {inspectStudent.preTestCompleted && inspectStudent.raw.preTestResult && (
               <div className="space-y-3 p-4 rounded-2xl bg-sky-950/20 border border-sky-500/30">
@@ -1212,7 +1897,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
                     return (
                       <div
                         key={q.id || qIdx}
-                        className={`p-2.5 rounded-xl border text-[11px] space-y-1 ${
+                        className={`p-2.5 rounded-xl border text-[11px] space-y-1.5 ${
                           isRight
                             ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200'
                             : 'bg-rose-950/40 border-rose-500/50 text-rose-200'
@@ -1236,6 +1921,12 @@ export const AdminStudentsAuditManager: React.FC = () => {
                           <div><span className="text-slate-400">إجابة الطالب: </span><span className="font-bold">{chosenText}</span></div>
                           <div><span className="text-slate-400">الإجابة الصحيحة: </span><span className="text-emerald-300 font-bold">{correctText}</span></div>
                         </div>
+                        {q.explanation && (
+                          <div className="p-2 rounded-lg bg-slate-900 border border-slate-700/80 text-[10px] text-amber-200">
+                            <span className="font-bold text-amber-400">💡 التفسير والشرح الأكاديمي: </span>
+                            <span>{q.explanation}</span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1287,7 +1978,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
                     return (
                       <div
                         key={q.id || qIdx}
-                        className={`p-2.5 rounded-xl border text-[11px] space-y-1 ${
+                        className={`p-2.5 rounded-xl border text-[11px] space-y-1.5 ${
                           isRight
                             ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200'
                             : 'bg-rose-950/40 border-rose-500/50 text-rose-200'
@@ -1311,6 +2002,12 @@ export const AdminStudentsAuditManager: React.FC = () => {
                           <div><span className="text-slate-400">إجابة الطالب: </span><span className="font-bold">{chosenText}</span></div>
                           <div><span className="text-slate-400">الإجابة الصحيحة: </span><span className="text-emerald-300 font-bold">{correctText}</span></div>
                         </div>
+                        {q.explanation && (
+                          <div className="p-2 rounded-lg bg-slate-900 border border-slate-700/80 text-[10px] text-amber-200">
+                            <span className="font-bold text-amber-400">💡 التفسير والشرح الأكاديمي: </span>
+                            <span>{q.explanation}</span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

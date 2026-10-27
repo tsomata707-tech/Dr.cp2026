@@ -37,8 +37,13 @@ import {
   submitPreTestResult,
   submitPostTestResult,
 } from '../data/preTestData';
-import { PreTestQuestion, PreTestResult, StudentGameProgress } from '../types';
+import { PreTestQuestion, PreTestResult, StudentGameProgress, TestAccessSession } from '../types';
 import { MatchingQuestionTableView } from './MatchingQuestionTableView';
+import {
+  recordTestEntry,
+  recordTestExit,
+  markTestCompletedInAudit,
+} from '../utils/testAccessAuditStorage';
 
 interface PreTestGameViewProps {
   username: string;
@@ -380,23 +385,34 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     () => (typeof document !== 'undefined' ? !document.hidden : true)
   );
 
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsTabActive(!document.hidden && document.visibilityState === 'visible');
-    };
-    const handleBlur = () => setIsTabActive(false);
-    const handleFocus = () => setIsTabActive(true);
+  // Test Entry Access Session Tracking (تسجيل كل دخول وخروج وحساب التردد والتفسير بالوقت والتاريخ)
+  const testAccessSessionRef = useRef<TestAccessSession | null>(null);
+  const testIdKey = mode === 'post' ? 'posttest' : 'pretest';
+  const testNameLabel = mode === 'post' ? 'الاختبار البعدي (Post-Test)' : 'الاختبار القبلي (Pre-Test)';
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('focus', handleFocus);
+  useEffect(() => {
+    // Record real entry on test mount
+    const sess = recordTestEntry(username, testIdKey, testNameLabel);
+    testAccessSessionRef.current = sess;
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('focus', handleFocus);
+      // Record exit timestamp on unmount
+      if (testAccessSessionRef.current) {
+        recordTestExit(testAccessSessionRef.current.id);
+      }
     };
-  }, []);
+  }, [username, testIdKey, testNameLabel]);
+
+  // Record exit/pause when student leaves the tab/window, and record re-entry when returning
+  useEffect(() => {
+    if (!isTabActive && testAccessSessionRef.current) {
+      recordTestExit(testAccessSessionRef.current.id);
+    } else if (isTabActive && testAccessSessionRef.current?.leftAt && !isFinished) {
+      // Student returned to page after leaving - create next visit entry
+      const reEntrySession = recordTestEntry(username, testIdKey, testNameLabel);
+      testAccessSessionRef.current = reEntrySession;
+    }
+  }, [isTabActive, isFinished, username, testIdKey, testNameLabel]);
 
   // Warning message state if student attempts to finish before solving all questions
   const [unansweredWarning, setUnansweredWarning] = useState<string | null>(null);
@@ -629,6 +645,9 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     localStorage.removeItem(`cp_${mode}_answers_${username}`);
     localStorage.removeItem(`cp_${mode}_started_${username}`);
     localStorage.removeItem(`cp_${mode}_timer_${username}`);
+
+    // Mark completed in audit with final visit interpretation
+    markTestCompletedInAudit(username, testIdKey);
 
     setFinalResult(submission.result);
     setIsFinished(true);

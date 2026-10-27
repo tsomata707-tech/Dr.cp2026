@@ -67,7 +67,8 @@ export interface CompletedLevelResult {
   score: number;
   maxScore: number;
   answers: Record<string, number>; // questionId -> chosenIndex
-  questionScores?: Record<string, number>; // questionId -> 1 or 0
+  questionScores?: Record<string, number>; // questionId -> points earned
+  questionDetails?: Record<string, QuestionAnswerDetail>; // questionId -> detail
   completedAt: string;
   timeSpentSeconds: number;
   feedbackRevealedToStudent: boolean; // true for G1 & G3, false for G2 & G4
@@ -85,12 +86,48 @@ export interface PreTestQuestion {
   questionType?: 'mcq' | 'matching';
   matchingPairs?: MatchingPairItem[];
   layout?: 'grid' | 'stacked';
+  module?: string;
+  domain?: string;
 }
 
 export interface QuestionAnswerDetail {
   chosenIndex: number;
   isCorrect: boolean;
   answeredAt: string;
+  chosenText?: string;
+  correctText?: string;
+  explanation?: string;
+  domain?: string;
+  questionText?: string;
+}
+
+export interface TestAccessSession {
+  id: string;
+  username: string;
+  fullName?: string;
+  testId: string; // 'pretest' | 'posttest' | 'level-1' .. 'level-10'
+  testName: string; // 'الاختبار القبلي' | 'الاختبار البعدي' | 'تحدي المستوى 1' ...
+  enteredAt: string; // YYYY-MM-DD HH:mm:ss
+  leftAt?: string; // YYYY-MM-DD HH:mm:ss
+  visitIndex: number; // 1, 2, 3...
+  interpretation: string; // التفسير والتحليل الأكاديمي
+  status: 'active' | 'exited' | 'completed';
+  device?: string;
+}
+
+export interface StudentTestAccessSummary {
+  username: string;
+  fullName: string;
+  groupCode: string;
+  testId: string;
+  testName: string;
+  totalVisits: number; // عدد التردد (0 = عدم تردد)
+  firstEntry?: string;
+  lastEntry?: string;
+  lastExit?: string;
+  isCompleted: boolean;
+  interpretation: string; // التفسير الأكاديمي الشامل لتردد الطالب
+  sessions: TestAccessSession[];
 }
 
 export interface PreTestResult {

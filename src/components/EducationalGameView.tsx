@@ -64,7 +64,13 @@ import {
   StudentActivitySubmission,
   LevelMediaItem,
   EducationalVideo,
+  TestAccessSession,
 } from '../types';
+import {
+  recordTestEntry,
+  recordTestExit,
+  markTestCompletedInAudit,
+} from '../utils/testAccessAuditStorage';
 import {
   subscribeToGroupRoom,
   joinGroupRoom,
@@ -164,6 +170,22 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [selectedLevelNum]);
+
+  // Level Test Access Session Tracking (تسجيل دخول وخروج كل طالب على كل مستوى تعليمي مع حساب التردد والتفسير)
+  const levelAccessSessionRef = useRef<TestAccessSession | null>(null);
+
+  useEffect(() => {
+    const levelTestId = `level-${selectedLevelNum}`;
+    const levelTestName = `تحدي المستوى التعليمي ${selectedLevelNum}`;
+    const sess = recordTestEntry(username, levelTestId, levelTestName);
+    levelAccessSessionRef.current = sess;
+
+    return () => {
+      if (levelAccessSessionRef.current) {
+        recordTestExit(levelAccessSessionRef.current.id);
+      }
+    };
+  }, [selectedLevelNum, username]);
 
   // Sync progress from local storage
   useEffect(() => {
@@ -347,6 +369,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       chosenAnswers,
       60
     );
+
+    // Mark level test completed in test access audit
+    markTestCompletedInAudit(username, `level-${selectedLevelNum}`);
 
     // Sync to Firebase
     await submitGroupLevelRealtime(groupCode, selectedLevelNum, chosenAnswers, {

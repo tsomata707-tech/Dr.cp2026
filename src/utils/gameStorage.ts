@@ -141,12 +141,39 @@ export function submitLevelChallenge(
   // Calculate real score based on actual student answers
   let scoreGained = 0;
   let maxScore = 0;
+  const questionScores: Record<string, number> = {};
+  const questionDetails: Record<string, any> = {};
+  const completedAtStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
   levelDef.questions.forEach((q) => {
     maxScore += q.points;
-    if (chosenAnswers[q.id] === q.correctIndex) {
+    const chosen = chosenAnswers[q.id];
+    const isCorrect = chosen === q.correctIndex;
+    if (isCorrect) {
       scoreGained += q.points;
+      questionScores[q.id] = q.points;
+    } else {
+      questionScores[q.id] = 0;
     }
+
+    const chosenIdx = chosen ?? -1;
+    const chosenText = chosenIdx >= 0 && q.options[chosenIdx]
+      ? `${['أ', 'ب', 'ج', 'د', 'هـ'][chosenIdx] || chosenIdx + 1}. ${q.options[chosenIdx]}`
+      : 'لم تتم الإجابة';
+    const correctText = q.options[q.correctIndex]
+      ? `${['أ', 'ب', 'ج', 'د', 'هـ'][q.correctIndex] || (q.correctIndex + 1)}. ${q.options[q.correctIndex]}`
+      : '-';
+
+    questionDetails[q.id] = {
+      chosenIndex: chosenIdx,
+      isCorrect,
+      answeredAt: completedAtStr,
+      chosenText,
+      correctText,
+      explanation: q.explanation || 'لا يوجد تفسير إضافي',
+      questionText: q.question,
+      domain: `المستوى ${levelNumber}: ${levelDef.title}`,
+    };
   });
 
   // Determine feedback mode from group:
@@ -160,7 +187,9 @@ export function submitLevelChallenge(
     score: scoreGained,
     maxScore,
     answers: chosenAnswers,
-    completedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    questionScores,
+    questionDetails,
+    completedAt: completedAtStr,
     timeSpentSeconds,
     feedbackRevealedToStudent: isImmediate,
   };
@@ -350,10 +379,11 @@ export function resetAllStudentsToRealCleanState(): Record<string, StudentGamePr
   const clean = generateCleanRealStudents();
   localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(clean));
 
-  // Clear global collaborative team answers & student activity submissions
+  // Clear global collaborative team answers & student activity submissions & test access audits
   try {
     localStorage.removeItem('cp_collab_team_answers_v1');
     localStorage.removeItem('cp_student_activities_submissions_v2');
+    localStorage.removeItem('cp_students_test_access_audit_v2');
   } catch {}
 
   // Remove all test timer, question answer, started, and index keys from localStorage
