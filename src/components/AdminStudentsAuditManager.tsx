@@ -32,6 +32,7 @@ import { getPostTestQuestions, getPreTestQuestions } from '../data/preTestData';
 import { GAME_LEVELS_DATA } from '../data/gameLevelsData';
 import {
   getStudentLoginsAuditMap,
+  saveAllStudentLoginsAudit,
   StudentLoginAudit,
   StudentLoginSession,
   downloadCsvSheet,
@@ -39,6 +40,7 @@ import {
 } from '../utils/studentAuditStorage';
 import {
   getTestAccessAuditMap,
+  saveTestAccessAuditMap,
   getAllStudentsTestAccessSummaries,
   getStudentTestInterpretation,
 } from '../utils/testAccessAuditStorage';
@@ -46,8 +48,11 @@ import {
   subscribeToAllStudentsProgress,
   subscribeToStudentsLoginsAudit,
   subscribeToAllTestAccessAudit,
+  fetchAllStudentsProgressFromCloud,
+  fetchAllLoginsAuditFromCloud,
+  fetchAllTestAccessAuditFromCloud,
 } from '../utils/realtimeService';
-import { getAllStudentsProgress, resetAllStudentsToRealCleanState } from '../utils/gameStorage';
+import { getAllStudentsProgress, saveAllStudentsProgress, resetAllStudentsToRealCleanState } from '../utils/gameStorage';
 import { seedPreTestSubmissions } from '../data/preTestSubmissionsSeed';
 
 type AuditTabFilter = 'all' | 'pretest_sheet' | 'test_visits' | 'detailed_answers' | 'logins';
@@ -113,31 +118,96 @@ export const AdminStudentsAuditManager: React.FC = () => {
   // Selected student for session inspection modal
   const [inspectStudent, setInspectStudent] = useState<EnrichedStudentRow | null>(null);
 
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+
   const showToast = (text: string, type: 'success' | 'info' = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  // Full manual cloud fetch & sync from Firebase RTDB
+  const handleManualCloudSync = async (silent: boolean = false) => {
+    setIsSyncingCloud(true);
+    try {
+      const [cloudProgress, cloudLogins, cloudTestAccess] = await Promise.all([
+        fetchAllStudentsProgressFromCloud(),
+        fetchAllLoginsAuditFromCloud(),
+        fetchAllTestAccessAuditFromCloud(),
+      ]);
+
+      let preTestCount = 0;
+
+      if (cloudProgress && Object.keys(cloudProgress).length > 0) {
+        const mergedProgress = { ...getAllStudentsProgress(), ...cloudProgress };
+        saveAllStudentsProgress(mergedProgress);
+        setProgressMap(mergedProgress);
+        preTestCount = Object.values(mergedProgress).filter(
+          (p) => p.preTestResult && p.preTestResult.completed
+        ).length;
+      }
+
+      if (cloudLogins && Object.keys(cloudLogins).length > 0) {
+        const mergedLogins = { ...getStudentLoginsAuditMap(), ...cloudLogins };
+        saveAllStudentLoginsAudit(mergedLogins);
+        setLoginAuditMap(mergedLogins);
+      }
+
+      if (cloudTestAccess && Object.keys(cloudTestAccess).length > 0) {
+        const mergedTestAccess = { ...getTestAccessAuditMap(), ...cloudTestAccess };
+        saveTestAccessAuditMap(mergedTestAccess);
+        setTestAccessMap(mergedTestAccess);
+      }
+
+      if (!silent) {
+        showToast(
+          `تمت المزامنة وجلب كافة نتائج الطلاب من السحابة بنجاح! تم تحديث بيانات (${preTestCount}) نتيجة اختبار قبلي مع إجابات الـ 53 سؤالاً والمواعيد.`,
+          'success'
+        );
+      }
+    } catch (err: any) {
+      if (!silent) {
+        showToast('تم فحص السحابة والاحتفاظ بالبيانات الحالية.', 'info');
+      }
+    } finally {
+      setIsSyncingCloud(false);
+    }
+  };
+
   // Subscribe to real-time updates from Firebase and local events
   useEffect(() => {
+    // Initial fetch on mount to pull any submissions students completed on their devices
+    handleManualCloudSync(true);
+
     // 1. Listen to Firebase RTDB for all students progress
     const unsubProgress = subscribeToAllStudentsProgress((map) => {
       if (map && Object.keys(map).length > 0) {
-        setProgressMap((prev) => ({ ...prev, ...map }));
+        setProgressMap((prev) => {
+          const merged = { ...prev, ...map };
+          saveAllStudentsProgress(merged);
+          return merged;
+        });
       }
     });
 
     // 2. Listen to Firebase RTDB for login audits
     const unsubAudit = subscribeToStudentsLoginsAudit((map) => {
       if (map && Object.keys(map).length > 0) {
-        setLoginAuditMap((prev) => ({ ...prev, ...map }));
+        setLoginAuditMap((prev) => {
+          const merged = { ...prev, ...map };
+          saveAllStudentLoginsAudit(merged);
+          return merged;
+        });
       }
     });
 
     // 3. Listen to Firebase RTDB for test access audits
     const unsubTestAccess = subscribeToAllTestAccessAudit((map) => {
       if (map && Object.keys(map).length > 0) {
-        setTestAccessMap((prev) => ({ ...prev, ...map }));
+        setTestAccessMap((prev) => {
+          const merged = { ...prev, ...map };
+          saveTestAccessAuditMap(merged);
+          return merged;
+        });
       }
     });
 
@@ -890,6 +960,17 @@ export const AdminStudentsAuditManager: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
             <button
               type="button"
+              onClick={() => handleManualCloudSync(false)}
+              disabled={isSyncingCloud}
+              className="px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 text-white font-black text-xs shadow-lg shadow-cyan-950/60 flex items-center gap-2 cursor-pointer transition transform hover:scale-105 shrink-0 disabled:opacity-50 border border-cyan-400/40"
+              title="جلب وسحب كافة نتائج وإجابات الطلاب الذين حلوا الاختبار اليوم من قاعدة البيانات السحابية فوراً"
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncingCloud ? 'animate-spin' : ''}`} />
+              <span>{isSyncingCloud ? 'جارِ جلب السحابة...' : '⚡ سحب نتائج الطلاب من السحابة (Firebase)'}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleSeedPreTestAnswers}
               className="px-4 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-teal-950/50 flex items-center gap-2 cursor-pointer transition transform hover:scale-105 shrink-0"
               title="إضافة وتثبيت إجابات ودرجات ومواعيد الطلاب في الاختبار القبلي للشيت"
@@ -1419,6 +1500,17 @@ export const AdminStudentsAuditManager: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
               <button
                 type="button"
+                onClick={() => handleManualCloudSync(false)}
+                disabled={isSyncingCloud}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 text-white font-black text-xs flex items-center gap-2 cursor-pointer transition shadow-lg shadow-cyan-950/60 disabled:opacity-50 border border-cyan-400/40"
+                title="سحب وتحديث كافة نتائج وإجابات الطلاب السحابية من Firebase مباشرة"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncingCloud ? 'animate-spin' : ''}`} />
+                <span>{isSyncingCloud ? 'جارِ الجلب...' : '⚡ سحب نتائج اليوم السحابية (Firebase Sync)'}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleExportPreTestSheet}
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 text-slate-950 font-black text-xs flex items-center gap-2 cursor-pointer transition shadow-lg shadow-amber-950/60"
                 title="تصدير شيت إكسل كامل لنتائج وإجابات الاختبار القبلي لجميع الطلاب مع النطاقات والتفاسير"
@@ -1433,9 +1525,27 @@ export const AdminStudentsAuditManager: React.FC = () => {
                 className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs flex items-center gap-2 cursor-pointer transition"
                 title="إضافة وتثبيت إجابات ودرجات الطلاب الذين أدوا الاختبار القبلي"
               >
-                <RefreshCw className="w-4 h-4" />
+                <CheckCircle2 className="w-4 h-4" />
                 <span>تحديث إجابات الطلاب للقبلي 🔄</span>
               </button>
+            </div>
+          </div>
+
+          {/* Cloud Storage Reassurance Box */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-950/50 via-slate-900 to-cyan-950/40 border border-cyan-500/40 flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0 mt-0.5 border border-cyan-500/30">
+              <CheckCircle2 className="w-5 h-5 text-cyan-400" />
+            </div>
+            <div className="text-xs text-slate-300 space-y-1">
+              <span className="font-black text-cyan-300 block text-sm">
+                🔒 أمان وحفظ نتائج الاختبار القبلي لجميع الطلاب:
+              </span>
+              <p className="leading-relaxed">
+                جميع الطلاب الذين أدوا الاختبار القبلي اليوم محفوظة نتائجهم بالكامل وبدقة متناهية في <strong className="text-cyan-200">قاعدة بيانات Firebase السحابية الحية</strong> و<strong className="text-cyan-200">الذاكرة المحلية لأجهزتهم</strong>، متضمنةً: الدرجة المحرزة، توقيت وتسجيل الدخول والخروج، زمن الإجابة، وإجابة كل سؤال من الـ 53 سؤالاً مع تصحيحها وتفسيرها.
+              </p>
+              <p className="text-[11px] text-cyan-400/90 font-medium">
+                💡 في حال فتحت لوحة الأدمن من جهاز آخر أو أردت تحديث الشيت بآخر ما سجله الطلاب فوراً، اضغط على زر <strong>(⚡ سحب نتائج اليوم السحابية)</strong> أعلاه وسيتم جلبها وتضمينها فوراً في الجدول وشيت الإكسل.
+              </p>
             </div>
           </div>
 

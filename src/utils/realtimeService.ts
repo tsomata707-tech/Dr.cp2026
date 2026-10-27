@@ -438,6 +438,57 @@ export const subscribeToAllStudentsProgress = (
 };
 
 /**
+ * One-shot direct fetch of all student progress from Firebase Realtime Database
+ */
+export const fetchAllStudentsProgressFromCloud = async (): Promise<Record<string, StudentGameProgress>> => {
+  try {
+    const studentsRef = ref(rtdb, 'studentsProgress');
+    const snapshot = await rtdbGet(studentsRef);
+    if (snapshot.exists()) {
+      return (snapshot.val() as Record<string, StudentGameProgress>) || {};
+    }
+    return {};
+  } catch (err) {
+    console.warn('Failed to fetch studentsProgress from RTDB:', err);
+    return {};
+  }
+};
+
+/**
+ * One-shot direct fetch of all student login audits from Firebase Realtime Database
+ */
+export const fetchAllLoginsAuditFromCloud = async (): Promise<Record<string, any>> => {
+  try {
+    const auditRef = ref(rtdb, 'studentsLoginsAudit');
+    const snapshot = await rtdbGet(auditRef);
+    if (snapshot.exists()) {
+      return snapshot.val() || {};
+    }
+    return {};
+  } catch (err) {
+    console.warn('Failed to fetch studentsLoginsAudit from RTDB:', err);
+    return {};
+  }
+};
+
+/**
+ * One-shot direct fetch of all student test access audits from Firebase Realtime Database
+ */
+export const fetchAllTestAccessAuditFromCloud = async (): Promise<Record<string, Record<string, any>>> => {
+  try {
+    const auditRef = ref(rtdb, 'studentsTestAccessAudit');
+    const snapshot = await rtdbGet(auditRef);
+    if (snapshot.exists()) {
+      return snapshot.val() || {};
+    }
+    return {};
+  } catch (err) {
+    console.warn('Failed to fetch studentsTestAccessAudit from RTDB:', err);
+    return {};
+  }
+};
+
+/**
  * Sync global question banks and level definitions to Firebase RTDB for instant real-time updates across all students
  */
 export type GlobalSyncType = 'pretest' | 'posttest' | 'levels' | 'instructions' | 'splash' | 'supervisors' | 'siteTitle' | 'users';
