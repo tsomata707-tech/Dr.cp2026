@@ -52,7 +52,25 @@ export function getAllStudentsProgress(): Record<string, StudentGameProgress> {
 }
 
 export function saveAllStudentsProgress(all: Record<string, StudentGameProgress>): void {
-  localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(all));
+  const stripped = JSON.parse(JSON.stringify(all));
+  Object.keys(stripped).forEach((username) => {
+    if (stripped[username].preTestResult) {
+      delete stripped[username].preTestResult.questionDetails;
+    }
+    if (stripped[username].postTestResult) {
+      delete stripped[username].postTestResult.questionDetails;
+    }
+    if (stripped[username].completedLevels) {
+      Object.keys(stripped[username].completedLevels).forEach((lvl) => {
+        delete stripped[username].completedLevels[lvl].questionDetails;
+      });
+    }
+  });
+  try {
+    localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(stripped));
+  } catch (e) {
+    console.error("Failed to save to localStorage, quota exceeded.", e);
+  }
 }
 
 export function calculateStudentTotalScore(prog: StudentGameProgress): number {
