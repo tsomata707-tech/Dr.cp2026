@@ -478,19 +478,3 @@ function generateCleanRealStudents(): Record<string, StudentGameProgress> {
 
   return clean;
 }
-
-// Auto-seed pre-test submissions for students who answered the test
-const PRETEST_ANSWERS_SEED_TOKEN = 'cp_pretest_answers_seeded_v20261027_v1';
-if (typeof window !== 'undefined') {
-  try {
-    if (localStorage.getItem(PRETEST_ANSWERS_SEED_TOKEN) !== 'done') {
-      import('../data/preTestSubmissionsSeed').then(({ seedPreTestSubmissions }) => {
-        seedPreTestSubmissions(true);
-      });
-      localStorage.setItem(PRETEST_ANSWERS_SEED_TOKEN, 'done');
-    }
-  } catch {
-    // Ignore
-  }
-}
-

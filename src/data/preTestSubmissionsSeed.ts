@@ -288,139 +288,141 @@ export function seedPreTestSubmissions(force: boolean = false): {
 
   COMPLETED_PRETEST_STUDENTS.forEach((stud) => {
     const existing = allProgress[stud.username];
-    // If not completed or forced, apply pre-test submission
-    if (force || !existing || !existing.preTestResult || !existing.preTestResult.completed) {
-      const preResult = buildRealisticPreTestResult(stud);
+    const alreadyCompleted = existing && existing.preTestResult && existing.preTestResult.completed === true;
+    if (alreadyCompleted) {
+      return;
+    }
+    
+    const preResult = buildRealisticPreTestResult(stud);
 
-      const prog: StudentGameProgress = existing || {
+    const prog: StudentGameProgress = existing || {
+      username: stud.username,
+      avatarId: 'cp-bot',
+      currentLevel: 1,
+      completedLevels: {},
+      totalScore: 0,
+      hearts: 3,
+      badges: [],
+      lastActive: stud.date,
+    };
+
+    prog.preTestResult = preResult;
+    prog.lastActive = stud.date;
+    if (!Array.isArray(prog.badges)) {
+      prog.badges = [];
+    }
+    if (!prog.badges.includes('وسام المستكشف التمهيدي (الاختبار القبلي)')) {
+      prog.badges.push('وسام المستكشف التمهيدي (الاختبار القبلي)');
+    }
+
+    allProgress[stud.username] = prog;
+    syncStudentProgressToFirestore(prog).catch(() => {});
+
+    // 2. Add Login audit record
+    const existingLogin = loginAuditMap[stud.username];
+    const sessions = existingLogin?.sessions || [];
+    const sessionExists = sessions.some((s) => s.timestamp === stud.entryDate);
+    if (!sessionExists) {
+      const parts = stud.entryDate.split(' ');
+      sessions.unshift({
+        id: `login_${stud.username}_${Date.now()}`,
         username: stud.username,
-        avatarId: 'cp-bot',
-        currentLevel: 1,
-        completedLevels: {},
-        totalScore: 0,
-        hearts: 3,
-        badges: [],
-        lastActive: stud.date,
-      };
+        timestamp: stud.entryDate,
+        date: parts[0] || '2026-10-27',
+        time: parts[1] || '09:00:00',
+        device: stud.device,
+      });
+    }
 
-      prog.preTestResult = preResult;
-      prog.lastActive = stud.date;
-      if (!Array.isArray(prog.badges)) {
-        prog.badges = [];
-      }
-      if (!prog.badges.includes('وسام المستكشف التمهيدي (الاختبار القبلي)')) {
-        prog.badges.push('وسام المستكشف التمهيدي (الاختبار القبلي)');
-      }
-
-      allProgress[stud.username] = prog;
-      syncStudentProgressToFirestore(prog).catch(() => {});
-
-      // 2. Add Login audit record
-      const existingLogin = loginAuditMap[stud.username];
-      const sessions = existingLogin?.sessions || [];
-      const sessionExists = sessions.some((s) => s.timestamp === stud.entryDate);
-      if (!sessionExists) {
-        const parts = stud.entryDate.split(' ');
-        sessions.unshift({
-          id: `login_${stud.username}_${Date.now()}`,
-          username: stud.username,
-          timestamp: stud.entryDate,
-          date: parts[0] || '2026-10-27',
-          time: parts[1] || '09:00:00',
-          device: stud.device,
-        });
-      }
-
-      loginAuditMap[stud.username] = {
-        username: stud.username,
-        totalLogins: Math.max(sessions.length, stud.visits),
-        firstLogin: sessions[sessions.length - 1]?.timestamp || stud.entryDate,
-        lastLogin: stud.date,
-        sessions,
-      };
+    loginAuditMap[stud.username] = {
+      username: stud.username,
+      totalLogins: Math.max(sessions.length, stud.visits),
+      firstLogin: sessions[sessions.length - 1]?.timestamp || stud.entryDate,
+      lastLogin: stud.date,
+      sessions,
+    };
 
 
-      // 3. Add Test Access Frequency Audit record
-      if (!testAccessMap[stud.username]) {
-        testAccessMap[stud.username] = {};
-      }
+    // 3. Add Test Access Frequency Audit record
+    if (!testAccessMap[stud.username]) {
+      testAccessMap[stud.username] = {};
+    }
 
-      const sessionsList: TestAccessSession[] = [];
-      if (stud.visits === 2) {
-        // First visit: entered, left early
-        const visit1Entry = new Date(new Date(stud.entryDate).getTime() - 40 * 60 * 1000)
-          .toISOString()
-          .replace('T', ' ')
-          .substring(0, 19);
-        const visit1Exit = new Date(new Date(stud.entryDate).getTime() - 25 * 60 * 1000)
-          .toISOString()
-          .replace('T', ' ')
-          .substring(0, 19);
+    const sessionsList: TestAccessSession[] = [];
+    if (stud.visits === 2) {
+      // First visit: entered, left early
+      const visit1Entry = new Date(new Date(stud.entryDate).getTime() - 40 * 60 * 1000)
+        .toISOString()
+        .replace('T', ' ')
+        .substring(0, 19);
+      const visit1Exit = new Date(new Date(stud.entryDate).getTime() - 25 * 60 * 1000)
+        .toISOString()
+        .replace('T', ' ')
+        .substring(0, 19);
 
-        sessionsList.push({
-          id: `sess_${stud.username}_pretest_v1`,
-          username: stud.username,
-          fullName: stud.fullName,
-          testId: 'pretest',
-          testName: 'الاختبار القبلي (Pre-Test)',
-          enteredAt: visit1Entry,
-          leftAt: visit1Exit,
-          visitIndex: 1,
-          interpretation: 'دخول أولي واستطلاع للأسئلة مع خروج مؤقت قبل إنهاء الحل',
-          status: 'exited',
-          device: stud.device,
-        });
-
-        // Second visit: completed
-        sessionsList.push({
-          id: `sess_${stud.username}_pretest_v2`,
-          username: stud.username,
-          fullName: stud.fullName,
-          testId: 'pretest',
-          testName: 'الاختبار القبلي (Pre-Test)',
-          enteredAt: stud.entryDate,
-          leftAt: stud.date,
-          visitIndex: 2,
-          interpretation: 'استئناف الإجابات وحل جميع الأسئلة وتسليم الاختبار بنجاح',
-          status: 'completed',
-          device: stud.device,
-        });
-      } else {
-        sessionsList.push({
-          id: `sess_${stud.username}_pretest_v1`,
-          username: stud.username,
-          fullName: stud.fullName,
-          testId: 'pretest',
-          testName: 'الاختبار القبلي (Pre-Test)',
-          enteredAt: stud.entryDate,
-          leftAt: stud.date,
-          visitIndex: 1,
-          interpretation: 'دخول أولي منتظم وإتمام الاختبار بنجاح في جلسة واحدة دون انقطاع',
-          status: 'completed',
-          device: stud.device,
-        });
-      }
-
-      const summary: StudentTestAccessSummary = {
+      sessionsList.push({
+        id: `sess_${stud.username}_pretest_v1`,
         username: stud.username,
         fullName: stud.fullName,
-        groupCode: stud.username.split('_')[0],
         testId: 'pretest',
         testName: 'الاختبار القبلي (Pre-Test)',
-        totalVisits: stud.visits,
-        firstEntry: sessionsList[0]?.enteredAt || stud.entryDate,
-        lastEntry: stud.entryDate,
-        lastExit: stud.date,
-        isCompleted: true,
-        interpretation: getStudentTestInterpretation(stud.visits, true),
-        sessions: sessionsList,
-      };
+        enteredAt: visit1Entry,
+        leftAt: visit1Exit,
+        visitIndex: 1,
+        interpretation: 'دخول أولي واستطلاع للأسئلة مع خروج مؤقت قبل إنهاء الحل',
+        status: 'exited',
+        device: stud.device,
+      });
 
-      testAccessMap[stud.username]['pretest'] = summary;
-
-      seededCount++;
-      updatedStudents.push(stud.username);
+      // Second visit: completed
+      sessionsList.push({
+        id: `sess_${stud.username}_pretest_v2`,
+        username: stud.username,
+        fullName: stud.fullName,
+        testId: 'pretest',
+        testName: 'الاختبار القبلي (Pre-Test)',
+        enteredAt: stud.entryDate,
+        leftAt: stud.date,
+        visitIndex: 2,
+        interpretation: 'استئناف الإجابات وحل جميع الأسئلة وتسليم الاختبار بنجاح',
+        status: 'completed',
+        device: stud.device,
+      });
+    } else {
+      sessionsList.push({
+        id: `sess_${stud.username}_pretest_v1`,
+        username: stud.username,
+        fullName: stud.fullName,
+        testId: 'pretest',
+        testName: 'الاختبار القبلي (Pre-Test)',
+        enteredAt: stud.entryDate,
+        leftAt: stud.date,
+        visitIndex: 1,
+        interpretation: 'دخول أولي منتظم وإتمام الاختبار بنجاح في جلسة واحدة دون انقطاع',
+        status: 'completed',
+        device: stud.device,
+      });
     }
+
+    const summary: StudentTestAccessSummary = {
+      username: stud.username,
+      fullName: stud.fullName,
+      groupCode: stud.username.split('_')[0],
+      testId: 'pretest',
+      testName: 'الاختبار القبلي (Pre-Test)',
+      totalVisits: stud.visits,
+      firstEntry: sessionsList[0]?.enteredAt || stud.entryDate,
+      lastEntry: stud.entryDate,
+      lastExit: stud.date,
+      isCompleted: true,
+      interpretation: getStudentTestInterpretation(stud.visits, true),
+      sessions: sessionsList,
+    };
+
+    testAccessMap[stud.username]['pretest'] = summary;
+
+    seededCount++;
+    updatedStudents.push(stud.username);
   });
 
   if (seededCount > 0) {
@@ -438,19 +440,4 @@ export function seedPreTestSubmissions(force: boolean = false): {
   }
 
   return { seededCount, updatedStudents };
-}
-
-// Auto-seed on initial module import if no students have pre-test answers yet
-if (typeof window !== 'undefined') {
-  try {
-    const existingProgress = getAllStudentsProgress();
-    const hasAnyPreTest = Object.values(existingProgress).some(
-      (p) => p.preTestResult && p.preTestResult.completed
-    );
-    if (!hasAnyPreTest) {
-      seedPreTestSubmissions(false);
-    }
-  } catch {
-    // Ignore
-  }
 }

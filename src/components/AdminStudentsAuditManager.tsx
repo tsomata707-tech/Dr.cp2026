@@ -251,7 +251,31 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const unsubProgress = subscribeToAllStudentsProgress((map) => {
       if (map && Object.keys(map).length > 0) {
         setProgressMap((prev) => {
-          const merged = { ...prev, ...map };
+          const merged = { ...prev };
+          Object.keys(map).forEach((username) => {
+            const remote = map[username];
+            const local = prev[username];
+            if (!local) {
+              merged[username] = remote;
+              return;
+            }
+            if (!remote) {
+              return;
+            }
+            const remotePreTime = remote?.preTestResult?.completedAt;
+            const localPreTime = local?.preTestResult?.completedAt;
+            const remotePostTime = remote?.postTestResult?.completedAt;
+            const localPostTime = local?.postTestResult?.completedAt;
+            const remoteLatest = Math.max(
+              remotePreTime ? new Date(remotePreTime).getTime() : 0,
+              remotePostTime ? new Date(remotePostTime).getTime() : 0
+            );
+            const localLatest = Math.max(
+              localPreTime ? new Date(localPreTime).getTime() : 0,
+              localPostTime ? new Date(localPostTime).getTime() : 0
+            );
+            merged[username] = localLatest > remoteLatest ? local : remote;
+          });
           saveAllStudentsProgress(merged);
           return merged;
         });
@@ -1040,7 +1064,9 @@ export const AdminStudentsAuditManager: React.FC = () => {
     setProgressMap(getAllStudentsProgress());
     setLoginAuditMap(getStudentLoginsAuditMap());
     setTestAccessMap(getTestAccessAuditMap());
-    showToast(`تمت إضافة وتثبيت إجابات ودرجات ومواعيد الاختبار القبلي لـ (${updatedStudents.length}) طالباً بنجاح في شيت الأدمن!`);
+    showToast(
+      `تمت إضافة نتائج تجريبية لـ (${updatedStudents.length}) طالباً فقط ممن لم يجيبوا على القبلي. بيانات الطلاب الذين أجابوا محفوظة كما هي دون تغيير.`
+    );
   };
 
   return (
