@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { PortalUser } from '../types';
 import { getPortalUsers, savePortalUsers, addActivityLog } from '../utils/adminStorage';
-import { resetStudentProgress, resetAllStudentsToRealCleanState } from '../utils/gameStorage';
+import { resetStudentProgress } from '../utils/gameStorage';
 import { RESEARCH_GROUPS_META, getStudentPassword } from '../data/studentAccounts';
 
 interface AdminUsersManagerProps {
@@ -43,7 +43,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
   const [copiedAll, setCopiedAll] = useState(false);
   const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
 
-  // State for Action Dropdown Menu
+  // Action Dropdown Menu
   const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -64,7 +64,6 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
   useEffect(() => {
     setUsers(getPortalUsers());
     
-    // Close menu when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setOpenMenuUserId(null);
@@ -76,20 +75,22 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
 
   const showToast = (text: string, type: 'success' | 'info' | 'error' = 'success') => {
     setToastMsg({ text, type });
-    setTimeout(() => setToastMsg(null), 3500);
+    setTimeout(() => setToastMsg(null), 4000);
   };
 
-  // 1. إعادة تهيئة بيانات الطالب
   const handleResetStudentProgress = (user: PortalUser) => {
     if (window.confirm(`هل أنت متأكد من تصفير وإعادة تهيئة بيانات الطالب ${user.username} بالكامل؟ سيتم مسح درجاته وتقدمه في جميع المستويات.`)) {
-      resetStudentProgress(user.username);
-      addActivityLog(`قام المشرف بإعادة تهيئة بيانات الطالب: ${user.username}`, 'admin', 'warning');
-      showToast(`✓ تم تصفير وإعادة تهيئة درجات وتقدم الطالب (${user.username}) بنجاح.`);
+      try {
+        resetStudentProgress(user.username);
+        addActivityLog(`قام المشرف بإعادة تهيئة بيانات الطالب: ${user.username}`, 'admin', 'warning');
+        showToast(`✓ تم تصفير وإعادة تهيئة درجات وتقدم الطالب (${user.username}) بنجاح.`);
+      } catch (error) {
+        showToast(`حدث خطأ أثناء تهيئة الطالب ${user.username}`, 'error');
+      }
       setOpenMenuUserId(null);
     }
   };
 
-  // 2. تفعيل / تعطيل الحساب
   const handleToggleActive = (user: PortalUser) => {
     const updated = users.map((u) => {
       if (u.id === user.id) {
@@ -107,17 +108,10 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
     showToast(`✓ تم ${actionText} حساب (${user.username}) بنجاح.`, isNowActive ? 'success' : 'info');
   };
 
-  // 3. نسخ بيانات الدخول
-  const handleCopySingle = (u: PortalUser) => {
-    const text = `اسم المستخدم: ${u.username}\nكلمة المرور: ${u.password}\nالمجموعة: ${u.groupName || 'المشرف'}`;
-    navigator.clipboard.writeText(text);
-    setCopiedId(u.id);
-    setTimeout(() => setCopiedId(null), 2000);
-    showToast(`✓ تم نسخ بيانات دخول (${u.username}) إلى الحافظة.`);
-    setOpenMenuUserId(null);
+  const toggleShowPassword = (id: string) => {
+    setShowPasswords((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // 4. إعادة تعيين كلمة المرور
   const handleResetPassword = (user: PortalUser) => {
     let defPass = '123456';
     if (user.groupCode) {
@@ -133,11 +127,10 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
     savePortalUsers(updated);
     
     addActivityLog(`إعادة تعيين كلمة مرور المستخدم ${user.username}`, 'admin', 'success');
-    showToast(`✓ تم إعادة تعيين كلمة المرور للحساب (${user.username}) إلى: ${defPass}`);
+    showToast(`✓ تم إعادة تعيين الباسورد للحساب (${user.username}) إلى: ${defPass}`);
     setOpenMenuUserId(null);
   };
 
-  // 5. حفظ التعديلات
   const openEditModal = (user: PortalUser) => {
     setEditingUser(user);
     setEditFullName(user.fullName || user.username);
@@ -173,7 +166,6 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
     showToast(`✓ تم حفظ تعديلات بيانات الحساب (${editingUser.username}) بنجاح.`);
   };
 
-  // 6. إضافة مستخدم
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUser = newUsername.trim();
@@ -213,7 +205,6 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
     showToast(`✓ تم إضافة المستخدم الجديد (${cleanUser}) بنجاح.`);
   };
 
-  // 7. حذف مستخدم
   const handleDeleteUser = (user: PortalUser) => {
     if (user.username === 'admin') {
       showToast('لا يمكن حذف حساب الأدمن الرئيسي!', 'error');
@@ -229,7 +220,15 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
     }
   };
 
-  // 8. نسخ الكل
+  const handleCopySingle = (u: PortalUser) => {
+    const text = `اسم المستخدم: ${u.username}\nكلمة المرور: ${u.password}\nالمجموعة: ${u.groupName || 'المشرف'}`;
+    navigator.clipboard.writeText(text);
+    setCopiedId(u.id);
+    setTimeout(() => setCopiedId(null), 2000);
+    showToast(`✓ تم نسخ بيانات دخول (${u.username}) إلى الحافظة.`);
+    setOpenMenuUserId(null);
+  };
+
   const handleCopyAll = () => {
     let sheet = 'قائمة حسابات وبيانات دخول المنظومة (Adobe Captivate 2019)\n';
     sheet += '----------------------------------------------------------\n';
@@ -239,12 +238,11 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
     navigator.clipboard.writeText(sheet);
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2500);
-    showToast('✓ تم نسخ قائمة كافة المستخدمين (60 طالب والمشرف) إلى الحافظة.');
+    showToast('✓ تم نسخ قائمة كافة المستخدمين إلى الحافظة.');
   };
 
-  // 9. تصدير Excel
   const handleExportCsv = () => {
-    let csv = '\uFEFF'; // BOM for Excel Arabic support
+    let csv = '\uFEFF';
     csv += 'الرقم,اسم المستخدم,الاسم الكامل,الدور,المجموعة,كود المجموعة,كلمة المرور,حالة الحساب,تاريخ الإنشاء\n';
 
     users.forEach((u, idx) => {
@@ -268,10 +266,6 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
     a.click();
     URL.revokeObjectURL(url);
     showToast('✓ تم تصدير شيت البيانات (CSV) وتحميله بنجاح.');
-  };
-
-  const toggleShowPassword = (id: string) => {
-    setShowPasswords((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const filteredUsers = useMemo(() => {
@@ -305,25 +299,25 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
 
   return (
     <div className="space-y-6 font-['Cairo',_sans-serif] text-right" dir="rtl">
-      {/* Toast Notification */}
+      {/* Toast Notification - Center & Large */}
       {toastMsg && (
         <div
-          className={`fixed top-5 left-1/2 -translate-x-1/2 z-[200] px-6 py-3.5 rounded-2xl shadow-2xl border-2 flex items-center gap-3 font-bold text-sm animate-fadeIn ${
+          className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[999] px-8 py-5 rounded-3xl shadow-2xl border-2 flex flex-col items-center justify-center gap-3 font-bold text-lg animate-fadeIn w-11/12 max-w-lg text-center ${
             toastMsg.type === 'success'
-              ? 'bg-emerald-950/95 border-emerald-500 text-emerald-200'
+              ? 'bg-emerald-950/95 border-emerald-500 text-emerald-200 shadow-[0_0_50px_rgba(16,185,129,0.4)]'
               : toastMsg.type === 'error'
-              ? 'bg-red-950/95 border-red-500 text-red-200'
-              : 'bg-blue-950/95 border-blue-500 text-blue-200'
+              ? 'bg-red-950/95 border-red-500 text-red-200 shadow-[0_0_50px_rgba(239,68,68,0.4)]'
+              : 'bg-blue-950/95 border-blue-500 text-blue-200 shadow-[0_0_50px_rgba(59,130,246,0.4)]'
           }`}
         >
           {toastMsg.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="w-12 h-12 text-emerald-400 shrink-0" />
           ) : toastMsg.type === 'error' ? (
-            <XCircle className="w-5 h-5 text-red-400 shrink-0" />
+            <XCircle className="w-12 h-12 text-red-400 shrink-0" />
           ) : (
-            <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0" />
+            <CheckCircle2 className="w-12 h-12 text-blue-400 shrink-0" />
           )}
-          <span>{toastMsg.text}</span>
+          <span className="leading-relaxed">{toastMsg.text}</span>
         </div>
       )}
 
@@ -343,7 +337,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
               </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              عرض كافة حسابات الطلاب والمشرفين، التحكم في كلمات المرور والتفعيل، وتوزيع المجموعات البحثية.
+              عرض كافة حسابات الطلاب والمشرفين، التحكم في كلمات المرور والتفعيل.
             </p>
           </div>
         </div>
@@ -385,27 +379,22 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
           <span className="text-[11px] font-bold text-slate-400 block mb-1">إجمالي الحسابات</span>
           <span className="text-xl sm:text-2xl font-black text-white">{totalCount}</span>
         </div>
-
         <div className="p-3.5 rounded-2xl bg-[#091a1a] border border-emerald-500/30 shadow-md">
           <span className="text-[11px] font-bold text-emerald-300/80 block mb-1">حسابات نشطة</span>
           <span className="text-xl sm:text-2xl font-black text-emerald-400">{activeCount}</span>
         </div>
-
         <div className="p-3.5 rounded-2xl bg-slate-200 border border-slate-300 shadow-md">
           <span className="text-[11px] font-black text-slate-900 font-['Cairo'] block mb-1">G1 (تنافسي/فوري)</span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 font-['Cairo']">{g1Count}</span>
         </div>
-
         <div className="p-3.5 rounded-2xl bg-slate-200 border border-slate-300 shadow-md">
           <span className="text-[11px] font-black text-slate-900 font-['Cairo'] block mb-1">G2 (تنافسي/مرجأ)</span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 font-['Cairo']">{g2Count}</span>
         </div>
-
         <div className="p-3.5 rounded-2xl bg-slate-200 border border-slate-300 shadow-md">
           <span className="text-[11px] font-black text-slate-900 font-['Cairo'] block mb-1">G3 (تعاوني/فوري)</span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 font-['Cairo']">{g3Count}</span>
         </div>
-
         <div className="p-3.5 rounded-2xl bg-slate-200 border border-slate-300 shadow-md">
           <span className="text-[11px] font-black text-slate-900 font-['Cairo'] block mb-1">G4 (تعاوني/مرجأ)</span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 font-['Cairo']">{g4Count}</span>
@@ -625,7 +614,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
         </div>
       </div>
 
-      {/* Edit User Modal */}
+      {/* Edit User Modal (Restored Username Field) */}
       {editingUser && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fadeIn">
           <div className="relative w-full max-w-md rounded-3xl bg-[#0c1026] border-2 border-amber-500/70 p-6 shadow-2xl text-right space-y-4">
@@ -634,6 +623,15 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
               <button onClick={() => setEditingUser(null)} className="text-slate-400 hover:text-white">✕</button>
             </div>
             <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">اسم المستخدم (اليوزر):</label>
+                <input
+                  type="text"
+                  disabled
+                  value={editingUser.username}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-400 font-bold text-xs cursor-not-allowed"
+                />
+              </div>
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">اسم الطالب الكامل:</label>
                 <input
@@ -667,7 +665,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
               </div>
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
                 <button type="button" onClick={() => setEditingUser(null)} className="px-4 py-2 rounded-xl bg-slate-900 text-slate-300 text-xs font-bold">إلغاء</button>
-                <button type="submit" className="px-6 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-black">حفظ</button>
+                <button type="submit" className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black">حفظ</button>
               </div>
             </form>
           </div>
