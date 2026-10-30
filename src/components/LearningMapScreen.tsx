@@ -396,45 +396,6 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
             {/* Video preview in Stage Intro if available */}
             <StageIntroVideoPlayer levelNumber={selectedIntroLevel.levelNumber} />
 
-            {/* Stage Objectives */}
-            <div className="p-4 rounded-2xl bg-[#080b18] border border-blue-500/30 mb-4">
-              <h4 className="text-xs font-black text-blue-300 font-['Cairo'] mb-2.5 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-blue-400" />
-                <span>أهداف المرحلة:</span>
-              </h4>
-              <ul className="space-y-1.5 text-xs text-slate-200">
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-400 font-bold">1.</span>
-                  <span>فهم وتطبيق المفاهيم المعرفية التخصصية الخاصة بـ {selectedIntroLevel.shortTitle}.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-400 font-bold">2.</span>
-                  <span>التعرف على الأدوات واللوحات الإجرائية في بيئة عمل Adobe Captivate 2019.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-400 font-bold">3.</span>
-                  <span>حل الأنشطة والمهام التقويمية بكفاءة للحصول على وسام {selectedIntroLevel.badgeName}.</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Targeted Skills */}
-            <div className="p-4 rounded-2xl bg-[#080b18] border border-purple-500/30 mb-6">
-              <h4 className="text-xs font-black text-purple-300 font-['Cairo'] mb-2.5 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-purple-400" />
-                <span>المهارات المستهدفة:</span>
-              </h4>
-              <ul className="space-y-1.5 text-xs text-slate-200">
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-400 font-bold">1.</span>
-                  <span>مهارة الإنتاج والتصميم العملي في المشروع التفاعلي.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-400 font-bold">2.</span>
-                  <span>مهارة التقييم الذاتي والتأكد من توافق الخيارات وفق المعايير التعليمية.</span>
-                </li>
-              </ul>
-            </div>
 
             {/* Action Buttons: Go to Content vs Go to Activity */}
             {/* Action Button: Go to Game Challenge Activity */}
@@ -568,7 +529,7 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
           onComplete={() => {
             const lvl = loadingLevelForGame;
             setLoadingLevelForGame(null);
-            setSelectedIntroLevel(lvl);
+            onSelectStageForActivity(lvl.levelNumber);
           }}
           onCancel={() => setLoadingLevelForGame(null)}
         />
