@@ -102,7 +102,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const [isVideoOpen, setIsVideoOpen] = useState<boolean>(true);
   const [loadingLevelForGame, setLoadingLevelForGame] = useState<GameLevelDef | null>(null);
 
-  // Section 1 Hearts per level: starts at 1 heart (❤️)
+  // Section 1 Hearts per level: starts at 2 hearts (❤️❤️)
   const [heartsPerLevel, setHeartsPerLevel] = useState<Record<number, number>>({});
   // Section 1 Score earned per level (25 points or 0)
   const [section1ScorePerLevel, setSection1ScorePerLevel] = useState<Record<number, number>>(() => {
@@ -305,8 +305,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   const q1 = currentLevelDef.questions[0];
   const q1Points = currentLevelDef.section1Score ?? q1?.points ?? 25;
-  const currentHearts = heartsPerLevel[selectedLevelNum] ?? 1;
-  const isSection1Done = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined);
+  const currentHearts = heartsPerLevel[selectedLevelNum] ?? 2;
+  const isSection1Done = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined && section1ScorePerLevel[selectedLevelNum] > 0);
 
   // Section 1: Heart-based question challenge handler
   const handleVideoSeek = () => {
@@ -337,8 +337,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
     if (isCorrect) {
       // Correct! Award points with deduction for lost hearts (5 points per lost heart)
-      const hearts = heartsPerLevel[selectedLevelNum] ?? 1;
-      const lostHearts = 1 - hearts;
+      const hearts = heartsPerLevel[selectedLevelNum] ?? 2;
+      const lostHearts = 2 - hearts;
       const deduction = lostHearts * 5;
       const finalScore = Math.max(0, q1Points - deduction);
 
@@ -349,16 +349,19 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       setLastHeartWarning(null);
     } else {
       // Incorrect!
-      const hearts = heartsPerLevel[selectedLevelNum] ?? 1;
-      if (hearts === 1) {
+      const hearts = heartsPerLevel[selectedLevelNum] ?? 2;
+      if (hearts === 2) {
+        setHeartsPerLevel((prev) => ({ ...prev, [selectedLevelNum]: 1 }));
+        setLastHeartWarning('إجابة غير صحيحة! فقدت قلباً واحداً، وخسرت 5 درجات من محاولتك. تبقت لك فرصة واحدة ❤️');
+      } else if (hearts === 1) {
         setHeartsPerLevel((prev) => ({ ...prev, [selectedLevelNum]: 0 }));
-        setLastHeartWarning('إجابة غير صحيحة! لقد استخدمت قلب المحاولة الوحيد، وتم خصم 5 درجات. تبقت لك محاولة أخيرة للإجابة الصحيحة! ⚠️');
+        setLastHeartWarning('إجابة غير صحيحة! فقدت قلباً ثانياً وخسرت 5 درجات إضافية. ليس لديك حياة وهذه آخر محاولة!');
       } else {
         setSection1ScorePerLevel((prev) => ({
           ...prev,
           [selectedLevelNum]: 0,
         }));
-        setLastHeartWarning('انتهت المحاولات! الإجابة الصحيحة موضحة بالبطاقة، وتم رصد 0 درجة لهذا التحدي.');
+        setLastHeartWarning('انتهت المحاولات! الإجابة الصحيحة موضحة بالبطاقة.');
       }
     }
   };
@@ -924,11 +927,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 onSeek={handleVideoSeek}
               />
             )}
-            {/* Inline Video Score Display */}
-            <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-emerald-500/30 flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-300">درجة مشاهدة الفيديو:</span>
-              <span className="text-sm font-black text-emerald-400">{(selectedLevelNum === 1 ? (videoScorePerLevel[1] ?? 25) : 0)} / 25 XP</span>
-            </div>
           </div>
         )}
 
@@ -1092,12 +1090,19 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               <div className="flex items-center gap-3 self-end sm:self-auto bg-slate-900/90 px-4 py-2.5 rounded-2xl border border-rose-500/50 shadow-inner">
                 <span className="text-xs text-rose-200 font-bold">طاقة المحاولة:</span>
                 <div className="flex items-center gap-1.5 text-2xl">
-                  {currentHearts >= 1 ? (
+                  {currentHearts >= 2 ? (
                     <>
-                      <span className="text-rose-500 animate-pulse" title="قلب محاولة متاح">❤️</span>
+                      <span className="text-rose-500 animate-pulse" title="قلب محاولة 1">❤️</span>
+                      <span className="text-rose-500 animate-pulse" title="قلب محاولة 2">❤️</span>
+                    </>
+                  ) : currentHearts === 1 ? (
+                    <>
+                      <span className="text-rose-500 animate-pulse" title="تبقى قلب محاولة واحد">❤️</span>
+                      <span className="text-slate-600 opacity-60" title="فقدت قلباً">🖤</span>
                     </>
                   ) : (
                     <>
+                      <span className="text-slate-600 opacity-60" title="نفدت القلوب">🖤</span>
                       <span className="text-slate-600 opacity-60" title="نفدت القلوب">🖤</span>
                     </>
                   )}
@@ -1151,13 +1156,12 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     : chosenAnswers[q1.id];
                   const isSelected = chosen === optIdx;
                   const isCorrect = optIdx === q1.correctIndex;
-                  const isFinalized = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined);
                   const isPassed = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined && section1ScorePerLevel[selectedLevelNum] > 0);
 
                   let cardStyle = 'bg-slate-900/90 border-slate-700/80 text-slate-100 hover:border-amber-400/80 hover:bg-slate-800/90';
-                  if (isFinalized && isCorrect) {
+                  if (isPassed && isCorrect) {
                     cardStyle = 'bg-emerald-950/80 border-2 border-emerald-400 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.3)] font-bold';
-                  } else if (isFinalized && isSelected && !isCorrect) {
+                  } else if (isPassed && isSelected && !isCorrect) {
                     cardStyle = 'bg-red-950/60 border-red-500/80 text-red-300 line-through opacity-70';
                   } else if (isSelected) {
                     cardStyle = 'bg-amber-950/80 border-2 border-amber-400 text-amber-200 font-bold shadow-[0_0_15px_rgba(251,191,36,0.3)]';
@@ -1167,10 +1171,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     <button
                       key={optIdx}
                       type="button"
-                      disabled={isFinalized}
+                      disabled={isLevelCompleted || isPassed}
                       onClick={() => handleSelectSection1Option(optIdx)}
                       className={`p-4 rounded-2xl border-2 text-right transition-all flex flex-col justify-between gap-3 ${
-                        isFinalized ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01]'
+                        isLevelCompleted || isPassed ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01]'
                       } ${cardStyle}`}
                     >
                       <div className="flex items-start justify-between gap-3 w-full">
@@ -1191,18 +1195,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     </button>
                   );
                 })}
-              </div>
-
-              {/* Inline Scores Display under Question Card */}
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                 <div className="p-3 rounded-xl bg-slate-950/60 border border-amber-500/30 flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-300">درجة سؤال التحدي:</span>
-                    <span className="text-sm font-black text-amber-400">{section1ScorePerLevel[selectedLevelNum] ?? 0} / 25 XP</span>
-                 </div>
-                 <div className="p-3 rounded-xl bg-slate-950/60 border border-cyan-500/30 flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-300">درجة رفع النشاط:</span>
-                    <span className="text-sm font-black text-cyan-400">{(selectedLevelNum === 1 ? (studentActivity ? 50 : 0) : activityScorePerLevel[selectedLevelNum] || 0)} / {(selectedLevelNum === 1 ? 50 : (currentLevelDef.section2Score || 25))} XP</span>
-                 </div>
               </div>
 
               {/* Explanation in Immediate Feedback mode */}
@@ -1298,11 +1290,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
                     {levelActivityConfig?.instructions || currentLevelDef.activityPrompt || 'قم برفع ملف تطبيقك العملي أو مخرج التدريب لهذا المستوى. يقبل النظام جميع امتدادات الفيديو، الصور، ومستندات PDF.'}
                   </p>
-                  {/* Activity Score Label */}
-                  <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-400/40 text-cyan-300 text-[11px] font-bold">
-                    <span>💎 درجة رفع النشاط:</span>
-                    <span className="font-black">{(selectedLevelNum === 1 ? 50 : (currentLevelDef.section2Score || 25))} XP</span>
-                  </div>
                 </div>
               </div>
 
