@@ -25,8 +25,6 @@ import { AdminSiteTitleManager } from './AdminSiteTitleManager';
 import { AdminLevelInstructionsManager } from './AdminLevelInstructionsManager';
 import { CollaborativeGroupsChat } from './CollaborativeGroupsChat';
 import { AdminStudentActivitiesManager } from './AdminStudentActivitiesManager';
-import { AdminQuestionsManager } from './AdminQuestionsManager';
-import { FileQuestion } from 'lucide-react';
 
 interface AdminPanelProps {
   onExitAdmin: () => void;
@@ -44,7 +42,6 @@ type AdminTab =
   | 'instructions_standards'
   | 'videos'
   | 'splash'
-  | 'questions_manager'
   | 'supervisors';
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsStudent }) => {
@@ -260,20 +257,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
               <Award className="w-4 h-4 text-sky-700" />
               <span>لوحة المشرفين</span>
             </button>
-
-            {/* TAB: إدارة الأسئلة والدرجات */}
-            <button
-              type="button"
-              onClick={() => setActiveTab('questions_manager')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'questions_manager'
-                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
-                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
-              }`}
-            >
-              <FileQuestion className="w-4 h-4 text-sky-700" />
-              <span>إدارة الأسئلة والدرجات 🎯</span>
-            </button>
           </div>
         </div>
       </div>
@@ -296,7 +279,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
         {activeTab === 'instructions_standards' && <AdminInstructionsManager />}
         {activeTab === 'videos' && <AdminVideoManager />}
         {activeTab === 'supervisors' && <AdminSupervisorsHonorManager />}
-        {activeTab === 'questions_manager' && <AdminQuestionsManager />}
       </div>
     </div>
   );

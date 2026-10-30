@@ -174,8 +174,7 @@ export function submitLevelChallenge(
   levelNumber: number,
   chosenAnswers: Record<string, number>, // questionId -> chosen option index
   timeSpentSeconds: number,
-  appliedActivityScore: number = 0,
-  section1ScoreOverride?: number
+  appliedActivityScore: number = 0
 ): {
   progress: StudentGameProgress;
   levelResult: CompletedLevelResult;
@@ -203,12 +202,7 @@ export function submitLevelChallenge(
     const qPoints = idx === 0 ? (levelDef.section1Score ?? q.points ?? 25) : q.points;
     const chosen = chosenAnswers[q.id];
     const isCorrect = chosen === q.correctIndex;
-    
-    // If it's the first question and we have an override (e.g. from hearts deduction), use it
-    if (idx === 0 && section1ScoreOverride !== undefined) {
-      scoreGained += section1ScoreOverride;
-      questionScores[q.id] = section1ScoreOverride;
-    } else if (isCorrect) {
+    if (isCorrect) {
       scoreGained += qPoints;
       questionScores[q.id] = qPoints;
     } else {

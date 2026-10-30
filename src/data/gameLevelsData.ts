@@ -753,49 +753,6 @@ export function replaceMediaInLevel(
   return levels;
 }
 
-export function updateQuestionInLevel(
-  levelNumber: number,
-  questionId: string,
-  updates: Partial<LevelQuestion>
-): GameLevelDef[] {
-  const levels = getCustomGameLevels();
-  const target = levels.find((l) => l.levelNumber === levelNumber);
-  if (!target) return levels;
-
-  const qIdx = target.questions.findIndex((q) => q.id === questionId);
-  if (qIdx !== -1) {
-    target.questions[qIdx] = { ...target.questions[qIdx], ...updates };
-    saveCustomGameLevels(levels, true);
-  }
-  return levels;
-}
-
-export function addQuestionToLevel(
-  levelNumber: number,
-  question: LevelQuestion
-): GameLevelDef[] {
-  const levels = getCustomGameLevels();
-  const target = levels.find((l) => l.levelNumber === levelNumber);
-  if (!target) return levels;
-
-  target.questions.push(question);
-  saveCustomGameLevels(levels, true);
-  return levels;
-}
-
-export function deleteQuestionFromLevel(
-  levelNumber: number,
-  questionId: string
-): GameLevelDef[] {
-  const levels = getCustomGameLevels();
-  const target = levels.find((l) => l.levelNumber === levelNumber);
-  if (!target) return levels;
-
-  target.questions = target.questions.filter((q) => q.id !== questionId);
-  saveCustomGameLevels(levels, true);
-  return levels;
-}
-
 export function updateMediaItemInLevel(
   levelNumber: number,
   mediaId: string,
