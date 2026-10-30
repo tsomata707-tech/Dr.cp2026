@@ -22,6 +22,7 @@ import { StudentWelcomeFloatingCard } from './StudentWelcomeFloatingCard';
 import { getSupervisorsBoardConfig } from '../utils/supervisorsStorage';
 import { getGroupByUsername } from '../data/studentAccounts';
 import { getStudentProgress, getAllStudentsProgress, saveAllStudentsProgress } from '../utils/gameStorage';
+import { subscribeToStudentProgress } from '../utils/realtimeService';
 import { GAME_LEVELS_DATA } from '../data/gameLevelsData';
 import {
   GraduationCap,
@@ -193,14 +194,27 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
     window.addEventListener('cp_admin_switch_group', handleAdminSwitchGroup);
     window.addEventListener('cp_open_collab_chat', handleOpenCollabChatEvent);
     window.addEventListener('cp_navigate_to_collab_chat', handleOpenCollabChatEvent);
+
+    // 5. Subscribe to real-time progress from Firebase RTDB for cross-device sync
+    const unsubProgress = subscribeToStudentProgress(username, (cloudProg) => {
+      if (cloudProg) {
+        // Update local state and localStorage if cloud has data
+        setStudentGame(cloudProg);
+        const all = getAllStudentsProgress();
+        all[username] = cloudProg;
+        saveAllStudentsProgress(all);
+      }
+    });
+
     return () => {
       window.removeEventListener('cp_navigate_to_student_home', handleReturnToStudentHome);
       window.removeEventListener('cp_navigate_to_posttest', handleNavToPosttest);
       window.removeEventListener('cp_admin_switch_group', handleAdminSwitchGroup);
       window.removeEventListener('cp_open_collab_chat', handleOpenCollabChatEvent);
       window.removeEventListener('cp_navigate_to_collab_chat', handleOpenCollabChatEvent);
+      unsubProgress();
     };
-  }, []);
+  }, [username]);
 
   const refreshProgress = () => {
     setStudentGame(getStudentProgress(username));

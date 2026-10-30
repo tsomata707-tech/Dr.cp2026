@@ -409,6 +409,34 @@ export const syncStudentProgressToFirestore = async (progress: StudentGameProgre
 };
 
 /**
+ * Subscribe to a single student's progress for cross-device sync
+ */
+export const subscribeToStudentProgress = (
+  username: string,
+  onUpdate: (prog: StudentGameProgress | null) => void
+): (() => void) => {
+  try {
+    const studentRef = ref(rtdb, `studentsProgress/${username}`);
+    const unsubscribe = onValue(
+      studentRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          onUpdate(snapshot.val() as StudentGameProgress);
+        } else {
+          onUpdate(null);
+        }
+      },
+      (error) => {
+        console.warn(`Error listening to student progress (${username}):`, error);
+      }
+    );
+    return unsubscribe;
+  } catch {
+    return () => {};
+  }
+};
+
+/**
  * Subscribe to all students progress for live analytics in RTDB
  */
 export const subscribeToAllStudentsProgress = (
@@ -430,7 +458,6 @@ export const subscribeToAllStudentsProgress = (
         console.warn('Error listening to all students progress in RTDB:', error);
       }
     );
-
     return unsubscribe;
   } catch {
     return () => {};

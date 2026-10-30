@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Trophy, Medal, Award, Crown, Star, Sparkles, UserCheck, Play, ArrowLeft } from 'lucide-react';
 import { SupervisorsHonorBoard } from './SupervisorsHonorBoard';
-import { getAllStudentsProgress } from '../utils/gameStorage';
+import { getAllStudentsProgress, saveAllStudentsProgress } from '../utils/gameStorage';
 import { getGroupByUsername } from '../data/studentAccounts';
 import { CARTOON_AVATARS } from '../data/gameLevelsData';
+import { subscribeToAllStudentsProgress } from '../utils/realtimeService';
+import { StudentGameProgress } from '../types';
 
 export interface HonorStudent {
   id: string;
@@ -33,18 +35,31 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
 }) => {
   const [activeView, setActiveView] = useState<'supervisors' | 'students'>(defaultView);
 
+  const [allStudentsProgress, setAllStudentsProgress] = useState<Record<string, StudentGameProgress>>(() => getAllStudentsProgress());
+
+  // Subscribe to real-time updates for all students to keep the leaderboard alive!
+  useEffect(() => {
+    const unsubscribe = subscribeToAllStudentsProgress((cloudMap) => {
+      if (cloudMap && Object.keys(cloudMap).length > 0) {
+        setAllStudentsProgress(cloudMap);
+        // Sync to local storage to ensure consistency
+        saveAllStudentsProgress(cloudMap);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Compute REAL students from actual game progress (no mock/fake data)
   const realHonorStudents: HonorStudent[] = useMemo(() => {
-    const allProgress = getAllStudentsProgress();
-    const studentsList = Object.values(allProgress);
+    const studentsList = Object.values(allStudentsProgress);
 
     // Only include students who have started, scored points, or completed levels (excluding read-only admin)
     const activeOnes = studentsList.filter(
-      (s) => s.username.toLowerCase() !== 'admin' && (s.totalScore > 0 || Object.keys(s.completedLevels || {}).length > 0)
+      (s: StudentGameProgress) => s.username.toLowerCase() !== 'admin' && (s.totalScore > 0 || Object.keys(s.completedLevels || {}).length > 0)
     );
 
     // Sort by real score descending
-    activeOnes.sort((a, b) => b.totalScore - a.totalScore);
+    activeOnes.sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
 
     return activeOnes.map((s, index) => {
       const groupMeta = getGroupByUsername(s.username);
@@ -65,7 +80,7 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
         specialty: 'تكنولوجيا التعليم - جامعة طنطا',
       };
     });
-  }, [currentUsername]);
+  }, [allStudentsProgress]);
 
   return (
     <section className="space-y-6 text-right font-['Cairo',_sans-serif]" id="honor-board-section">
