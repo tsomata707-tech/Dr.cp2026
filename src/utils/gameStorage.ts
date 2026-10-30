@@ -35,7 +35,11 @@ export function getAllStudentsProgress(): Record<string, StudentGameProgress> {
     const raw = localStorage.getItem(GAME_STORAGE_KEY);
     if (!raw) {
       const cleanReal = generateCleanRealStudents();
-      localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(cleanReal));
+      try {
+        localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(cleanReal));
+      } catch (e) {
+        console.warn("Failed to initialize game storage in localStorage:", e);
+      }
       return cleanReal;
     }
     const parsed = JSON.parse(raw);
@@ -54,16 +58,21 @@ export function getAllStudentsProgress(): Record<string, StudentGameProgress> {
 export function saveAllStudentsProgress(all: Record<string, StudentGameProgress>): void {
   const stripped = JSON.parse(JSON.stringify(all));
   Object.keys(stripped).forEach((username) => {
-    if (stripped[username].preTestResult) {
-      delete stripped[username].preTestResult.questionDetails;
-    }
-    if (stripped[username].postTestResult) {
-      delete stripped[username].postTestResult.questionDetails;
-    }
-    if (stripped[username].completedLevels) {
-      Object.keys(stripped[username].completedLevels).forEach((lvl) => {
-        delete stripped[username].completedLevels[lvl].questionDetails;
-      });
+    const s = stripped[username];
+    if (s) {
+      if (s.preTestResult) {
+        delete s.preTestResult.questionDetails;
+      }
+      if (s.postTestResult) {
+        delete s.postTestResult.questionDetails;
+      }
+      if (s.completedLevels) {
+        Object.keys(s.completedLevels).forEach((lvl) => {
+          if (s.completedLevels[lvl]) {
+            delete s.completedLevels[lvl].questionDetails;
+          }
+        });
+      }
     }
   });
   try {
@@ -75,11 +84,11 @@ export function saveAllStudentsProgress(all: Record<string, StudentGameProgress>
 
 export function calculateStudentTotalScore(prog: StudentGameProgress): number {
   const levelsScore = Object.values(prog.completedLevels || {}).reduce(
-    (acc, lvl) => acc + (lvl.score || 0),
+    (acc, lvl) => acc + (lvl?.score || 0),
     0
   );
   const activitiesScore = Object.values(prog.studentActivities || {}).reduce(
-    (acc, act) => acc + (act.grade || 0),
+    (acc, act) => acc + (act?.grade || 0),
     0
   );
   return levelsScore + activitiesScore;
@@ -324,7 +333,11 @@ export function submitLevelChallenge(
           completedAt: new Date().toISOString(),
           score: scoreGained,
         };
+      try {
         localStorage.setItem(collabTeamStateKey, JSON.stringify(teamAnswers));
+      } catch (e) {
+        console.warn("Failed to save collab team state:", e);
+      }
       } catch {}
     }
   }
@@ -445,7 +458,11 @@ export function resetStudentProgress(username: string): StudentGameProgress {
 
 export function resetAllStudentsToRealCleanState(): Record<string, StudentGameProgress> {
   const clean = generateCleanRealStudents();
-  localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(clean));
+  try {
+    localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(clean));
+  } catch (e) {
+    console.warn("Failed to reset game storage in localStorage:", e);
+  }
 
   // Clear global collaborative team answers & student activity submissions & test access audits
   try {

@@ -396,7 +396,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       // Levels metrics
       const completedLevels = prog.completedLevels || {};
       const completedLevelsCount = Object.keys(completedLevels).length;
-      const totalLevelsScore = Object.values(completedLevels).reduce((acc, l) => acc + (l.score || 0), 0);
+      const totalLevelsScore = Object.values(completedLevels).reduce((acc, l) => acc + (l?.score || 0), 0);
 
       return {
         username,
