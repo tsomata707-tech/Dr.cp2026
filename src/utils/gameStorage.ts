@@ -183,7 +183,9 @@ export function submitLevelChallenge(
   levelNumber: number,
   chosenAnswers: Record<string, number>, // questionId -> chosen option index
   timeSpentSeconds: number,
-  appliedActivityScore: number = 0
+  appliedActivityScore: number = 0,
+  s1ScoreOverride?: number,
+  videoScore: number = 0
 ): {
   progress: StudentGameProgress;
   levelResult: CompletedLevelResult;
@@ -212,8 +214,9 @@ export function submitLevelChallenge(
     const chosen = chosenAnswers[q.id];
     const isCorrect = chosen === q.correctIndex;
     if (isCorrect) {
-      scoreGained += qPoints;
-      questionScores[q.id] = qPoints;
+      const actualScore = (idx === 0 && s1ScoreOverride !== undefined) ? s1ScoreOverride : qPoints;
+      scoreGained += actualScore;
+      questionScores[q.id] = actualScore;
     } else {
       questionScores[q.id] = 0;
     }
@@ -252,6 +255,22 @@ export function submitLevelChallenge(
     questionText: `النشاط التطبيقي التفاعلي للمستوى ${levelNumber}`,
     domain: `المستوى ${levelNumber}: ${levelDef.title}`,
   };
+
+  // Add video score (Level 1 only usually, but supported for all)
+  if (videoScore > 0 || levelNumber === 1) {
+    scoreGained += videoScore;
+    questionScores['video_watch'] = videoScore;
+    questionDetails['video_watch'] = {
+      chosenIndex: videoScore >= 25 ? 1 : 0,
+      isCorrect: videoScore > 0,
+      answeredAt: completedAtStr,
+      chosenText: videoScore >= 25 ? 'تمت مشاهدة الفيديو بالكامل دون تقديم أو تأخير' : `تمت مشاهدة الفيديو مع تقديم/تأخير (الدرجة: ${videoScore})`,
+      correctText: 'مشاهدة الفيديو التعليمي كاملاً دون تخطي',
+      explanation: 'الالتزام بمشاهدة الفيديو التعليمي يمنحك الدرجة الكاملة.',
+      questionText: 'مشاهدة الفيديو التعليمي للمستوى',
+      domain: `المستوى ${levelNumber}: ${levelDef.title}`,
+    };
+  }
 
   // Determine feedback mode from group:
   // G1 (فوري) & G3 (فوري) -> immediate feedback to student

@@ -18,6 +18,7 @@ interface MultiPartVideoPlayerProps {
   title?: string;
   className?: string;
   showHeader?: boolean;
+  onSeek?: () => void;
 }
 
 export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
@@ -25,6 +26,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
   title,
   className = '',
   showHeader = true,
+  onSeek,
 }) => {
   const [selectedPartIndex, setSelectedPartIndex] = useState<number>(0);
 
@@ -129,6 +131,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
             controls
             preload="metadata"
             className="w-full h-full object-contain"
+            onSeeking={() => onSeek?.()}
           />
         )}
       </div>

@@ -78,7 +78,7 @@ export const LevelTransitionLoader5s: React.FC<LevelTransitionLoader5sProps> = (
           </h2>
 
           <p className="text-xs sm:text-sm text-slate-300">
-            انتظر 5 ثوانٍ للتحميل وتجهيز المحتوى والأنشطة التالية...
+            جاري التحميل... انتظر 5 ثوانٍ لتجهيز المحتوى والأنشطة التالية...
           </p>
         </div>
 

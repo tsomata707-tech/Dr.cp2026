@@ -139,6 +139,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   const [lastHeartWarning, setLastHeartWarning] = useState<string | null>(null);
 
+  // Level 1 specific tracking for penalties (Video and Hearts)
+  const [videoSeekedPerLevel, setVideoSeekedPerLevel] = useState<Record<number, boolean>>({});
+  const [videoScorePerLevel, setVideoScorePerLevel] = useState<Record<number, number>>({ 1: 25 });
+  const [section1HeartsUsed, setSection1HeartsUsed] = useState<Record<number, boolean>>({});
+
   // 5-second transition state as requested: "وبعدها شريط تحميل ٥ ثواني مكتوب أعلاه جاري الانتقال الي ليفل ٢"
   const [isTransitioning5s, setIsTransitioning5s] = useState<boolean>(false);
   const [transitionTargetLevel, setTransitionTargetLevel] = useState<number>(2);
@@ -304,6 +309,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const isSection1Done = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined && section1ScorePerLevel[selectedLevelNum] > 0);
 
   // Section 1: Heart-based question challenge handler
+  const handleVideoSeek = () => {
+    if (selectedLevelNum === 1 && !videoSeekedPerLevel[1]) {
+      setVideoSeekedPerLevel((prev) => ({ ...prev, [1]: true }));
+      setVideoScorePerLevel((prev) => ({ ...prev, [1]: 20 }));
+    }
+  };
+
   const handleSelectSection1Option = (optIdx: number) => {
     if (isLevelCompleted || isSection1Done) return;
     if (!q1) return;
@@ -467,7 +479,19 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     }
 
     const s1ScoreOverride = section1ScorePerLevel[selectedLevelNum];
-    const s2Score = activityScorePerLevel[selectedLevelNum] ?? (currentLevelDef.section2Score ?? 25);
+    let s2Score = activityScorePerLevel[selectedLevelNum] ?? (currentLevelDef.section2Score ?? 25);
+
+    // Special Scoring for Level 1: Activity Upload is worth 50 points
+    if (selectedLevelNum === 1) {
+      s2Score = studentActivity ? 50 : 0;
+      
+      const isS2Done = activityScorePerLevel[1] !== undefined && activityScorePerLevel[1] > 0;
+      if (!isAdmin && !isS2Done && !isLevelCompleted) {
+        alert('يرجى إنهاء النشاط التفاعلي (القسم الثاني) أولاً للحصول على الدرجة');
+        return;
+      }
+    }
+    const videoScore = selectedLevelNum === 1 ? (videoScorePerLevel[1] ?? 25) : 0;
 
     const { progress: updatedProgress, levelResult, isImmediateFeedback } = submitLevelChallenge(
       username,
@@ -475,7 +499,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       chosenAnswers,
       60,
       s2Score,
-      s1ScoreOverride
+      s1ScoreOverride,
+      videoScore
     );
 
     // Mark level test completed in test access audit
@@ -852,7 +877,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             <div className="text-right">
               <span className="text-[10px] text-slate-400 block font-['Cairo']">إجمالي النقاط المتاحة</span>
               <span className="text-xl font-black text-amber-300 font-['Outfit']">
-                {currentLevelDef.questions.length * 50} XP
+                {currentLevelDef.totalMaxScore || (currentLevelDef.questions.length * 50)} XP
               </span>
             </div>
           </div>
@@ -899,6 +924,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   ),
                 ]}
                 title={`شرح المستوى ${selectedLevelNum}: ${currentLevelDef.title}`}
+                onSeek={handleVideoSeek}
               />
             )}
           </div>
@@ -1206,14 +1232,19 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 <span>درجة المستوى {selectedLevelNum} الإجمالية:</span>
               </span>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                {selectedLevelNum === 1 && (
+                  <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
+                    مشاهدة الفيديو: <strong className="text-emerald-400">{videoScorePerLevel[1] ?? 25} / 25 XP</strong>
+                  </span>
+                )}
                 <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                  القسم 1 (تحدي المعرفة): <strong className="text-amber-400">{section1ScorePerLevel[selectedLevelNum] || (chosenAnswers[q1?.id] === q1?.correctIndex ? q1Points : 0)} / {q1Points} XP</strong>
+                  سؤال التحدي (25 درجة): <strong className="text-amber-400">{section1ScorePerLevel[selectedLevelNum] || (chosenAnswers[q1?.id] === q1?.correctIndex ? q1Points : 0)} / {q1Points} XP</strong>
                 </span>
                 <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                  القسم 2 (النشاط التطبيقي): <strong className="text-cyan-400">{activityScorePerLevel[selectedLevelNum] || (isLevelCompleted ? (currentLevelDef.section2Score || 25) : 0)} / {currentLevelDef.section2Score || 25} XP</strong>
+                  النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{activityScorePerLevel[selectedLevelNum] || (isLevelCompleted ? (currentLevelDef.section2Score || 25) : 0)} / {currentLevelDef.section2Score || 25} XP</strong>
                 </span>
                 <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
-                  المجموع المعتمد: {(section1ScorePerLevel[selectedLevelNum] || (chosenAnswers[q1?.id] === q1?.correctIndex ? q1Points : 0)) + (activityScorePerLevel[selectedLevelNum] || (isLevelCompleted ? (currentLevelDef.section2Score || 25) : 0))} / {currentLevelDef.totalMaxScore || 50} XP
+                  المجموع المعتمد للمستوى: {(selectedLevelNum === 1 ? (videoScorePerLevel[1] ?? 25) : 0) + (section1ScorePerLevel[selectedLevelNum] || (chosenAnswers[q1?.id] === q1?.correctIndex ? q1Points : 0)) + (activityScorePerLevel[selectedLevelNum] || (isLevelCompleted ? (currentLevelDef.section2Score || 25) : 0))} / {currentLevelDef.totalMaxScore || 50} XP
                 </span>
               </div>
             </div>
