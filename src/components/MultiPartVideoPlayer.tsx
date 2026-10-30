@@ -201,8 +201,8 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
               <span>الجزء السابق</span>
             </button>
 
-            <span className="text-[11px] text-slate-400 font-bold">
-              الجزء {selectedPartIndex + 1} من {videos.length}
+            <span className="text-[11px] text-slate-300 font-bold">
+              {currentVideo.partCustomTitle || `الجزء ${selectedPartIndex + 1}`} ({selectedPartIndex + 1} من {videos.length})
             </span>
 
             <button

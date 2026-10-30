@@ -19,6 +19,8 @@ import {
   Globe,
   Layers,
   Film,
+  Edit2,
+  Edit3,
 } from 'lucide-react';
 import { EducationalVideo, VideoSlotDef } from '../types';
 import {
@@ -43,15 +45,25 @@ export const AdminVideoManager: React.FC = () => {
   // Upload Mode: 'file' (from device) or 'url' (web link / youtube)
   const [uploadSource, setUploadSource] = useState<'file' | 'url'>('file');
 
-  // Form State (Video Name, Target Slot, Part Number, and Auto-detected Actual Duration)
+  // Form State (Video Name, Target Slot, Part Number, Part Custom Title, and Auto-detected Duration)
   const [title, setTitle] = useState('');
   const [targetSlotId, setTargetSlotId] = useState(VIDEO_SLOTS[0].slotId);
   const [partNumber, setPartNumber] = useState<number>(1);
+  const [partCustomTitle, setPartCustomTitle] = useState<string>('الجزء 1');
   const [videoUrl, setVideoUrl] = useState('');
   const [videoType, setVideoType] = useState<'youtube' | 'mp4' | 'file'>('file');
   const [actualDuration, setActualDuration] = useState<string>('04:30 دقيقة');
   const [blobId, setBlobId] = useState<string | undefined>(undefined);
   const [fileName, setFileName] = useState<string | null>(null);
+
+  // Edit Video & Part Name State (Modal for editing existing part titles, e.g. changing 'جزء 1' to custom name)
+  const [editingVideo, setEditingVideo] = useState<EducationalVideo | null>(null);
+  const [editPartCustomTitle, setEditPartCustomTitle] = useState<string>('');
+  const [editTitle, setEditTitle] = useState<string>('');
+  const [editPartNumber, setEditPartNumber] = useState<number>(1);
+  const [editVideoUrl, setEditVideoUrl] = useState<string>('');
+  const [editFormError, setEditFormError] = useState<string | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
 
   // Processing & Feedback State
   const [isProcessingFile, setIsProcessingFile] = useState(false);
@@ -181,6 +193,7 @@ export const AdminVideoManager: React.FC = () => {
     );
     setTargetSlotId(slot);
     setPartNumber(nextPart);
+    setPartCustomTitle(`الجزء ${nextPart}`);
     setVideoUrl('');
     setUploadSource('file');
     setVideoType('file');
@@ -292,11 +305,13 @@ export const AdminVideoManager: React.FC = () => {
     try {
       const slotDef = VIDEO_SLOTS.find((s) => s.slotId === targetSlotId);
       const slotName = slotDef ? slotDef.name : targetSlotId;
+      const customPartLabel = partCustomTitle.trim() || `الجزء ${partNumber}`;
 
       addEducationalVideo({
         title: finalTitle,
         partNumber,
-        partTitle: `الجزء ${partNumber}: ${finalTitle}`,
+        partCustomTitle: customPartLabel,
+        partTitle: `${customPartLabel}: ${finalTitle}`,
         targetSlotId,
         videoUrl: videoUrl.trim(),
         videoType,
@@ -306,14 +321,14 @@ export const AdminVideoManager: React.FC = () => {
       });
 
       addActivityLog(
-        `تم رفع ونشر فيديو: "${finalTitle}" (الجزء ${partNumber}) في ${slotName} - المدة الفعلية: ${actualDuration}`,
+        `تم رفع ونشر فيديو: "${finalTitle}" (${customPartLabel}) في ${slotName} - المدة الفعلية: ${actualDuration}`,
         'المشرف',
         'success'
       );
 
       // Success Notification
       setSuccessMessage(
-        `✅ تم رفع ونشر الجزء ${partNumber} بنجاح! متاح الآن لجميع الطلاب في: ${slotName} (المدة الفعلية: ${actualDuration}).`
+        `✅ تم رفع ونشر (${customPartLabel}) بنجاح! متاح الآن لجميع الطلاب في: ${slotName} (المدة الفعلية: ${actualDuration}).`
       );
       refreshVideos();
       setIsPublishing(false);
@@ -324,6 +339,55 @@ export const AdminVideoManager: React.FC = () => {
     } catch (err: any) {
       setIsPublishing(false);
       setFormError(err?.message || 'حدث خطأ أثناء نشر الفيديو، يرجى المحاولة مرة أخرى.');
+    }
+  };
+
+  // 🌟 Edit Part Name & Video Details Handler
+  const handleOpenEdit = (v: EducationalVideo) => {
+    setEditingVideo(v);
+    setEditPartCustomTitle(v.partCustomTitle || (v.partNumber ? `الجزء ${v.partNumber}` : 'الجزء 1'));
+    setEditTitle(v.title);
+    setEditPartNumber(v.partNumber || 1);
+    setEditVideoUrl(v.videoUrl);
+    setEditFormError(null);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingVideo) return;
+
+    const finalTitle = editTitle.trim();
+    if (!finalTitle) {
+      setEditFormError('يرجى إدخال اسم أو عنوان الفيديو.');
+      return;
+    }
+
+    const finalCustomPart = editPartCustomTitle.trim() || (editPartNumber ? `الجزء ${editPartNumber}` : 'الجزء 1');
+    setIsSavingEdit(true);
+
+    try {
+      updateEducationalVideo(editingVideo.id, {
+        title: finalTitle,
+        partNumber: editPartNumber,
+        partCustomTitle: finalCustomPart,
+        partTitle: `${finalCustomPart}: ${finalTitle}`,
+        videoUrl: editVideoUrl.trim() || editingVideo.videoUrl,
+      });
+
+      addActivityLog(
+        `قام المشرف بتعديل تسمية/اسم الفيديو إلى: "${finalCustomPart}" (${finalTitle}) في ${editingVideo.targetSlotName}`,
+        'المشرف',
+        'success'
+      );
+
+      setSuccessMessage(`✅ تم تحديث وتغيير اسم الجزء إلى "${finalCustomPart}" بنجاح! تم تطبيق التعديل للطلاب.`);
+      refreshVideos();
+      setIsSavingEdit(false);
+      setEditingVideo(null);
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (err: any) {
+      setIsSavingEdit(false);
+      setEditFormError(err?.message || 'حدث خطأ أثناء حفظ تعديلات الفيديو.');
     }
   };
 
@@ -483,7 +547,7 @@ export const AdminVideoManager: React.FC = () => {
               title="المستوى 1: أساسيات الوسائط وتثبيت Adobe Captivate 2019"
             />
 
-            {/* List of Level 1 parts with delete buttons */}
+            {/* List of Level 1 parts with edit name and delete buttons */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
               {level1Videos.map((v) => (
                 <div
@@ -491,22 +555,38 @@ export const AdminVideoManager: React.FC = () => {
                   className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-2 text-xs"
                 >
                   <div className="min-w-0">
-                    <span className="font-bold text-amber-300 block truncate">
-                      {v.partTitle || v.title}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-black text-[11px] border border-amber-500/30">
+                        {v.partCustomTitle || (v.partNumber ? `الجزء ${v.partNumber}` : 'الجزء')}
+                      </span>
+                    </div>
+                    <span className="font-bold text-slate-200 block truncate mt-0.5" title={v.title}>
+                      {v.title}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-400">
+                    <span className="text-[10px] font-bold text-slate-400 block mt-0.5">
                       ⏱️ {v.duration}
                     </span>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(v)}
-                    className="p-1.5 rounded-lg bg-red-950/60 hover:bg-red-800 text-red-300 hover:text-white transition-colors cursor-pointer shrink-0"
-                    title="حذف هذا الجزء"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(v)}
+                      className="p-1.5 rounded-lg bg-blue-950/80 hover:bg-blue-800 text-blue-300 hover:text-white transition-colors cursor-pointer border border-blue-500/40"
+                      title="تعديل اسم الجزء (مثلاً تغيير جزء 1 إلى أي اسم آخر)"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(v)}
+                      className="p-1.5 rounded-lg bg-red-950/60 hover:bg-red-800 text-red-300 hover:text-white transition-colors cursor-pointer border border-red-500/40"
+                      title="حذف هذا الجزء"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -570,14 +650,14 @@ export const AdminVideoManager: React.FC = () => {
                           <Play className="w-4 h-4 fill-blue-300/40" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="leading-snug">{v.title}</span>
-                            <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-bold">
-                              {v.partNumber ? `الجزء ${v.partNumber}` : 'الجزء 1'}
+                            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black">
+                              {v.partCustomTitle || (v.partNumber ? `الجزء ${v.partNumber}` : 'الجزء 1')}
                             </span>
                           </div>
                           {v.partTitle && v.partTitle !== v.title && (
-                            <span className="text-[11px] text-slate-400 font-normal block">
+                            <span className="text-[11px] text-slate-400 font-normal block mt-0.5">
                               {v.partTitle}
                             </span>
                           )}
@@ -627,10 +707,20 @@ export const AdminVideoManager: React.FC = () => {
                           type="button"
                           onClick={() => setPreviewVideo(v)}
                           title="معاينة وتشغيل الفيديو"
-                          className="px-3 py-1.5 rounded-xl bg-blue-950/80 border border-blue-500/50 hover:bg-blue-600 text-blue-300 hover:text-white font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors"
+                          className="px-2.5 py-1.5 rounded-xl bg-blue-950/80 border border-blue-500/50 hover:bg-blue-600 text-blue-300 hover:text-white font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>تشغيل</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(v)}
+                          title="تعديل تسمية الجزء (تغيير جزء 1 أو جزء 2) والاسم"
+                          className="px-2.5 py-1.5 rounded-xl bg-amber-950/80 border border-amber-500/50 hover:bg-amber-600 text-amber-300 hover:text-white font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>تعديل التسمية</span>
                         </button>
 
                         <button
@@ -847,7 +937,12 @@ export const AdminVideoManager: React.FC = () => {
                       <button
                         key={num}
                         type="button"
-                        onClick={() => setPartNumber(num)}
+                        onClick={() => {
+                          setPartNumber(num);
+                          if (!partCustomTitle || partCustomTitle.startsWith('الجزء ')) {
+                            setPartCustomTitle(`الجزء ${num}`);
+                          }
+                        }}
                         className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer border flex flex-col items-center justify-center gap-0.5 ${
                           isSelected
                             ? 'bg-blue-600 border-blue-400 text-white shadow-lg ring-1 ring-blue-300'
@@ -864,16 +959,52 @@ export const AdminVideoManager: React.FC = () => {
                 </div>
               </div>
 
+              {/* 🌟 Custom Part Name: يسمح للأدمن بتغيير كلمة "جزء 1" أو "جزء 2" للاسم المراد */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-[#231b0e] to-amber-500/10 border-2 border-amber-400/70 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-amber-300 flex items-center gap-1.5 font-['Tajawal']">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>تسمية / اسم الجزء (تغيير كلمة "جزء {partNumber}" إلى الاسم المراد):</span>
+                  </label>
+                  <span className="text-[10px] text-amber-200 font-bold bg-amber-950/90 px-2 py-0.5 rounded-md border border-amber-500/40">
+                    ميزة مخصصة للمشرف ✨
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={partCustomTitle}
+                    onChange={(e) => setPartCustomTitle(e.target.value)}
+                    placeholder={`مثال: الجزء ${partNumber}، أو المقدمة، أو شرح السؤال الأول، أو التطبيق العملي...`}
+                    className="w-full h-11 px-4 rounded-xl bg-[#070914] text-white text-xs sm:text-sm font-black border-2 border-amber-500/70 focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] text-slate-300 pt-1">
+                  <span>💡 هذا الاسم سيحل محل كلمة "جزء {partNumber}" ويظهر للطلاب في أزرار المشغل وعنوان الشرح.</span>
+                  {partCustomTitle !== `الجزء ${partNumber}` && (
+                    <button
+                      type="button"
+                      onClick={() => setPartCustomTitle(`الجزء ${partNumber}`)}
+                      className="text-amber-400 hover:text-white text-[10px] underline cursor-pointer"
+                    >
+                      إعادة للافتراضي (الجزء {partNumber})
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Video Title (Name) */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-200">
-                  اسم أو عنوان الجزء (تم تعيينه ذاتياً ويمكن تعديله):
+                  اسم أو عنوان الفيديو (تم تعيينه ذاتياً ويمكن تعديله):
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="اسم الفيديو أو عنوان الجزء"
+                  placeholder="اسم الفيديو أو موضوع الشرح"
                   className="w-full h-12 px-4 rounded-xl bg-[#070914] text-white text-sm font-bold border-2 border-slate-700 focus:border-blue-500 focus:outline-none"
                 />
               </div>
@@ -1000,6 +1131,156 @@ export const AdminVideoManager: React.FC = () => {
                 إغلاق
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. MODAL: تعديل الفيديو وتغيير اسم الجزء (تمكين الأدمن من تغيير جزء 1 أو جزء 2 إلى الاسم المراد) */}
+      {editingVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn font-['Cairo',_sans-serif]">
+          <div className="w-full max-w-lg rounded-3xl bg-[#0c0f20] border-2 border-amber-500/80 p-6 sm:p-7 text-right shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/60 text-amber-400 flex items-center justify-center shadow-sm">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">
+                    تعديل وتخصيص تسمية الجزء
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {editingVideo.targetSlotName}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setEditingVideo(null)}
+                className="w-8 h-8 rounded-full bg-slate-900 hover:bg-red-500/20 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {editFormError && (
+              <div className="p-3 rounded-xl bg-red-950/80 border-2 border-red-500 text-red-200 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <span>{editFormError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              {/* 🌟 Custom Part Name: تمكين الأدمن من تغيير جزء 1 أو جزء 2 */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-[#231b0e] to-amber-500/10 border-2 border-amber-400/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-black text-amber-300 font-['Tajawal']">
+                    تسمية / اسم الجزء (تغيير كلمة "جزء 1" أو "جزء 2" إلى الاسم المطلوب):
+                  </label>
+                  <span className="text-[10px] text-amber-200 font-bold bg-amber-950/90 px-2 py-0.5 rounded-md border border-amber-500/40">
+                    مخصص للمشرف ✨
+                  </span>
+                </div>
+
+                <input
+                  type="text"
+                  value={editPartCustomTitle}
+                  onChange={(e) => setEditPartCustomTitle(e.target.value)}
+                  placeholder="مثال: المقدمة، أو شرح السؤال الأول، أو التطبيق العملي..."
+                  className="w-full h-11 px-4 rounded-xl bg-[#070914] text-white text-sm font-black border-2 border-amber-500 focus:border-amber-400 focus:outline-none"
+                />
+
+                <span className="text-[11px] text-slate-300 block">
+                  💡 هذا الاسم سيحل محل كلمة "جزء {editPartNumber}" ويظهر مباشرة في أزرار المشغل للطلاب.
+                </span>
+              </div>
+
+              {/* Part Number (1-5) */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-200">
+                  ترتيب الجزء (من 1 إلى 5):
+                </label>
+                <div className="grid grid-cols-5 gap-2">
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => {
+                        setEditPartNumber(num);
+                        if (!editPartCustomTitle || editPartCustomTitle.startsWith('الجزء ')) {
+                          setEditPartCustomTitle(`الجزء ${num}`);
+                        }
+                      }}
+                      className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                        editPartNumber === num
+                          ? 'bg-amber-500 text-slate-950 border-amber-400 font-black shadow-md'
+                          : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'
+                      }`}
+                    >
+                      الجزء {num}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Video Title */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-200">
+                  عنوان أو اسم الفيديو:
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="عنوان الفيديو"
+                  className="w-full h-11 px-4 rounded-xl bg-[#070914] text-white text-sm font-bold border-2 border-slate-700 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Video URL (if not local file) */}
+              {editingVideo.videoType !== 'file' && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-200">
+                    رابط الفيديو (YouTube أو رابط MP4 مباشر):
+                  </label>
+                  <input
+                    type="text"
+                    value={editVideoUrl}
+                    onChange={(e) => setEditVideoUrl(e.target.value)}
+                    className="w-full h-11 px-4 rounded-xl bg-[#070914] text-white text-xs border border-slate-700 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-3 flex items-center justify-between gap-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingVideo(null)}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs cursor-pointer transition-colors"
+                >
+                  إلغاء
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSavingEdit}
+                  className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg border border-amber-300 flex items-center gap-2 cursor-pointer transition-all transform hover:-translate-y-0.5 disabled:opacity-50"
+                >
+                  {isSavingEdit ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>جاري حفظ التعديل...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 stroke-[2.5]" />
+                      <span>حفظ التعديلات والاسم الجديد</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

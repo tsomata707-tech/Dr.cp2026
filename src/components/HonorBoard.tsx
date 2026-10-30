@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Trophy, Medal, Award, Crown, Star, Sparkles, UserCheck, Play, ArrowLeft } from 'lucide-react';
 import { SupervisorsHonorBoard } from './SupervisorsHonorBoard';
 import { getAllStudentsProgress, saveAllStudentsProgress } from '../utils/gameStorage';

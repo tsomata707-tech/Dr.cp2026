@@ -301,11 +301,13 @@ export function addEducationalVideo(
 
   const slotDef = VIDEO_SLOTS.find((s) => s.slotId === videoData.targetSlotId);
   const partNumber = videoData.partNumber || (existingInSlot.length + 1);
-  const partTitle = videoData.partTitle || `الجزء ${partNumber}: ${videoData.title}`;
+  const partCustomTitle = videoData.partCustomTitle?.trim() || `الجزء ${partNumber}`;
+  const partTitle = videoData.partTitle || `${partCustomTitle}: ${videoData.title}`;
 
   const newVideo: EducationalVideo = {
     ...videoData,
     partNumber,
+    partCustomTitle,
     partTitle,
     id: `vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     targetSlotName: slotDef ? slotDef.name : videoData.targetSlotId,
@@ -334,9 +336,20 @@ export function updateEducationalVideo(
     if (slotDef) slotName = slotDef.name;
   }
 
+  const updatedPartCustomTitle = updates.partCustomTitle !== undefined 
+    ? updates.partCustomTitle.trim() 
+    : all[index].partCustomTitle;
+  const updatedTitle = updates.title !== undefined ? updates.title.trim() : all[index].title;
+  const updatedPartNumber = updates.partNumber !== undefined ? updates.partNumber : all[index].partNumber;
+  const defaultLabel = updatedPartCustomTitle || (updatedPartNumber ? `الجزء ${updatedPartNumber}` : 'الجزء');
+  const updatedPartTitle = updates.partTitle || `${defaultLabel}: ${updatedTitle}`;
+
   const updated: EducationalVideo = {
     ...all[index],
     ...updates,
+    partCustomTitle: updatedPartCustomTitle,
+    partTitle: updatedPartTitle,
+    title: updatedTitle,
     targetSlotName: slotName,
     videoUrl: updates.videoUrl ? normalizeVideoUrl(updates.videoUrl) : all[index].videoUrl,
     updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
