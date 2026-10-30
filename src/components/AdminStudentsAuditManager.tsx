@@ -200,7 +200,6 @@ export const AdminStudentsAuditManager: React.FC = () => {
 
       if (cloudProgress) {
         const mergedProgress = { ...localProgress, ...cloudProgress };
-        saveAllStudentsProgress(mergedProgress);
         setProgressMap(mergedProgress);
         preTestCount = Object.values(mergedProgress).filter(
           (p) => p.preTestResult && p.preTestResult.completed
@@ -276,7 +275,6 @@ export const AdminStudentsAuditManager: React.FC = () => {
             );
             merged[username] = localLatest > remoteLatest ? local : remote;
           });
-          saveAllStudentsProgress(merged);
           return merged;
         });
       }

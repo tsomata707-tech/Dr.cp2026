@@ -21,7 +21,7 @@ import { PreTestGameView } from './PreTestGameView';
 import { StudentWelcomeFloatingCard } from './StudentWelcomeFloatingCard';
 import { getSupervisorsBoardConfig } from '../utils/supervisorsStorage';
 import { getGroupByUsername } from '../data/studentAccounts';
-import { getStudentProgress, getAllStudentsProgress, saveAllStudentsProgress } from '../utils/gameStorage';
+import { getStudentProgress, getAllStudentsProgress, saveAllStudentsProgress, saveSingleStudentProgress } from '../utils/gameStorage';
 import { subscribeToStudentProgress } from '../utils/realtimeService';
 import { GAME_LEVELS_DATA } from '../data/gameLevelsData';
 import {
@@ -200,9 +200,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       if (cloudProg) {
         // Update local state and localStorage if cloud has data
         setStudentGame(cloudProg);
-        const all = getAllStudentsProgress();
-        all[username] = cloudProg;
-        saveAllStudentsProgress(all);
+        saveSingleStudentProgress(username, cloudProg);
       }
     });
 

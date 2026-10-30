@@ -217,8 +217,15 @@ export function saveAllActivitySubmissions(
   list: StudentActivitySubmission[],
   syncRemote: boolean = true
 ): void {
+  // Strip large file payloads for local storage to prevent quota errors
+  const stripped = list.map(s => {
+    const copy = { ...s };
+    delete copy.fileUrl;
+    return copy;
+  });
+
   try {
-    localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(list));
+    localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(stripped));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('cp_student_activity_submissions_updated', { detail: list }));
     }

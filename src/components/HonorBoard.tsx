@@ -42,8 +42,6 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
     const unsubscribe = subscribeToAllStudentsProgress((cloudMap) => {
       if (cloudMap && Object.keys(cloudMap).length > 0) {
         setAllStudentsProgress(cloudMap);
-        // Sync to local storage to ensure consistency
-        saveAllStudentsProgress(cloudMap);
       }
     });
     return () => unsubscribe();

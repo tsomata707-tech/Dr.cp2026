@@ -34,6 +34,7 @@ import {
   X,
   FileCheck,
   Target,
+  HardDrive,
 } from 'lucide-react';
 import { CARTOON_AVATARS, GAME_LEVELS_DATA, GameLevelDef } from '../data/gameLevelsData';
 import {
@@ -1385,7 +1386,15 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
                 {/* Inline Preview according to File Type */}
                 <div className="rounded-xl overflow-hidden border border-slate-800 bg-black/60 p-2 flex justify-center items-center">
-                  {studentActivity.fileType === 'video' ? (
+                  {!studentActivity.fileUrl ? (
+                    <div className="p-10 text-center space-y-3">
+                      <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto text-blue-400">
+                        <HardDrive className="w-8 h-8" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-300">الملف محفوظ بأمان في السحابة</p>
+                      <p className="text-xs text-slate-500">تم ضغط المساحة المحلية؛ يمكنك دائماً استبدال الملف أو حذفه.</p>
+                    </div>
+                  ) : studentActivity.fileType === 'video' ? (
                     <video
                       controls
                       src={studentActivity.fileUrl}

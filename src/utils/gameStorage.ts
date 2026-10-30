@@ -73,6 +73,14 @@ export function saveAllStudentsProgress(all: Record<string, StudentGameProgress>
           }
         });
       }
+      if (s.studentActivities) {
+        Object.keys(s.studentActivities).forEach((lvlNum) => {
+          if (s.studentActivities[lvlNum]) {
+            // Strip huge base64 strings for localStorage
+            delete s.studentActivities[lvlNum].fileUrl;
+          }
+        });
+      }
     }
   });
   try {
@@ -92,6 +100,12 @@ export function calculateStudentTotalScore(prog: StudentGameProgress): number {
     0
   );
   return levelsScore + activitiesScore;
+}
+
+export function saveSingleStudentProgress(username: string, prog: StudentGameProgress): void {
+  const all = getAllStudentsProgress();
+  all[username] = prog;
+  saveAllStudentsProgress(all);
 }
 
 export function getStudentProgress(username: string): StudentGameProgress {
