@@ -324,10 +324,15 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     }
 
     if (isCorrect) {
-      // Correct! Award 25 points
+      // Correct! Award points with deduction for lost hearts (5 points per lost heart)
+      const hearts = heartsPerLevel[selectedLevelNum] ?? 2;
+      const lostHearts = 2 - hearts;
+      const deduction = lostHearts * 5;
+      const finalScore = Math.max(0, q1Points - deduction);
+
       setSection1ScorePerLevel((prev) => ({
         ...prev,
-        [selectedLevelNum]: q1Points,
+        [selectedLevelNum]: finalScore,
       }));
       setLastHeartWarning(null);
     } else {
@@ -335,10 +340,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       const hearts = heartsPerLevel[selectedLevelNum] ?? 2;
       if (hearts === 2) {
         setHeartsPerLevel((prev) => ({ ...prev, [selectedLevelNum]: 1 }));
-        setLastHeartWarning('إجابة غير صحيحة! فقدت قلباً واحداً، تبقت لك فرصة واحدة ❤️');
+        setLastHeartWarning('إجابة غير صحيحة! فقدت قلباً واحداً، وخسرت 5 درجات من محاولتك. تبقت لك فرصة واحدة ❤️');
       } else if (hearts === 1) {
         setHeartsPerLevel((prev) => ({ ...prev, [selectedLevelNum]: 0 }));
-        setLastHeartWarning('ليس لديك حياة وهذه آخر محاولة');
+        setLastHeartWarning('إجابة غير صحيحة! فقدت قلباً ثانياً وخسرت 5 درجات إضافية. ليس لديك حياة وهذه آخر محاولة!');
       } else {
         setSection1ScorePerLevel((prev) => ({
           ...prev,
@@ -461,6 +466,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       return;
     }
 
+    const s1ScoreOverride = section1ScorePerLevel[selectedLevelNum];
     const s2Score = activityScorePerLevel[selectedLevelNum] ?? (currentLevelDef.section2Score ?? 25);
 
     const { progress: updatedProgress, levelResult, isImmediateFeedback } = submitLevelChallenge(
@@ -468,7 +474,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       selectedLevelNum,
       chosenAnswers,
       60,
-      s2Score
+      s2Score,
+      s1ScoreOverride
     );
 
     // Mark level test completed in test access audit
@@ -695,8 +702,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 <span>طاقة المحاولة</span>
               </div>
               <div className="flex items-center justify-center gap-1 text-base pt-0.5">
-                {[1, 2, 3].map((h) => (
-                  <span key={h} className="text-rose-500 animate-pulse">❤️</span>
+                {[1, 2].map((h) => (
+                  <span key={h} className={h <= currentHearts ? "text-rose-500 animate-pulse" : "text-slate-600 opacity-60"}>
+                    {h <= currentHearts ? "❤️" : "🖤"}
+                  </span>
                 ))}
               </div>
             </div>
