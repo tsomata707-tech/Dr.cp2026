@@ -173,7 +173,8 @@ export function submitLevelChallenge(
   username: string,
   levelNumber: number,
   chosenAnswers: Record<string, number>, // questionId -> chosen option index
-  timeSpentSeconds: number
+  timeSpentSeconds: number,
+  appliedActivityScore: number = 0
 ): {
   progress: StudentGameProgress;
   levelResult: CompletedLevelResult;
@@ -190,18 +191,20 @@ export function submitLevelChallenge(
 
   // Calculate real score based on actual student answers
   let scoreGained = 0;
-  let maxScore = 0;
+  let q1MaxScore = levelDef.section1Score ?? (levelDef.questions[0]?.points || 25);
+  let totalLevelMax = levelDef.totalMaxScore ?? (q1MaxScore + (levelDef.section2Score ?? 25));
   const questionScores: Record<string, number> = {};
   const questionDetails: Record<string, any> = {};
   const completedAtStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
-  levelDef.questions.forEach((q) => {
-    maxScore += q.points;
+  // Score Question 1 (or all questions if answered)
+  levelDef.questions.forEach((q, idx) => {
+    const qPoints = idx === 0 ? (levelDef.section1Score ?? q.points ?? 25) : q.points;
     const chosen = chosenAnswers[q.id];
     const isCorrect = chosen === q.correctIndex;
     if (isCorrect) {
-      scoreGained += q.points;
-      questionScores[q.id] = q.points;
+      scoreGained += qPoints;
+      questionScores[q.id] = qPoints;
     } else {
       questionScores[q.id] = 0;
     }
@@ -226,6 +229,21 @@ export function submitLevelChallenge(
     };
   });
 
+  // Add applied activity score from Section 2
+  const actScore = Math.min(levelDef.section2Score ?? 25, Math.max(0, appliedActivityScore));
+  scoreGained += actScore;
+  questionScores['section2_activity'] = actScore;
+  questionDetails['section2_activity'] = {
+    chosenIndex: actScore > 0 ? 1 : 0,
+    isCorrect: actScore > 0,
+    answeredAt: completedAtStr,
+    chosenText: actScore > 0 ? `تم إنجاز النشاط التطبيقي للمستوى ${levelNumber} بنجاح` : 'قيد الإنجاز',
+    correctText: `إنجاز النشاط التطبيقي التفاعلي للمستوى ${levelNumber}`,
+    explanation: `النشاط التطبيقي التفاعلي للمستوى ${levelNumber}`,
+    questionText: `النشاط التطبيقي التفاعلي للمستوى ${levelNumber}`,
+    domain: `المستوى ${levelNumber}: ${levelDef.title}`,
+  };
+
   // Determine feedback mode from group:
   // G1 (فوري) & G3 (فوري) -> immediate feedback to student
   // G2 (مرجأ) & G4 (مرجأ) -> deferred feedback
@@ -235,7 +253,7 @@ export function submitLevelChallenge(
   const levelResult: CompletedLevelResult = {
     levelNumber,
     score: scoreGained,
-    maxScore,
+    maxScore: totalLevelMax,
     answers: chosenAnswers,
     questionScores,
     questionDetails,
@@ -260,7 +278,7 @@ export function submitLevelChallenge(
   prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
   // Advance level if passed (1 up to 9)
-  const passThreshold = Math.floor(maxScore * 0.5); // 50% pass rate
+  const passThreshold = Math.floor(totalLevelMax * 0.5); // 50% pass rate
   if (scoreGained >= passThreshold) {
     if (levelNumber === prog.currentLevel && levelNumber < 9) {
       prog.currentLevel = levelNumber + 1;
@@ -316,7 +334,7 @@ export function submitLevelChallenge(
   syncStudentProgressToFirestore(prog).catch(() => {});
 
   addActivityLog(
-    `حل مستوى حقيقي: الطالب ${username} أتم المستوى ${levelNumber} وحصل على ${scoreGained}/${maxScore} نقطة`,
+    `حل مستوى حقيقي: الطالب ${username} أتم المستوى ${levelNumber} وحصل على ${scoreGained}/${totalLevelMax} نقطة`,
     username,
     scoreGained >= passThreshold ? 'success' : 'warning'
   );

@@ -53,6 +53,7 @@ import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { DraggableLevelInstructions } from './DraggableLevelInstructions';
 import { LevelTransitionLoader5s } from './LevelTransitionLoader5s';
+import { LevelInteractiveGames } from './LevelInteractiveGames';
 import { getGroupByUsername, getStudentByUsername, RESEARCH_GROUPS_META, getCollaborativeGroupByUsername } from '../data/studentAccounts';
 import {
   StudentGameProgress,
@@ -100,6 +101,43 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const [showAvatarModal, setShowAvatarModal] = useState<boolean>(false);
   const [isVideoOpen, setIsVideoOpen] = useState<boolean>(true);
   const [loadingLevelForGame, setLoadingLevelForGame] = useState<GameLevelDef | null>(null);
+
+  // Section 1 Hearts per level: starts at 2 hearts (❤️❤️)
+  const [heartsPerLevel, setHeartsPerLevel] = useState<Record<number, number>>({});
+  // Section 1 Score earned per level (25 points or 0)
+  const [section1ScorePerLevel, setSection1ScorePerLevel] = useState<Record<number, number>>(() => {
+    const initScores: Record<number, number> = {};
+    const prog = getStudentProgress(username);
+    Object.entries(prog.completedLevels || {}).forEach(([lvlNum, res]) => {
+      const num = Number(lvlNum);
+      const lvlDef = GAME_LEVELS_DATA.find((l) => l.levelNumber === num);
+      const q1Id = lvlDef?.questions[0]?.id;
+      if (q1Id && res.questionScores && res.questionScores[q1Id] !== undefined) {
+        initScores[num] = res.questionScores[q1Id];
+      } else if (res.score) {
+        initScores[num] = Math.min(lvlDef?.section1Score ?? 25, Math.round(res.score * 0.5));
+      }
+    });
+    return initScores;
+  });
+
+  // Section 2 Interactive Activity score earned per level (25 points)
+  const [activityScorePerLevel, setActivityScorePerLevel] = useState<Record<number, number>>(() => {
+    const initScores: Record<number, number> = {};
+    const prog = getStudentProgress(username);
+    Object.entries(prog.completedLevels || {}).forEach(([lvlNum, res]) => {
+      const num = Number(lvlNum);
+      const lvlDef = GAME_LEVELS_DATA.find((l) => l.levelNumber === num);
+      if (res.questionScores?.['section2_activity'] !== undefined) {
+        initScores[num] = res.questionScores['section2_activity'];
+      } else if (res.score) {
+        initScores[num] = Math.max(0, res.score - (initScores[num] || (lvlDef?.section1Score ?? 25)));
+      }
+    });
+    return initScores;
+  });
+
+  const [lastHeartWarning, setLastHeartWarning] = useState<string | null>(null);
 
   // 5-second transition state as requested: "وبعدها شريط تحميل ٥ ثواني مكتوب أعلاه جاري الانتقال الي ليفل ٢"
   const [isTransitioning5s, setIsTransitioning5s] = useState<boolean>(false);
@@ -260,6 +298,65 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     }
   };
 
+  const q1 = currentLevelDef.questions[0];
+  const q1Points = currentLevelDef.section1Score ?? q1?.points ?? 25;
+  const currentHearts = heartsPerLevel[selectedLevelNum] ?? 2;
+  const isSection1Done = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined && section1ScorePerLevel[selectedLevelNum] > 0);
+
+  // Section 1: Heart-based question challenge handler
+  const handleSelectSection1Option = (optIdx: number) => {
+    if (isLevelCompleted || isSection1Done) return;
+    if (!q1) return;
+
+    const isCorrect = optIdx === q1.correctIndex;
+
+    setChosenAnswers((prev) => ({
+      ...prev,
+      [q1.id]: optIdx,
+    }));
+
+    if (!isAdmin) {
+      selectQuestionOptionRealtime(groupCode, selectedLevelNum, q1.id, optIdx, {
+        username,
+        fullName: studentInfo?.fullName || username,
+        avatarEmoji: currentAvatar.emoji,
+      });
+    }
+
+    if (isCorrect) {
+      // Correct! Award 25 points
+      setSection1ScorePerLevel((prev) => ({
+        ...prev,
+        [selectedLevelNum]: q1Points,
+      }));
+      setLastHeartWarning(null);
+    } else {
+      // Incorrect!
+      const hearts = heartsPerLevel[selectedLevelNum] ?? 2;
+      if (hearts === 2) {
+        setHeartsPerLevel((prev) => ({ ...prev, [selectedLevelNum]: 1 }));
+        setLastHeartWarning('إجابة غير صحيحة! فقدت قلباً واحداً، تبقت لك فرصة واحدة ❤️');
+      } else if (hearts === 1) {
+        setHeartsPerLevel((prev) => ({ ...prev, [selectedLevelNum]: 0 }));
+        setLastHeartWarning('ليس لديك حياة وهذه آخر محاولة');
+      } else {
+        setSection1ScorePerLevel((prev) => ({
+          ...prev,
+          [selectedLevelNum]: 0,
+        }));
+        setLastHeartWarning('انتهت المحاولات! الإجابة الصحيحة موضحة بالبطاقة.');
+      }
+    }
+  };
+
+  // Section 2: Applied activity completion handler
+  const handleActivityCompleted = (activityScore: number) => {
+    setActivityScorePerLevel((prev) => ({
+      ...prev,
+      [selectedLevelNum]: activityScore,
+    }));
+  };
+
   // Sync student activity when level changes
   useEffect(() => {
     setStudentActivity(progress.studentActivities?.[selectedLevelNum] || null);
@@ -350,8 +447,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       return;
     }
 
-    if (!isAdmin && Object.keys(chosenAnswers).length < currentLevelDef.questions.length) {
-      alert('يرجى الإجابة على جميع الأسئلة قبل الانتقال للمستوى التالي');
+    const firstQ = currentLevelDef.questions[0];
+    if (!isAdmin && firstQ && chosenAnswers[firstQ.id] === undefined && !isLevelCompleted) {
+      alert('يرجى الإجابة على سؤال تحدي المعرفة (القسم الأول) قبل إنهاء المستوى');
       return;
     }
 
@@ -363,11 +461,14 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       return;
     }
 
+    const s2Score = activityScorePerLevel[selectedLevelNum] ?? (currentLevelDef.section2Score ?? 25);
+
     const { progress: updatedProgress, levelResult, isImmediateFeedback } = submitLevelChallenge(
       username,
       selectedLevelNum,
       chosenAnswers,
-      60
+      60,
+      s2Score
     );
 
     // Mark level test completed in test access audit
@@ -689,6 +790,19 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     ? 'نشط الآن'
                     : 'قيد الانتظار'}
                 </span>
+
+                {/* Score displayed at bottom of level card as requested */}
+                <div className="mt-1 pt-1 border-t border-slate-700/60 w-full flex items-center justify-center">
+                  {isCompleted ? (
+                    <span className="text-[10px] font-black text-emerald-300 font-['Outfit']">
+                      ⭐ {progress.completedLevels[lvl.levelNumber]?.score ?? (lvl.totalMaxScore || 50)} / {progress.completedLevels[lvl.levelNumber]?.maxScore ?? (lvl.totalMaxScore || 50)}
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-bold text-amber-300 font-['Outfit']">
+                      {lvl.totalMaxScore || 50} XP
+                    </span>
+                  )}
+                </div>
               </button>
             );
           })}
@@ -923,168 +1037,202 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         )}
 
 
-        {/* LEVEL 9 ACTIVITIES BANNER */}
-        {selectedLevelNum === 9 && (
-          <div className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-blue-950/60 via-slate-900/80 to-blue-950/60 border border-blue-500/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-right">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl p-2 rounded-xl bg-blue-500/20 border border-blue-400/40">🎯</span>
-              <div>
-                <h3 className="text-sm sm:text-base font-black text-white font-['Tajawal']">
-                  أنشطة ومهام المستوى 9 (أنشطة تطبيقية يقوم بها الطالب)
-                </h3>
-                <p className="text-xs text-blue-200 mt-0.5">
-                  جميع أسئلة هذا المستوى عبارة عن أنشطة ومهام يقوم بها الطالب لتحقيق المهارات المستهدفة ونواتج التعلم.
-                </p>
+        {/* ======================================================== */}
+        {/* SECTION 1: KNOWLEDGE CHALLENGE WITH 2 HEARTS (القسم الأول) */}
+        {/* ======================================================== */}
+        {q1 && (
+          <div className="mt-6 p-6 rounded-3xl bg-slate-950/90 border-2 border-amber-400/80 shadow-[0_0_35px_rgba(251,191,36,0.25)] space-y-5 text-right">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border-2 border-amber-400 text-amber-300 flex items-center justify-center text-2xl shrink-0 shadow-md">
+                  ❤️
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/60 text-amber-300 text-[10px] font-black">
+                      القسم الأول: تحدي المعرفة الرقمية
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 text-[10px] font-black">
+                      +{q1Points} درجة
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-0.5">
+                    سؤال التحدي وبطاقات الإجابات بقلوب المحاولة
+                  </h3>
+                </div>
+              </div>
+
+              {/* 2 Hearts Indicator displayed above answers */}
+              <div className="flex items-center gap-3 self-end sm:self-auto bg-slate-900/90 px-4 py-2.5 rounded-2xl border border-rose-500/50 shadow-inner">
+                <span className="text-xs text-rose-200 font-bold">طاقة المحاولة:</span>
+                <div className="flex items-center gap-1.5 text-2xl">
+                  {currentHearts >= 2 ? (
+                    <>
+                      <span className="text-rose-500 animate-pulse" title="قلب محاولة 1">❤️</span>
+                      <span className="text-rose-500 animate-pulse" title="قلب محاولة 2">❤️</span>
+                    </>
+                  ) : currentHearts === 1 ? (
+                    <>
+                      <span className="text-rose-500 animate-pulse" title="تبقى قلب محاولة واحد">❤️</span>
+                      <span className="text-slate-600 opacity-60" title="فقدت قلباً">🖤</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-slate-600 opacity-60" title="نفدت القلوب">🖤</span>
+                      <span className="text-slate-600 opacity-60" title="نفدت القلوب">🖤</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-            <span className="px-3 py-1 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-400/40 text-xs font-bold shrink-0">
-              {currentLevelDef.questions.length} أنشطة
-            </span>
+
+            {/* Question Prompt - Clear Arabic without programming strings */}
+            <div className="space-y-4">
+              <h4 className="text-base sm:text-lg font-bold text-white font-['Tajawal'] leading-relaxed">
+                {q1.question}
+              </h4>
+
+              {/* Question Image (if attached) */}
+              {q1.imageUrl && (
+                <div className="my-3 flex justify-center items-center">
+                  <div className="relative max-w-full rounded-2xl overflow-hidden border-2 border-amber-400/50 bg-[#070914] shadow-2xl p-1.5">
+                    <img
+                      src={q1.imageUrl}
+                      alt="توضيح السؤال"
+                      className="max-h-56 sm:max-h-80 w-auto max-w-full rounded-xl object-contain shadow-md mx-auto"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Warnings / Feedback for Hearts */}
+              {currentHearts === 0 && (
+                <div className="p-3.5 rounded-2xl bg-red-950/90 border-2 border-red-500 text-red-200 font-black text-xs sm:text-sm flex items-center justify-between gap-3 shadow-[0_0_20px_rgba(239,68,68,0.35)] animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                    <span>ليس لديك حياة وهذه آخر محاولة</span>
+                  </div>
+                  <span className="text-[11px] bg-red-900/60 px-2.5 py-0.5 rounded-lg border border-red-400 font-bold">
+                    فرصتك الأخيرة للإجابة
+                  </span>
+                </div>
+              )}
+
+              {currentHearts === 1 && (
+                <div className="p-3 rounded-2xl bg-amber-950/70 border border-amber-500/60 text-amber-200 font-bold text-xs flex items-center gap-2">
+                  <span>⚠️ إجابة غير صحيحة، فقدت قلباً واحداً! تبقت لك فرصة واحدة ❤️</span>
+                </div>
+              )}
+
+              {/* Answer Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                {q1.options.map((opt, optIdx) => {
+                  const chosen = isLevelCompleted && completedResult
+                    ? completedResult.answers[q1.id]
+                    : chosenAnswers[q1.id];
+                  const isSelected = chosen === optIdx;
+                  const isCorrect = optIdx === q1.correctIndex;
+                  const isPassed = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined && section1ScorePerLevel[selectedLevelNum] > 0);
+
+                  let cardStyle = 'bg-slate-900/90 border-slate-700/80 text-slate-100 hover:border-amber-400/80 hover:bg-slate-800/90';
+                  if (isPassed && isCorrect) {
+                    cardStyle = 'bg-emerald-950/80 border-2 border-emerald-400 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.3)] font-bold';
+                  } else if (isPassed && isSelected && !isCorrect) {
+                    cardStyle = 'bg-red-950/60 border-red-500/80 text-red-300 line-through opacity-70';
+                  } else if (isSelected) {
+                    cardStyle = 'bg-amber-950/80 border-2 border-amber-400 text-amber-200 font-bold shadow-[0_0_15px_rgba(251,191,36,0.3)]';
+                  }
+
+                  return (
+                    <button
+                      key={optIdx}
+                      type="button"
+                      disabled={isLevelCompleted || isPassed}
+                      onClick={() => handleSelectSection1Option(optIdx)}
+                      className={`p-4 rounded-2xl border-2 text-right transition-all flex flex-col justify-between gap-3 ${
+                        isLevelCompleted || isPassed ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01]'
+                      } ${cardStyle}`}
+                    >
+                      <div className="flex items-start justify-between gap-3 w-full">
+                        <span className="text-xs sm:text-sm font-medium leading-relaxed font-['Cairo']">
+                          {opt}
+                        </span>
+                        <span className="w-6 h-6 rounded-full border border-slate-600 bg-slate-950 flex items-center justify-center shrink-0 text-xs font-bold text-amber-400">
+                          {['أ', 'ب', 'ج', 'د', 'هـ'][optIdx] || optIdx + 1}
+                        </span>
+                      </div>
+
+                      {isPassed && isCorrect && (
+                        <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-bold pt-1 border-t border-emerald-500/40">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <span>إجابة صحيحة ومتقنة (+{q1Points} درجة)</span>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Explanation in Immediate Feedback mode */}
+              {isLevelCompleted && isImmediateGroup && (
+                <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-300 font-['Cairo'] leading-relaxed">
+                  💡 <strong>التغذية الراجعة الفورية المعتمدة:</strong> {q1.explanation}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* QUESTIONS LIST */}
-        <div className="mt-6 space-y-6">
-          {currentLevelDef.questions.map((q, qIndex) => {
-            const isLevel9 = selectedLevelNum === 9;
-            const chosen = isLevelCompleted && completedResult
-              ? completedResult.answers[q.id]
-              : chosenAnswers[q.id];
+        {/* ======================================================== */}
+        {/* SECTION 2: APPLIED INTERACTIVE ACTIVITY (القسم الثاني)   */}
+        {/* ======================================================== */}
+        <div className="mt-6">
+          <LevelInteractiveGames
+            levelNumber={selectedLevelNum}
+            isLevelCompleted={isLevelCompleted}
+            initialCompleted={activityScorePerLevel[selectedLevelNum] !== undefined && activityScorePerLevel[selectedLevelNum] > 0}
+            earnedScore={activityScorePerLevel[selectedLevelNum] || 0}
+            maxScore={currentLevelDef.section2Score || 25}
+            onCompleteActivity={handleActivityCompleted}
+          />
+        </div>
 
-            return (
-              <div
-                key={q.id}
-                className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-4 text-right"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-2.5">
-                    <span className="min-w-7 px-2 h-7 rounded-xl bg-[#ffd700]/20 border border-[#ffd700] text-[#ffd700] font-black text-xs flex items-center justify-center font-['Outfit'] shrink-0 mt-0.5">
-                      {isLevel9 ? `نشاط ${qIndex + 1}` : qIndex + 1}
-                    </span>
-                    <div>
-                      {isLevel9 && (
-                        <span className="inline-block px-2.5 py-0.5 rounded-md bg-blue-500/20 border border-blue-400/40 text-blue-300 text-[10px] font-bold mb-1.5">
-                          🎯 نشاط يقوم به الطالب
-                        </span>
-                      )}
-                      <h4 className="text-sm sm:text-base font-bold text-white font-['Tajawal'] leading-relaxed">
-                        {q.question}
-                      </h4>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-lg border border-amber-500/40 shrink-0">
-                    +{q.points} XP
-                  </span>
-                </div>
-
-                {/* Question Image (if attached) */}
-                {q.imageUrl && (
-                  <div className="my-3 flex justify-center items-center">
-                    <div className="relative max-w-full rounded-2xl overflow-hidden border-2 border-amber-400/50 bg-[#070914] shadow-2xl p-1.5">
-                      <img
-                        src={q.imageUrl}
-                        alt="توضيح السؤال"
-                        className="max-h-56 sm:max-h-80 w-auto max-w-full rounded-xl object-contain shadow-md mx-auto"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* 4 Options Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  {q.options.map((opt, optIdx) => {
-                    const isSelected = chosen === optIdx;
-                    const realtimeAnswerForQ = roomState.currentAnswers?.[q.id];
-                    const isLatestPeerChoice = !isLevelCompleted && realtimeAnswerForQ?.selectedOption === optIdx;
-                    const votersForThisOpt = (Object.values(roomState.votes?.[q.id] || {}) as RealtimeVote[]).filter(
-                      (v) => v.optionIndex === optIdx
-                    );
-
-
-                    let optionStyle = 'bg-slate-900 border-slate-800 text-slate-200 hover:border-[#d4af37]/60';
-
-                    if (isLevelCompleted && isImmediateGroup) {
-                      // Reveal correct and wrong
-                      if (optIdx === q.correctIndex) {
-                        optionStyle = 'bg-emerald-950/70 border-emerald-500 text-emerald-200 font-bold';
-                      } else if (isSelected && optIdx !== q.correctIndex) {
-                        optionStyle = 'bg-red-950/70 border-red-500 text-red-200 line-through';
-                      }
-                    } else if (isSelected) {
-                      optionStyle = 'bg-amber-950/80 border-[#ffd700] text-amber-200 font-bold shadow-[0_0_15px_rgba(212,175,55,0.25)]';
-                    } else if (isLatestPeerChoice) {
-                      optionStyle = 'bg-purple-950/40 border-purple-500/80 text-purple-200';
-                    }
-
-                    return (
-                      <button
-                        key={optIdx}
-                        type="button"
-                        disabled={isLevelCompleted}
-                        onClick={() => handleSelectOption(q.id, optIdx)}
-                        className={`p-3.5 rounded-xl border-2 text-right text-xs sm:text-sm font-['Cairo'] transition-all flex flex-col justify-between gap-2 ${
-                          isLevelCompleted ? 'cursor-not-allowed' : 'cursor-pointer'
-                        } ${optionStyle}`}
-                      >
-                        <div className="flex items-center justify-between gap-3 w-full">
-                          <span className="leading-relaxed font-medium">{opt}</span>
-                          <span className="w-5 h-5 rounded-full border border-slate-600 flex items-center justify-center shrink-0 text-[10px] font-bold">
-                            {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'][optIdx] || String.fromCharCode(65 + optIdx)}
-                          </span>
-                        </div>
-
-                        {/* Optional Option Image - Balanced & Layout Preserving */}
-                        {q.optionImages?.[optIdx] && (
-                          <div className="w-full h-28 sm:h-36 my-2 rounded-xl overflow-hidden border border-slate-700/80 bg-black/60 p-2 flex justify-center items-center shadow-inner">
-                            <img
-                              src={q.optionImages[optIdx]!}
-                              alt={`صورة الخيار`}
-                              className="max-h-full max-w-full object-contain rounded-lg hover:scale-105 transition-transform"
-                              loading="lazy"
-                            />
-                          </div>
-                        )}
-
-                        {/* Real-time Peer Choice Indicator & Live Votes */}
-                        {!isLevelCompleted && (isLatestPeerChoice || votersForThisOpt.length > 0) && (
-                          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800/60 w-full">
-                            {isLatestPeerChoice && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 text-[10px] font-bold border border-amber-400/40 animate-pulse">
-                                <span>{realtimeAnswerForQ.avatarEmoji}</span>
-                                <span>اختاره لحظياً: {realtimeAnswerForQ.studentName?.split(' ')[0] || realtimeAnswerForQ.selectedBy}</span>
-                              </span>
-                            )}
-                            {votersForThisOpt.length > 0 && (
-                              <div className="inline-flex items-center gap-1 text-[10px] text-slate-400 mr-auto">
-                                <span className="flex -space-x-1">
-                                  {votersForThisOpt.slice(0, 4).map((v) => (
-                                    <span key={v.username} className="text-xs" title={`${v.studentName} اختار هذا الخيار`}>
-                                      {v.avatarEmoji}
-                                    </span>
-                                  ))}
-                                </span>
-                                <span className="text-[9px] font-bold text-amber-300">
-                                  ({votersForThisOpt.length} أصوات)
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-
-                </div>
-
-                {/* Explanation in Immediate Feedback mode for completed level */}
-                {isLevelCompleted && isImmediateGroup && (
-                  <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-300 font-['Cairo'] leading-relaxed">
-                    💡 <strong>التغذية الراجعة الفورية المعتمدة:</strong> {q.explanation}
-                  </div>
-                )}
+        {/* ======================================================== */}
+        {/* LEVEL TOTAL SCORE SUMMARY CARD (أسفل بطاقة المستوى)       */}
+        {/* ======================================================== */}
+        <div className="mt-6 p-5 rounded-3xl bg-gradient-to-r from-[#170e2b] via-[#22133d] to-[#170e2b] border-2 border-amber-400/90 shadow-[0_0_30px_rgba(251,191,36,0.25)] text-right">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <span className="text-xs text-amber-300 font-black flex items-center gap-1.5 mb-1.5">
+                <span>⭐</span>
+                <span>درجة المستوى {selectedLevelNum} الإجمالية:</span>
+              </span>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
+                  القسم 1 (تحدي المعرفة): <strong className="text-amber-400">{section1ScorePerLevel[selectedLevelNum] || (chosenAnswers[q1?.id] === q1?.correctIndex ? q1Points : 0)} / {q1Points} XP</strong>
+                </span>
+                <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
+                  القسم 2 (النشاط التطبيقي): <strong className="text-cyan-400">{activityScorePerLevel[selectedLevelNum] || (isLevelCompleted ? (currentLevelDef.section2Score || 25) : 0)} / {currentLevelDef.section2Score || 25} XP</strong>
+                </span>
+                <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
+                  المجموع المعتمد: {(section1ScorePerLevel[selectedLevelNum] || (chosenAnswers[q1?.id] === q1?.correctIndex ? q1Points : 0)) + (activityScorePerLevel[selectedLevelNum] || (isLevelCompleted ? (currentLevelDef.section2Score || 25) : 0))} / {currentLevelDef.totalMaxScore || 50} XP
+                </span>
               </div>
-            );
-          })}
+            </div>
+
+            <div className="text-left shrink-0">
+              {isLevelCompleted ? (
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-300 font-black text-xs">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>تم اعتماد واحتساب درجات المستوى بالكامل في الشيت</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-950/80 border border-amber-500/60 text-amber-300 font-bold text-xs">
+                  <span>⏳ تُعتمد الدرجة تلقائياً وتُضاف لشيت المستويات الـ 9 عند إنهاء المستوى</span>
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
   

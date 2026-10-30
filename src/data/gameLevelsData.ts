@@ -58,6 +58,9 @@ export interface GameLevelDef {
   instructions?: string;
   objectives?: string;
   activityPrompt?: string;
+  totalMaxScore?: number; // Total max score for level (default 50: 25 Section 1 + 25 Section 2)
+  section1Score?: number; // Section 1 points (default 25)
+  section2Score?: number; // Section 2 points (default 25)
   imagesSectionTitle?: string;
   imagesSectionDesc?: string;
   badgeName: string;
@@ -75,6 +78,9 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     shortTitle: 'تثبيت البرنامج',
     storyMission: 'مهمتك الأولى يا بطل: تهيئة بيئة العمل الرقمية، التحقق من معمارية 64-Bit، وتشغيل معالج التثبيت القياسي للبرنامج بنجاح.',
     instructions: '1. تأكد من توافر نظام 64-Bit لتشغيل Adobe Captivate 2019.\n2. افتح ملف التثبيت القياسي وقم بضبط دعم اللغة العربية من قائمة التفضيلات Preferences.\n3. تصفح الفيديوهات والصور التعليمية الخاصة بالمستوى.\n4. أجب عن أنشطة وأسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص بأسفل المستوى (فيديو أو صورة أو PDF) ثم اضغط على زر Finish Level 1 للانتقال للمستوى التالي.',
+    totalMaxScore: 50,
+    section1Score: 25,
+    section2Score: 25,
     badgeName: 'وسام البداية الرقمية',
     badgeEmoji: '🛡️',
     videos: [],
@@ -91,7 +97,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         ],
         correctIndex: 1,
         explanation: 'يتطلب Adobe Captivate 2019 معمارية 64-Bit لتوفير استقرار معالجة الوسائط المتعددة والمحاكاة التفاعلية.',
-        points: 34,
+        points: 25,
       },
       {
         id: 'q1-2',
@@ -127,7 +133,10 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     title: 'المستوى 2: جولة واجهة المستخدم وشاشات البداية',
     shortTitle: 'واجهة المستخدم',
     storyMission: 'استكشف لوحات التحكم ومناطق العمل، وتعرف على شريط الأدوات الرئيسي (Toolbar) ولوحة الخصائص (Properties Panel).',
-    instructions: '1. استكشف شريط الأدوات الرئيسي Toolbar ولوحة الخصائص Properties Panel.\n2. تعرف على متصفح الشرائح Filmstrip وطرق ترتيب الشرائح.\n3. شاهد الفيديوهات التوضيحية وتصفح الصور التعليمية.\n4. أجب عن أسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص بأسفل الصفحة ثم اضغط Finish Level 2.',
+    instructions: '1. استكشف شريط الأدوات الرئيسي Toolbar ولوحة الخصائص Properties Panel.\n2. تعرف على متصفح الشرائح Filmstrip وطرق ترتيب الشرائح.\n3. شاهد الفيديوهات التوضيحية وتصفح الصور التعليمية.\n4. أجب عن أنشطة وأسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص بأسفل الصفحة ثم اضغط Finish Level 2.',
+    totalMaxScore: 50,
+    section1Score: 25,
+    section2Score: 25,
     badgeName: 'وسام الملاح السيبراني',
     badgeEmoji: '🧭',
     videos: [],
@@ -144,7 +153,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         ],
         correctIndex: 0,
         explanation: 'لوحة الخصائص (Properties) تعرض الخيارات الديناميكية لكل كائن محدد مثل الحجم، التنسيق، التوقيت، وحالات الزر.',
-        points: 34,
+        points: 25,
       },
       {
         id: 'q2-2',
@@ -181,6 +190,9 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     shortTitle: 'إنشاء المشروعات',
     storyMission: 'اختر نوع المشروع المناسب للمتعلم: متجاوب (Responsive)، أو فارغ (Blank)، أو واقع افتراضي (VR Project).',
     instructions: '1. تعرف على أنواع المشروعات: Responsive, Blank, VR Project.\n2. اضبط أبعاد المشروع بالبكسل المناسب وتعرف على تقنية Fluid Boxes.\n3. استعرض الوسائط والصور المرفقة بالمستوى.\n4. حل أسئلة التقويم التفاعلية للمستوى.\n5. ارفع نشاطك الخاص بأسفل المستوى ثم اضغط Finish Level 3.',
+    totalMaxScore: 50,
+    section1Score: 25,
+    section2Score: 25,
     badgeName: 'وسام المعماري الرقمي',
     badgeEmoji: '📐',
     videos: [],
@@ -197,7 +209,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         ],
         correctIndex: 1,
         explanation: 'المشروع المتجاوب يعتمد على الصناديق المرنة (Fluid Boxes) لضبط المحتوى آلياً مع أحجام ومقاسات الشاشات المختلفة.',
-        points: 34,
+        points: 25,
       },
       {
         id: 'q3-2',
@@ -234,6 +246,9 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     shortTitle: 'إدارة الشرائح',
     storyMission: 'أتقن تنظيم مسارات الشرائح، الشريحة الرئيسية (Master Slide)، وانتقالات العرض الزمني.',
     instructions: '1. أتقن استخدام الشرائح الرئيسية Master Slides لتوحيد التصميم والهوية.\n2. تدرب على تغيير خلفيات الشرائح وتكرارها وحذفها.\n3. تصفح الفيديوهات والصور التوضيحية للمستوى.\n4. أجب عن الأنشطة التفاعلية.\n5. ارفع نشاطك الخاص بأسفل الصفحة واضغط Finish Level 4.',
+    totalMaxScore: 50,
+    section1Score: 25,
+    section2Score: 25,
     badgeName: 'وسام قائد الشرائح',
     badgeEmoji: '🎞️',
     videos: [],
@@ -250,7 +265,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         ],
         correctIndex: 1,
         explanation: 'الشرائح الرئيسية تطبق عناصر التصميم الموحدة (خلفيات، أزرار، ترويسات) على كافة الشرائح التابعة لتوفير الوقت.',
-        points: 34,
+        points: 25,
       },
       {
         id: 'q4-2',
@@ -287,6 +302,9 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     shortTitle: 'إدراج الوسائط',
     storyMission: 'ادمج عناصر الوسائط المتعددة بانسجام: النصوص التوضيحية، المقاطع الصوتية، وتزامن الفيديو.',
     instructions: '1. تعلم ضبط التوقيت بالخط الزمني Timeline لظهور الوسائط المتعددة بدقة.\n2. اختر صيغ الفيديو والصوت المتوافقة مثل MP4 و WAV/MP3.\n3. شاهد الفيديوهات والصور المرفقة واستفد من الشرح.\n4. أجب عن أسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص واضغط Finish Level 5.',
+    totalMaxScore: 50,
+    section1Score: 25,
+    section2Score: 25,
     badgeName: 'وسام مهندس الوسائط المتعددة',
     badgeEmoji: '🎬',
     videos: [],
@@ -303,7 +321,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         ],
         correctIndex: 0,
         explanation: 'الخط الزمني (Timeline) يحدد موضع بداية ونهاية ظهور كل كائن ومدة بقائه وتزامنه مع الصوت.',
-        points: 34,
+        points: 25,
       },
       {
         id: 'q5-2',
@@ -340,6 +358,9 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     shortTitle: 'الكائنات التفاعلية',
     storyMission: 'ابنِ مسارات التعلم التفاعلية باستخدام الأزرار الذكية، صناديق النقر (Click Boxes)، ومناطق الإفلات.',
     instructions: '1. تدرب على إضافة الكائنات التفاعلية وصناديق النقر Click Boxes.\n2. اضبط حالات الأزرار التفاعلية الثلاث (Normal, RollOver, Down).\n3. حدد إجراءات الانتقال Jump to Slide.\n4. أجب عن أسئلة المستوى.\n5. ارفع نشاطك الخاص واضغط Finish Level 6.',
+    totalMaxScore: 50,
+    section1Score: 25,
+    section2Score: 25,
     badgeName: 'وسام خبير التفاعل',
     badgeEmoji: '⚡',
     videos: [],
@@ -356,7 +377,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         ],
         correctIndex: 0,
         explanation: 'صندوق النقر Click Box كائن شفاف يُوضع فوق أي عنصر ليصبح قابلاً للنقر ويطلق إجراءات التنقل.',
-        points: 34,
+        points: 25,
       },
       {
         id: 'q6-2',
@@ -393,6 +414,9 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     shortTitle: 'الاختبارات التفاعلية',
     storyMission: 'صمم أدوات التقويم الإلكتروني: أسئلة الاختيار من متعدد، الصواب والخطأ، وبنوك الأسئلة العشوائية.',
     instructions: '1. تعرف على بناء بنوك الأسئلة Question Pools وتوليد نماذج متكافئة.\n2. اضبط شريحة النتائج Quiz Results Slide ونسبة الاجتياز.\n3. تعرف على فرق التغذية الراجعة الفورية والمرجأة.\n4. أجب عن أسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص واضغط Finish Level 7.',
+    totalMaxScore: 50,
+    section1Score: 25,
+    section2Score: 25,
     badgeName: 'وسام خبير القياس والتقويم',
     badgeEmoji: '🏆',
     videos: [],
@@ -409,7 +433,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         ],
         correctIndex: 1,
         explanation: 'بنوك الأسئلة تسحب عدداً محدداً من الأسئلة عشوائياً لكل متعلم، مما يخلق نماذج اختبارية متكافئة ومتنوعة.',
-        points: 34,
+        points: 25,
       },
       {
         id: 'q7-2',
@@ -446,6 +470,9 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     shortTitle: 'المحاكاة التفاعلية',
     storyMission: 'سجل تطبيقات الحاسب بالأنماط الثلاثة: العرض التوضيحي (Demo)، التدريب (Training)، والتقييم (Assessment).',
     instructions: '1. تدرب على تسجيل الشاشة بالأنماط الثلاثة: Demo, Training, Assessment.\n2. أتقن نمط التدريب لتقديم التلميحات ونمط التقييم لاختبار المهارة.\n3. تصفح الفيديوهات والصور المرفقة بالمستوى.\n4. أجب عن أسئلة المستوى.\n5. ارفع نشاطك الخاص واضغط Finish Level 8.',
+    totalMaxScore: 50,
+    section1Score: 25,
+    section2Score: 25,
     badgeName: 'وسام سيد المحاكاة',
     badgeEmoji: '🖥️',
     videos: [],
@@ -462,7 +489,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         ],
         correctIndex: 0,
         explanation: 'نمط التدريب Training يسمح للمتعلم بالتطبيق العملي مع ظهور رسائل توجيهية وتلميحات إذا تعثر في النقر.',
-        points: 34,
+        points: 25,
       },
       {
         id: 'q8-2',
@@ -495,11 +522,14 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
   {
     levelNumber: 9,
     moduleId: 'mod-9',
-    title: 'المستوى 9: استيراد PowerPoint ونشر وتصدير المشروعات (HTML5 / SCORM) - أنشطة تطبيقية',
+    title: 'المستوى 9: استيراد PowerPoint ونشر وتصدير المشروعات (HTML5 / SCORM)',
     shortTitle: 'أنشطة وتطبيقات المستوى 9',
     storyMission: 'حول العروض التقديمية الساكنة إلى تجارب تعلم نشطة تفاعلية، وانشر المشروع بصيغة HTML5 المتوافقة مع نظم LMS ومعايير SCORM.',
     instructions: '1. استيراد ملفات العروض التقديمية PowerPoint وربطها ديناميكياً داخل Adobe Captivate.\n2. تحويل الشرائح الساكنة إلى عناصر تعليمية نشطة وتفاعلية.\n3. ضبط إعدادات التصدير ومعايير حزم التعلم الإلكتروني SCORM و xAPI لتتبع الدرجات في منصات LMS.\n4. نشر وتصدير المشروع النهائي بصيغة HTML5 المتوافقة مع كافة المتصفحات والأجهزة الذكية.\n5. تنفيذ ورفع النشاط التطبيقي العملي الخاص بالمستوى بنجاح.',
     objectives: '1. استيراد ملفات العروض التقديمية PowerPoint وربطها ديناميكياً داخل Adobe Captivate.\n2. تحويل الشرائح الساكنة إلى عناصر تعليمية نشطة وتفاعلية.\n3. ضبط إعدادات التصدير ومعايير حزم التعلم الإلكتروني SCORM و xAPI لتتبع الدرجات في منصات LMS.\n4. نشر وتصدير المشروع النهائي بصيغة HTML5 المتوافقة مع كافة المتصفحات والأجهزة الذكية.\n5. تنفيذ ورفع النشاط التطبيقي العملي الخاص بالمستوى بنجاح.',
+    totalMaxScore: 50,
+    section1Score: 25,
+    section2Score: 25,
     badgeName: 'وسام تاج التميز الرقمي المطلق',
     badgeEmoji: '👑',
     videos: [],
@@ -507,7 +537,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     questions: [
       {
         id: 'q9-1',
-        question: 'نشاط 1 (يقوم به الطالب): عند قيامك باستيراد ملف عرض تقديمي (PowerPoint) إلى Adobe Captivate، ما هو الإجراء العملي الأفضل لضمان مزامنة أي تعديل يطرأ على ملف العرض الأصلي مستقبلاً؟',
+        question: 'عند قيامك باستيراد ملف عرض تقديمي (PowerPoint) إلى Adobe Captivate، ما هو الإجراء العملي الأفضل لضمان مزامنة أي تعديل يطرأ على ملف العرض الأصلي مستقبلاً؟',
         options: [
           'تفعيل خيار الربط الديناميكي (Link) لمزامنة التعديلات تلقائياً',
           'طباعة الشرائح يدوياً على ورق وإعادة مسحها ضوئياً',
@@ -516,11 +546,11 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         ],
         correctIndex: 0,
         explanation: 'خيار Link يتيح لك تعديل شرائح البوربوينت مستقبلاً وتحديثها تلقائياً داخل مشروع Captivate بضغطة زر.',
-        points: 34,
+        points: 25,
       },
       {
         id: 'q9-2',
-        question: 'نشاط 2 (يقوم به الطالب): أثناء إعدادك لنشر المشروع التعليمي، ما هي المعايير القياسية العالمية التي تضبطها لتمكين نظام إدارة التعلم LMS (مثل Moodle أو Blackboard) من تتبع درجاتك ونسبة إنجازك؟',
+        question: 'أثناء إعدادك لنشر وتصدير المشروع التعليمي، ما هي المعايير القياسية العالمية التي تضبطها لتمكين نظام إدارة التعلم LMS من تتبع درجاتك ونسبة إنجازك؟',
         options: [
           'معايير حزم التعلم الإلكتروني SCORM (1.2 / 2004) و xAPI',
           'معايير وتنسيقات مستندات Word القياسية',
@@ -533,7 +563,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
       },
       {
         id: 'q9-3',
-        question: 'نشاط 3 (يقوم به الطالب): بصفتك مصمم محتوى تفاعلي، ما الصيغة التفاعلية الحديثة المعتمدة التي تصدر بها مشروعك ليعمل بأعلى كفاءة وأمان على متصفحات الويب والهواتف الذكية والأجهزة اللوحية دون الحاجة لمشغلات إضافية؟',
+        question: 'بصفتك مصمم محتوى تفاعلي، ما الصيغة التفاعلية الحديثة المعتمدة التي تصدر بها مشروعك ليعمل بأعلى كفاءة وأمان على متصفحات الويب والهواتف الذكية دون الحاجة لمشغلات إضافية؟',
         options: [
           'التصدير بصيغة HTML5 مفتوحة المعايير والمتوافقة مع كافة الشاشات والمتصفحات',
           'التصدير بصيغة Flash القديمة والمحظورة أمنياً',
@@ -573,6 +603,9 @@ export function getCustomGameLevels(): GameLevelDef[] {
           found.instructions = customLvl.instructions || found.instructions;
           found.objectives = customLvl.objectives || found.objectives;
           found.activityPrompt = customLvl.activityPrompt !== undefined ? customLvl.activityPrompt : found.activityPrompt;
+          found.totalMaxScore = customLvl.totalMaxScore !== undefined ? customLvl.totalMaxScore : found.totalMaxScore;
+          found.section1Score = customLvl.section1Score !== undefined ? customLvl.section1Score : found.section1Score;
+          found.section2Score = customLvl.section2Score !== undefined ? customLvl.section2Score : found.section2Score;
           found.imagesSectionTitle = customLvl.imagesSectionTitle !== undefined ? customLvl.imagesSectionTitle : found.imagesSectionTitle;
           found.imagesSectionDesc = customLvl.imagesSectionDesc !== undefined ? customLvl.imagesSectionDesc : found.imagesSectionDesc;
           found.videos = customLvl.videos || [];
@@ -614,6 +647,9 @@ export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean
         found.instructions = customLvl.instructions || found.instructions;
         found.objectives = customLvl.objectives || found.objectives;
         found.activityPrompt = customLvl.activityPrompt !== undefined ? customLvl.activityPrompt : found.activityPrompt;
+        found.totalMaxScore = customLvl.totalMaxScore !== undefined ? customLvl.totalMaxScore : found.totalMaxScore;
+        found.section1Score = customLvl.section1Score !== undefined ? customLvl.section1Score : found.section1Score;
+        found.section2Score = customLvl.section2Score !== undefined ? customLvl.section2Score : found.section2Score;
         found.imagesSectionTitle = customLvl.imagesSectionTitle !== undefined ? customLvl.imagesSectionTitle : found.imagesSectionTitle;
         found.imagesSectionDesc = customLvl.imagesSectionDesc !== undefined ? customLvl.imagesSectionDesc : found.imagesSectionDesc;
         found.videos = customLvl.videos || [];

@@ -112,6 +112,21 @@ export const AdminTestsSettingsManager: React.FC = () => {
   });
   const [isSavingObjectives, setIsSavingObjectives] = useState<boolean>(false);
 
+  // Level Total Score & Distribution state (Saved and adopted in student cards and 9-levels sheet)
+  const [levelTotalScoreInput, setLevelTotalScoreInput] = useState<number>(() => {
+    const l9 = getCustomGameLevels().find((l) => l.levelNumber === 9);
+    return l9?.totalMaxScore ?? 50;
+  });
+  const [levelSection1ScoreInput, setLevelSection1ScoreInput] = useState<number>(() => {
+    const l9 = getCustomGameLevels().find((l) => l.levelNumber === 9);
+    return l9?.section1Score ?? 25;
+  });
+  const [levelSection2ScoreInput, setLevelSection2ScoreInput] = useState<number>(() => {
+    const l9 = getCustomGameLevels().find((l) => l.levelNumber === 9);
+    return l9?.section2Score ?? 25;
+  });
+  const [isSavingLevelScores, setIsSavingLevelScores] = useState<boolean>(false);
+
   // Search
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -211,6 +226,41 @@ export const AdminTestsSettingsManager: React.FC = () => {
       showNotification(`✓ تم حفظ وتحديث أهداف المستوى ${levelNum} بنجاح ومزامنتها لجميع الطلاب فوراً`);
     } finally {
       setTimeout(() => setIsSavingObjectives(false), 250);
+    }
+  };
+
+  // Save / Update Level Total Score & Distribution (adopted in student cards and 9-levels sheet)
+  const handleSaveLevelScores = async (
+    levelNum: number,
+    totalScore: number,
+    sec1Score: number,
+    sec2Score: number
+  ) => {
+    setIsSavingLevelScores(true);
+    try {
+      const updatedLevels = gameLevels.map((lvl) => {
+        if (lvl.levelNumber === levelNum) {
+          const updatedQuestions = [...lvl.questions];
+          if (updatedQuestions[0]) {
+            updatedQuestions[0] = { ...updatedQuestions[0], points: sec1Score };
+          }
+          return {
+            ...lvl,
+            totalMaxScore: totalScore,
+            section1Score: sec1Score,
+            section2Score: sec2Score,
+            questions: updatedQuestions,
+          };
+        }
+        return lvl;
+      });
+      setGameLevels(updatedLevels);
+      saveCustomGameLevels(updatedLevels, true);
+      showNotification(`✓ تم اعتماد وتحديث الدرجة الكلية للمستوى ${levelNum} (${totalScore} درجة: ${sec1Score} للسؤال الأول + ${sec2Score} للنشاط) في بطاقة الطلاب والشيت بنجاح!`);
+    } catch {
+      showNotification('حدث خطأ أثناء حفظ درجات المستوى', 'error');
+    } finally {
+      setTimeout(() => setIsSavingLevelScores(false), 250);
     }
   };
 
@@ -1381,7 +1431,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
 
               {/* Level Selector for Objectives */}
               <div className="flex items-center gap-2 self-end sm:self-auto">
-                <span className="text-xs text-slate-300 font-bold">تحديد المستوى لتعديل أهدافه:</span>
+                <span className="text-xs text-slate-300 font-bold">تحديد المستوى لتعديل أهدافه ودرجته:</span>
                 <select
                   value={editingLevelNum}
                   onChange={(e) => {
@@ -1389,6 +1439,9 @@ export const AdminTestsSettingsManager: React.FC = () => {
                     setEditingLevelNum(num);
                     const targetLvl = gameLevels.find((l) => l.levelNumber === num);
                     setLevelObjectivesText(targetLvl?.objectives || targetLvl?.instructions || '');
+                    setLevelTotalScoreInput(targetLvl?.totalMaxScore ?? 50);
+                    setLevelSection1ScoreInput(targetLvl?.section1Score ?? 25);
+                    setLevelSection2ScoreInput(targetLvl?.section2Score ?? 25);
                   }}
                   className="px-3 py-1.5 rounded-xl bg-slate-950 border border-cyan-500/50 text-cyan-200 text-xs font-bold outline-none cursor-pointer"
                 >
@@ -1426,6 +1479,105 @@ export const AdminTestsSettingsManager: React.FC = () => {
               >
                 {isSavingObjectives ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 <span>💾 حفظ وتحديث أهداف المستوى ومزامنتها فوراً</span>
+              </button>
+            </div>
+          </div>
+
+          {/* ================= LEVEL TOTAL SCORE & DISTRIBUTION EDITOR CARD ================= */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#170e2b] via-[#22133d] to-[#170e2b] border-2 border-amber-400/80 shadow-[0_0_30px_rgba(251,191,36,0.25)] space-y-4 text-right">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-amber-400/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 flex items-center justify-center shrink-0 text-xl">
+                  🏆
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-black border border-amber-400/40">
+                      {`المستوى ${editingLevelNum}`}
+                    </span>
+                    <span className="text-[11px] text-emerald-300 font-bold">
+                      الدرجة الكلية وتوزيع درجات التحدي والنشاط
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-0.5">
+                    {`الدرجة الكلية للمستوى ${editingLevelNum} (تُعتمد في بطاقة الطلاب وشيت المستويات الـ 9)`}
+                  </h3>
+                </div>
+              </div>
+
+              <span className="text-xs text-amber-300/90 font-bold bg-amber-950/60 px-3 py-1 rounded-xl border border-amber-500/40">
+                المجموع الحالي: {levelTotalScoreInput} درجة
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-700/80 space-y-1.5">
+                <label className="text-xs font-bold text-amber-300 block">
+                  ⭐ الدرجة الكلية للمستوى:
+                </label>
+                <input
+                  type="number"
+                  min="10"
+                  max="500"
+                  value={levelTotalScoreInput}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setLevelTotalScoreInput(val);
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-sm font-black outline-none"
+                />
+                <span className="text-[10px] text-slate-400 block">الدرجة العظمى الإجمالية المعتمدة للمستوى</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-700/80 space-y-1.5">
+                <label className="text-xs font-bold text-rose-300 block">
+                  ❤️ درجة القسم 1 (سؤال القلوب):
+                </label>
+                <input
+                  type="number"
+                  min="5"
+                  max="250"
+                  value={levelSection1ScoreInput}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setLevelSection1ScoreInput(val);
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-rose-400 text-white text-sm font-black outline-none"
+                />
+                <span className="text-[10px] text-slate-400 block">درجة سؤال التحدي المعرفي بلعبة القلوب</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-700/80 space-y-1.5">
+                <label className="text-xs font-bold text-cyan-300 block">
+                  🎮 درجة القسم 2 (النشاط التطبيقي):
+                </label>
+                <input
+                  type="number"
+                  min="5"
+                  max="250"
+                  value={levelSection2ScoreInput}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setLevelSection2ScoreInput(val);
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-cyan-400 text-white text-sm font-black outline-none"
+                />
+                <span className="text-[10px] text-slate-400 block">درجة النشاط التطبيقي واللعبة التفاعلية</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+              <span className="text-[11px] text-slate-300">
+                ⚡ عند الحفظ، تُعتمد الدرجة تلقائياً وتنعكس فوراً في بطاقات المستويات وشيت المستويات الـ 9 للطلاب
+              </span>
+              <button
+                type="button"
+                disabled={isSavingLevelScores}
+                onClick={() => handleSaveLevelScores(editingLevelNum, levelTotalScoreInput, levelSection1ScoreInput, levelSection2ScoreInput)}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg transition cursor-pointer"
+              >
+                {isSavingLevelScores ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                <span>💾 حفظ واعتماد الدرجة الكلية وتوزيعها في بطاقة الطلاب والشيت</span>
               </button>
             </div>
           </div>

@@ -30,7 +30,7 @@ import { generateSixtyStudents, RESEARCH_GROUPS_META, getGroupByUsername, getCol
 import { getAllTripartiteNames, getStudentTripartiteName } from '../utils/studentNameStorage';
 import { StudentGameProgress, PreTestResult, CompletedLevelResult, StudentTestAccessSummary, TestAccessSession, PreTestQuestion } from '../types';
 import { getPostTestQuestions, getPreTestQuestions } from '../data/preTestData';
-import { GAME_LEVELS_DATA } from '../data/gameLevelsData';
+import { GAME_LEVELS_DATA, getCustomGameLevels } from '../data/gameLevelsData';
 import {
   getStudentLoginsAuditMap,
   saveAllStudentLoginsAudit,
@@ -449,7 +449,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       if (statusFilter === 'logged_in' && !s.hasLoggedIn) return false;
       if (statusFilter === 'pre_done' && !s.preTestCompleted) return false;
       if (statusFilter === 'post_done' && !s.postTestCompleted) return false;
-      if (statusFilter === 'levels_done' && s.completedLevelsCount < 10) return false;
+      if (statusFilter === 'levels_done' && s.completedLevelsCount < 9) return false;
 
       // Search query
       if (searchQuery.trim()) {
@@ -468,7 +468,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
   const activeLoginsCount = enrichedStudents.filter((s) => s.hasLoggedIn).length;
   const preTestDoneCount = enrichedStudents.filter((s) => s.preTestCompleted).length;
   const postTestDoneCount = enrichedStudents.filter((s) => s.postTestCompleted).length;
-  const allLevelsDoneCount = enrichedStudents.filter((s) => s.completedLevelsCount === 10).length;
+  const allLevelsDoneCount = enrichedStudents.filter((s) => s.completedLevelsCount >= 9).length;
 
   // Format seconds to mm:ss
   const formatDuration = (sec: number) => {
@@ -823,8 +823,13 @@ export const AdminStudentsAuditManager: React.FC = () => {
     showToast(`تم استخراج وتحميل شيت تفصيل إجابات ${testLabel} مع التفسير العلمي لكل سؤال بنجاح`);
   };
 
-  // 3. Export 10 Stages Game Levels Sheet
+  // 3. Export 9 Educational Game Levels Sheet
   const handleExportLevelsSheet = () => {
+    const customLevels = getCustomGameLevels();
+    const levelHeaders = customLevels.map(
+      (lvl) => `المستوى ${lvl.levelNumber}: ${lvl.title} (درجة / ${lvl.totalMaxScore || 50})`
+    );
+
     const headers = [
       'م',
       'اسم المستخدم (اليوزر نيم)',
@@ -835,30 +840,52 @@ export const AdminStudentsAuditManager: React.FC = () => {
       'المجموعة البحثية',
       'نمط التعلم',
       'نمط التغذية الراجعة',
-      'عدد المراحل المكتملة (من 10)',
-      'إجمالي نقاط الخبرة (XP)',
-      'نسبة إنجاز المراحل (%)',
-      'تاريخ آخر مرحلة منجزة',
+      ...levelHeaders,
+      'إجمالي الدرجات المحرزة (XP)',
+      'الدرجة العظمى الكلية للمستويات',
+      'النسبة المئوية (%)',
+      'عدد المستويات المنجزة (من 9)',
+      'تاريخ آخر مستوى منجز',
     ];
 
-    const rows = enrichedStudents.map((s, idx) => [
-      idx + 1,
-      s.username,
-      s.firstName,
-      s.fatherName,
-      s.familyName,
-      s.fullName,
-      `${s.groupCode} (${s.groupName})`,
-      s.learningMode,
-      s.feedbackMode,
-      `${s.completedLevelsCount} / 10`,
-      s.totalLevelsScore,
-      `${Math.round((s.completedLevelsCount / 10) * 100)}%`,
-      s.lastActive,
-    ]);
+    const totalPossibleMax = customLevels.reduce((sum, lvl) => sum + (lvl.totalMaxScore || 50), 0);
 
-    downloadCsvSheet('شيت_نتائج_المراحل_التعليمية_العشر_Levels_Results', headers, rows);
-    showToast('تم تصدير وتحميل شيت نتائج المراحل العشر بنجاح بصيغة Excel / CSV');
+    const rows = enrichedStudents.map((s, idx) => {
+      const levelScores = customLevels.map((lvl) => {
+        const lvlResult = s.raw?.completedLevels?.[lvl.levelNumber];
+        if (!lvlResult) return '-';
+        return `${lvlResult.score} / ${lvlResult.maxScore || lvl.totalMaxScore || 50}`;
+      });
+
+      const totalEarnedScore = customLevels.reduce((sum, lvl) => {
+        const lvlResult = s.raw?.completedLevels?.[lvl.levelNumber];
+        return sum + (lvlResult ? lvlResult.score : 0);
+      }, 0);
+
+      const completedCount = customLevels.filter((lvl) => !!s.raw?.completedLevels?.[lvl.levelNumber]).length;
+      const pct = totalPossibleMax > 0 ? Math.round((totalEarnedScore / totalPossibleMax) * 100) : 0;
+
+      return [
+        idx + 1,
+        s.username,
+        s.firstName,
+        s.fatherName,
+        s.familyName,
+        s.fullName,
+        `${s.groupCode} (${s.groupName})`,
+        s.learningMode,
+        s.feedbackMode,
+        ...levelScores,
+        totalEarnedScore,
+        totalPossibleMax,
+        `${pct}%`,
+        `${completedCount} / 9`,
+        s.lastActive,
+      ];
+    });
+
+    downloadCsvSheet('شيت_نتائج_المستويات_التعليمية_الـ9_Levels_Results', headers, rows);
+    showToast('تم تصدير وتحميل شيت نتائج المستويات الـ 9 بنجاح مع تفاصيل درجات كل مستوى');
   };
 
   // 4. Export Real Logins Sheet
@@ -902,7 +929,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const headers = [
       'م', 'اسم المستخدم', 'الاسم الأول', 'اسم الأب', 'اسم العائلة', 'الاسم الكامل', 'المجموعة البحثية', 'نمط التعاوني', 'تاريخ ووقت أول دخول', 'تاريخ ووقت آخر دخول',
       'حالة القبلي', 'درجة القبلي (/53)', 'تاريخ ووقت القبلي الفعلي',
-      'المراحل المكتملة', 'نقاط المراحل',
+      'المستويات المكتملة', 'نقاط المستويات',
       'حالة البعدي', 'درجة البعدي (/53)', 'تاريخ ووقت البعدي الفعلي',
     ];
     const collabStudents = enrichedStudents.filter((s) => s.learningMode === 'تعاوني');
@@ -910,7 +937,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       idx + 1, s.username, s.firstName, s.fatherName, s.familyName, s.fullName, `${s.groupCode} (${s.groupName})`, s.feedbackMode,
       s.firstLogin, s.lastLogin,
       s.preTestCompleted ? 'مكتمل' : 'غير مكتمل', s.preTestCompleted ? s.preTestScore : '-', s.preTestDate,
-      `${s.completedLevelsCount} / 10`, s.totalLevelsScore,
+      `${s.completedLevelsCount} / 9`, s.totalLevelsScore,
       s.postTestCompleted ? 'مكتمل' : 'غير مكتمل', s.postTestCompleted ? s.postTestScore : '-', s.postTestDate,
     ]);
     downloadCsvSheet('شيت_نتائج_المجموعات_التعاونية_Collaborative_Groups', headers, rows);
@@ -921,7 +948,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
   const handleExportGroupSheet = (targetGroupCode: string) => {
     const headers = [
       'م', 'اسم المستخدم', 'الاسم الأول', 'اسم الأب', 'اسم العائلة', 'الاسم الكامل', 'المجموعة', 'نمط التعلم', 'التغذية الراجعة', 'أول دخول', 'آخر دخول',
-      'حالة القبلي', 'درجة القبلي', 'تاريخ ووقت القبلي الفعلي', 'المراحل المكتملة', 'نقاط المراحل',
+      'حالة القبلي', 'درجة القبلي', 'تاريخ ووقت القبلي الفعلي', 'المستويات المكتملة', 'نقاط المستويات',
       'حالة البعدي', 'درجة البعدي', 'تاريخ ووقت البعدي الفعلي',
     ];
     const groupStudents = enrichedStudents.filter((s) => {
@@ -936,7 +963,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       idx + 1, s.username, s.firstName, s.fatherName, s.familyName, s.fullName, s.groupName, s.learningMode, s.feedbackMode,
       s.firstLogin, s.lastLogin,
       s.preTestCompleted ? 'مكتمل' : '-', s.preTestCompleted ? s.preTestScore : '-', s.preTestDate,
-      `${s.completedLevelsCount}/10`, s.totalLevelsScore,
+      `${s.completedLevelsCount}/9`, s.totalLevelsScore,
       s.postTestCompleted ? 'مكتمل' : '-', s.postTestCompleted ? s.postTestScore : '-', s.postTestDate,
     ]);
     downloadCsvSheet(`شيت_مجموعة_${targetGroupCode}_Group_Results`, headers, rows);
@@ -964,8 +991,8 @@ export const AdminStudentsAuditManager: React.FC = () => {
       'نسبة القبلي (%)',
       'اجتياز القبلي',
       'تاريخ القبلي',
-      'المراحل المكتملة (من 10)',
-      'نقاط المراحل (XP)',
+      'المستويات المكتملة (من 9)',
+      'نقاط المستويات (XP)',
       'حالة الاختبار البعدي',
       'درجة الاختبار البعدي (/53)',
       'نسبة البعدي (%)',
@@ -992,7 +1019,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       s.preTestCompleted ? `${s.preTestPercentage}%` : '-',
       s.preTestCompleted ? (s.preTestPassed ? 'مجتاز' : 'غير مجتاز') : '-',
       s.preTestDate,
-      `${s.completedLevelsCount}/10`,
+      `${s.completedLevelsCount}/9`,
       s.totalLevelsScore,
       s.postTestCompleted ? 'مكتمل' : 'غير مكتمل',
       s.postTestCompleted ? s.postTestScore : '-',
@@ -1016,7 +1043,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       'درجة القبلي',
       'اجتياز القبلي',
       'تاريخ القبلي',
-      'المراحل المنجزة',
+      'المستويات المنجزة',
       'درجة البعدي',
       'اجتياز البعدي',
       'تاريخ البعدي',
@@ -1031,7 +1058,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       s.preTestCompleted ? `${s.preTestScore}/${s.preTestMaxScore}` : '-',
       s.preTestCompleted ? (s.preTestPassed ? 'ناجح' : 'راسب') : '-',
       s.preTestDate,
-      `${s.completedLevelsCount}/10`,
+      `${s.completedLevelsCount}/9`,
       s.postTestCompleted ? `${s.postTestScore}/${s.postTestMaxScore}` : '-',
       s.postTestCompleted ? (s.postTestPassed ? 'ناجح' : 'راسب') : '-',
       s.postTestDate,
@@ -1210,7 +1237,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
             <Download className="w-4 h-4 text-purple-400 shrink-0" />
           </button>
 
-          {/* Button 3: 10 Stages */}
+          {/* Button 3: 9 Educational Levels */}
           <button
             type="button"
             onClick={handleExportLevelsSheet}
@@ -1221,8 +1248,8 @@ export const AdminStudentsAuditManager: React.FC = () => {
                 <Gamepad2 className="w-4 h-4" />
               </div>
               <div className="text-right">
-                <span className="block font-black text-blue-300">شيت المراحل العشر</span>
-                <span className="text-[11px] text-slate-400">{allLevelsDoneCount} أتموا الـ 10 كاملة</span>
+                <span className="block font-black text-blue-300">شيت المستويات الـ 9</span>
+                <span className="text-[11px] text-slate-400">{allLevelsDoneCount} أتموا المستويات الـ 9</span>
               </div>
             </div>
             <Download className="w-4 h-4 text-blue-400 shrink-0" />
@@ -1507,7 +1534,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
                   <th className="p-3.5 text-center">المجموعة</th>
                   <th className="p-3.5">تسجيل الدخول الفعلي</th>
                   <th className="p-3.5 text-center">الاختبار القبلي</th>
-                  <th className="p-3.5 text-center">المراحل (10)</th>
+                  <th className="p-3.5 text-center">المستويات (9)</th>
                   <th className="p-3.5 text-center">الاختبار البعدي</th>
                   <th className="p-3.5 text-center">سجل الجلسات</th>
                 </tr>
@@ -1580,11 +1607,11 @@ export const AdminStudentsAuditManager: React.FC = () => {
                       )}
                     </td>
 
-                    {/* 10 Stages */}
+                    {/* 9 Educational Levels */}
                     <td className="p-3.5 text-center">
                       <div className="inline-block p-1.5 rounded-xl bg-blue-950/40 border border-blue-500/40 text-center">
                         <div className="font-black text-blue-300 text-xs">
-                          {s.completedLevelsCount} / 10 مراحل
+                          {s.completedLevelsCount} / 9 مستويات
                         </div>
                         <div className="text-[10px] text-cyan-300 font-bold">{s.totalLevelsScore} XP</div>
                       </div>
@@ -2395,9 +2422,9 @@ export const AdminStudentsAuditManager: React.FC = () => {
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-                <span className="text-[10px] text-blue-300 font-bold block">المراحل</span>
+                <span className="text-[10px] text-blue-300 font-bold block">المستويات</span>
                 <span className="text-xs font-black text-white  block mt-0.5">
-                  {inspectStudent.completedLevelsCount} / 10
+                  {inspectStudent.completedLevelsCount} / 9
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
@@ -2619,27 +2646,27 @@ export const AdminStudentsAuditManager: React.FC = () => {
               </div>
             )}
 
-            {/* 10 Educational Game Levels Detailed Breakdown */}
+            {/* 9 Educational Game Levels Detailed Breakdown */}
             <div className="space-y-2 p-3.5 rounded-2xl bg-blue-950/20 border border-blue-500/30">
               <h4 className="text-xs font-black text-blue-300 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <Gamepad2 className="w-4 h-4 text-blue-400" />
-                  <span>نتائج وتقدم المراحل التعليمية العشر (1-10):</span>
+                  <span>نتائج وتقدم المستويات التعليمية الـ 9 (1-9):</span>
                 </span>
                 <span className="text-[11px] text-cyan-300 font-bold">
-                  {inspectStudent.completedLevelsCount} / 10 مراحل مكتملة ({inspectStudent.totalLevelsScore} XP)
+                  {inspectStudent.completedLevelsCount} / 9 مستويات مكتملة ({inspectStudent.totalLevelsScore} XP)
                 </span>
               </h4>
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((lvlNum) => {
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-2 pt-1">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvlNum) => {
                   const lvlDetail = inspectStudent.levelsDetails[lvlNum];
                   const isDone = !!lvlDetail;
 
                   return (
                     <div
                       key={lvlNum}
-                      className={`p-2 rounded-xl border text-center text-xs space-y-0.5 ${
+                      className={`p-2.5 rounded-xl border text-center text-xs space-y-0.5 ${
                         isDone
                           ? 'bg-blue-950/80 border-blue-500/60 text-blue-200'
                           : 'bg-slate-950 border-slate-800 text-slate-500'
@@ -2649,7 +2676,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
                       {isDone ? (
                         <>
                           <span className="block font-bold text-emerald-300 text-[11px]">
-                            {lvlDetail.score} / {lvlDetail.maxScore || 100} XP
+                            {lvlDetail.score} / {lvlDetail.maxScore || 50} XP
                           </span>
                           <span className="block text-[9px] text-slate-400 opacity-80">
                             {lvlDetail.completedAt ? lvlDetail.completedAt.split(' ')[0] : 'مكتمل'}
