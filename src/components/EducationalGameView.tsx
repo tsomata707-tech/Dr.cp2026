@@ -103,8 +103,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const [isVideoOpen, setIsVideoOpen] = useState<boolean>(true);
   const [loadingLevelForGame, setLoadingLevelForGame] = useState<GameLevelDef | null>(null);
 
-  // Section 1 Hearts per level: starts at 2 hearts (❤️❤️)
-  const [heartsPerLevel, setHeartsPerLevel] = useState<Record<number, number>>({});
+  // Section 1 Hearts per level: starts at 1 heart (❤️) acting as a hint
+  const [heartsPerLevel, setHeartsPerLevel] = useState<Record<number, number>>({ 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1 });
+  const [hintUsedPerLevel, setHintUsedPerLevel] = useState<Record<number, boolean>>({});
   // Section 1 Score earned per level (25 points or 0)
   const [section1ScorePerLevel, setSection1ScorePerLevel] = useState<Record<number, number>>(() => {
     const initScores: Record<number, number> = {};
@@ -154,6 +155,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const [studentActivity, setStudentActivity] = useState<StudentActivitySubmission | null>(
     () => progress.studentActivities?.[selectedLevelNum] || null
   );
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [previewMediaZoom, setPreviewMediaZoom] = useState<LevelMediaItem | null>(null);
   const currentLevelVideos = useEducationalVideos(`level-${selectedLevelNum}`);
   const [feedbackModal, setFeedbackModal] = useState<{
@@ -310,11 +314,35 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const isSection1Done = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined && section1ScorePerLevel[selectedLevelNum] > 0);
 
   // Section 1: Heart-based question challenge handler
+  // Video seek handler: prevent forward seeking and deduct 5 points once
+  const [videoWarning, setVideoWarning] = useState<string | null>(null);
   const handleVideoSeek = () => {
     if (selectedLevelNum === 1 && !videoSeekedPerLevel[1]) {
       setVideoSeekedPerLevel((prev) => ({ ...prev, [1]: true }));
       setVideoScorePerLevel((prev) => ({ ...prev, [1]: 20 }));
+      setVideoWarning('لا يُسمح بتقديم أو تأخير الفيديو — تم خصم 5 درجات.');
+      setTimeout(() => setVideoWarning(null), 5000);
     }
+  };
+  // Hint helper: consume 1 heart as a hint, deduct 5 points, and highlight/eliminate an incorrect option
+  const [hintMessage, setHintMessage] = useState<string | null>(null);
+  const handleUseHint = () => {
+    if (isLevelCompleted || isSection1Done || hintUsedPerLevel[selectedLevelNum]) return;
+    const currentHeartCount = heartsPerLevel[selectedLevelNum] ?? 1;
+    if (currentHeartCount <= 0) return;
+
+    setHeartsPerLevel((prev) => ({ ...prev, [selectedLevelNum]: 0 }));
+    setHintUsedPerLevel((prev) => ({ ...prev, [selectedLevelNum]: true }));
+
+    // Deduct 5 points from current section 1 score or set base score to q1Points - 5
+    const existingScore = section1ScorePerLevel[selectedLevelNum] ?? q1Points;
+    const newScore = Math.max(0, existingScore - 5);
+    setSection1ScorePerLevel((prev) => ({
+      ...prev,
+      [selectedLevelNum]: newScore,
+    }));
+
+    setHintMessage('تم استخدام المساعدة (−5 درجات). تم تلميح إجابة خاطئة!');
   };
 
   const handleSelectSection1Option = (optIdx: number) => {
@@ -410,19 +438,57 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     return () => window.removeEventListener('cp_student_activity_graded', handleGraded);
   }, [username, selectedLevelNum]);
 
-  // Handle uploading special activity (Video, Image, or PDF)
+  // Handle uploading special activity (Video, Image, or PDF) with validation & 50 points grant
+  const handleTriggerUpload = () => {
+    // 1. Check if at least 3 questions are answered in this level
+    const questionsList = currentLevelDef.questions || [];
+    const minRequired = Math.min(3, questionsList.length);
+    const answeredCount = questionsList.filter((q) => chosenAnswers[q.id] !== undefined).length;
+
+    if (!isAdmin && answeredCount < minRequired) {
+      setUploadError(`يجب الإجابة على 3 أسئلة على الأقل قبل رفع النشاط (تمت الإجابة على ${answeredCount} من ${minRequired})`);
+      setTimeout(() => setUploadError(null), 6000);
+      return;
+    }
+
+    setUploadError(null);
+    activityFileInputRef.current?.click();
+  };
+
   const handleUploadActivity = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // 2. Max file size: 20MB limit
+    const maxSizeBytes = 20 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      setUploadError(`حجم الملف كبير جداً (${(file.size / (1024 * 1024)).toFixed(1)} MB). الحد الأقصى المسموح به هو 20 ميجابايت.`);
+      setTimeout(() => setUploadError(null), 6000);
+      e.target.value = '';
+      return;
+    }
 
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     const isVid = file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/i.test(file.name);
     const fileType: 'video' | 'image' | 'pdf' = isVid ? 'video' : isPdf ? 'pdf' : 'image';
 
+    setIsUploading(true);
+    setUploadProgress(0);
+
     const reader = new FileReader();
+
+    reader.onprogress = (evt) => {
+      if (evt.lengthComputable) {
+        const pct = Math.round((evt.loaded / evt.total) * 100);
+        setUploadProgress(pct);
+      }
+    };
+
     reader.onload = async () => {
+      setUploadProgress(100);
       const fileUrl = reader.result as string;
       const cfg = getLevelActivityConfig(selectedLevelNum);
+      
       const submission: StudentActivitySubmission = {
         fileUrl,
         fileName: file.name,
@@ -434,16 +500,34 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         groupCode,
         levelNumber: selectedLevelNum,
         activityTitle: cfg.activityTitle,
-        maxPoints: cfg.maxPoints || 50,
+        maxPoints: 50,
         status: 'pending',
-        grade: null,
+        grade: 50, // Instantly grant 50 points upon upload
       };
 
       const saved = await submitStudentActivity(submission);
+      
+      // Instantly set activity score per level to 50
+      setActivityScorePerLevel((prev) => ({
+        ...prev,
+        [selectedLevelNum]: 50,
+      }));
+
       const updatedProg = getStudentProgress(username);
       setProgress(updatedProg);
       setStudentActivity(saved);
+
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 1200);
     };
+
+    reader.onerror = () => {
+      setIsUploading(false);
+      setUploadError('حدث خطأ أثناء قراءة الملف. يجرب المحاولة مرة أخرى.');
+    };
+
     reader.readAsDataURL(file);
     e.target.value = '';
   };
@@ -928,6 +1012,21 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 onSeek={handleVideoSeek}
               />
             )}
+
+            {/* Video Warning Banner if penalty applied */}
+            {videoWarning && (
+              <div className="p-3 rounded-xl bg-red-950/90 border border-red-500 text-red-200 text-xs font-bold flex items-center gap-2 animate-bounce">
+                <span>⚠️ {videoWarning}</span>
+              </div>
+            )}
+
+            {/* Video Score Card */}
+            <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-emerald-500/50 flex items-center justify-between text-xs">
+              <span className="text-slate-300 font-bold">درجة الفيديو التعليمي لهذا المستوى:</span>
+              <span className="px-3 py-1 rounded-xl bg-emerald-950/80 border border-emerald-400 text-emerald-300 font-black font-['Outfit']">
+                {selectedLevelNum === 1 ? (videoScorePerLevel[1] ?? 25) : 25} / 25 XP
+              </span>
+            </div>
           </div>
         )}
 
@@ -1087,27 +1186,30 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 </div>
               </div>
 
-              {/* 2 Hearts Indicator displayed above answers */}
+              {/* 1 Heart Indicator (Hint) displayed above answers */}
               <div className="flex items-center gap-3 self-end sm:self-auto bg-slate-900/90 px-4 py-2.5 rounded-2xl border border-rose-500/50 shadow-inner">
-                <span className="text-xs text-rose-200 font-bold">طاقة المحاولة:</span>
+                <span className="text-xs text-rose-200 font-bold">المساعدة (Hint):</span>
                 <div className="flex items-center gap-1.5 text-2xl">
-                  {currentHearts >= 2 ? (
-                    <>
-                      <span className="text-rose-500 animate-pulse" title="قلب محاولة 1">❤️</span>
-                      <span className="text-rose-500 animate-pulse" title="قلب محاولة 2">❤️</span>
-                    </>
-                  ) : currentHearts === 1 ? (
-                    <>
-                      <span className="text-rose-500 animate-pulse" title="تبقى قلب محاولة واحد">❤️</span>
-                      <span className="text-slate-600 opacity-60" title="فقدت قلباً">🖤</span>
-                    </>
+                  {currentHearts >= 1 ? (
+                    <span className="text-rose-500 animate-pulse" title="قلب المساعدة المتاح">❤️</span>
                   ) : (
-                    <>
-                      <span className="text-slate-600 opacity-60" title="نفدت القلوب">🖤</span>
-                      <span className="text-slate-600 opacity-60" title="نفدت القلوب">🖤</span>
-                    </>
+                    <span className="text-slate-600 opacity-60" title="تم استهلاك قلب المساعدة">🖤</span>
                   )}
                 </div>
+
+                {!hintUsedPerLevel[selectedLevelNum] && !isLevelCompleted && !isSection1Done ? (
+                  <button
+                    type="button"
+                    onClick={handleUseHint}
+                    className="px-3 py-1 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-black text-xs shadow-md transition-all cursor-pointer"
+                  >
+                    استخدام المساعدة ❤️ (−5)
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-slate-400 font-bold px-2 py-1 bg-slate-800 rounded-lg">
+                    {hintUsedPerLevel[selectedLevelNum] ? 'تم استخدام المساعدة (−5 درجات)' : 'مغلق'}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -1204,6 +1306,14 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   💡 <strong>التغذية الراجعة الفورية المعتمدة:</strong> {q1.explanation}
                 </div>
               )}
+
+              {/* Question Score Card */}
+              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-amber-500/50 flex items-center justify-between text-xs mt-3">
+                <span className="text-slate-300 font-bold">درجة سؤال التحدي (القسم الأول):</span>
+                <span className="px-3 py-1 rounded-xl bg-amber-950/80 border border-amber-400 text-amber-300 font-black font-['Outfit']">
+                  {section1ScorePerLevel[selectedLevelNum] ?? 25} / {q1Points} XP
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -1305,10 +1415,33 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               />
             </div>
 
+            {/* Upload Error Banner */}
+            {uploadError && (
+              <div className="mb-4 p-3.5 rounded-2xl bg-rose-950/90 border-2 border-rose-500 text-rose-200 text-xs font-bold flex items-center gap-2 animate-shake">
+                <span>⚠️ {uploadError}</span>
+              </div>
+            )}
+
+            {/* Real Progress Bar during upload */}
+            {isUploading && (
+              <div className="mb-4 p-4 rounded-2xl bg-slate-900/90 border border-sky-500/50 space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-sky-300">
+                  <span>جاري قراءة ورفع ملف النشاط...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-sky-500/40">
+                  <div
+                    className="h-full bg-gradient-to-r from-sky-500 to-cyan-400 rounded-full transition-all duration-150 shadow-[0_0_10px_rgba(56,189,248,0.5)]"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* If No Activity Uploaded Yet */}
             {!studentActivity ? (
               <div
-                onClick={() => activityFileInputRef.current?.click()}
+                onClick={handleTriggerUpload}
                 className="mt-5 p-8 rounded-2xl border-2 border-dashed border-amber-400/60 hover:border-amber-400 bg-slate-950/60 hover:bg-slate-900/60 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-3 group"
               >
                 <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-400/40 group-hover:scale-110 group-hover:bg-amber-500/20 text-amber-300 flex items-center justify-center transition-all text-3xl">
@@ -1367,7 +1500,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => activityFileInputRef.current?.click()}
+                      onClick={handleTriggerUpload}
                       className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />

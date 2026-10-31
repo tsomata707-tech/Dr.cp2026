@@ -59,11 +59,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Center Subtitle or Status */}
       <div className="hidden md:flex items-center gap-2">
-        <span className="text-xs text-sky-800 font-['Tajawal'] font-bold">
+        <span className="text-sky-800 font-['Tajawal'] font-bold" style={{ textDecorationLine: 'none', fontSize: '25px', fontFamily: 'Tajawal' }}>
           بيئة الألعاب التعليمية الإلكترونية
         </span>
         <span className="text-sky-400">•</span>
-        <span className="text-xs text-slate-600 font-['Cairo'] font-semibold">
+        <span className="text-slate-600 font-['Cairo'] font-semibold" style={{ fontSize: '16px', lineHeight: '23px', fontWeight: 'bold' }}>
           Adobe Captivate 2019
         </span>
       </div>
@@ -141,21 +141,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>تسجيل خروج</span>
             </button>
           </div>
-        ) : (
-          <div className="flex items-center gap-2">
-
-            <button
-              type="button"
-              onClick={onOpenAdminLogin}
-              id="btn-navbar-admin-login"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-2 border-amber-500 bg-slate-900 hover:bg-slate-800 text-amber-300 text-xs font-bold transition-all cursor-pointer shadow-sm"
-              title="دخول المشرف (لوحة الأدمن)"
-            >
-              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-              <span>لوحة الأدمن</span>
-            </button>
-          </div>
-        )}
+        ) : null}
       </div>
     </header>
   );

@@ -131,7 +131,27 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
             controls
             preload="metadata"
             className="w-full h-full object-contain"
-            onSeeking={() => onSeek?.()}
+            onTimeUpdate={(e) => {
+              const v = e.currentTarget;
+              // Track max watched time to prevent seeking forward
+              const maxTimeKey = `cp_max_watched_${currentVideo.id}`;
+              const maxTime = parseFloat(v.dataset.maxTime || '0');
+              if (v.currentTime > maxTime + 1.5) {
+                // Attempted to seek forward! Revert back
+                v.currentTime = maxTime;
+                onSeek?.();
+              } else if (v.currentTime > maxTime) {
+                v.dataset.maxTime = String(v.currentTime);
+              }
+            }}
+            onSeeking={(e) => {
+              const v = e.currentTarget;
+              const maxTime = parseFloat(v.dataset.maxTime || '0');
+              if (v.currentTime > maxTime + 1) {
+                v.currentTime = maxTime;
+                onSeek?.();
+              }
+            }}
           />
         )}
       </div>
