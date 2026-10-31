@@ -257,18 +257,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     const unsub = subscribeToGroupRoom(groupCode, (updatedRoom) => {
       setRoomState(updatedRoom);
       setIsConnectedToFirebase(true);
-
-      if (updatedRoom.currentAnswers && Object.keys(updatedRoom.currentAnswers).length > 0) {
-        setChosenAnswers((prev) => {
-          const next = { ...prev };
-          Object.entries(updatedRoom.currentAnswers).forEach(([qId, ansObj]) => {
-            if (ansObj && typeof ansObj.selectedOption === 'number') {
-              next[qId] = ansObj.selectedOption;
-            }
-          });
-          return next;
-        });
-      }
     });
 
     joinGroupRoom(groupCode, {
@@ -296,7 +284,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   // [FIX 3]: القلوب الحالية تنزل إلى 1 افتراضياً
   const currentHearts = heartsPerLevel[selectedLevelNum] ?? 1;
-  const isSection1Done = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined && section1ScorePerLevel[selectedLevelNum] > 0);
+  const hasAnsweredQ1 = isLevelCompleted || (q1 ? chosenAnswers[q1.id] !== undefined : false);
+  const isSection1Done = hasAnsweredQ1;
 
   // [FIX 7]: تعميم خصم تقديم/تأخير الفيديو على كل المستويات
   const [videoWarning, setVideoWarning] = useState<string | null>(null);
@@ -1197,7 +1186,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   : chosenAnswers[q1.id];
                 const isSelected = chosen === optIdx;
                 const isCorrect = optIdx === q1.correctIndex;
-                const isPassed = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined && section1ScorePerLevel[selectedLevelNum] > 0);
+                const isPassed = isLevelCompleted || (hasAnsweredQ1 && (section1ScorePerLevel[selectedLevelNum] ?? 0) > 0);
 
                 // [FIX 8]: تمييز واستبعاد الخيار عند استخدام الـ Hint
                 const isEliminatedByHint = hintEliminatedOption[selectedLevelNum] === optIdx;
