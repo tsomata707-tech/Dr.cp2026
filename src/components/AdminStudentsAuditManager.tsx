@@ -1560,7 +1560,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
 
                     {/* Group Code */}
                     <td className="p-3.5 text-center">
-                      <span className="inline-block px-2.5 py-1 rounded-lg text-[11px] font-black font-['Cairo'] bg-slate-200 border border-slate-300 text-slate-900 shadow-xs">
+                      <span className="inline-block px-2.5 py-1 rounded-lg text-[11px] font-black font-['Cairo'] bg-slate-200 border border-slate-300 text-slate-900 shadow-xs" style={{ backgroundColor: '#d4c5be' }}>
                         {s.groupCode}
                       </span>
                     </td>
@@ -1611,7 +1611,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
                         <div className="font-black text-blue-300 text-xs">
                           {s.completedLevelsCount} / 9 مستويات
                         </div>
-                        <div className="text-[10px] text-cyan-300 font-bold">{s.totalLevelsScore} XP</div>
+                        <div className="text-[10px] text-cyan-300 font-bold" style={{ backgroundColor: '#e6ded9' }}>{s.totalLevelsScore} XP</div>
                       </div>
                     </td>
 

@@ -111,10 +111,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
                   ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
                   : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
-              style={{ backgroundColor: '#ecd7cc' }}
+              style={{ backgroundColor: '#f14b4b' }}
             >
               <Users className="w-4 h-4 text-sky-700" />
-              <span style={{ borderColor: '#dea75c' }}>اليوزر</span>
+              <span style={{ borderColor: '#cc5959', color: '#000000', fontWeight: 'bold' }}>اليوزر</span>
             </button>
 
             {/* TAB: شات مجموعات التعاون (G3 & G4) */}
