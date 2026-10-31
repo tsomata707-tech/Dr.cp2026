@@ -1252,16 +1252,18 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       )}
 
       {/* SECTION 2: APPLIED INTERACTIVE ACTIVITY */}
-      <div className="mt-6">
-        <LevelInteractiveGames
-          levelNumber={selectedLevelNum}
-          isLevelCompleted={isLevelCompleted}
-          initialCompleted={activityScorePerLevel[selectedLevelNum] !== undefined && activityScorePerLevel[selectedLevelNum] > 0}
-          earnedScore={activityScorePerLevel[selectedLevelNum] || 0}
-          maxScore={currentLevelDef.section2Score || 25}
-          onCompleteActivity={handleActivityCompleted}
-        />
-      </div>
+      {selectedLevelNum !== 1 && (
+        <div className="mt-6">
+          <LevelInteractiveGames
+            levelNumber={selectedLevelNum}
+            isLevelCompleted={isLevelCompleted}
+            initialCompleted={activityScorePerLevel[selectedLevelNum] !== undefined && activityScorePerLevel[selectedLevelNum] > 0}
+            earnedScore={activityScorePerLevel[selectedLevelNum] || 0}
+            maxScore={currentLevelDef.section2Score || 50}
+            onCompleteActivity={handleActivityCompleted}
+          />
+        </div>
+      )}
 
       {/* LEVEL TOTAL SCORE SUMMARY CARD */}
       <div className="mt-6 p-5 rounded-3xl bg-gradient-to-r from-[#170e2b] via-[#22133d] to-[#170e2b] border-2 border-amber-400/90 shadow-[0_0_30px_rgba(251,191,36,0.25)] text-right">
@@ -1273,16 +1275,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             </span>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                مشاهدة الفيديو: <strong className="text-emerald-400">{videoScorePerLevel[selectedLevelNum] ?? 25} / 25 XP</strong>
-              </span>
-              <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                سؤال التحدي (25 درجة): <strong className="text-amber-400">{chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0} / {q1Points} XP</strong>
+                سؤال التحدي (50 درجة): <strong className="text-amber-400">{chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0} / {q1Points} XP</strong>
               </span>
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
                 النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{studentActivity ? 50 : 0} / 50 XP</strong>
               </span>
               <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
-                المجموع المعتمد للمستوى: {(videoScorePerLevel[selectedLevelNum] ?? 25) + (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0) + (studentActivity ? 50 : 0)} / 100 XP
+                المجموع المعتمد للمستوى: {(chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0) + (studentActivity ? 50 : 0)} / 100 XP
               </span>
             </div>
           </div>
