@@ -100,6 +100,12 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const isAdmin = username.trim().toLowerCase() === 'admin';
   const [progress, setProgress] = useState<StudentGameProgress>(() => getStudentProgress(username));
   const [selectedLevelNum, setSelectedLevelNum] = useState<number>(() => Math.min(9, progress.currentLevel));
+  const [allLevels, setAllLevels] = useState<GameLevelDef[]>(() => {
+    const custom = import.meta.env.SSR ? [] : JSON.parse(localStorage.getItem('cp_game_levels_custom_v3') || '[]');
+    if (custom && custom.length > 0) return custom;
+    return GAME_LEVELS_DATA;
+  });
+
   const [chosenAnswers, setChosenAnswers] = useState<Record<string, number>>({});
   const [showAvatarModal, setShowAvatarModal] = useState<boolean>(false);
   const [isVideoOpen, setIsVideoOpen] = useState<boolean>(true);
@@ -119,12 +125,12 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     Object.entries(prog.completedLevels || {}).forEach(([lvlNum, res]) => {
       if (!res) return;
       const num = Number(lvlNum);
-      const lvlDef = GAME_LEVELS_DATA.find((l) => l.levelNumber === num);
+      const lvlDef = allLevels.find((l) => l.levelNumber === num) || GAME_LEVELS_DATA.find((l) => l.levelNumber === num);
       const q1Id = lvlDef?.questions[0]?.id;
       if (q1Id && res.questionScores && res.questionScores[q1Id] !== undefined) {
         initScores[num] = res.questionScores[q1Id];
       } else if (res.score) {
-        initScores[num] = Math.min(lvlDef?.section1Score ?? 50, Math.round(res.score * 0.5));
+        initScores[num] = Math.min(lvlDef?.section1Score ?? 25, Math.round(res.score * 0.25));
       }
     });
     return initScores;
@@ -137,11 +143,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     Object.entries(prog.completedLevels || {}).forEach(([lvlNum, res]) => {
       if (!res) return;
       const num = Number(lvlNum);
-      const lvlDef = GAME_LEVELS_DATA.find((l) => l.levelNumber === num);
+      const lvlDef = allLevels.find((l) => l.levelNumber === num) || GAME_LEVELS_DATA.find((l) => l.levelNumber === num);
       if (res.questionScores?.['section2_activity'] !== undefined) {
         initScores[num] = res.questionScores['section2_activity'];
       } else if (res.score) {
-        initScores[num] = Math.max(0, res.score - (initScores[num] || (lvlDef?.section1Score ?? 50)));
+        initScores[num] = Math.min(50, Math.max(0, res.score - (initScores[num] || (lvlDef?.section1Score ?? 25))));
       }
     });
     return initScores;
@@ -163,6 +169,29 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     });
     return initScores;
   });
+
+  // Real-time synchronization of levels
+  useEffect(() => {
+    const handleLevelsUpdate = (e: any) => {
+      if (Array.isArray(e.detail)) {
+        setAllLevels(e.detail);
+      }
+    };
+    window.addEventListener('game-levels-updated', handleLevelsUpdate);
+    return () => window.removeEventListener('game-levels-updated', handleLevelsUpdate);
+  }, []);
+
+  const handleVideoFinishReward = () => {
+    if (isLevelCompleted) return;
+    if ((videoScorePerLevel[selectedLevelNum] || 0) >= 25) return;
+    
+    setVideoScorePerLevel(prev => ({
+      ...prev,
+      [selectedLevelNum]: 25
+    }));
+    setVideoWarning('مبروك! حصلت على 25 نقطة لمشاهدة فيديو الشرح بالكامل 🎓');
+    setTimeout(() => setVideoWarning(null), 5000);
+  };
 
   // 5-second transition state as requested
   const [isTransitioning5s, setIsTransitioning5s] = useState<boolean>(false);
@@ -285,7 +314,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   // Current level definition
   const currentLevelDef =
-    GAME_LEVELS_DATA.find((l) => l.levelNumber === selectedLevelNum) || GAME_LEVELS_DATA[0];
+    allLevels.find((l) => l.levelNumber === selectedLevelNum) || GAME_LEVELS_DATA[0];
 
   const [previewMediaZoom, setPreviewMediaZoom] = useState<LevelMediaItem | null>(null);
 
@@ -891,7 +920,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         </div>
 
         <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2.5">
-          {GAME_LEVELS_DATA.map((lvl) => {
+          {allLevels.map((lvl) => {
             const isCompleted = !!progress.completedLevels[lvl.levelNumber];
             const isCurrent = lvl.levelNumber === progress.currentLevel && !isCompleted;
             const isUpcoming = !isAdmin && lvl.levelNumber > progress.currentLevel;
@@ -1353,7 +1382,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 مشاهدة الفيديو (25 درجة): <strong className="text-emerald-400">{isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined ? completedResult.questionScores['video_watch'] : (videoScorePerLevel[selectedLevelNum] ?? 0)} / 25 XP</strong>
               </span>
               <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
-                المجموع المعتمد للمستوى: {(isLevelCompleted && completedResult?.questionScores?.[q1?.id ?? ''] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0)) + (studentActivity ? (studentActivity.grade ?? 50) : 0) + (isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined ? completedResult.questionScores['video_watch'] : (videoScorePerLevel[selectedLevelNum] ?? 0))} / 100 XP
+                المجموع المعتمد للمستوى: {(isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined ? completedResult.questionScores['video_watch'] : (videoScorePerLevel[selectedLevelNum] ?? 0)) + (studentActivity ? (studentActivity.grade ?? 50) : 0) + (isLevelCompleted && q1 && completedResult?.questionScores?.[q1.id] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0))} / 100 XP
               </span>
             </div>
           </div>

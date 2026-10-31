@@ -80,7 +80,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     instructions: '1. تأكد من توافر نظام 64-Bit لتشغيل Adobe Captivate 2019.\n2. افتح ملف التثبيت القياسي وقم بضبط دعم اللغة العربية من قائمة التفضيلات Preferences.\n3. تصفح الفيديوهات والصور التعليمية الخاصة بالمستوى.\n4. أجب عن أنشطة وأسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص بأسفل المستوى (فيديو أو صورة أو PDF) ثم اضغط على زر Finish Level 1 للانتقال للمستوى التالي.',
     totalMaxScore: 100,
     section1Score: 25,
-    section2Score: 75,
+    section2Score: 50,
     badgeName: 'وسام البداية الرقمية',
     badgeEmoji: '🛡️',
     videos: [],
@@ -99,19 +99,6 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         explanation: 'يتطلب Adobe Captivate 2019 معمارية 64-Bit لتوفير استقرار معالجة الوسائط المتعددة والمحاكاة التفاعلية.',
         points: 25,
       },
-      {
-        id: 'q1-2',
-        question: 'عند اكتمال تثبيت البرنامج، ما هو الإجراء الضروري لضمان ظهور النصوص العربية بشكل سليم واتجاه صحيح؟',
-        options: [
-          'حذف ملفات الخطوط من نظام التشغيل',
-          'تفعيل خيار دعم لغات الشرق الأوسط (Middle Eastern Text Support) في التفضيلات',
-          'إلغاء تثبيت برنامج Captivate',
-          'استخدام اللغة الإنجليزية فقط'
-        ],
-        correctIndex: 1,
-        explanation: 'يتم ضبط تفضيلات Preferences واختيار محرك النصوص لدعم اللغة العربية وتوجيه النص من اليمين إلى اليسار.',
-        points: 25,
-      },
     ],
   },
   {
@@ -123,7 +110,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     instructions: '1. استكشف شريط الأدوات الرئيسي Toolbar ولوحة الخصائص Properties Panel.\n2. تعرف على متصفح الشرائح Filmstrip وطرق ترتيب الشرائح.\n3. شاهد الفيديوهات التوضيحية وتصفح الصور التعليمية.\n4. أجب عن أنشطة وأسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص بأسفل الصفحة ثم اضغط Finish Level 2.',
     totalMaxScore: 100,
     section1Score: 25,
-    section2Score: 75,
+    section2Score: 50,
     badgeName: 'وسام الملاح السيبراني',
     badgeEmoji: '🧭',
     videos: [],
@@ -142,19 +129,6 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         explanation: 'لوحة الخصائص (Properties) تعرض الخيارات الديناميكية لكل كائن محدد مثل الحجم، التنسيق، التوقيت، وحالات الزر.',
         points: 25,
       },
-      {
-        id: 'q2-2',
-        question: 'ما الوظيفة الأساسية للشاشة الافتتاحية (Welcome Screen) عند تشغيل Adobe Captivate 2019؟',
-        options: [
-          'إغلاق الجهاز تلقائياً',
-          'إتاحة إنشاء مشروعات جديدة (Responsive, Blank, VR) وفتح المشروعات الأخيرة',
-          'حذف المشروعات القديمة',
-          'تعديل خلفية سطح المكتب'
-        ],
-        correctIndex: 1,
-        explanation: 'توفر الشاشة الافتتاحية خيارات إنشاء مشروع متجاوب أو فارغ أو واقع افتراضي والوصول للقوالب الجاهزة.',
-        points: 25,
-      },
     ],
   },
   {
@@ -166,7 +140,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     instructions: '1. تعرف على أنواع المشروعات: Responsive, Blank, VR Project.\n2. اضبط أبعاد المشروع بالبكسل المناسب وتعرف على تقنية Fluid Boxes.\n3. استعرض الوسائط والصور المرفقة بالمستوى.\n4. حل أسئلة التقويم التفاعلية للمستوى.\n5. ارفع نشاطك الخاص بأسفل المستوى ثم اضغط Finish Level 3.',
     totalMaxScore: 100,
     section1Score: 25,
-    section2Score: 75,
+    section2Score: 50,
     badgeName: 'وسام المعماري الرقمي',
     badgeEmoji: '📐',
     videos: [],
@@ -185,19 +159,6 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         explanation: 'المشروع المتجاوب يعتمد على الصناديق المرنة (Fluid Boxes) لضبط المحتوى آلياً مع أحجام ومقاسات الشاشات المختلفة.',
         points: 25,
       },
-      {
-        id: 'q3-2',
-        question: 'لإنشاء بيئة تعلم غامرة بزاوية 360 درجة، أي نوع من المشروعات يجب اختياره من الشاشة الافتتاحية؟',
-        options: [
-          'مشروع نصي فقط (Text Project)',
-          'مشروع الواقع الافتراضي (Virtual Reality Project)',
-          'مشروع جدول بيانات',
-          'مشروع تسجيل صوتي فقط'
-        ],
-        correctIndex: 1,
-        explanation: 'مشروع VR Project يتيح إدراج صور أو مقاطع فيديو 360 درجة وإضافة نقاط ساخنة تفاعلية (Hotspots).',
-        points: 25,
-      },
     ],
   },
   {
@@ -209,7 +170,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     instructions: '1. أتقن استخدام الشرائح الرئيسية Master Slides لتوحيد التصميم والهوية.\n2. تدرب على تغيير خلفيات الشرائح وتكرارها وحذفها.\n3. تصفح الفيديوهات والصور التوضيحية للمستوى.\n4. أجب عن الأنشطة التفاعلية.\n5. ارفع نشاطك الخاص بأسفل الصفحة واضغط Finish Level 4.',
     totalMaxScore: 100,
     section1Score: 25,
-    section2Score: 75,
+    section2Score: 50,
     badgeName: 'وسام قائد الشرائح',
     badgeEmoji: '🎞️',
     videos: [],
@@ -228,19 +189,6 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         explanation: 'الشرائح الرئيسية تطبق عناصر التصميم الموحدة (خلفيات، أزرار، ترويسات) على كافة الشرائح التابعة لتوفير الوقت.',
         points: 25,
       },
-      {
-        id: 'q4-2',
-        question: 'عند الرغبة في تكرار شريحة كاملة بجميع محتوياتها وكائناتها، نستخدم الأمر:',
-        options: [
-          'Duplicate Slide',
-          'Delete Slide',
-          'Hide Slide',
-          'Lock Slide'
-        ],
-        correctIndex: 0,
-        explanation: 'أمر تكرار الشريحة (Duplicate) ينشئ نسخة مطابقة تماماً للشريحة المحددة بكافة كائناتها ومساراتها.',
-        points: 25,
-      },
     ],
   },
   {
@@ -252,7 +200,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     instructions: '1. تعلم ضبط التوقيت بالخط الزمني Timeline لظهور الوسائط المتعددة بدقة.\n2. اختر صيغ الفيديو والصوت المتوافقة مثل MP4 و WAV/MP3.\n3. شاهد الفيديوهات والصور المرفقة واستفد من الشرح.\n4. أجب عن أسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص واضغط Finish Level 5.',
     totalMaxScore: 100,
     section1Score: 25,
-    section2Score: 75,
+    section2Score: 50,
     badgeName: 'وسام مهندس الوسائط المتعددة',
     badgeEmoji: '🎬',
     videos: [],
@@ -271,19 +219,6 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         explanation: 'الخط الزمني (Timeline) يحدد موضع بداية ونهاية ظهور كل كائن ومدة بقائه وتزامنه مع الصوت.',
         points: 25,
       },
-      {
-        id: 'q5-2',
-        question: 'ما هي الصيغة الأكثر توافقاً والأمثل لإدراج مقاطع الفيديو في Captivate 2019 لتعمل بسلاسة على كافة المتصفحات؟',
-        options: [
-          'صيغة MP4 بترميز H.264',
-          'صيغة AVI غير المضغوطة الكبيرة جداً',
-          'ملف TXT نصي',
-          'صيغة BMP للصور'
-        ],
-        correctIndex: 0,
-        explanation: 'صيغة MP4/H.264 هي المعيار العالمي لمشروعات الويب وHTML5 وتوفر أعلى جودة مع أقل حجم ملف.',
-        points: 25,
-      },
     ],
   },
   {
@@ -295,7 +230,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     instructions: '1. تدرب على إضافة الكائنات التفاعلية وصناديق النقر Click Boxes.\n2. اضبط حالات الأزرار التفاعلية الثلاث (Normal, RollOver, Down).\n3. حدد إجراءات الانتقال Jump to Slide.\n4. أجب عن أسئلة المستوى.\n5. ارفع نشاطك الخاص واضغط Finish Level 6.',
     totalMaxScore: 100,
     section1Score: 25,
-    section2Score: 75,
+    section2Score: 50,
     badgeName: 'وسام خبير التفاعل',
     badgeEmoji: '⚡',
     videos: [],
@@ -314,19 +249,6 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         explanation: 'صندوق النقر Click Box كائن شفاف يُوضع فوق أي عنصر ليصبح قابلاً للنقر ويطلق إجراءات التنقل.',
         points: 25,
       },
-      {
-        id: 'q6-2',
-        question: 'ما الإجراء (Action) الذي يجعل المتعلم يقفز مباشرة إلى شريحة اختبار أو محاكاة محددة برقمها؟',
-        options: [
-          'إجراء Jump to Slide',
-          'إجراء Exit Project',
-          'إجراء Mute Audio',
-          'إجراء Close Window'
-        ],
-        correctIndex: 0,
-        explanation: 'أمر Jump to Slide يتيح التفرع التعليمي والانتقال إلى أي شريحة محددة بناءً على اختيار المتعلم.',
-        points: 25,
-      },
     ],
   },
   {
@@ -338,7 +260,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     instructions: '1. تعرف على بناء بنوك الأسئلة Question Pools وتوليد نماذج متكافئة.\n2. اضبط شريحة النتائج Quiz Results Slide ونسبة الاجتياز.\n3. تعرف على فرق التغذية الراجعة الفورية والمرجأة.\n4. أجب عن أسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص واضغط Finish Level 7.',
     totalMaxScore: 100,
     section1Score: 25,
-    section2Score: 75,
+    section2Score: 50,
     badgeName: 'وسام خبير القياس والتقويم',
     badgeEmoji: '🏆',
     videos: [],
@@ -357,19 +279,6 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         explanation: 'بنوك الأسئلة تسحب عدداً محدداً من الأسئلة عشوائياً لكل متعلم، مما يخلق نماذج اختبارية متكافئة ومتنوعة.',
         points: 25,
       },
-      {
-        id: 'q7-2',
-        question: 'ما هي الشريحة التلقائية التي تظهر في نهاية الاختبار لعرض نتيجة الطالب ونسبة إتقانه وحالة النجاح والرسوب؟',
-        options: [
-          'شريحة النتائج (Quiz Results Slide)',
-          'الشريحة الافتتاحية',
-          'شريحة الخط الزمني',
-          'شريحة إعدادات الميكروفون'
-        ],
-        correctIndex: 0,
-        explanation: 'شريحة النتائج Quiz Results تعرض مجموع النقاط المحققة والنسبة المئوية وحد النجاح وزر المراجعة.',
-        points: 25,
-      },
     ],
   },
   {
@@ -381,7 +290,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     instructions: '1. تدرب على تسجيل الشاشة بالأنماط الثلاثة: Demo, Training, Assessment.\n2. أتقن نمط التدريب لتقديم التلميحات ونمط التقييم لاختبار المهارة.\n3. تصفح الفيديوهات والصور المرفقة بالمستوى.\n4. أجب عن أسئلة المستوى.\n5. ارفع نشاطك الخاص واضغط Finish Level 8.',
     totalMaxScore: 100,
     section1Score: 25,
-    section2Score: 75,
+    section2Score: 50,
     badgeName: 'وسام سيد المحاكاة',
     badgeEmoji: '🖥️',
     videos: [],
@@ -400,19 +309,6 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         explanation: 'نمط التدريب Training يسمح للمتعلم بالتطبيق العملي مع ظهور رسائل توجيهية وتلميحات إذا تعثر في النقر.',
         points: 25,
       },
-      {
-        id: 'q8-2',
-        question: 'في نمط التقييم (Assessment Mode)، كيف يتعامل البرنامج مع نقرات المتعلم؟',
-        options: [
-          'يحل عنه الأسئلة تلقائياً',
-          'يختبر مهارة المتعلم بدون تلميحات مساعدة ويحسب درجات على النقر الصحيح والخطأ',
-          'يغلق البرنامج',
-          'يعرض فيديو ترفيهي'
-        ],
-        correctIndex: 1,
-        explanation: 'نمط التقييم يقيس الإتقان الفعلي؛ فلا تظهر مساعدة أثناء النقر، وتُسجل النقاط بناءً على دقة الأداء.',
-        points: 25,
-      },
     ],
   },
   {
@@ -424,7 +320,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     instructions: '1. استيراد ملفات العروض التقديمية PowerPoint وربطها ديناميكياً داخل Adobe Captivate.\n2. تحويل الشرائح الساكنة إلى عناصر تعليمية نشطة وتفاعلية.\n3. ضبط إعدادات التصدير ومعايير حزم التعلم الإلكتروني SCORM و xAPI لتتبع الدرجات في منصات LMS.\n4. نشر وتصدير المشروع النهائي بصيغة HTML5 المتوافقة مع كافة المتصفحات والأجهزة الذكية.\n5. تنفيذ ورفع النشاط التطبيقي العملي الخاص بالمستوى بنجاح.',
     totalMaxScore: 100,
     section1Score: 25,
-    section2Score: 75,
+    section2Score: 50,
     badgeName: 'وسام تاج التميز الرقمي المطلق',
     badgeEmoji: '👑',
     videos: [],
@@ -441,19 +337,6 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
         ],
         correctIndex: 0,
         explanation: 'خيار Link يتيح لك تعديل شرائح البوربوينت مستقبلاً وتحديثها تلقائياً داخل مشروع Captivate بضغطة زر.',
-        points: 25,
-      },
-      {
-        id: 'q9-2',
-        question: 'أثناء إعدادك لنشر وتصدير المشروع التعليمي، ما هي المعايير القياسية العالمية التي تضبطها لتمكين نظام إدارة التعلم LMS من تتبع درجاتك ونسبة إنجازك؟',
-        options: [
-          'معايير حزم التعلم الإلكتروني SCORM (1.2 / 2004) و xAPI',
-          'معايير وتنسيقات مستندات Word القياسية',
-          'معايير الطباعة الورقية والكتب المصورة',
-          'تنسيق ملفات الأقراص المدمجة القديمة ISO'
-        ],
-        correctIndex: 0,
-        explanation: 'معايير SCORM/xAPI هي البروتوكول المعتمد عالمياً لتبادل بيانات إنجاز الطالب والدرجات بين المحتوى والمنصة.',
         points: 25,
       },
     ],

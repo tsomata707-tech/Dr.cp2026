@@ -19,6 +19,8 @@ import {
   Sparkles,
   Link2,
 } from 'lucide-react';
+import { ref as sRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../firebase';
 import {
   getCustomGameLevels,
   saveCustomGameLevels,
@@ -32,6 +34,17 @@ import { LevelMediaItem, LevelQuestion } from '../types';
 
 export const AdminLevelInstructionsManager: React.FC = () => {
   const [levels, setLevels] = useState<GameLevelDef[]>(() => getCustomGameLevels());
+  
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      if (Array.isArray(e.detail)) {
+        setLevels(e.detail);
+      }
+    };
+    window.addEventListener('game-levels-updated', handleUpdate);
+    return () => window.removeEventListener('game-levels-updated', handleUpdate);
+  }, []);
+
   const [selectedLevelNum, setSelectedLevelNum] = useState<number>(1);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -104,12 +117,12 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   };
 
   // Handle Video Upload (Up to 5)
-  const handleUploadVideo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 4.5 * 1024 * 1024) {
-      showError('حجم الفيديو كبير جداً (أكبر من 4.5 ميجابايت). يرجى ضغط الفيديو أو اختيار ملف أصغر حجماً.');
+    if (file.size > 50 * 1024 * 1024) {
+      showError('حجم الفيديو كبير جداً (أكبر من 50 ميجابايت). يرجى ضغط الفيديو أو اختيار ملف أصغر حجماً.');
       e.target.value = '';
       return;
     }
@@ -121,11 +134,19 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const url = reader.result as string;
+    const videoId = `vid-${Date.now()}`;
+    showToast('جاري رفع الفيديو للسحابة ليتمكن الطلاب من مشاهدته...');
+    
+    let url = '';
+    try {
+      // NEW: Upload to Firebase Storage for sharing!
+      const storagePath = `level_instructions/level${selectedLevelNum}/${videoId}_${file.name}`;
+      const fileRef = sRef(storage, storagePath);
+      await uploadBytes(fileRef, file);
+      url = await getDownloadURL(fileRef);
+
       const newMedia: LevelMediaItem = {
-        id: `vid-${Date.now()}`,
+        id: videoId,
         title: file.name.replace(/\.[^/.]+$/, ''),
         url,
         type: 'video',
@@ -134,26 +155,36 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         addedAt: new Date().toISOString(),
       };
 
-      try {
-        const updated = addMediaToLevel(selectedLevelNum, newMedia);
-        setLevels([...updated]);
-        showToast(`تم رفع الفيديو (${file.name}) بنجاح للمستوى ${selectedLevelNum}`);
-      } catch (err: unknown) {
-        showError((err as Error).message || 'فشل رفع الفيديو');
-      }
-    };
-    reader.readAsDataURL(file);
+      const updated = addMediaToLevel(selectedLevelNum, newMedia);
+      setLevels([...updated]);
+      showToast(`تم رفع الفيديو (${file.name}) بنجاح للمستوى ${selectedLevelNum}`);
+    } catch (err: any) {
+      console.error('Storage upload error:', err);
+      showError('فشل رفع الفيديو للسحابة. يرجى المحاولة مرة أخرى.');
+    }
+    
     e.target.value = '';
   };
 
   // Replace existing video
-  const handleReplaceVideo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReplaceVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !replacingVideoId) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const url = reader.result as string;
+    if (file.size > 50 * 1024 * 1024) {
+      showError('حجم الفيديو كبير جداً (أكبر من 50 ميجابايت).');
+      e.target.value = '';
+      return;
+    }
+
+    showToast('جاري استبدال الفيديو ورفعه للسحابة...');
+
+    try {
+      const storagePath = `level_instructions/level${selectedLevelNum}/${replacingVideoId}_${file.name}`;
+      const fileRef = sRef(storage, storagePath);
+      await uploadBytes(fileRef, file);
+      const url = await getDownloadURL(fileRef);
+
       const updatedMedia: LevelMediaItem = {
         id: replacingVideoId,
         title: file.name.replace(/\.[^/.]+$/, ''),
@@ -168,8 +199,11 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       setLevels([...updated]);
       showToast('تم استبدال الفيديو بنجاح!');
       setReplacingVideoId(null);
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      console.error('Storage replacement error:', err);
+      showError('فشل استبدال الفيديو في السحابة.');
+    }
+    
     e.target.value = '';
   };
 

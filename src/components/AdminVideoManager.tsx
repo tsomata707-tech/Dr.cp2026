@@ -23,6 +23,8 @@ import {
   Edit3,
 } from 'lucide-react';
 import { EducationalVideo, VideoSlotDef } from '../types';
+import { ref as sRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../firebase';
 import {
   VIDEO_SLOTS,
   getEducationalVideos,
@@ -39,6 +41,15 @@ import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 
 export const AdminVideoManager: React.FC = () => {
   const [videos, setVideos] = useState<EducationalVideo[]>(() => getEducationalVideos());
+  
+  useEffect(() => {
+    const handleUpdate = () => {
+      setVideos(getEducationalVideos());
+    };
+    window.addEventListener('videos-storage-updated', handleUpdate);
+    return () => window.removeEventListener('videos-storage-updated', handleUpdate);
+  }, []);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [previewVideo, setPreviewVideo] = useState<EducationalVideo | null>(null);
   const [previewSlotId, setPreviewSlotId] = useState<string | null>(null);
@@ -56,6 +67,7 @@ export const AdminVideoManager: React.FC = () => {
   const [actualDuration, setActualDuration] = useState<string>('04:30 دقيقة');
   const [blobId, setBlobId] = useState<string | undefined>(undefined);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Edit Video & Part Name State (Modal for editing existing part titles, e.g. changing 'جزء 1' to custom name)
   const [editingVideo, setEditingVideo] = useState<EducationalVideo | null>(null);
@@ -91,12 +103,6 @@ export const AdminVideoManager: React.FC = () => {
     rehydrateLocalVideoUrls().then((refreshed) => {
       setVideos(refreshed);
     });
-
-    const handleUpdate = () => {
-      setVideos(getEducationalVideos());
-    };
-    window.addEventListener('videos-storage-updated', handleUpdate);
-    return () => window.removeEventListener('videos-storage-updated', handleUpdate);
   }, []);
 
   const refreshVideos = () => {
@@ -140,12 +146,23 @@ export const AdminVideoManager: React.FC = () => {
       const nextPart = level1Videos.length + 1;
       const cleanFileName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
 
+      // NEW: Upload to Firebase Storage for sharing!
+      let finalUrl = objectUrl;
+      try {
+        const storagePath = `educational_videos/level1/${generatedBlobId}_${file.name}`;
+        const fileRef = sRef(storage, storagePath);
+        await uploadBytes(fileRef, file);
+        finalUrl = await getDownloadURL(fileRef);
+      } catch (storageErr) {
+        console.warn('Firebase Storage upload failed, falling back to local only:', storageErr);
+      }
+
       addEducationalVideo({
         title: `مقدمة في إنتاج وتصميم الوسائط المتعددة (الجزء ${nextPart})`,
         partNumber: nextPart,
         partTitle: `الجزء ${nextPart}: ${cleanFileName}`,
         targetSlotId: 'level-1',
-        videoUrl: objectUrl,
+        videoUrl: finalUrl,
         videoType: 'file',
         duration: detectedDuration,
         blobId: generatedBlobId,
@@ -225,6 +242,7 @@ export const AdminVideoManager: React.FC = () => {
       const objectUrl = await storeVideoBlob(generatedBlobId, file, file.name);
       setVideoUrl(objectUrl);
       setBlobId(generatedBlobId);
+      setSelectedFile(file);
 
       // 3. Automatically detect ACTUAL video duration from HTML5 video element
       const tempVideo = document.createElement('video');
@@ -276,7 +294,7 @@ export const AdminVideoManager: React.FC = () => {
   };
 
   // 🌟 Upload & Publish Button Handler
-  const handlePublishVideo = (e: React.FormEvent) => {
+  const handlePublishVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
@@ -308,13 +326,27 @@ export const AdminVideoManager: React.FC = () => {
       const slotName = slotDef ? slotDef.name : targetSlotId;
       const customPartLabel = partCustomTitle.trim() || `الجزء ${partNumber}`;
 
+      // NEW: Upload to Firebase Storage for sharing if it's a file!
+      let finalUrl = videoUrl.trim();
+      if (uploadSource === 'file' && selectedFile) {
+        try {
+          const storagePath = `educational_videos/${targetSlotId}/${blobId || Date.now()}_${selectedFile.name}`;
+          const fileRef = sRef(storage, storagePath);
+          await uploadBytes(fileRef, selectedFile);
+          finalUrl = await getDownloadURL(fileRef);
+        } catch (storageErr) {
+          console.warn('Firebase Storage upload failed, using local blob URL:', storageErr);
+          // finalUrl remains the local blob URL
+        }
+      }
+
       addEducationalVideo({
         title: finalTitle,
         partNumber,
         partCustomTitle: customPartLabel,
         partTitle: `${customPartLabel}: ${finalTitle}`,
         targetSlotId,
-        videoUrl: videoUrl.trim(),
+        videoUrl: finalUrl,
         videoType,
         duration: actualDuration,
         blobId,
@@ -488,7 +520,7 @@ export const AdminVideoManager: React.FC = () => {
               المستوى 1: أساسيات الوسائط وتثبيت Adobe Captivate 2019
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl font-['Cairo'] leading-relaxed">
-              يمكنك رفع حتى <strong className="text-amber-300">٥ أجزاء فيديو كأجزاء للشرح</strong> للمستوى الأول. يتم حساب المدة الفعلية تلقائياً وتنسيق الشاشة لجميع الأجهزة.
+              يمكنك رفع حتى <strong className="text-amber-300">٥ أجزاء فيديو كأجزاء للشرح</strong> للمستوى الأول. يتم رفعها للسحابة لتظهر لجميع الطلاب، وحساب المدة الفعلية وتنسيق الشاشة تلقائياً.
             </p>
           </div>
 
@@ -836,6 +868,9 @@ export const AdminVideoManager: React.FC = () => {
                       </h4>
                       <p className="text-xs text-slate-300 mt-1">
                         يدعم صيغ MP4 و WebM و MOV. سيقوم النظام ذاتياً بحساب المدة واستخراج الاسم.
+                      </p>
+                      <p className="text-[10px] text-emerald-400 font-bold bg-emerald-950/50 py-1 px-2 rounded-lg border border-emerald-500/30 inline-block mt-1">
+                        ✨ سيتم رفع الفيديو للسحابة ليظهر فوراً لجميع الطلاب
                       </p>
                     </div>
 
