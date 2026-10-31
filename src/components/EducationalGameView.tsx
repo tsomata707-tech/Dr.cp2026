@@ -117,29 +117,31 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     const initScores: Record<number, number> = {};
     const prog = getStudentProgress(username);
     Object.entries(prog.completedLevels || {}).forEach(([lvlNum, res]) => {
+      if (!res) return;
       const num = Number(lvlNum);
       const lvlDef = GAME_LEVELS_DATA.find((l) => l.levelNumber === num);
       const q1Id = lvlDef?.questions[0]?.id;
       if (q1Id && res.questionScores && res.questionScores[q1Id] !== undefined) {
         initScores[num] = res.questionScores[q1Id];
       } else if (res.score) {
-        initScores[num] = Math.min(lvlDef?.section1Score ?? 25, Math.round(res.score * 0.5));
+        initScores[num] = Math.min(lvlDef?.section1Score ?? 50, Math.round(res.score * 0.5));
       }
     });
     return initScores;
   });
 
-  // Section 2 Interactive Activity score earned per level (25 or 50 points)
+  // Section 2 Interactive Activity score earned per level (50 points)
   const [activityScorePerLevel, setActivityScorePerLevel] = useState<Record<number, number>>(() => {
     const initScores: Record<number, number> = {};
     const prog = getStudentProgress(username);
     Object.entries(prog.completedLevels || {}).forEach(([lvlNum, res]) => {
+      if (!res) return;
       const num = Number(lvlNum);
       const lvlDef = GAME_LEVELS_DATA.find((l) => l.levelNumber === num);
       if (res.questionScores?.['section2_activity'] !== undefined) {
         initScores[num] = res.questionScores['section2_activity'];
       } else if (res.score) {
-        initScores[num] = Math.max(0, res.score - (initScores[num] || (lvlDef?.section1Score ?? 25)));
+        initScores[num] = Math.max(0, res.score - (initScores[num] || (lvlDef?.section1Score ?? 50)));
       }
     });
     return initScores;
