@@ -975,20 +975,25 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               ]}
               title={`شرح المستوى ${selectedLevelNum}: ${currentLevelDef.title}`}
               onSeek={handleVideoSeek}
+              onVideoFinish={() => {
+                setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: 25 }));
+                setVideoWarning('تم إتمام مشاهدة الفيديو بنجاح! +25 درجة.');
+                setTimeout(() => setVideoWarning(null), 5000);
+              }}
             />
           )}
 
           {/* Video Warning Banner if penalty applied */}
           {videoWarning && (
-            <div className="p-3 rounded-xl bg-red-950/90 border border-red-500 text-red-200 text-xs font-bold flex items-center gap-2 animate-bounce">
-              <span>⚠️ {videoWarning}</span>
+            <div className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${videoWarning.includes('تم خصم') ? 'bg-red-950/90 border-red-500 text-red-200 animate-bounce' : 'bg-emerald-950/90 border-emerald-500 text-emerald-200'}`}>
+              <span>{videoWarning.includes('تم خصم') ? '⚠️' : '✅'} {videoWarning}</span>
             </div>
           )}
 
           <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-emerald-500/50 flex items-center justify-between text-xs">
             <span className="text-slate-300 font-bold">درجة الفيديو التعليمي لهذا المستوى:</span>
             <span className="px-3 py-1 rounded-xl bg-emerald-950/80 border border-emerald-400 text-emerald-300 font-black font-['Outfit']">
-              {videoScorePerLevel[selectedLevelNum] ?? 25} / 25 XP
+              {videoScorePerLevel[selectedLevelNum] ?? 0} / 25 XP
             </span>
           </div>
         </div>

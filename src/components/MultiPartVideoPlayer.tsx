@@ -19,6 +19,7 @@ interface MultiPartVideoPlayerProps {
   className?: string;
   showHeader?: boolean;
   onSeek?: () => void;
+  onVideoFinish?: () => void;
 }
 
 export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
@@ -27,7 +28,22 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
   className = '',
   showHeader = true,
   onSeek,
+  onVideoFinish,
 }) => {
+  // ... existing state ...
+  
+  // Need to detect when video ends to trigger onVideoFinish if it's the last part.
+  // ... inside video element ...
+  // <video
+  //   onEnded={() => {
+  //     if (selectedPartIndex === videos.length - 1) {
+  //       onVideoFinish?.();
+  //     } else {
+  //       handleNextPart();
+  //     }
+  //   }}
+  // ...
+
   const [selectedPartIndex, setSelectedPartIndex] = useState<number>(0);
 
   // [FIX 6]: ثبات maxTime عبر أجزاء الفيديو المختلفة باستخدام useRef بدلاً من dataset
@@ -157,6 +173,13 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
               if (Math.abs(v.currentTime - maxTime) > 1) {
                 v.currentTime = maxTime;
                 onSeek?.();
+              }
+            }}
+            onEnded={() => {
+              if (selectedPartIndex === videos.length - 1) {
+                onVideoFinish?.();
+              } else {
+                handleNextPart();
               }
             }}
           />
