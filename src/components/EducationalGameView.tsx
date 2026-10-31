@@ -149,9 +149,20 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   const [lastHeartWarning, setLastHeartWarning] = useState<string | null>(null);
 
-  // [FIX 7 & FIX 9]: تعميم خصم الفيديو على كل المستويات وتنظيف المتغيرات غير المستخدمة
+  // [FIX 7 & FIX 9]: تعميم درجات وخصم الفيديو على كل المستويات - تبدأ بـ 0 حتى يستمع الطالب للفيديو
   const [videoPenaltyAppliedPerLevel, setVideoPenaltyAppliedPerLevel] = useState<Record<number, boolean>>({});
-  const [videoScorePerLevel, setVideoScorePerLevel] = useState<Record<number, number>>({ 1: 25, 2: 25, 3: 25, 4: 25, 5: 25, 6: 25, 7: 25, 8: 25, 9: 25 });
+  const [videoScorePerLevel, setVideoScorePerLevel] = useState<Record<number, number>>(() => {
+    const initScores: Record<number, number> = {};
+    const prog = getStudentProgress(username);
+    Object.entries(prog.completedLevels || {}).forEach(([lvlNum, res]) => {
+      if (!res) return;
+      const num = Number(lvlNum);
+      if (res.questionScores?.['video_watch'] !== undefined) {
+        initScores[num] = res.questionScores['video_watch'];
+      }
+    });
+    return initScores;
+  });
 
   // 5-second transition state as requested
   const [isTransitioning5s, setIsTransitioning5s] = useState<boolean>(false);
@@ -294,8 +305,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const handleVideoSeek = () => {
     if (!videoPenaltyAppliedPerLevel[selectedLevelNum]) {
       setVideoPenaltyAppliedPerLevel((prev) => ({ ...prev, [selectedLevelNum]: true }));
-      setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: 20 }));
-      setVideoWarning('لا يُسمح بتقديم أو تأخير الفيديو — تم خصم 5 درجات.');
+      setVideoScorePerLevel((prev) => {
+        const current = prev[selectedLevelNum];
+        return current ? { ...prev, [selectedLevelNum]: Math.max(0, current - 5) } : prev;
+      });
+      setVideoWarning('لا يُسمح بتقديم أو تأخير الفيديو — تم تطبيق خصم 5 درجات عند انتهاء المشاهدة.');
       setTimeout(() => setVideoWarning(null), 5000);
     }
   };
@@ -577,7 +591,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
     // [FIX 1]: تمرير s2Score = 0 دائماً لمنع حساب الـ 50 درجة مرتين (لأن الدرجة موجودة في studentActivities وتُحسب في calculateStudentTotalScore)
     const s2Score = 0;
-    const videoScore = videoScorePerLevel[selectedLevelNum] ?? 25;
+    const videoScore = videoScorePerLevel[selectedLevelNum] ?? 0;
 
     const { progress: updatedProgress } = submitLevelChallenge(
       username,
@@ -881,11 +895,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 <div className="mt-1 pt-1 border-t border-slate-700/60 w-full flex items-center justify-center">
                   {isCompleted ? (
                     <span className="text-[10px] font-black text-emerald-300 font-['Outfit']">
-                      ⭐ {progress.completedLevels[lvl.levelNumber]?.score ?? 50} / {progress.completedLevels[lvl.levelNumber]?.maxScore ?? 50}
+                      ⭐ {progress.completedLevels[lvl.levelNumber]?.score ?? 100} / {progress.completedLevels[lvl.levelNumber]?.maxScore ?? 100}
                     </span>
                   ) : (
                     <span className="text-[9px] font-bold text-amber-300 font-['Outfit']">
-                      50 XP
+                      100 XP
                     </span>
                   )}
                 </div>
@@ -927,7 +941,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             <div className="text-right">
               <span className="text-[10px] text-slate-400 block font-['Cairo']">إجمالي النقاط المتاحة</span>
               <span className="text-xl font-black text-amber-300 font-['Outfit']">
-                75 XP
+                100 XP
               </span>
             </div>
           </div>
@@ -976,8 +990,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               title={`شرح المستوى ${selectedLevelNum}: ${currentLevelDef.title}`}
               onSeek={handleVideoSeek}
               onVideoFinish={() => {
-                setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: 25 }));
-                setVideoWarning('تم إتمام مشاهدة الفيديو بنجاح! +25 درجة.');
+                const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
+                const earned = penalty ? 20 : 25;
+                setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
+                setVideoWarning(penalty ? 'تم إتمام مشاهدة الفيديو مع تطبيق خصم التقديم (−5 درجات): +20 درجة.' : 'تم إتمام مشاهدة الفيديو بنجاح! +25 درجة.');
                 setTimeout(() => setVideoWarning(null), 5000);
               }}
             />
@@ -985,15 +1001,17 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
           {/* Video Warning Banner if penalty applied */}
           {videoWarning && (
-            <div className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${videoWarning.includes('تم خصم') ? 'bg-red-950/90 border-red-500 text-red-200 animate-bounce' : 'bg-emerald-950/90 border-emerald-500 text-emerald-200'}`}>
-              <span>{videoWarning.includes('تم خصم') ? '⚠️' : '✅'} {videoWarning}</span>
+            <div className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${videoWarning.includes('تم تطبيق') || videoWarning.includes('تم خصم') ? 'bg-red-950/90 border-red-500 text-red-200 animate-bounce' : 'bg-emerald-950/90 border-emerald-500 text-emerald-200'}`}>
+              <span>{videoWarning.includes('تم تطبيق') || videoWarning.includes('تم خصم') ? '⚠️' : '✅'} {videoWarning}</span>
             </div>
           )}
 
           <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-emerald-500/50 flex items-center justify-between text-xs">
             <span className="text-slate-300 font-bold">درجة الفيديو التعليمي لهذا المستوى:</span>
             <span className="px-3 py-1 rounded-xl bg-emerald-950/80 border border-emerald-400 text-emerald-300 font-black font-['Outfit']">
-              {videoScorePerLevel[selectedLevelNum] ?? 0} / 25 XP
+              {isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined
+                ? completedResult.questionScores['video_watch']
+                : (videoScorePerLevel[selectedLevelNum] ?? 0)} / 25 XP
             </span>
           </div>
         </div>
@@ -1282,16 +1300,16 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             </span>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                سؤال التحدي (25 درجة): <strong className="text-amber-400">{chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0} / {q1Points} XP</strong>
+                سؤال التحدي (25 درجة): <strong className="text-amber-400">{isLevelCompleted && completedResult?.questionScores?.[q1?.id ?? ''] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0)} / {q1Points} XP</strong>
               </span>
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{studentActivity ? 50 : 0} / 50 XP</strong>
+                النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{studentActivity ? (studentActivity.grade ?? 50) : 0} / 50 XP</strong>
               </span>
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                مشاهدة الفيديو (25 درجة): <strong className="text-emerald-400">{videoScorePerLevel[selectedLevelNum] ?? 25} / 25 XP</strong>
+                مشاهدة الفيديو (25 درجة): <strong className="text-emerald-400">{isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined ? completedResult.questionScores['video_watch'] : (videoScorePerLevel[selectedLevelNum] ?? 0)} / 25 XP</strong>
               </span>
               <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
-                المجموع المعتمد للمستوى: {(chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0) + (studentActivity ? 50 : 0) + (videoScorePerLevel[selectedLevelNum] ?? 25)} / 100 XP
+                المجموع المعتمد للمستوى: {(isLevelCompleted && completedResult?.questionScores?.[q1?.id ?? ''] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0)) + (studentActivity ? (studentActivity.grade ?? 50) : 0) + (isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined ? completedResult.questionScores['video_watch'] : (videoScorePerLevel[selectedLevelNum] ?? 0))} / 100 XP
               </span>
             </div>
           </div>
