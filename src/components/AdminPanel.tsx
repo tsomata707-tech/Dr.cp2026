@@ -111,9 +111,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
                   ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
                   : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
+              style={{ backgroundColor: '#ecd7cc' }}
             >
               <Users className="w-4 h-4 text-sky-700" />
-              <span>اليوزر</span>
+              <span style={{ borderColor: '#dea75c' }}>اليوزر</span>
             </button>
 
             {/* TAB: شات مجموعات التعاون (G3 & G4) */}
@@ -126,6 +127,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
                   ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
                   : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
+              style={{ backgroundColor: '#c1aad2' }}
             >
               <MessageSquare className="w-4 h-4 text-sky-700" />
               <span>شات مجموعات التعاون (G3 & G4) 💬</span>
@@ -141,6 +143,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
                   ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
                   : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
               }`}
+              style={{ backgroundColor: '#23304f' }}
             >
               <FolderCheck className="w-4 h-4 text-sky-700" />
               <span>نشاط الطلاب 📁</span>

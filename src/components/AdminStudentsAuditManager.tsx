@@ -1591,14 +1591,14 @@ export const AdminStudentsAuditManager: React.FC = () => {
                     {/* Pre-Test Result */}
                     <td className="p-3.5 text-center">
                       {s.preTestCompleted ? (
-                        <div className="inline-block p-1.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-center">
-                          <div className="font-black text-amber-300 text-xs">
+                        <div className="inline-block p-1.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-center" style={{ backgroundColor: '#f0f0f0' }}>
+                          <div className="font-black text-amber-300 text-xs" style={{ color: '#2a2625', fontFamily: 'Cairo' }}>
                             {s.preTestScore} / {s.preTestMaxScore} ({s.preTestPercentage}%)
                           </div>
-                          <div className="text-[10px] font-bold text-emerald-400">
+                          <div className="text-[10px] font-bold text-emerald-400" style={{ color: '#75ac58' }}>
                             {s.preTestPassed ? '✓ مجتاز' : 'لم يجتز'}
                           </div>
-                          <div className="text-[9px] text-slate-400">{s.preTestDate.split(' ')[0]}</div>
+                          <div className="text-[9px] text-slate-400" style={{ fontWeight: 'bold' }}>{s.preTestDate.split(' ')[0]}</div>
                         </div>
                       ) : (
                         <span className="text-[11px] text-slate-500">لم يكتمل</span>
