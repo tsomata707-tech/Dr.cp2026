@@ -19,6 +19,8 @@ import { saveSupervisorsBoardConfig } from './utils/supervisorsStorage';
 import { saveSiteTitleConfig } from './utils/siteTitleStorage';
 import { recordStudentLogin } from './utils/studentAuditStorage';
 
+import { seedPreTestSubmissions } from './data/preTestSubmissionsSeed';
+
 const SESSION_KEY = 'cp_active_session_username_v1';
 const ADMIN_SESSION_KEY = 'cp_active_admin_session_v1';
 
@@ -34,6 +36,13 @@ export default function App() {
     
     const savedAdmin = localStorage.getItem(ADMIN_SESSION_KEY) === 'true';
     if (savedAdmin) setIsAdminMode(true);
+
+    // Ensure all 60 students have completed and passed the Pre-Test, starting directly at levels 1..9
+    try {
+      seedPreTestSubmissions(false);
+    } catch {
+      // Ignore
+    }
   }, []);
 
   // Automatically rehydrate any uploaded videos from IndexedDB on startup

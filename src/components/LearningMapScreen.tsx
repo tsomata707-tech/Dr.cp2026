@@ -79,11 +79,7 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
   };
 
   const handleStageClick = (lvl: GameLevelDef) => {
-    const isPreTestDone = !!progress.preTestResult?.completed;
-    if (!isPreTestDone) {
-      setPreTestRequiredAlert(true);
-      return;
-    }
+    const isPreTestDone = true; // Pre-test is locked and passed for everyone
 
     const isCompleted = !!progress.completedLevels[lvl.levelNumber];
     const isCurrent = lvl.levelNumber === progress.currentLevel;
@@ -134,75 +130,32 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
           </div>
         </div>
 
-        {/* PRE-TEST (المستوى التمهيدي: الاختبار القبلي) CARD */}
+        {/* PRE-TEST (المستوى التمهيدي: الاختبار القبلي) CARD - مغلق ومكتمل للجميع */}
         <div className="mt-6 mb-2">
-          {!progress.preTestResult?.completed ? (
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 border-2 border-sky-400 shadow-[0_0_30px_rgba(56,189,248,0.25)] flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn">
-              <div className="flex items-center gap-4 text-right">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white flex items-center justify-center font-black text-2xl shadow-lg shrink-0">
-                  <Gamepad2 className="w-8 h-8 animate-pulse" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2.5 py-0.5 rounded-full bg-sky-900/90 border border-sky-400 text-sky-200 text-[10px] font-black font-['Cairo',_sans-serif]">
-                      المستوى التمهيدي: الخطوة الأولى
-                    </span>
-                    <span className="text-xs text-sky-300 font-bold font-['Cairo',_sans-serif]">مطلوب للبدء</span>
-                  </div>
-                  <h3 className="text-base sm:text-lg font-black text-white font-['Cairo',_sans-serif]">
-                    لعبة الاختبار القبلي (Adobe Captivate 2019)
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-200 mt-0.5 leading-relaxed font-['Cairo',_sans-serif]">
-                    ادخل الاختبار القبلي أولاً ثم تابع باقي المستويات. صُمم على شكل لعبة أسئلة تفاعلية لتشخيص مهاراتك وفتح المرحلة 1.
-                  </p>
-                </div>
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-950/70 to-slate-950 border border-emerald-500/60 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn">
+            <div className="flex items-center gap-3.5 text-right">
+              <div className="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-lg shadow-md shrink-0">
+                <CheckCircle2 className="w-6 h-6 text-emerald-100" />
               </div>
-
-              {onSelectPreTest && (
-                <button
-                  type="button"
-                  id="btn-map-start-pretest"
-                  onClick={onSelectPreTest}
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm shadow-[0_0_20px_rgba(255,215,0,0.4)] border border-amber-300 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap transform hover:-translate-y-0.5 transition"
-                >
-                  <Gamepad2 className="w-4 h-4 text-slate-950" />
-                  <span>ابدأ لعبة الاختبار القبلي الآن</span>
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-950/60 via-slate-950/70 to-slate-950 border border-cyan-500/60 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn">
-              <div className="flex items-center gap-3.5 text-right">
-                <div className="w-11 h-11 rounded-xl bg-cyan-600 text-white flex items-center justify-center font-black text-lg shadow-md shrink-0">
-                  <CheckCircle2 className="w-6 h-6 text-cyan-100" />
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/50 text-[10px] font-bold">
+                    المستوى التمهيدي: مكتمل ومغلق للجميع 🔒
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-bold">
+                    (النتيجة معتمدة ومسجلة في شيت الطلاب)
+                  </span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/50 text-[10px] font-bold">
-                      المستوى التمهيدي: مكتمل بنجاح ✓
-                    </span>
-                    <span className="text-[11px] text-slate-400 font-bold">
-                      (النتيجة مسجلة في لوحة الإدارة والمشرف 🔒)
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-black text-white font-['Tajawal']">
-                    تم إتمام وتسليم الاختبار القبلي وحصد وسام المستكشف التمهيدي 🏅
-                  </h4>
-                </div>
+                <h4 className="text-sm font-black text-white font-['Tajawal']">
+                  تم اجتياز الاختبار القبلي بنجاح لكافة الطلاب والبدء مباشرة في المستويات التعليمية الـ 9 🏅
+                </h4>
               </div>
-
-              {onSelectPreTest && (
-                <button
-                  type="button"
-                  onClick={onSelectPreTest}
-                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bold border border-slate-700 cursor-pointer whitespace-nowrap"
-                >
-                  استعراض الأسئلة التمهيدية
-                </button>
-              )}
             </div>
-          )}
+
+            <span className="px-3 py-1.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
+              مجتاز ومصادق عليه ✓
+            </span>
+          </div>
         </div>
 
         {/* Winding Path / Visual Road of the 10 Stages */}

@@ -43,6 +43,7 @@ import {
   Award,
   FileCheck,
   CheckCircle,
+  CheckCircle2,
   Home,
   ArrowLeft,
   Database,
@@ -97,14 +98,22 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
     try {
       const saved = localStorage.getItem(`cp_active_portal_section_${username}`);
       if (saved) {
-        if (saved === 'collab-chat' && !isCollaborative && !isAdmin) return 'honor';
+        if (saved === 'collab-chat' && !isCollaborative && !isAdmin) return 'game';
+        if (saved === 'pretest' && !isAdmin) return 'game';
         return saved as PortalSection;
       }
-      return !studentGame.preTestResult?.completed ? 'pretest' : 'honor';
+      return 'game';
     } catch {
-      return 'honor';
+      return 'game';
     }
   });
+
+  // Guard: Automatically redirect non-admin from locked pretest to educational game
+  useEffect(() => {
+    if (activeMainSection === 'pretest' && !isAdmin) {
+      setActiveMainSection('game');
+    }
+  }, [activeMainSection, isAdmin]);
 
   // Save active section on change
   useEffect(() => {
@@ -288,71 +297,57 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
 
   // Smart test & learning continuation tracker: يتابع من مكان ما توقف في الاختبارات وحسب ما يراه النظام
   const getSmartResumeAction = () => {
-    // 1. If Pre-Test is not completed yet, system directs student to start/finish Pre-Test
-    if (!studentGame.preTestResult?.completed) {
+    const completedLevelsCount = Object.keys(studentGame.completedLevels || {}).length;
+
+    // 1. If all 9 levels are completed, but Post-Test is not completed yet
+    if (studentGame.currentLevel > 9 || completedLevelsCount >= 9) {
+      if (!studentGame.postTestResult?.completed) {
+        return {
+          stepLabel: 'المحطة 3: الاختبار البعدي الختامي',
+          title: 'متابعة من حيث توقفت: لعبة الاختبار البعدي (المحطة الختامية)',
+          description: 'أتممت كافة المراحل التعليمية الـ 9 بنجاح! استأنف الآن لعبة الاختبار البعدي الختامي.',
+          badge: 'المحطة الختامية 🏁',
+          buttonText: 'بدء الاختبار البعدي الآن 🏆',
+          action: () => {
+            setActiveMainSection('posttest');
+            window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+          },
+          gradient: 'from-purple-700 via-indigo-700 to-blue-700',
+          textColor: 'text-white',
+        };
+      }
+
+      // Everything completed!
       return {
-        stepLabel: 'المحطة 1: المستوى التمهيدي',
-        title: 'متابعة من حيث توقفت: لعبة الاختبار القبلي (البداية المنهجية)',
-        description: '',
-        badge: 'مطلوب الآن ⭐',
-        buttonText: 'متابعة الاختبار القبلي الآن 🏎️',
+        stepLabel: 'المسار التعليمي مكتمل بالكامل بنجاح 100%',
+        title: 'أتممت كافة الاختبارات والمراحل بنجاح باهر! 🎉',
+        description: 'لقد اجتزت الاختبار القبلي وجميع المستويات التسعة والاختبار البعدي. استعرض رتبتك في لوحة الشرف.',
+        badge: 'مكتمل بنسبة 100% 👑',
+        buttonText: 'استعراض لوحة الشرف والإنجازات 🏆',
         action: () => {
-          setActiveMainSection('pretest');
+          setActiveMainSection('honor');
           window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
         },
-        gradient: 'from-amber-500 via-[#ffd700] to-yellow-500',
+        gradient: 'from-amber-400 via-[#ffd700] to-yellow-500',
         textColor: 'text-slate-950',
       };
     }
 
-    // 2. If Pre-Test is done, but the student hasn't completed all 9 educational levels
-    const completedLevelsCount = Object.keys(studentGame.completedLevels || {}).length;
-    if (studentGame.currentLevel <= 9 && completedLevelsCount < 9) {
-      return {
-        stepLabel: `المحطة 2: المراحل التعليمية (${completedLevelsCount}/9 مكتملة)`,
-        title: `متابعة من حيث توقفت: المرحلة ${studentGame.currentLevel}`,
-        description: `أنجزت ${completedLevelsCount} من 9 مستويات بنجاح. استأنف الآن تحديات وأسئلة المستوى ${studentGame.currentLevel} لكسب النقاط.`,
-        badge: `المرحلة الحالية: L${studentGame.currentLevel} 🎮`,
-        buttonText: `متابعة المرحلة ${studentGame.currentLevel} الآن 🚀`,
-        action: () => {
-          setActiveMainSection('game');
-          window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-        },
-        gradient: 'from-blue-600 via-indigo-600 to-purple-600',
-        textColor: 'text-white',
-      };
-    }
-
-    // 3. If all 9 levels are completed, but Post-Test is not completed yet
-    if (!studentGame.postTestResult?.completed) {
-      return {
-        stepLabel: 'المحطة 3: الاختبار البعدي الختامي',
-        title: 'متابعة من حيث توقفت: لعبة الاختبار البعدي (المحطة الختامية)',
-        description: 'أتممت كافة المراحل التعليمية الـ 9 بنجاح! استأنف الآن لعبة الاختبار البعدي الختامي.',
-        badge: 'المحطة الختامية 🏁',
-        buttonText: 'بدء الاختبار البعدي الآن 🏆',
-        action: () => {
-          setActiveMainSection('posttest');
-          window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-        },
-        gradient: 'from-purple-700 via-indigo-700 to-blue-700',
-        textColor: 'text-white',
-      };
-    }
-
-    // 4. Everything completed!
+    // 2. Default: Educational levels (L1 .. L9) - Pre-test is already passed & locked for everyone
     return {
-      stepLabel: 'المسار التعليمي مكتمل بالكامل بنجاح 100%',
-      title: 'أتممت كافة الاختبارات والمراحل بنجاح باهر! 🎉',
-      description: 'لقد اجتزت الاختبار القبلي وجميع المستويات التسعة والاختبار البعدي. استعرض رتبتك في لوحة الشرف.',
-      badge: 'مكتمل بنسبة 100% 👑',
-      buttonText: 'استعراض لوحة الشرف والإنجازات 🏆',
+      stepLabel: `المحطة: المراحل التعليمية (${completedLevelsCount}/9 مكتملة)`,
+      title: `متابعة من حيث توقفت: المرحلة ${studentGame.currentLevel}`,
+      description: completedLevelsCount === 0
+        ? `تم اعتماد اجتياز الاختبار القبلي بنجاح. ابدأ الآن تحديات وأسئلة المستوى ${studentGame.currentLevel} لكسب النقاط.`
+        : `أنجزت ${completedLevelsCount} من 9 مستويات بنجاح. استأنف الآن تحديات وأسئلة المستوى ${studentGame.currentLevel} لكسب النقاط.`,
+      badge: `المرحلة الحالية: L${studentGame.currentLevel} 🎮`,
+      buttonText: `متابعة المرحلة ${studentGame.currentLevel} الآن 🚀`,
       action: () => {
-        setActiveMainSection('honor');
+        setActiveMainSection('game');
         window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
       },
-      gradient: 'from-amber-400 via-[#ffd700] to-yellow-500',
-      textColor: 'text-slate-950',
+      gradient: 'from-blue-600 via-indigo-600 to-purple-600',
+      textColor: 'text-white',
     };
   };
 
@@ -463,23 +458,23 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
               <span>🎮 بيئة الألعاب</span>
             </button>
 
-            {/* المستوى التمهيدي: لعبة الاختبار القبلي */}
+            {/* المستوى التمهيدي: لعبة الاختبار القبلي (مغلق ومكتمل للجميع) */}
             <button
               type="button"
               id="tab-pretest"
-              onClick={() => setActiveMainSection('pretest')}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                activeMainSection === 'pretest'
-                  ? 'bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 text-slate-950 shadow-[0_0_15px_rgba(255,215,0,0.45)]'
-                  : studentGame.preTestResult?.completed
-                  ? 'text-emerald-300 hover:text-white hover:bg-slate-900 border border-emerald-500/30'
-                  : 'text-amber-300 hover:text-white hover:bg-slate-900 border border-amber-500/50 animate-pulse'
-              }`}
+              onClick={() => {
+                if (!isAdmin) {
+                  alert('🔒 الاختبار القبلي مغلق؛ تم اجتياز الاختبار بنجاح واعتماد درجات الجميع. يمكنك متابعة وخوض المستويات التعليمية التسعة مباشرة 🚀');
+                  setActiveMainSection('game');
+                  return;
+                }
+                setActiveMainSection('pretest');
+              }}
+              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap text-emerald-300 hover:text-white hover:bg-slate-900 border border-emerald-500/40"
+              title="تم اجتياز الاختبار القبلي وإغلاقه للجميع"
             >
-              <Gamepad2 className="w-4 h-4 text-amber-400" />
-              <span>
-                {studentGame.preTestResult?.completed ? '✅ الاختبار القبلي (مكتمل)' : '⭐ الاختبار القبلي (البداية)'}
-              </span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>🔒 الاختبار القبلي (مكتمل ومغلق)</span>
             </button>
 
             {/* المحطة الختامية: لعبة الاختبار البعدي */}

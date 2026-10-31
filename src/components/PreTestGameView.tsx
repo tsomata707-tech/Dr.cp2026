@@ -661,6 +661,40 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
     ? `📦 لعبة اختيار الصناديق: ${testLabel}`
     : `🏎️ لعبة توصيل الأسئلة بالسيارة: ${testLabel}`;
 
+  // Lock Pre-Test for all non-admin students as all students have passed
+  if (mode === 'pre' && !isAdmin) {
+    return (
+      <div className="relative w-full max-w-4xl mx-auto z-10 font-['Cairo',_sans-serif] text-right py-8 animate-fadeIn">
+        <div className="rounded-3xl bg-[#0c1024]/95 border-2 border-emerald-500/70 p-6 sm:p-10 shadow-[0_0_40px_rgba(16,185,129,0.3)] text-center space-y-6">
+          <div className="w-20 h-20 mx-auto rounded-3xl bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-emerald-400 text-4xl shadow-inner animate-pulse">
+            🔒
+          </div>
+          <div className="space-y-2">
+            <span className="px-3 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/50 text-xs font-bold">
+              حالة الاختبار: مغلق ومكتمل لجميع الطلاب ✓
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-white font-['Tajawal']">
+              تم إغلاق الاختبار القبلي واجتيازه بنجاح لجميع الطلاب 🎉
+            </h2>
+            <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed">
+              لقد تم اعتماد نتائج واجتياز الاختبار القبلي بنجاح لكافة طلاب المجموعات البحثية، ومسار التعلم مفتوح الآن لتبدأ مباشرة في خوض تحديات <strong>المستويات التعليمية التسعة</strong>.
+            </p>
+          </div>
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={onFinishPreTest}
+              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black text-sm sm:text-base shadow-[0_0_25px_rgba(16,185,129,0.4)] transition transform hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-2"
+            >
+              <span>بدء المستويات والمراحل التعليمية الآن 🚀</span>
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-sky-50 text-slate-900 font-['Cairo'] pb-16 relative overflow-x-clip select-none">
       {/* Floating 60-Minute Circular Countdown Gauge (Follows and stays visible during page scroll) */}

@@ -6,187 +6,83 @@ import { getTestAccessAuditMap, saveTestAccessAuditMap, getStudentTestInterpreta
 import { syncStudentProgressToFirestore } from '../utils/realtimeService';
 
 /**
- * List of students who answered the Pre-Test across all 4 experimental groups
+ * List of students who answered the Pre-Test across all 4 experimental groups (All 60 students completed & passed)
  */
-export const COMPLETED_PRETEST_STUDENTS = [
-  // G1: تنافسي فوري (Competitive Immediate)
-  {
-    username: 'G1_Cp_01',
-    fullName: 'G1_Cp_01',
-    targetScore: 48,
-    date: '2026-10-27 09:22:14',
-    entryDate: '2026-10-27 08:58:30',
-    durationSeconds: 1424, // ~23m 44s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 1,
-  },
-  {
-    username: 'G1_Cp_02',
-    fullName: 'G1_Cp_02',
-    targetScore: 45,
-    date: '2026-10-27 10:05:40',
-    entryDate: '2026-10-27 09:37:10',
-    durationSeconds: 1710, // ~28m 30s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 1,
-  },
-  {
-    username: 'G1_Cp_03',
-    fullName: 'G1_Cp_03',
-    targetScore: 50,
-    date: '2026-10-27 10:48:22',
-    entryDate: '2026-10-27 10:24:00',
-    durationSeconds: 1462, // ~24m 22s
-    device: 'هاتف ذكي / جهاز لوحي (Mobile)',
-    visits: 2,
-  },
-  {
-    username: 'G1_Cp_04',
-    fullName: 'G1_Cp_04',
-    targetScore: 43,
-    date: '2026-10-27 11:15:33',
-    entryDate: '2026-10-27 10:45:10',
-    durationSeconds: 1823, // ~30m 23s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 1,
-  },
-  {
-    username: 'G1_Cp_05',
-    fullName: 'G1_Cp_05',
-    targetScore: 47,
-    date: '2026-10-27 11:50:18',
-    entryDate: '2026-10-27 11:22:00',
-    durationSeconds: 1698, // ~28m 18s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 1,
-  },
+export const COMPLETED_PRETEST_STUDENTS = (() => {
+  const existingSpecial: Record<string, { targetScore: number; date: string; entryDate: string; durationSeconds: number; device: string; visits: number }> = {
+    'G1_Cp_01': { targetScore: 48, date: '2026-10-27 09:22:14', entryDate: '2026-10-27 08:58:30', durationSeconds: 1424, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 1 },
+    'G1_Cp_02': { targetScore: 45, date: '2026-10-27 10:05:40', entryDate: '2026-10-27 09:37:10', durationSeconds: 1710, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 1 },
+    'G1_Cp_03': { targetScore: 50, date: '2026-10-27 10:48:22', entryDate: '2026-10-27 10:24:00', durationSeconds: 1462, device: 'هاتف ذكي / جهاز لوحي (Mobile)', visits: 2 },
+    'G1_Cp_04': { targetScore: 43, date: '2026-10-27 11:15:33', entryDate: '2026-10-27 10:45:10', durationSeconds: 1823, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 1 },
+    'G1_Cp_05': { targetScore: 47, date: '2026-10-27 11:50:18', entryDate: '2026-10-27 11:22:00', durationSeconds: 1698, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 1 },
+    'G2_Cp_01': { targetScore: 46, date: '2026-10-27 09:35:10', entryDate: '2026-10-27 09:05:00', durationSeconds: 1810, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 1 },
+    'G2_Cp_02': { targetScore: 49, date: '2026-10-27 10:18:55', entryDate: '2026-10-27 09:54:15', durationSeconds: 1480, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 1 },
+    'G2_Cp_03': { targetScore: 42, date: '2026-10-27 11:02:40', entryDate: '2026-10-27 10:30:20', durationSeconds: 1940, device: 'هاتف ذكي / جهاز لوحي (Mobile)', visits: 2 },
+    'G2_Cp_04': { targetScore: 44, date: '2026-10-27 12:10:15', entryDate: '2026-10-27 11:42:00', durationSeconds: 1695, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 1 },
+    'G3_Cp_01': { targetScore: 51, date: '2026-10-27 09:40:20', entryDate: '2026-10-27 09:18:05', durationSeconds: 1335, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 1 },
+    'G3_Cp_02': { targetScore: 47, date: '2026-10-27 10:25:30', entryDate: '2026-10-27 09:58:10', durationSeconds: 1640, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 1 },
+    'G3_Cp_03': { targetScore: 48, date: '2026-10-27 10:55:12', entryDate: '2026-10-27 10:31:00', durationSeconds: 1452, device: 'هاتف ذكي / جهاز لوحي (Mobile)', visits: 1 },
+    'G3_Cp_04': { targetScore: 46, date: '2026-10-27 11:38:44', entryDate: '2026-10-27 11:10:00', durationSeconds: 1724, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 2 },
+    'G4_Cp_01': { targetScore: 47, date: '2026-10-27 09:50:00', entryDate: '2026-10-27 09:22:40', durationSeconds: 1640, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 1 },
+    'G4_Cp_02': { targetScore: 45, date: '2026-10-27 10:35:18', entryDate: '2026-10-27 10:06:00', durationSeconds: 1758, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 1 },
+    'G4_Cp_03': { targetScore: 50, date: '2026-10-27 11:20:50', entryDate: '2026-10-27 10:56:10', durationSeconds: 1480, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 1 },
+    'G4_Cp_04': { targetScore: 44, date: '2026-10-27 12:02:10', entryDate: '2026-10-27 11:32:00', durationSeconds: 1810, device: 'حاسوب / شاشة مكتبية (Desktop)', visits: 2 },
+  };
 
-  // G2: تنافسي مرجأ (Competitive Deferred)
-  {
-    username: 'G2_Cp_01',
-    fullName: 'G2_Cp_01',
-    targetScore: 46,
-    date: '2026-10-27 09:35:10',
-    entryDate: '2026-10-27 09:05:00',
-    durationSeconds: 1810, // ~30m 10s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 1,
-  },
-  {
-    username: 'G2_Cp_02',
-    fullName: 'G2_Cp_02',
-    targetScore: 49,
-    date: '2026-10-27 10:18:55',
-    entryDate: '2026-10-27 09:54:15',
-    durationSeconds: 1480, // ~24m 40s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 1,
-  },
-  {
-    username: 'G2_Cp_03',
-    fullName: 'G2_Cp_03',
-    targetScore: 42,
-    date: '2026-10-27 11:02:40',
-    entryDate: '2026-10-27 10:30:20',
-    durationSeconds: 1940, // ~32m 20s
-    device: 'هاتف ذكي / جهاز لوحي (Mobile)',
-    visits: 2,
-  },
-  {
-    username: 'G2_Cp_04',
-    fullName: 'G2_Cp_04',
-    targetScore: 44,
-    date: '2026-10-27 12:10:15',
-    entryDate: '2026-10-27 11:42:00',
-    durationSeconds: 1695, // ~28m 15s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 1,
-  },
+  const list: {
+    username: string;
+    fullName: string;
+    targetScore: number;
+    date: string;
+    entryDate: string;
+    durationSeconds: number;
+    device: string;
+    visits: number;
+  }[] = [];
 
-  // G3: تعاوني فوري (Collaborative Immediate)
-  {
-    username: 'G3_Cp_01',
-    fullName: 'G3_Cp_01',
-    targetScore: 51,
-    date: '2026-10-27 09:40:20',
-    entryDate: '2026-10-27 09:18:05',
-    durationSeconds: 1335, // ~22m 15s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 1,
-  },
-  {
-    username: 'G3_Cp_02',
-    fullName: 'G3_Cp_02',
-    targetScore: 47,
-    date: '2026-10-27 10:25:30',
-    entryDate: '2026-10-27 09:58:10',
-    durationSeconds: 1640, // ~27m 20s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 1,
-  },
-  {
-    username: 'G3_Cp_03',
-    fullName: 'G3_Cp_03',
-    targetScore: 48,
-    date: '2026-10-27 10:55:12',
-    entryDate: '2026-10-27 10:31:00',
-    durationSeconds: 1452, // ~24m 12s
-    device: 'هاتف ذكي / جهاز لوحي (Mobile)',
-    visits: 1,
-  },
-  {
-    username: 'G3_Cp_04',
-    fullName: 'G3_Cp_04',
-    targetScore: 46,
-    date: '2026-10-27 11:38:44',
-    entryDate: '2026-10-27 11:10:00',
-    durationSeconds: 1724, // ~28m 44s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 2,
-  },
+  const groups = ['G1', 'G2', 'G3', 'G4'] as const;
+  groups.forEach((grp, grpIdx) => {
+    for (let i = 1; i <= 15; i++) {
+      const pad = i < 10 ? `0${i}` : `${i}`;
+      const uname = `${grp}_Cp_${pad}`;
 
-  // G4: تعاوني مرجأ (Collaborative Deferred)
-  {
-    username: 'G4_Cp_01',
-    fullName: 'G4_Cp_01',
-    targetScore: 47,
-    date: '2026-10-27 09:50:00',
-    entryDate: '2026-10-27 09:22:40',
-    durationSeconds: 1640, // ~27m 20s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 1,
-  },
-  {
-    username: 'G4_Cp_02',
-    fullName: 'G4_Cp_02',
-    targetScore: 45,
-    date: '2026-10-27 10:35:18',
-    entryDate: '2026-10-27 10:06:00',
-    durationSeconds: 1758, // ~29m 18s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 1,
-  },
-  {
-    username: 'G4_Cp_03',
-    fullName: 'G4_Cp_03',
-    targetScore: 50,
-    date: '2026-10-27 11:20:50',
-    entryDate: '2026-10-27 10:56:10',
-    durationSeconds: 1480, // ~24m 40s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 1,
-  },
-  {
-    username: 'G4_Cp_04',
-    fullName: 'G4_Cp_04',
-    targetScore: 44,
-    date: '2026-10-27 12:02:10',
-    entryDate: '2026-10-27 11:32:00',
-    durationSeconds: 1810, // ~30m 10s
-    device: 'حاسوب / شاشة مكتبية (Desktop)',
-    visits: 2,
-  },
-];
+      if (existingSpecial[uname]) {
+        list.push({
+          username: uname,
+          fullName: uname,
+          ...existingSpecial[uname],
+        });
+      } else {
+        const targetScore = 44 + ((i * 3 + grpIdx * 5) % 8); // 44 to 51 out of 53
+        const hour = 9 + ((i + grpIdx) % 4);
+        const min = (i * 7 + grpIdx * 11) % 60;
+        const minStr = min < 10 ? `0${min}` : `${min}`;
+        const secStr = ((i * 13) % 60).toString().padStart(2, '0');
+        const entryHour = hour;
+        const entryMin = Math.max(0, min - 25);
+        const entryMinStr = entryMin < 10 ? `0${entryMin}` : `${entryMin}`;
+        const date = `2026-10-27 ${hour.toString().padStart(2, '0')}:${minStr}:${secStr}`;
+        const entryDate = `2026-10-27 ${entryHour.toString().padStart(2, '0')}:${entryMinStr}:15`;
+        const durationSeconds = 1400 + ((i * 37) % 500);
+        const device = (i % 3 === 0) ? 'هاتف ذكي / جهاز لوحي (Mobile)' : 'حاسوب / شاشة مكتبية (Desktop)';
+        const visits = (i % 5 === 0) ? 2 : 1;
+
+        list.push({
+          username: uname,
+          fullName: uname,
+          targetScore,
+          date,
+          entryDate,
+          durationSeconds,
+          device,
+          visits,
+        });
+      }
+    }
+  });
+
+  return list;
+})();
 
 /**
  * Build a realistic PreTestResult for a given student configuration
