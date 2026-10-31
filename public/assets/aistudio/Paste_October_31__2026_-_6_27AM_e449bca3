@@ -1,0 +1,1960 @@
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  Gamepad2,
+  Trophy,
+  Flame,
+  Heart,
+  Sparkles,
+  Lock,
+  CheckCircle2,
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Shield,
+  Zap,
+  HelpCircle,
+  Eye,
+  RefreshCw,
+  Award,
+  ChevronRight,
+  Star,
+  Users,
+  Radio,
+  Wifi,
+  Volume2,
+  Video,
+  Play,
+  Home,
+  Upload,
+  Download,
+  Clock,
+  FileText,
+  Trash2,
+  Image as ImageIcon,
+  X,
+  FileCheck,
+  Target,
+  HardDrive,
+} from 'lucide-react';
+import { CARTOON_AVATARS, GAME_LEVELS_DATA, GameLevelDef } from '../data/gameLevelsData';
+import {
+  getStudentProgress,
+  submitLevelChallenge,
+  updateStudentAvatar,
+  saveStudentLevelActivity,
+} from '../utils/gameStorage';
+import {
+  getLevelActivityConfig,
+  submitStudentActivity,
+  deleteStudentActivity,
+  subscribeToLevelActivityConfigs,
+} from '../utils/studentActivityStorage';
+import { useEducationalVideos } from '../utils/videoStorage';
+import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
+import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
+import { DraggableLevelInstructions } from './DraggableLevelInstructions';
+import { LevelTransitionLoader5s } from './LevelTransitionLoader5s';
+import { LevelInteractiveGames } from './LevelInteractiveGames';
+import { getGroupByUsername, getStudentByUsername, RESEARCH_GROUPS_META, getCollaborativeGroupByUsername } from '../data/studentAccounts';
+import {
+  StudentGameProgress,
+  CompletedLevelResult,
+  GroupRoomState,
+  RealtimeQuestionAnswer,
+  RealtimeVote,
+  RealtimeStudentParticipant,
+  StudentActivitySubmission,
+  LevelMediaItem,
+  EducationalVideo,
+  TestAccessSession,
+} from '../types';
+import {
+  recordTestEntry,
+  recordTestExit,
+  markTestCompletedInAudit,
+} from '../utils/testAccessAuditStorage';
+import {
+  subscribeToGroupRoom,
+  joinGroupRoom,
+  selectQuestionOptionRealtime,
+  submitGroupLevelRealtime,
+  syncStudentProgressToFirestore,
+  getDefaultRoomState,
+} from '../utils/realtimeService';
+
+interface EducationalGameViewProps {
+  username: string;
+  onBackToHome?: () => void;
+  onCompleteAllLevels?: () => void;
+  selectedGroupId?: string;
+}
+
+export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
+  username,
+  onBackToHome,
+  onCompleteAllLevels,
+  selectedGroupId,
+}) => {
+  const isAdmin = username.trim().toLowerCase() === 'admin';
+  const [progress, setProgress] = useState<StudentGameProgress>(() => getStudentProgress(username));
+  const [selectedLevelNum, setSelectedLevelNum] = useState<number>(() => Math.min(9, progress.currentLevel));
+  const [chosenAnswers, setChosenAnswers] = useState<Record<string, number>>({});
+  const [showAvatarModal, setShowAvatarModal] = useState<boolean>(false);
+  const [isVideoOpen, setIsVideoOpen] = useState<boolean>(true);
+  const [loadingLevelForGame, setLoadingLevelForGame] = useState<GameLevelDef | null>(null);
+
+  // Section 1 Hearts per level: starts at 1 heart (❤️) acting as a hint
+  const [heartsPerLevel, setHeartsPerLevel] = useState<Record<number, number>>({ 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1 });
+  const [hintUsedPerLevel, setHintUsedPerLevel] = useState<Record<number, boolean>>({});
+  // Section 1 Score earned per level (25 points or 0)
+  const [section1ScorePerLevel, setSection1ScorePerLevel] = useState<Record<number, number>>(() => {
+    const initScores: Record<number, number> = {};
+    const prog = getStudentProgress(username);
+    Object.entries(prog.completedLevels || {}).forEach(([lvlNum, res]) => {
+      const num = Number(lvlNum);
+      const lvlDef = GAME_LEVELS_DATA.find((l) => l.levelNumber === num);
+      const q1Id = lvlDef?.questions[0]?.id;
+      if (q1Id && res.questionScores && res.questionScores[q1Id] !== undefined) {
+        initScores[num] = res.questionScores[q1Id];
+      } else if (res.score) {
+        initScores[num] = Math.min(lvlDef?.section1Score ?? 25, Math.round(res.score * 0.5));
+      }
+    });
+    return initScores;
+  });
+
+  // Section 2 Interactive Activity score earned per level (25 points)
+  const [activityScorePerLevel, setActivityScorePerLevel] = useState<Record<number, number>>(() => {
+    const initScores: Record<number, number> = {};
+    const prog = getStudentProgress(username);
+    Object.entries(prog.completedLevels || {}).forEach(([lvlNum, res]) => {
+      const num = Number(lvlNum);
+      const lvlDef = GAME_LEVELS_DATA.find((l) => l.levelNumber === num);
+      if (res.questionScores?.['section2_activity'] !== undefined) {
+        initScores[num] = res.questionScores['section2_activity'];
+      } else if (res.score) {
+        initScores[num] = Math.max(0, res.score - (initScores[num] || (lvlDef?.section1Score ?? 25)));
+      }
+    });
+    return initScores;
+  });
+
+  const [lastHeartWarning, setLastHeartWarning] = useState<string | null>(null);
+
+  // Level 1 specific tracking for penalties (Video and Hearts)
+  const [videoSeekedPerLevel, setVideoSeekedPerLevel] = useState<Record<number, boolean>>({});
+  const [videoScorePerLevel, setVideoScorePerLevel] = useState<Record<number, number>>({ 1: 25 });
+  const [section1HeartsUsed, setSection1HeartsUsed] = useState<Record<number, boolean>>({});
+
+  // 5-second transition state as requested: "وبعدها شريط تحميل ٥ ثواني مكتوب أعلاه جاري الانتقال الي ليفل ٢"
+  const [isTransitioning5s, setIsTransitioning5s] = useState<boolean>(false);
+  const [transitionTargetLevel, setTransitionTargetLevel] = useState<number>(2);
+
+  // Student level activity upload state (نشاطك الخاص)
+  const activityFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [studentActivity, setStudentActivity] = useState<StudentActivitySubmission | null>(
+    () => progress.studentActivities?.[selectedLevelNum] || null
+  );
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [previewMediaZoom, setPreviewMediaZoom] = useState<LevelMediaItem | null>(null);
+  const currentLevelVideos = useEducationalVideos(`level-${selectedLevelNum}`);
+  const [feedbackModal, setFeedbackModal] = useState<{
+    result: CompletedLevelResult;
+    isImmediate: boolean;
+    levelDef: GameLevelDef;
+  } | null>(null);
+
+  // Group metadata: for admin, resolve dynamically based on selectedGroupId (allowing admin to enter and inspect ANY group)
+  const userGroupMeta = useMemo(() => {
+    if (isAdmin && selectedGroupId) {
+      const codeMap: Record<string, 'G1' | 'G2' | 'G3' | 'G4'> = {
+        'grp-1': 'G1',
+        'grp-2': 'G2',
+        'grp-3': 'G3',
+        'grp-4': 'G4',
+      };
+      const code = codeMap[selectedGroupId] || 'G1';
+      return RESEARCH_GROUPS_META[code] || null;
+    }
+    return getGroupByUsername(username);
+  }, [username, isAdmin, selectedGroupId]);
+
+  const groupCode = userGroupMeta?.code || 'G1';
+  const isCollaborative = userGroupMeta?.learningMode === 'تعاوني';
+  const isImmediateGroup = userGroupMeta ? userGroupMeta.feedbackMode === 'فورية' : true;
+  const studentInfo = useMemo(() => getStudentByUsername(username), [username]);
+
+  const collabSubGroup = getCollaborativeGroupByUsername(username);
+  const [teammateAnswerInfo, setTeammateAnswerInfo] = useState<{ completedBy: string; score: number } | null>(null);
+
+  useEffect(() => {
+    if (isCollaborative && isImmediateGroup && collabSubGroup) {
+      try {
+        const rawTeam = localStorage.getItem('cp_collab_team_answers_v1');
+        if (rawTeam) {
+          const teamAnswers = JSON.parse(rawTeam);
+          const record = teamAnswers[`${collabSubGroup}_${selectedLevelNum}`];
+          if (record && record.completedBy && record.completedBy.toUpperCase() !== username.toUpperCase()) {
+            setTeammateAnswerInfo(record);
+          } else {
+            setTeammateAnswerInfo(null);
+          }
+        }
+      } catch {
+        setTeammateAnswerInfo(null);
+      }
+    } else {
+      setTeammateAnswerInfo(null);
+    }
+  }, [username, selectedLevelNum, isCollaborative, isImmediateGroup, collabSubGroup, progress]);
+
+  // Real-time group room state from Firebase Firestore
+  const [roomState, setRoomState] = useState<GroupRoomState>(() => getDefaultRoomState(groupCode));
+  const [isConnectedToFirebase, setIsConnectedToFirebase] = useState<boolean>(true);
+
+  // Always scroll to top when changing levels or mounting
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [selectedLevelNum]);
+
+  // Level Test Access Session Tracking (تسجيل دخول وخروج كل طالب على كل مستوى تعليمي مع حساب التردد والتفسير)
+  const levelAccessSessionRef = useRef<TestAccessSession | null>(null);
+
+  useEffect(() => {
+    const levelTestId = `level-${selectedLevelNum}`;
+    const levelTestName = `تحدي المستوى التعليمي ${selectedLevelNum}`;
+    const sess = recordTestEntry(username, levelTestId, levelTestName);
+    levelAccessSessionRef.current = sess;
+
+    return () => {
+      if (levelAccessSessionRef.current) {
+        recordTestExit(levelAccessSessionRef.current.id);
+      }
+    };
+  }, [selectedLevelNum, username]);
+
+  // Sync progress from local storage
+  useEffect(() => {
+    const current = getStudentProgress(username);
+    setProgress(current);
+    setSelectedLevelNum(current.currentLevel);
+  }, [username]);
+
+  // Current avatar
+  const currentAvatar =
+    CARTOON_AVATARS.find((a) => a.id === progress.avatarId) || CARTOON_AVATARS[0];
+
+  // Subscribe to Firebase Firestore real-time room
+  useEffect(() => {
+    const unsub = subscribeToGroupRoom(groupCode, (updatedRoom) => {
+      setRoomState(updatedRoom);
+      setIsConnectedToFirebase(true);
+
+      // In real-time collaborative rooms, sync questions answers when updated by peers
+      if (updatedRoom.currentAnswers && Object.keys(updatedRoom.currentAnswers).length > 0) {
+        setChosenAnswers((prev) => {
+          const next = { ...prev };
+          Object.entries(updatedRoom.currentAnswers).forEach(([qId, ansObj]) => {
+            if (ansObj && typeof ansObj.selectedOption === 'number') {
+              next[qId] = ansObj.selectedOption;
+            }
+          });
+          return next;
+        });
+      }
+    });
+
+    // Announce presence to all 15 students in this group
+    joinGroupRoom(groupCode, {
+      username,
+      fullName: studentInfo?.fullName || `طالب (${username})`,
+      avatarEmoji: currentAvatar.emoji,
+      avatarId: currentAvatar.id,
+    });
+
+    return () => {
+      unsub();
+    };
+  }, [groupCode, username, studentInfo, currentAvatar]);
+
+  // Current level definition
+  const currentLevelDef =
+    GAME_LEVELS_DATA.find((l) => l.levelNumber === selectedLevelNum) || GAME_LEVELS_DATA[0];
+
+  // Status of the currently viewed level
+  const isLevelCompleted = !!progress.completedLevels[selectedLevelNum];
+  const completedResult = progress.completedLevels[selectedLevelNum];
+  const isLevelUnlocked = selectedLevelNum <= progress.currentLevel;
+
+  // Handle option selection with Real-time broadcast to all 15 students
+  const handleSelectOption = (questionId: string, optionIndex: number) => {
+    if (isLevelCompleted) return; // Cannot modify if already completed
+
+    // Update local state instantly (admin can preview interactive choices locally)
+    setChosenAnswers((prev) => ({
+      ...prev,
+      [questionId]: optionIndex,
+    }));
+
+    // Broadcast in real-time to Firebase Firestore for regular students (admin is read-only)
+    if (!isAdmin) {
+      selectQuestionOptionRealtime(groupCode, selectedLevelNum, questionId, optionIndex, {
+        username,
+        fullName: studentInfo?.fullName || username,
+        avatarEmoji: currentAvatar.emoji,
+      });
+    }
+  };
+
+  const q1 = currentLevelDef.questions[0];
+  const q1Points = currentLevelDef.section1Score ?? q1?.points ?? 25;
+  const currentHearts = heartsPerLevel[selectedLevelNum] ?? 2;
+  const isSection1Done = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined && section1ScorePerLevel[selectedLevelNum] > 0);
+
+  // Section 1: Heart-based question challenge handler
+  // Video seek handler: prevent forward seeking and deduct 5 points once
+  const [videoWarning, setVideoWarning] = useState<string | null>(null);
+  const handleVideoSeek = () => {
+    if (selectedLevelNum === 1 && !videoSeekedPerLevel[1]) {
+      setVideoSeekedPerLevel((prev) => ({ ...prev, [1]: true }));
+      setVideoScorePerLevel((prev) => ({ ...prev, [1]: 20 }));
+      setVideoWarning('لا يُسمح بتقديم أو تأخير الفيديو — تم خصم 5 درجات.');
+      setTimeout(() => setVideoWarning(null), 5000);
+    }
+  };
+  // Hint helper: consume 1 heart as a hint, deduct 5 points, and highlight/eliminate an incorrect option
+  const [hintMessage, setHintMessage] = useState<string | null>(null);
+  const handleUseHint = () => {
+    if (isLevelCompleted || isSection1Done || hintUsedPerLevel[selectedLevelNum]) return;
+    const currentHeartCount = heartsPerLevel[selectedLevelNum] ?? 1;
+    if (currentHeartCount <= 0) return;
+
+    setHeartsPerLevel((prev) => ({ ...prev, [selectedLevelNum]: 0 }));
+    setHintUsedPerLevel((prev) => ({ ...prev, [selectedLevelNum]: true }));
+
+    // Deduct 5 points from current section 1 score or set base score to q1Points - 5
+    const existingScore = section1ScorePerLevel[selectedLevelNum] ?? q1Points;
+    const newScore = Math.max(0, existingScore - 5);
+    setSection1ScorePerLevel((prev) => ({
+      ...prev,
+      [selectedLevelNum]: newScore,
+    }));
+
+    setHintMessage('تم استخدام المساعدة (−5 درجات). تم تلميح إجابة خاطئة!');
+  };
+
+  const handleSelectSection1Option = (optIdx: number) => {
+    if (isLevelCompleted || isSection1Done) return;
+    if (!q1) return;
+
+    const isCorrect = optIdx === q1.correctIndex;
+
+    setChosenAnswers((prev) => ({
+      ...prev,
+      [q1.id]: optIdx,
+    }));
+
+    if (!isAdmin) {
+      selectQuestionOptionRealtime(groupCode, selectedLevelNum, q1.id, optIdx, {
+        username,
+        fullName: studentInfo?.fullName || username,
+        avatarEmoji: currentAvatar.emoji,
+      });
+    }
+
+    if (isCorrect) {
+      // Correct! Award points with deduction for lost hearts (5 points per lost heart)
+      const hearts = heartsPerLevel[selectedLevelNum] ?? 2;
+      const lostHearts = 2 - hearts;
+      const deduction = lostHearts * 5;
+      const finalScore = Math.max(0, q1Points - deduction);
+
+      setSection1ScorePerLevel((prev) => ({
+        ...prev,
+        [selectedLevelNum]: finalScore,
+      }));
+      setLastHeartWarning(null);
+    } else {
+      // Incorrect!
+      const hearts = heartsPerLevel[selectedLevelNum] ?? 2;
+      if (hearts === 2) {
+        setHeartsPerLevel((prev) => ({ ...prev, [selectedLevelNum]: 1 }));
+        setLastHeartWarning('إجابة غير صحيحة! فقدت قلباً واحداً، وخسرت 5 درجات من محاولتك. تبقت لك فرصة واحدة ❤️');
+      } else if (hearts === 1) {
+        setHeartsPerLevel((prev) => ({ ...prev, [selectedLevelNum]: 0 }));
+        setLastHeartWarning('إجابة غير صحيحة! فقدت قلباً ثانياً وخسرت 5 درجات إضافية. ليس لديك حياة وهذه آخر محاولة!');
+      } else {
+        setSection1ScorePerLevel((prev) => ({
+          ...prev,
+          [selectedLevelNum]: 0,
+        }));
+        setLastHeartWarning('انتهت المحاولات! الإجابة الصحيحة موضحة بالبطاقة.');
+      }
+    }
+  };
+
+  // Section 2: Applied activity completion handler
+  const handleActivityCompleted = (activityScore: number) => {
+    setActivityScorePerLevel((prev) => ({
+      ...prev,
+      [selectedLevelNum]: activityScore,
+    }));
+  };
+
+  // Sync student activity when level changes
+  useEffect(() => {
+    setStudentActivity(progress.studentActivities?.[selectedLevelNum] || null);
+  }, [selectedLevelNum, progress]);
+
+  // Dynamic Level Activity Config (Title, Instructions, MaxPoints) customized by Admin
+  const [levelActivityConfig, setLevelActivityConfig] = useState<import('../types').LevelActivityConfig>(() =>
+    getLevelActivityConfig(selectedLevelNum)
+  );
+
+  useEffect(() => {
+    setLevelActivityConfig(getLevelActivityConfig(selectedLevelNum));
+    const unsub = subscribeToLevelActivityConfigs((allConfigs) => {
+      if (allConfigs[selectedLevelNum]) {
+        setLevelActivityConfig(allConfigs[selectedLevelNum]);
+      }
+    });
+    return () => unsub();
+  }, [selectedLevelNum]);
+
+  // Live listener when Admin grades the activity
+  useEffect(() => {
+    const handleGraded = (e: any) => {
+      if (e.detail?.username?.toLowerCase() === username.toLowerCase()) {
+        const updated = getStudentProgress(username);
+        setProgress(updated);
+        if (e.detail.levelNumber === selectedLevelNum) {
+          setStudentActivity(e.detail.submission || updated.studentActivities?.[selectedLevelNum] || null);
+        }
+      }
+    };
+    window.addEventListener('cp_student_activity_graded', handleGraded);
+    return () => window.removeEventListener('cp_student_activity_graded', handleGraded);
+  }, [username, selectedLevelNum]);
+
+  // Handle uploading special activity (Video, Image, or PDF) with validation & 50 points grant
+  const handleTriggerUpload = () => {
+    // 1. Check if at least 3 questions are answered in this level
+    const questionsList = currentLevelDef.questions || [];
+    const minRequired = Math.min(3, questionsList.length);
+    const answeredCount = questionsList.filter((q) => chosenAnswers[q.id] !== undefined).length;
+
+    if (!isAdmin && answeredCount < minRequired) {
+      setUploadError(`يجب الإجابة على 3 أسئلة على الأقل قبل رفع النشاط (تمت الإجابة على ${answeredCount} من ${minRequired})`);
+      setTimeout(() => setUploadError(null), 6000);
+      return;
+    }
+
+    setUploadError(null);
+    activityFileInputRef.current?.click();
+  };
+
+  const handleUploadActivity = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 2. Max file size: 20MB limit
+    const maxSizeBytes = 20 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      setUploadError(`حجم الملف كبير جداً (${(file.size / (1024 * 1024)).toFixed(1)} MB). الحد الأقصى المسموح به هو 20 ميجابايت.`);
+      setTimeout(() => setUploadError(null), 6000);
+      e.target.value = '';
+      return;
+    }
+
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isVid = file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/i.test(file.name);
+    const fileType: 'video' | 'image' | 'pdf' = isVid ? 'video' : isPdf ? 'pdf' : 'image';
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const reader = new FileReader();
+
+    reader.onprogress = (evt) => {
+      if (evt.lengthComputable) {
+        const pct = Math.round((evt.loaded / evt.total) * 100);
+        setUploadProgress(pct);
+      }
+    };
+
+    reader.onload = async () => {
+      setUploadProgress(100);
+      const fileUrl = reader.result as string;
+      const cfg = getLevelActivityConfig(selectedLevelNum);
+      
+      const submission: StudentActivitySubmission = {
+        fileUrl,
+        fileName: file.name,
+        fileType,
+        fileSize: file.size,
+        uploadedAt: new Date().toISOString(),
+        studentUsername: username,
+        studentFullName: studentInfo?.fullName || username,
+        groupCode,
+        levelNumber: selectedLevelNum,
+        activityTitle: cfg.activityTitle,
+        maxPoints: 50,
+        status: 'pending',
+        grade: 50, // Instantly grant 50 points upon upload
+      };
+
+      const saved = await submitStudentActivity(submission);
+      
+      // Instantly set activity score per level to 50
+      setActivityScorePerLevel((prev) => ({
+        ...prev,
+        [selectedLevelNum]: 50,
+      }));
+
+      const updatedProg = getStudentProgress(username);
+      setProgress(updatedProg);
+      setStudentActivity(saved);
+
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 1200);
+    };
+
+    reader.onerror = () => {
+      setIsUploading(false);
+      setUploadError('حدث خطأ أثناء قراءة الملف. يجرب المحاولة مرة أخرى.');
+    };
+
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRemoveActivity = async () => {
+    if (studentActivity?.id) {
+      await deleteStudentActivity(studentActivity.id);
+    }
+    const updatedProg = getStudentProgress(username);
+    setProgress(updatedProg);
+    setStudentActivity(null);
+  };
+
+  // Finish Level Click: triggers 5-second loading bar
+  // "ثم زر finish level 1 وبعدها شريط تحميل ٥ ثواني مكتوب أعلاه جاري الانتقال الي ليفل ٢ وهكذا الي ان تنتهي ال ٩ ليفل"
+  const handleFinishLevelClick = async () => {
+    if (!isAdmin && !studentActivity) {
+      alert('يرجى رفع نشاطك الخاص لهذا المستوى أولاً (فيديو أو صورة أو PDF) لإكمال المستوى');
+      return;
+    }
+
+    const firstQ = currentLevelDef.questions[0];
+    if (!isAdmin && firstQ && chosenAnswers[firstQ.id] === undefined && !isLevelCompleted) {
+      alert('يرجى الإجابة على سؤال تحدي المعرفة (القسم الأول) قبل إنهاء المستوى');
+      return;
+    }
+
+    if (isAdmin) {
+      // In read-only admin mode, advance level without saving or polluting scores
+      const nextLvl = selectedLevelNum + 1;
+      setTransitionTargetLevel(nextLvl);
+      setIsTransitioning5s(true);
+      return;
+    }
+
+    const s1ScoreOverride = section1ScorePerLevel[selectedLevelNum];
+    let s2Score = activityScorePerLevel[selectedLevelNum] ?? (currentLevelDef.section2Score ?? 25);
+
+    // Special Scoring for Level 1: Activity Upload is worth 50 points
+    if (selectedLevelNum === 1) {
+      s2Score = studentActivity ? 50 : 0;
+      
+      const isS2Done = activityScorePerLevel[1] !== undefined && activityScorePerLevel[1] > 0;
+      if (!isAdmin && !isS2Done && !isLevelCompleted) {
+        alert('يرجى إنهاء النشاط التفاعلي (القسم الثاني) أولاً للحصول على الدرجة');
+        return;
+      }
+    }
+    const videoScore = selectedLevelNum === 1 ? (videoScorePerLevel[1] ?? 25) : 0;
+
+    const { progress: updatedProgress, levelResult, isImmediateFeedback } = submitLevelChallenge(
+      username,
+      selectedLevelNum,
+      chosenAnswers,
+      60,
+      s2Score,
+      s1ScoreOverride,
+      videoScore
+    );
+
+    // Mark level test completed in test access audit
+    markTestCompletedInAudit(username, `level-${selectedLevelNum}`);
+
+    // Sync to Firebase
+    await submitGroupLevelRealtime(groupCode, selectedLevelNum, chosenAnswers, {
+      username,
+      fullName: studentInfo?.fullName || username,
+      avatarEmoji: currentAvatar.emoji,
+    });
+    await syncStudentProgressToFirestore(updatedProgress);
+    setProgress(updatedProgress);
+
+    // Launch 5-second transition loader with heading
+    const nextLvl = selectedLevelNum + 1;
+    setTransitionTargetLevel(nextLvl);
+    setIsTransitioning5s(true);
+  };
+
+  const handle5sTransitionComplete = () => {
+    setIsTransitioning5s(false);
+    if (selectedLevelNum < 9) {
+      const nextLvl = selectedLevelNum + 1;
+      setSelectedLevelNum(nextLvl);
+      const freshProg = getStudentProgress(username);
+      setProgress(freshProg);
+      setChosenAnswers({});
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    } else {
+      // Completed Level 9! Transfer to Post-Test
+      if (onCompleteAllLevels) {
+        onCompleteAllLevels();
+      }
+      window.dispatchEvent(new CustomEvent('cp_navigate_to_posttest'));
+    }
+  };
+
+  // Submit level challenge with Real-time sync to Firestore
+  const handleSubmitChallenge = async () => {
+    handleFinishLevelClick();
+  };
+
+  const handleNextLevel = () => {
+    setFeedbackModal(null);
+    if (selectedLevelNum < 9) {
+      setSelectedLevelNum(selectedLevelNum + 1);
+    } else {
+      if (onCompleteAllLevels) {
+        onCompleteAllLevels();
+      }
+      window.dispatchEvent(new CustomEvent('cp_navigate_to_posttest'));
+    }
+  };
+
+  return (
+    <div className="space-y-6 text-right" id="educational-game-arena">
+      {/* Admin Read-Only Notice Banner */}
+      {isAdmin && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-[#0d1815] to-emerald-950/90 border-2 border-emerald-500/80 shadow-[0_0_25px_rgba(16,185,129,0.3)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs sm:text-sm font-['Cairo'] text-emerald-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500 flex items-center justify-center shrink-0 shadow-inner">
+              <Eye className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-emerald-300 font-['Tajawal'] text-sm sm:text-base">
+                  وضع استعراض المشرف (حساب للقراءة فقط 👁️)
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-900/60 border border-emerald-400/50 text-[11px] text-emerald-200 font-bold">
+                  {userGroupMeta?.name || 'مجموعة تجريبية'} ({groupCode})
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                يمكنك التنقل بين المستويات الـ 9 واختبار أي مجموعة وتجربة الأسئلة بحرية، ولن يتم احتساب أو اعتماد أي إجابات أو تعديلات على درجات وبيانات المنظومة.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick group switcher for admin */}
+          <div className="flex items-center gap-2 bg-slate-900/90 p-2 rounded-xl border border-emerald-500/40">
+            <span className="text-xs text-emerald-300 font-bold whitespace-nowrap">تبديل المجموعة:</span>
+            <select
+              value={groupCode}
+              onChange={(e) => {
+                const targetCode = e.target.value;
+                const groupObj = Object.values(RESEARCH_GROUPS_META).find((g) => g.code === targetCode);
+                if (groupObj) {
+                  // Dispatch custom event to sync with parent if needed
+                  window.dispatchEvent(new CustomEvent('cp_admin_switch_group', { detail: { groupId: groupObj.id, groupCode: targetCode } }));
+                }
+              }}
+              className="bg-slate-950 border border-emerald-500/60 rounded-lg px-2.5 py-1 text-xs text-amber-300 font-black cursor-pointer"
+            >
+              <option value="G1">G1 - فردي وتغذية فورية</option>
+              <option value="G2">G2 - فردي وتغذية مرجئة</option>
+              <option value="G3">G3 - تعاوني وتغذية فورية</option>
+              <option value="G4">G4 - تعاوني وتغذية مرجئة</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Collaborative Team Immediate Answer Notification Banner */}
+      {teammateAnswerInfo && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-950/90 via-[#0d1c24] to-cyan-950/90 border-2 border-cyan-400/80 shadow-[0_0_30px_rgba(6,182,212,0.3)] flex items-center gap-3 text-cyan-200 text-xs sm:text-sm font-['Cairo'] animate-fadeIn">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5 text-cyan-300" />
+          </div>
+          <div>
+            <span className="font-black text-white font-['Tajawal'] text-sm sm:text-base block">
+              🤝 إشعار الفريق التعاوني الفوري (إجابة مشتركة للفريق):
+            </span>
+            <span>
+              لقد قام صديقك في مجموعتك التعاونية، وهو المستخدم <strong className="text-amber-300 font-bold underline">{teammateAnswerInfo.completedBy}</strong>، بالإجابة وإتمام هذا المستوى مسبقاً! إجاباتكم الفريقية مسجلة ومشتركة.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* 0. RETURN TO STUDENT HOME BUTTON (🏠 الصفحة الخاصة للطالب) */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-[#0c1024]/95 border-2 border-amber-500/60 shadow-[0_0_25px_rgba(255,215,0,0.2)]">
+        <button
+          type="button"
+          onClick={() => {
+            if (onBackToHome) {
+              onBackToHome();
+            } else {
+              window.dispatchEvent(new CustomEvent('cp_navigate_to_student_home'));
+            }
+          }}
+          id="btn-game-back-to-student-home"
+          className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
+        >
+          <Home className="w-4 h-4 text-slate-950" />
+          <span>العودة للرئيسية 🏠</span>
+        </button>
+
+        <span className="text-xs text-amber-300 font-bold flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          <span>أنت الآن في: لعبة التحدي للمستوى {selectedLevelNum} ({currentLevelDef.shortTitle})</span>
+        </span>
+      </div>
+
+      {/* 1. TOP GAME HUD (Header Bar) */}
+      <div className="rounded-3xl bg-gradient-to-r from-[#0d0a1a] via-[#141029] to-[#0d0a1a] border-2 border-[#d4af37] p-5 sm:p-7 shadow-[0_0_35px_rgba(212,175,55,0.25)] relative overflow-hidden">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+          {/* Avatar & Player Profile */}
+          <div className="flex items-center gap-4 w-full lg:w-auto">
+            <div
+              onClick={() => setShowAvatarModal(true)}
+              className="relative group cursor-pointer"
+              title="انقر لتغيير الشخصية الكرتونية"
+            >
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-purple-600/20 border-2 border-[#ffd700] flex items-center justify-center text-3xl sm:text-4xl shadow-[0_0_20px_rgba(212,175,55,0.4)] group-hover:scale-105 transition-all overflow-hidden relative">
+                {progress.customPhotoUrl ? (
+                  <img
+                    src={progress.customPhotoUrl}
+                    alt={username}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{currentAvatar.emoji}</span>
+                )}
+              </div>
+              <span className="absolute -bottom-2 -right-1 px-1.5 py-0.5 rounded-md bg-[#ffd700] text-slate-950 text-[9px] font-black shadow flex items-center gap-0.5">
+                <RefreshCw className="w-2.5 h-2.5" />
+                تغيير
+              </span>
+            </div>
+
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#d4af37]/20 border border-[#d4af37] text-amber-300 text-[11px] font-bold font-['Cairo']">
+                  {currentAvatar.title}
+                </span>
+                {userGroupMeta && (
+                  <span
+                    className="px-3.5 py-1 rounded-full text-xs font-black font-['Cairo'] bg-slate-200 border border-slate-300 text-slate-900 shadow-sm"
+                  >
+                    المجموعة {userGroupMeta.code}: {userGroupMeta.name}
+                  </span>
+                )}
+              </div>
+
+              <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal'] mt-1 flex items-center gap-2">
+                <span className="text-[#ffd700] font-black">{username}</span>
+              </h2>
+
+              <p className="text-xs text-slate-300 font-['Cairo'] mt-0.5 max-w-md line-clamp-1">
+                {currentAvatar.description}
+              </p>
+            </div>
+          </div>
+
+          {/* Game Stats (XP Points, Level, Hearts, Streak) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full lg:w-auto">
+            {/* Total XP Points */}
+            <div className="p-3 rounded-2xl bg-slate-950/80 border border-[#ffd700]/50 text-center shadow-[0_0_15px_rgba(255,215,0,0.15)]">
+              <div className="flex items-center justify-center gap-1 text-[#ffd700] text-xs font-bold font-['Cairo'] mb-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>النقاط الذهبية</span>
+              </div>
+              <span className="text-xl font-black text-white font-['Outfit']">
+                {progress.totalScore} <span className="text-xs text-[#ffd700]">XP</span>
+              </span>
+            </div>
+
+            {/* Level Counter */}
+            <div className="p-3 rounded-2xl bg-slate-950/80 border border-purple-500/50 text-center">
+              <div className="flex items-center justify-center gap-1 text-purple-300 text-xs font-bold font-['Cairo'] mb-1">
+                <Trophy className="w-3.5 h-3.5" />
+                <span>المستوى الحالي</span>
+              </div>
+              <span className="text-xl font-black text-purple-200 font-['Outfit']">
+                {progress.currentLevel} <span className="text-xs text-slate-400">/ 9</span>
+              </span>
+            </div>
+
+            {/* Hearts (طاقة المحاولة) */}
+            <div className="p-3 rounded-2xl bg-slate-950/80 border border-rose-500/50 text-center">
+              <div className="flex items-center justify-center gap-1 text-rose-300 text-xs font-bold font-['Cairo'] mb-1">
+                <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                <span>طاقة المحاولة</span>
+              </div>
+              <div className="flex items-center justify-center gap-1 text-base pt-0.5">
+                {[1, 2].map((h) => (
+                  <span key={h} className={h <= currentHearts ? "text-rose-500 animate-pulse" : "text-slate-600 opacity-60"}>
+                    {h <= currentHearts ? "❤️" : "🖤"}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Badges Earned */}
+            <div className="p-3 rounded-2xl bg-slate-950/80 border border-cyan-500/50 text-center">
+              <div className="flex items-center justify-center gap-1 text-cyan-300 text-xs font-bold font-['Cairo'] mb-1">
+                <Award className="w-3.5 h-3.5" />
+                <span>الأوسمة المكتسبة</span>
+              </div>
+              <span className="text-xl font-black text-cyan-200 font-['Outfit']">
+                {(progress.badges || []).length} <span className="text-xs text-slate-400">أوسمة</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. GAME PROGRESS MAP (The 9 Levels Track) */}
+      <div className="rounded-3xl bg-[#0b0914] border-2 border-slate-800 p-5 sm:p-6 text-right">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+          <div className="flex items-center gap-2">
+            <Gamepad2 className="w-5 h-5 text-[#ffd700]" />
+            <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">
+              مراحل بيئة الألعاب (9 مستويات تفاعلية)
+            </h3>
+          </div>
+          <span className="text-xs text-amber-300 font-['Cairo']">
+            المستوى الذي تُعتمد إجاباته ويُسلّم نشاطه يُقفل تلقائياً للمتابعة للأمام
+          </span>
+        </div>
+
+        {/* 9 Level Nodes Horizontal / Grid Track */}
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2.5">
+          {GAME_LEVELS_DATA.map((lvl) => {
+            const isCompleted = !!progress.completedLevels[lvl.levelNumber];
+            const isCurrent = lvl.levelNumber === progress.currentLevel && !isCompleted;
+            const isUpcoming = !isAdmin && lvl.levelNumber > progress.currentLevel;
+            const isSelected = lvl.levelNumber === selectedLevelNum;
+
+            return (
+              <button
+                key={lvl.levelNumber}
+                type="button"
+                onClick={() => {
+                  if (isUpcoming) {
+                    return;
+                  }
+                  if (lvl.levelNumber === 1 || lvl.levelNumber !== selectedLevelNum) {
+                    setLoadingLevelForGame(lvl);
+                  } else {
+                    setSelectedLevelNum(lvl.levelNumber);
+                  }
+                }}
+                className={`p-3 rounded-2xl border-2 flex flex-col items-center justify-center text-center transition-all cursor-pointer relative overflow-hidden ${
+                  isSelected
+                    ? 'ring-2 ring-[#ffd700] scale-105'
+                    : 'hover:scale-102'
+                } ${
+                  isCompleted
+                    ? 'bg-emerald-950/40 border-emerald-500/70 text-emerald-300'
+                    : isCurrent
+                    ? 'bg-amber-950/60 border-[#ffd700] text-[#ffd700] shadow-[0_0_15px_rgba(255,215,0,0.3)] animate-pulse'
+                    : 'bg-slate-950/60 border-slate-800 text-slate-500 opacity-60'
+                }`}
+              >
+                {/* Level Icon/Badge */}
+                <div className="text-xl mb-1">
+                  {isCompleted ? (
+                    '🔒'
+                  ) : isCurrent ? (
+                    '⚡'
+                  ) : (
+                    '⏳'
+                  )}
+                </div>
+
+                <span className="text-xs font-black font-['Outfit']">
+                  L{lvl.levelNumber}
+                </span>
+
+                <span className="text-[10px] font-bold font-['Cairo'] line-clamp-1 mt-0.5">
+                  {lvl.shortTitle}
+                </span>
+
+                {/* Sub status tag */}
+                <span className="text-[9px] mt-1 font-bold">
+                  {isCompleted
+                    ? 'مكتمل ومتقن'
+                    : isCurrent
+                    ? 'نشط الآن'
+                    : 'قيد الانتظار'}
+                </span>
+
+                {/* Score displayed at bottom of level card as requested */}
+                <div className="mt-1 pt-1 border-t border-slate-700/60 w-full flex items-center justify-center">
+                  {isCompleted ? (
+                    <span className="text-[10px] font-black text-emerald-300 font-['Outfit']">
+                      ⭐ {progress.completedLevels[lvl.levelNumber]?.score ?? (lvl.totalMaxScore || 50)} / {progress.completedLevels[lvl.levelNumber]?.maxScore ?? (lvl.totalMaxScore || 50)}
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-bold text-amber-300 font-['Outfit']">
+                      {lvl.totalMaxScore || 50} XP
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. ACTIVE LEVEL MISSION & CHALLENGE ARENA */}
+      <div className="rounded-3xl bg-[#0f0c1f] border-2 border-[#d4af37] p-6 sm:p-8 shadow-[0_0_35px_rgba(212,175,55,0.2)] text-right">
+        {/* Mission Banner */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-0.5 rounded-full bg-[#ffd700] text-slate-950 text-xs font-black font-['Cairo']">
+                المستوى {currentLevelDef.levelNumber} من 9
+              </span>
+              <span className="px-3 py-0.5 rounded-full bg-purple-950/80 border border-purple-500/50 text-purple-300 text-xs font-bold font-['Cairo']">
+                الجائزة: {currentLevelDef.badgeEmoji} {currentLevelDef.badgeName}
+              </span>
+              {isLevelCompleted && (
+                <span className="px-3 py-0.5 rounded-full bg-red-950/80 border border-red-500 text-red-300 text-xs font-bold font-['Cairo'] flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-red-400" />
+                  مستوى مكتمل ومقفل نهائياً
+                </span>
+              )}
+            </div>
+
+            <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal'] mt-2">
+              {currentLevelDef.title}
+            </h2>
+
+            <p className="text-xs sm:text-sm text-slate-300 font-['IBM_Plex_Sans_Arabic'] mt-2 leading-relaxed bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800">
+              🎯 <strong className="text-amber-300">السيناريو والمهمة الكرتونية:</strong> {currentLevelDef.storyMission}
+            </p>
+
+          </div>
+
+          <div className="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0">
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 block font-['Cairo']">إجمالي النقاط المتاحة</span>
+              <span className="text-xl font-black text-amber-300 font-['Outfit']">
+                {currentLevelDef.totalMaxScore || (currentLevelDef.questions.length * 50)} XP
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+        {/* 🌟 STAGE VIDEOS (تتسع حتى 5 فيديوهات وفق متطلبات الأدمن) */}
+        {((currentLevelDef.videos && currentLevelDef.videos.length > 0) || currentLevelVideos.length > 0) && (
+          <div className="my-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-300 font-['Cairo'] flex items-center gap-1.5">
+                <Video className="w-4 h-4 text-blue-400" />
+                <span>فيديوهات شرح المستوى {selectedLevelNum} ({(currentLevelDef.videos?.length || 0) + currentLevelVideos.length} فيديو متاح):</span>
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setIsVideoOpen(!isVideoOpen)}
+                className="px-3.5 py-1.5 rounded-xl bg-blue-600/30 hover:bg-blue-600 border border-blue-500/50 text-white text-xs font-bold transition-all cursor-pointer shadow-md flex items-center gap-1.5"
+              >
+                <Play className="w-3.5 h-3.5" />
+                <span>{isVideoOpen ? 'إخفاء الفيديوهات' : 'عرض مشغل الفيديوهات'}</span>
+              </button>
+            </div>
+
+            {isVideoOpen && (
+              <MultiPartVideoPlayer
+                videos={[
+                  ...(currentLevelDef.videos || []).map((v, idx): EducationalVideo => ({
+                    id: v.id,
+                    title: v.title,
+                    targetSlotId: `level-${selectedLevelNum}`,
+                    targetSlotName: `المستوى ${selectedLevelNum}`,
+                    videoUrl: v.url,
+                    videoType: 'file',
+                    partNumber: idx + 1,
+                    partTitle: v.title,
+                    partCustomTitle: v.partCustomTitle,
+                    addedAt: v.addedAt || new Date().toISOString(),
+                    isActive: true,
+                  })),
+                  ...currentLevelVideos.filter(
+                    (cv) => !(currentLevelDef.videos || []).some((v) => v.url === cv.videoUrl)
+                  ),
+                ]}
+                title={`شرح المستوى ${selectedLevelNum}: ${currentLevelDef.title}`}
+                onSeek={handleVideoSeek}
+              />
+            )}
+
+            {/* Video Warning Banner if penalty applied */}
+            {videoWarning && (
+              <div className="p-3 rounded-xl bg-red-950/90 border border-red-500 text-red-200 text-xs font-bold flex items-center gap-2 animate-bounce">
+                <span>⚠️ {videoWarning}</span>
+              </div>
+            )}
+
+            {/* Video Score Card */}
+            <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-emerald-500/50 flex items-center justify-between text-xs">
+              <span className="text-slate-300 font-bold">درجة الفيديو التعليمي لهذا المستوى:</span>
+              <span className="px-3 py-1 rounded-xl bg-emerald-950/80 border border-emerald-400 text-emerald-300 font-black font-['Outfit']">
+                {selectedLevelNum === 1 ? (videoScorePerLevel[1] ?? 25) : 25} / 25 XP
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* 🖼️ STAGE IMAGES & PDF DOCUMENTS (تتسع حتى 5 صور أو ملفات PDF مع إمكانية المعاينة والتكبير) */}
+        {currentLevelDef.images && currentLevelDef.images.length > 0 && (
+          <div className="my-6 p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-amber-500/30 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span className="text-xs font-bold text-amber-300 font-['Cairo'] flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-purple-400" />
+                <span>{currentLevelDef.imagesSectionTitle || `صور ومستندات المستوى ${selectedLevelNum} (${currentLevelDef.images.length} ملفات):`}</span>
+              </span>
+              <span className="text-[11px] text-slate-300 font-semibold">
+                {currentLevelDef.imagesSectionDesc || 'إمكانية رفع حتى 5 صور أو ملفات PDF بحد أقصى (يقبل جميع امتدادات الصور PNG, JPG, WebP, GIF, SVG و PDF مع إمكانية التبديل)'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {currentLevelDef.images.map((imgItem) => (
+                <div
+                  key={imgItem.id}
+                  onClick={() => setPreviewMediaZoom(imgItem)}
+                  className="rounded-xl overflow-hidden border border-slate-700 hover:border-amber-400 bg-black/50 p-2 cursor-pointer transition-transform hover:scale-105 flex flex-col items-center justify-center text-center space-y-1.5 group"
+                >
+                  {imgItem.type === 'pdf' ? (
+                    <div className="w-full h-24 rounded-lg bg-rose-500/15 border border-rose-500/40 flex flex-col items-center justify-center text-rose-300">
+                      <FileText className="w-8 h-8" />
+                      <span className="text-[10px] font-bold mt-1">مستند PDF</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={imgItem.url}
+                      alt={imgItem.title}
+                      className="w-full h-24 object-contain rounded-lg"
+                    />
+                  )}
+                  <span className="text-[10px] font-bold text-slate-300 line-clamp-1 group-hover:text-amber-300">
+                    {imgItem.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 2.5 REAL-TIME COLLABORATIVE LIVE BAR (FIREBASE SYNC) */}
+        <div className="my-6 p-4 rounded-2xl bg-gradient-to-r from-purple-950/60 via-slate-900 to-indigo-950/60 border border-purple-500/40 shadow-lg space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-emerald-300 font-['Tajawal'] flex items-center gap-1.5">
+                  <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+                  التزامن اللحظي المباشر للجلسة التفاعلية
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 text-[10px] font-bold border border-purple-400/30">
+                  غرفة {userGroupMeta ? userGroupMeta.name : groupCode}
+                </span>
+              </div>
+            </div>
+
+            {/* Active Peers Counter */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-300 font-['Cairo']">
+                الطلاب المتصلين بالغرفة الآن:
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-[#ffd700]/20 border border-[#ffd700] text-[#ffd700] text-xs font-black">
+                {(Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[]).filter((s) => s.isOnline).length || 1} من 15
+              </span>
+            </div>
+          </div>
+
+          {/* Active Members Avatars Ribbon */}
+          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-800/80">
+            <span className="text-[11px] text-slate-400 font-['Cairo'] flex items-center gap-1">
+              <Users className="w-3 h-3 text-amber-400" />
+              أعضاء المجموعة المتفاعلون:
+            </span>
+            {(Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[]).map((participant) => (
+              <div
+                key={participant.username}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs border transition-all ${
+                  participant.username === username
+                    ? 'bg-amber-500/20 border-[#ffd700] text-amber-200 font-bold'
+                    : 'bg-slate-950/80 border-slate-700 text-slate-300'
+                }`}
+                title={participant.fullName}
+              >
+                <span className="text-sm">{participant.avatarEmoji}</span>
+                <span className="text-[11px] font-bold font-['Cairo']">
+                  {participant.username} {participant.username === username ? '(أنت)' : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+
+
+          {/* Live Activity Marquee Ticker */}
+          {roomState.liveEvents && roomState.liveEvents.length > 0 && (
+            <div className="flex items-center gap-2 pt-1 text-[11px] text-amber-300/90 font-['Cairo'] bg-slate-950/40 px-3 py-1.5 rounded-xl border border-slate-800">
+              <Radio className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" />
+              <span className="font-bold text-slate-400 shrink-0">آخر حركة لحظية:</span>
+              <span className="truncate font-['Cairo'] text-slate-200">
+                {roomState.liveEvents[0].text}
+              </span>
+              <span className="text-[9px] font-medium text-slate-500 mr-auto shrink-0">
+                {roomState.liveEvents[0].time}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* LOCKED NOTICE IF LEVEL ALREADY COMPLETED */}
+        {isLevelCompleted && (
+          <div className="my-6 p-4 rounded-2xl bg-amber-950/40 border-2 border-amber-500/60 flex items-center gap-4 text-right">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500 flex items-center justify-center shrink-0 text-amber-300">
+              <Lock className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="text-sm font-black text-amber-200 font-['Tajawal']">
+                المستوى {selectedLevelNum} معتمد
+              </h4>
+              {isImmediateGroup && completedResult && (
+                <p className="text-xs text-slate-300 font-['Cairo'] mt-0.5">
+                  النتيجة: {completedResult.score} من {completedResult.maxScore} XP
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+
+        {/* ======================================================== */}
+        {/* SECTION 1: KNOWLEDGE CHALLENGE WITH 2 HEARTS (القسم الأول) */}
+        {/* ======================================================== */}
+        {q1 && (
+          <div className="mt-6 p-6 rounded-3xl bg-slate-950/90 border-2 border-amber-400/80 shadow-[0_0_35px_rgba(251,191,36,0.25)] space-y-5 text-right">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border-2 border-amber-400 text-amber-300 flex items-center justify-center text-2xl shrink-0 shadow-md">
+                  ❤️
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/60 text-amber-300 text-[10px] font-black">
+                      القسم الأول: تحدي المعرفة الرقمية
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 text-[10px] font-black">
+                      +{q1Points} درجة
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-0.5">
+                    سؤال التحدي وبطاقات الإجابات بقلوب المحاولة
+                  </h3>
+                </div>
+              </div>
+
+              {/* 1 Heart Indicator (Hint) displayed above answers */}
+              <div className="flex items-center gap-3 self-end sm:self-auto bg-slate-900/90 px-4 py-2.5 rounded-2xl border border-rose-500/50 shadow-inner">
+                <span className="text-xs text-rose-200 font-bold">المساعدة (Hint):</span>
+                <div className="flex items-center gap-1.5 text-2xl">
+                  {currentHearts >= 1 ? (
+                    <span className="text-rose-500 animate-pulse" title="قلب المساعدة المتاح">❤️</span>
+                  ) : (
+                    <span className="text-slate-600 opacity-60" title="تم استهلاك قلب المساعدة">🖤</span>
+                  )}
+                </div>
+
+                {!hintUsedPerLevel[selectedLevelNum] && !isLevelCompleted && !isSection1Done ? (
+                  <button
+                    type="button"
+                    onClick={handleUseHint}
+                    className="px-3 py-1 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-black text-xs shadow-md transition-all cursor-pointer"
+                  >
+                    استخدام المساعدة ❤️ (−5)
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-slate-400 font-bold px-2 py-1 bg-slate-800 rounded-lg">
+                    {hintUsedPerLevel[selectedLevelNum] ? 'تم استخدام المساعدة (−5 درجات)' : 'مغلق'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Question Prompt - Clear Arabic without programming strings */}
+            <div className="space-y-4">
+              <h4 className="text-base sm:text-lg font-bold text-white font-['Tajawal'] leading-relaxed">
+                {q1.question}
+              </h4>
+
+              {/* Question Image (if attached) */}
+              {q1.imageUrl && (
+                <div className="my-3 flex justify-center items-center">
+                  <div className="relative max-w-full rounded-2xl overflow-hidden border-2 border-amber-400/50 bg-[#070914] shadow-2xl p-1.5">
+                    <img
+                      src={q1.imageUrl}
+                      alt="توضيح السؤال"
+                      className="max-h-56 sm:max-h-80 w-auto max-w-full rounded-xl object-contain shadow-md mx-auto"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Warnings / Feedback for Hearts */}
+              {currentHearts === 0 && (
+                <div className="p-3.5 rounded-2xl bg-red-950/90 border-2 border-red-500 text-red-200 font-black text-xs sm:text-sm flex items-center justify-between gap-3 shadow-[0_0_20px_rgba(239,68,68,0.35)] animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                    <span>ليس لديك حياة وهذه آخر محاولة</span>
+                  </div>
+                  <span className="text-[11px] bg-red-900/60 px-2.5 py-0.5 rounded-lg border border-red-400 font-bold">
+                    فرصتك الأخيرة للإجابة
+                  </span>
+                </div>
+              )}
+
+              {currentHearts === 1 && (
+                <div className="p-3 rounded-2xl bg-amber-950/70 border border-amber-500/60 text-amber-200 font-bold text-xs flex items-center gap-2">
+                  <span>⚠️ إجابة غير صحيحة، فقدت قلباً واحداً! تبقت لك فرصة واحدة ❤️</span>
+                </div>
+              )}
+
+              {/* Answer Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                {q1.options.map((opt, optIdx) => {
+                  const chosen = isLevelCompleted && completedResult
+                    ? completedResult.answers[q1.id]
+                    : chosenAnswers[q1.id];
+                  const isSelected = chosen === optIdx;
+                  const isCorrect = optIdx === q1.correctIndex;
+                  const isPassed = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined && section1ScorePerLevel[selectedLevelNum] > 0);
+
+                  let cardStyle = 'bg-slate-900/90 border-slate-700/80 text-slate-100 hover:border-amber-400/80 hover:bg-slate-800/90';
+                  if (isPassed && isCorrect) {
+                    cardStyle = 'bg-emerald-950/80 border-2 border-emerald-400 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.3)] font-bold';
+                  } else if (isPassed && isSelected && !isCorrect) {
+                    cardStyle = 'bg-red-950/60 border-red-500/80 text-red-300 line-through opacity-70';
+                  } else if (isSelected) {
+                    cardStyle = 'bg-amber-950/80 border-2 border-amber-400 text-amber-200 font-bold shadow-[0_0_15px_rgba(251,191,36,0.3)]';
+                  }
+
+                  return (
+                    <button
+                      key={optIdx}
+                      type="button"
+                      disabled={isLevelCompleted || isPassed}
+                      onClick={() => handleSelectSection1Option(optIdx)}
+                      className={`p-4 rounded-2xl border-2 text-right transition-all flex flex-col justify-between gap-3 ${
+                        isLevelCompleted || isPassed ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01]'
+                      } ${cardStyle}`}
+                    >
+                      <div className="flex items-start justify-between gap-3 w-full">
+                        <span className="text-xs sm:text-sm font-medium leading-relaxed font-['Cairo']">
+                          {opt}
+                        </span>
+                        <span className="w-6 h-6 rounded-full border border-slate-600 bg-slate-950 flex items-center justify-center shrink-0 text-xs font-bold text-amber-400">
+                          {['أ', 'ب', 'ج', 'د', 'هـ'][optIdx] || optIdx + 1}
+                        </span>
+                      </div>
+
+                      {isPassed && isCorrect && (
+                        <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-bold pt-1 border-t border-emerald-500/40">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <span>إجابة صحيحة ومتقنة (+{q1Points} درجة)</span>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Explanation in Immediate Feedback mode */}
+              {isLevelCompleted && isImmediateGroup && (
+                <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-300 font-['Cairo'] leading-relaxed">
+                  💡 <strong>التغذية الراجعة الفورية المعتمدة:</strong> {q1.explanation}
+                </div>
+              )}
+
+              {/* Question Score Card */}
+              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-amber-500/50 flex items-center justify-between text-xs mt-3">
+                <span className="text-slate-300 font-bold">درجة سؤال التحدي (القسم الأول):</span>
+                <span className="px-3 py-1 rounded-xl bg-amber-950/80 border border-amber-400 text-amber-300 font-black font-['Outfit']">
+                  {section1ScorePerLevel[selectedLevelNum] ?? 25} / {q1Points} XP
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* SECTION 2: APPLIED INTERACTIVE ACTIVITY (القسم الثاني)   */}
+        {/* ======================================================== */}
+        <div className="mt-6">
+          <LevelInteractiveGames
+            levelNumber={selectedLevelNum}
+            isLevelCompleted={isLevelCompleted}
+            initialCompleted={activityScorePerLevel[selectedLevelNum] !== undefined && activityScorePerLevel[selectedLevelNum] > 0}
+            earnedScore={activityScorePerLevel[selectedLevelNum] || 0}
+            maxScore={currentLevelDef.section2Score || 25}
+            onCompleteActivity={handleActivityCompleted}
+          />
+        </div>
+
+        {/* ======================================================== */}
+        {/* LEVEL TOTAL SCORE SUMMARY CARD (أسفل بطاقة المستوى)       */}
+        {/* ======================================================== */}
+        <div className="mt-6 p-5 rounded-3xl bg-gradient-to-r from-[#170e2b] via-[#22133d] to-[#170e2b] border-2 border-amber-400/90 shadow-[0_0_30px_rgba(251,191,36,0.25)] text-right">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <span className="text-xs text-amber-300 font-black flex items-center gap-1.5 mb-1.5">
+                <span>⭐</span>
+                <span>درجة المستوى {selectedLevelNum} الإجمالية:</span>
+              </span>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                {selectedLevelNum === 1 && (
+                  <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
+                    مشاهدة الفيديو: <strong className="text-emerald-400">{videoScorePerLevel[1] ?? 25} / 25 XP</strong>
+                  </span>
+                )}
+                <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
+                  سؤال التحدي (25 درجة): <strong className="text-amber-400">{section1ScorePerLevel[selectedLevelNum] || (chosenAnswers[q1?.id] === q1?.correctIndex ? q1Points : 0)} / {q1Points} XP</strong>
+                </span>
+                <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
+                  النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{activityScorePerLevel[selectedLevelNum] || (isLevelCompleted ? (currentLevelDef.section2Score || 25) : 0)} / {currentLevelDef.section2Score || 25} XP</strong>
+                </span>
+                <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
+                  المجموع المعتمد للمستوى: {(selectedLevelNum === 1 ? (videoScorePerLevel[1] ?? 25) : 0) + (section1ScorePerLevel[selectedLevelNum] || (chosenAnswers[q1?.id] === q1?.correctIndex ? q1Points : 0)) + (activityScorePerLevel[selectedLevelNum] || (isLevelCompleted ? (currentLevelDef.section2Score || 25) : 0))} / {currentLevelDef.totalMaxScore || 50} XP
+                </span>
+              </div>
+            </div>
+
+            <div className="text-left shrink-0">
+              {isLevelCompleted ? (
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-300 font-black text-xs">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>تم اعتماد واحتساب درجات المستوى بالكامل في الشيت</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-950/80 border border-amber-500/60 text-amber-300 font-bold text-xs">
+                  <span>⏳ تُعتمد الدرجة تلقائياً وتُضاف لشيت المستويات الـ 9 عند إنهاء المستوى</span>
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+  
+        {/* ======================================================== */}
+        {/* 4. قسم "نشاطك الخاص" - ينتهي الليفل بعد رفع الطالب نشاطه */}
+        {/* ======================================================== */}
+        <div className="mt-8 pt-8 border-t-2 border-amber-500/40 space-y-6" id="student-activity-section">
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#120e26] via-[#1a1438] to-[#120e26] border-2 border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.25)] text-right relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border-2 border-amber-400 text-amber-300 flex items-center justify-center text-2xl shrink-0 shadow-md">
+                  🎯
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-[11px] font-black">
+                      متطلب إنهاء المستوى {selectedLevelNum}
+                    </span>
+                    <span className="text-xs text-emerald-400 font-bold">
+                      {studentActivity ? '✅ تم رفع النشاط' : '⏳ مطلوب رفع النشاط أولاً'}
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-white font-['Tajawal'] mt-1">
+                    {levelActivityConfig?.activityTitle || `نشاط المستوى ${selectedLevelNum}`}
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                    {levelActivityConfig?.instructions || currentLevelDef.activityPrompt || 'قم برفع ملف تطبيقك العملي أو مخرج التدريب لهذا المستوى. يقبل النظام جميع امتدادات الفيديو، الصور، ومستندات PDF.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Hidden File Input */}
+              <input
+                ref={activityFileInputRef}
+                type="file"
+                accept="image/*,.pdf,video/*,.cptx,.zip"
+                onChange={handleUploadActivity}
+                className="hidden"
+                id={`activity-upload-input-${selectedLevelNum}`}
+              />
+            </div>
+
+            {/* Upload Error Banner */}
+            {uploadError && (
+              <div className="mb-4 p-3.5 rounded-2xl bg-rose-950/90 border-2 border-rose-500 text-rose-200 text-xs font-bold flex items-center gap-2 animate-shake">
+                <span>⚠️ {uploadError}</span>
+              </div>
+            )}
+
+            {/* Real Progress Bar during upload */}
+            {isUploading && (
+              <div className="mb-4 p-4 rounded-2xl bg-slate-900/90 border border-sky-500/50 space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-sky-300">
+                  <span>جاري قراءة ورفع ملف النشاط...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-sky-500/40">
+                  <div
+                    className="h-full bg-gradient-to-r from-sky-500 to-cyan-400 rounded-full transition-all duration-150 shadow-[0_0_10px_rgba(56,189,248,0.5)]"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* If No Activity Uploaded Yet */}
+            {!studentActivity ? (
+              <div
+                onClick={handleTriggerUpload}
+                className="mt-5 p-8 rounded-2xl border-2 border-dashed border-amber-400/60 hover:border-amber-400 bg-slate-950/60 hover:bg-slate-900/60 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-3 group"
+              >
+                <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-400/40 group-hover:scale-110 group-hover:bg-amber-500/20 text-amber-300 flex items-center justify-center transition-all text-3xl">
+                  📁
+                </div>
+                <div>
+                  <h4 className="text-sm sm:text-base font-black text-white font-['Tajawal']">
+                    اضغط هنا لرفع {levelActivityConfig?.activityTitle || 'نشاطك الخاص'}
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-1 font-['Cairo']">
+                    يقبل جميع امتدادات الفيديو (MP4, WebM, ...) والصور (PNG, JPG, ...) وملفات الـ PDF وملفات المشاريع (.cptx, .zip)
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-xs shadow-lg flex items-center gap-2 pointer-events-none"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>اختيار ملف النشاط من جهازك</span>
+                </button>
+              </div>
+            ) : (
+              /* If Activity Is Uploaded: Preview, Download and Status */
+              <div className="mt-5 p-5 rounded-2xl bg-slate-950/80 border border-emerald-500/50 space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">
+                      {studentActivity.fileType === 'video' ? '🎬' : studentActivity.fileType === 'pdf' ? '📄' : '🖼️'}
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-bold text-white truncate max-w-xs sm:max-w-md">
+                        {studentActivity.fileName}
+                      </h4>
+                      <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                        <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-emerald-300 font-bold uppercase">
+                          {studentActivity.fileType}
+                        </span>
+                        {studentActivity.fileSize && (
+                          <span>{(studentActivity.fileSize / (1024 * 1024)).toFixed(2)} MB</span>
+                        )}
+                        <span>• تم الرفع بنجاح</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                    {/* Direct Download Button */}
+                    <a
+                      href={studentActivity.fileUrl}
+                      download={studentActivity.fileName}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/50 text-emerald-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>تحميل الملف</span>
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={handleTriggerUpload}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>تبديل الملف</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRemoveActivity}
+                      className="px-3 py-1.5 rounded-lg bg-red-950/50 hover:bg-red-900/60 border border-red-500/50 text-red-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>حذف</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Inline Preview according to File Type */}
+                <div className="rounded-xl overflow-hidden border border-slate-800 bg-black/60 p-2 flex justify-center items-center">
+                  {!studentActivity.fileUrl ? (
+                    <div className="p-10 text-center space-y-3">
+                      <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto text-blue-400">
+                        <HardDrive className="w-8 h-8" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-300">الملف محفوظ بأمان في السحابة</p>
+                      <p className="text-xs text-slate-500">تم ضغط المساحة المحلية؛ يمكنك دائماً استبدال الملف أو حذفه.</p>
+                    </div>
+                  ) : studentActivity.fileType === 'video' ? (
+                    <video
+                      controls
+                      src={studentActivity.fileUrl}
+                      className="max-h-72 w-auto max-w-full rounded-lg shadow-lg"
+                    />
+                  ) : studentActivity.fileType === 'image' ? (
+                    <img
+                      src={studentActivity.fileUrl}
+                      alt="معاينة نشاطك الخاص"
+                      className="max-h-72 w-auto max-w-full rounded-lg object-contain shadow-lg"
+                    />
+                  ) : (
+                    <div className="p-6 text-center space-y-2">
+                      <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/50 text-rose-300 flex items-center justify-center mx-auto text-2xl font-bold">
+                        PDF
+                      </div>
+                      <p className="text-xs text-slate-300 font-bold">{studentActivity.fileName}</p>
+                      <a
+                        href={studentActivity.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold border border-slate-700 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>فتح ومعاينة ملف PDF</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* Admin Grading Status & Feedback Notice */}
+                {studentActivity.status === 'graded' || (studentActivity.grade !== null && studentActivity.grade !== undefined) ? (
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-teal-950/80 to-emerald-950/90 border-2 border-emerald-400 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 flex items-center justify-center text-xl shrink-0">
+                        ⭐
+                      </div>
+                      <div>
+                        <div className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal']">
+                          تم تقييم النشاط ورصد الدرجة بنجاح من المشرف
+                        </div>
+                        {studentActivity.feedback ? (
+                          <div className="text-xs text-slate-200 mt-0.5">
+                            ملاحظة المشرف: <span className="font-bold text-white">{studentActivity.feedback}</span>
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-slate-300 mt-0.5">
+                            تم اعتماد النشاط وإضافة درجاته تلقائياً إلى رصيد نقاطك الذهبية (XP).
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="px-4 py-2 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 font-black text-base font-['Outfit'] shrink-0 shadow-md">
+                      {studentActivity.grade} / {studentActivity.maxPoints || levelActivityConfig?.maxPoints || 50} XP ⭐
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 text-amber-300 font-bold font-['Cairo']">
+                      <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>تم تسليم الملف بنجاح وهو الآن بانتظار تقييم واعتماد المشرف (لا تُضاف أي درجات إلا بعد رصد الدرجة) ⏳</span>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-400/50 text-amber-300 text-[11px] font-bold shrink-0">
+                      قيد المراجعة
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Finish Level Action Button: "ثم زر finish level 1 وبعدها شريط تحميل ٥ ثواني" */}
+            <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800/80">
+              <div className="text-xs text-slate-400 font-['Cairo']">
+                {isAdmin ? (
+                  <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    وضع المشرف (قراءة فقط 👁️): يمكنك الانتقال وتصفح أي مستوى بحرية دون الحاجة لحل الأسئلة أو رفع نشاط.
+                  </span>
+                ) : !studentActivity ? (
+                  <span className="text-amber-300 font-bold flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4 text-amber-400" />
+                    يجب رفع نشاطك الخاص لتفعيل زر إنهاء المستوى
+                  </span>
+                ) : (
+                  <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4" />
+                    النشاط مكتمل وجاهز للتسليم والإنهاء
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  id={`btn-finish-level-${selectedLevelNum}`}
+                  onClick={() => {
+                    if (!isAdmin) {
+                      const unanswered = currentLevelDef.questions.some(
+                        (q) => chosenAnswers[q.id] === undefined
+                      );
+                      if (unanswered) {
+                        alert('يرجى الإجابة على جميع أسئلة المستوى أولاً');
+                        return;
+                      }
+                      if (!studentActivity) {
+                        alert('يرجى رفع نشاطك الخاص أولاً (فيديو أو صورة أو PDF) لإكمال المستوى');
+                        return;
+                      }
+                    }
+                    handleFinishLevelClick();
+                  }}
+                  className={`w-full sm:w-auto min-w-[240px] px-8 py-3.5 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-3 transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg ${
+                    studentActivity || isAdmin
+                      ? 'bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-[0_0_25px_rgba(255,215,0,0.45)] border-2 border-amber-300'
+                      : 'bg-slate-800/80 text-slate-400 border border-slate-700/60 hover:border-amber-400/50'
+                  }`}
+                >
+                  <span>finish level {selectedLevelNum}</span>
+                  <ArrowLeft className="w-5 h-5 shrink-0" />
+                </button>
+
+                {(isLevelCompleted || isAdmin) && selectedLevelNum < 9 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLevelNum(selectedLevelNum + 1)}
+                    className="px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-lg"
+                  >
+                    <span>المستوى {selectedLevelNum + 1}</span>
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+      </div>
+
+      {/* RESULT FEEDBACK MODAL: IMMEDIATE vs DEFERRED */}
+      {feedbackModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="bg-[#0f0c1f] border-2 border-[#ffd700] rounded-3xl p-6 sm:p-8 max-w-lg w-full text-right shadow-[0_0_60px_rgba(212,175,55,0.4)] space-y-5">
+            {feedbackModal.isImmediate ? (
+              /* SCREEN 10: IMMEDIATE FEEDBACK SCREEN (G1 & G3) */
+              <>
+                <div className="text-center space-y-2">
+                  <div className="w-16 h-16 rounded-3xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400 flex items-center justify-center mx-auto text-3xl shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-bounce">
+                    ✔️
+                  </div>
+                  <span className="px-3 py-0.5 rounded-full bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs font-black font-['Cairo']">
+                    التغذية الراجعة الفورية المباشرة
+                  </span>
+                  <h3 className="text-2xl font-black text-white font-['Tajawal']">
+                    أحسنت! إجابتك صحيحة وأتقنت مهارات المرحلة {feedbackModal.result.levelNumber}
+                  </h3>
+                  <p className="text-xs text-slate-300 font-['Cairo']">
+                    تُستخدم أدوات Adobe Captivate 2019 لبناء بيئات وتجارب تعليمية تفاعلية غنية.
+                  </p>
+                </div>
+
+                {/* Score badge & Team or Individual Points */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-[#ffd700]/50 flex items-center justify-around text-center">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-['Cairo']">
+                      {isCollaborative ? 'نقاط مضافة لرصيد الفريق' : 'نقاط المكافأة المكتسبة'}
+                    </span>
+                    <span className="text-2xl font-black text-[#ffd700] font-['Outfit']">
+                      +{feedbackModal.result.score} ⭐ XP
+                    </span>
+                  </div>
+                  <div className="w-px h-10 bg-slate-800" />
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-['Cairo']">الوسام الممنوح</span>
+                    <span className="text-sm font-black text-[#ffd700] font-['Cairo'] flex items-center gap-1">
+                      {feedbackModal.levelDef.badgeEmoji} {feedbackModal.levelDef.badgeName}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Detailed Questions Feedback Breakdown */}
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {feedbackModal.levelDef.questions.map((q, idx) => {
+                    const isCorrect = feedbackModal.result.answers[q.id] === q.correctIndex;
+                    return (
+                      <div
+                        key={q.id}
+                        className={`p-3 rounded-xl border text-xs leading-relaxed ${
+                          isCorrect
+                            ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200'
+                            : 'bg-red-950/40 border-red-500/50 text-red-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between font-bold mb-1">
+                          <span>نشاط {idx + 1}: {isCorrect ? '✔️ إجابة صحيحة (+50 XP)' : '❌ إجابة غير دقيقة (0 XP)'}</span>
+                        </div>
+                        <p className="text-[11px] opacity-90">{q.explanation}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="pt-2 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleNextLevel}
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-sm shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <span>التالي (المرحلة التالية) 🚀</span>
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* SCREEN 11: DELAYED FEEDBACK SCREEN (G2 & G4) */
+              <>
+                <div className="text-center space-y-2">
+                  <div className="w-16 h-16 rounded-3xl bg-purple-500/20 border-2 border-purple-400 text-purple-300 flex items-center justify-center mx-auto text-3xl shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+                    📊
+                  </div>
+                  <span className="px-3 py-0.5 rounded-full bg-purple-950 border border-purple-500 text-purple-300 text-xs font-black font-['Cairo']">
+                    تقرير أداء المرحلة (التغذية الراجعة المرجأة)
+                  </span>
+                  <h3 className="text-2xl font-black text-white font-['Tajawal']">
+                    تقرير أداء المرحلة {feedbackModal.result.levelNumber}
+                  </h3>
+                  <p className="text-xs text-slate-300 font-['Cairo']">
+                    لقد أكملت الأنشطة الخاصة بـ [{feedbackModal.levelDef.shortTitle}]. يمكنك الآن مراجعة أدائك الإجمالي.
+                  </p>
+                </div>
+
+                {/* Table showing activities, status, and points earned according to Storyboard */}
+                <div className="p-4 rounded-2xl bg-[#090714] border border-purple-500/40 space-y-2.5">
+                  <div className="space-y-1.5 font-['Cairo'] text-xs">
+                      {feedbackModal.levelDef.questions.map((q, idx) => {
+                        const isCorrect = feedbackModal.result.answers[q.id] === q.correctIndex;
+                        return (
+                          <div
+                            key={q.id}
+                            className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800"
+                          >
+                            <span className="text-slate-300 font-['Cairo'] font-bold">
+                              نشاط {idx + 1}: {q.question.substring(0, 32)}...
+                            </span>
+                            {/* Only show result if not a student in deferred mode, or if admin */}
+                            {isImmediateGroup || isAdmin ? (
+                              <span
+                                className={`font-black ${
+                                  isCorrect ? 'text-emerald-400' : 'text-red-400'
+                                }`}
+                              >
+                                {isCorrect ? '✔️ +50 نقطة' : '❌ 0 نقطة'}
+                              </span>
+                            ) : (
+                              <span className="text-emerald-400 font-bold text-[10px] bg-slate-950 px-2.5 py-0.5 rounded border border-emerald-900/50">
+                                مكتمل ✓
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-300 font-['Cairo']">
+                        {isImmediateGroup || isAdmin ? 'إجمالي نقاط المرحلة المكتسبة:' : 'حالة المرحلة:'}
+                      </span>
+                      {isImmediateGroup || isAdmin ? (
+                        <span className="text-lg font-black text-[#ffd700] font-['Outfit']">
+                          +{feedbackModal.result.score} ⭐
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-emerald-400 font-['Cairo']">
+                          اكتملت جميع المهام بنجاح ✓
+                        </span>
+                      )}
+                    </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/50 text-xs text-purple-200 font-['Cairo'] leading-relaxed">
+                  💡 <strong>ملاحظة تعليمية:</strong> أحسنت! لقد أتممت أنشطة هذه المرحلة بالكامل، ويمكنك الآن الانتقال إلى المرحلة التالية.
+                </div>
+
+                <div className="pt-2 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleNextLevel}
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <span>عرض الإنجاز والمتابعة 🚀</span>
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* AVATAR SELECTION MODAL */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0f0c1f] border-2 border-[#ffd700] rounded-3xl p-6 sm:p-8 max-w-xl w-full text-right shadow-[0_0_50px_rgba(212,175,55,0.3)] space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-lg font-black text-white font-['Tajawal'] flex items-center gap-2">
+                <span>اختر شخصيتك الكرتونية التفاعلية</span>
+                <span className="text-xl">🦸‍♂️🤖</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAvatarModal(false)}
+                className="text-slate-400 hover:text-white text-xs font-bold font-['Cairo'] cursor-pointer"
+              >
+                إغلاق ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto p-1">
+              {CARTOON_AVATARS.map((avatar) => {
+                const isSelected = avatar.id === progress.avatarId;
+
+                return (
+                  <div
+                    key={avatar.id}
+                    onClick={() => {
+                      const updated = updateStudentAvatar(username, avatar.id);
+                      setProgress(updated);
+                      setShowAvatarModal(false);
+                    }}
+                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 ${
+                      isSelected
+                        ? 'bg-amber-950/70 border-[#ffd700] shadow-[0_0_20px_rgba(212,175,55,0.3)]'
+                        : 'bg-slate-950/80 border-slate-800 hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-700 flex items-center justify-center text-3xl shrink-0">
+                      {avatar.emoji}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-white font-['Tajawal']">
+                        {avatar.name}
+                      </h4>
+                      <span className="text-[10px] text-amber-300 font-bold font-['Cairo'] block">
+                        {avatar.title}
+                      </span>
+                      <p className="text-[10px] text-slate-400 font-['Cairo'] mt-1 line-clamp-2">
+                        {avatar.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 🎮 ARCADE GAME PROGRESS BAR (1 TO 100%) WITH MOVING ANIME MASCOT */}
+      {loadingLevelForGame && (
+        <GameLevelUnlockLoader
+          levelNumber={loadingLevelForGame.levelNumber}
+          levelTitle={loadingLevelForGame.title}
+          badgeEmoji={loadingLevelForGame.badgeEmoji}
+          onComplete={() => {
+            const num = loadingLevelForGame.levelNumber;
+            setSelectedLevelNum(num);
+            setIsVideoOpen(true);
+            setLoadingLevelForGame(null);
+          }}
+          onCancel={() => setLoadingLevelForGame(null)}
+        />
+      )}
+
+      {/* 5-SECOND LEVEL TRANSITION LOADER
+          "وبعدها شريط تحميل ٥ ثواني مكتوب أعلاه جاري الانتقال الي ليفل ٢ وهكذا الي ان تنتهي ال ٩ ليفل" */}
+      {isTransitioning5s && (
+        <LevelTransitionLoader5s
+          currentLevel={selectedLevelNum}
+          nextLevel={transitionTargetLevel}
+          isFinalLevel={selectedLevelNum >= 9}
+          onComplete={handle5sTransitionComplete}
+        />
+      )}
+
+      {/* 📋 FLOATING DRAGGABLE INSTRUCTIONS MENU
+          "مع اضافه قائمه عائمه يمكن تحركها في اي مكان تتضمن أهداف كل ليفل" */}
+      <DraggableLevelInstructions
+        key={selectedLevelNum}
+        levelNumber={selectedLevelNum}
+        levelTitle={currentLevelDef.title}
+        instructions={currentLevelDef.instructions || ''}
+      />
+
+      {/* 🔍 MEDIA ZOOM & PREVIEW MODAL FOR IMAGES AND PDF DOCUMENTS */}
+      {previewMediaZoom && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in"
+          onClick={() => setPreviewMediaZoom(null)}
+        >
+          <div
+            className="bg-[#0f0c1f] border-2 border-[#ffd700] rounded-3xl p-5 sm:p-6 max-w-4xl w-full text-right space-y-4 shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-base font-black text-white">{previewMediaZoom.title}</h3>
+              <button
+                type="button"
+                onClick={() => setPreviewMediaZoom(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="max-h-[70vh] overflow-auto flex justify-center items-center">
+              {previewMediaZoom.type === 'pdf' ? (
+                <iframe
+                  src={previewMediaZoom.url}
+                  className="w-full h-96 rounded-xl border border-slate-800"
+                  title="معاينة PDF"
+                />
+              ) : (
+                <img
+                  src={previewMediaZoom.url}
+                  alt={previewMediaZoom.title}
+                  className="max-h-[65vh] w-auto max-w-full rounded-xl object-contain"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

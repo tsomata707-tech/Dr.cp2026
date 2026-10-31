@@ -256,8 +256,9 @@ export async function submitStudentActivity(
     levelNumber: levelNum,
     activityTitle: submission.activityTitle || config.activityTitle,
     maxPoints: submission.maxPoints || config.maxPoints || 50,
-    status: submission.status || 'pending',
-    grade: submission.grade ?? null,
+    // [FIX 12]: تعيين الحالة التلقائية عند رفع النشاط إلى auto_granted_pending_review لحل تناقض الدرجة الـ 50 مع pending
+    status: submission.status || 'auto_granted_pending_review',
+    grade: submission.grade ?? 50,
     feedback: submission.feedback || '',
     uploadedAt: submission.uploadedAt || new Date().toISOString(),
   };

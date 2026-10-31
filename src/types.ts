@@ -169,7 +169,7 @@ export interface StudentActivitySubmission {
   grade?: number | null;
   maxPoints?: number;
   feedback?: string;
-  status?: 'pending' | 'graded';
+  status?: 'pending' | 'graded' | 'auto_granted_pending_review';
   gradedAt?: string;
   gradedBy?: string;
 }

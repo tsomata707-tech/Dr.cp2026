@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Video,
   Play,
@@ -29,6 +29,9 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
   onSeek,
 }) => {
   const [selectedPartIndex, setSelectedPartIndex] = useState<number>(0);
+
+  // [FIX 6]: ثبات maxTime عبر أجزاء الفيديو المختلفة باستخدام useRef بدلاً من dataset
+  const maxTimeRefs = useRef<Record<string, number>>({});
 
   // Keep selectedPartIndex in bounds if videos change
   useEffect(() => {
@@ -133,21 +136,25 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
             className="w-full h-full object-contain"
             onTimeUpdate={(e) => {
               const v = e.currentTarget;
-              // Track max watched time to prevent seeking forward
-              const maxTimeKey = `cp_max_watched_${currentVideo.id}`;
-              const maxTime = parseFloat(v.dataset.maxTime || '0');
-              if (v.currentTime > maxTime + 1.5) {
-                // Attempted to seek forward! Revert back
+              const vidId = currentVideo.id || 'vid_default';
+              const maxTime = maxTimeRefs.current[vidId] ?? 0;
+
+              // [FIX 5]: منع تقديم أو ترجيع الفيديو إذا تجاوز الفرق ثانيتين عن الوقت المسموح به
+              if (Math.abs(v.currentTime - maxTime) > 1.5 && v.currentTime > maxTime) {
                 v.currentTime = maxTime;
                 onSeek?.();
               } else if (v.currentTime > maxTime) {
-                v.dataset.maxTime = String(v.currentTime);
+                // [FIX 6]: تحديث وقت المشاهدة الأقصى في useRef للحفاظ عليه ثابتاً عبر تبديل الأجزاء
+                maxTimeRefs.current[vidId] = v.currentTime;
               }
             }}
             onSeeking={(e) => {
               const v = e.currentTarget;
-              const maxTime = parseFloat(v.dataset.maxTime || '0');
-              if (v.currentTime > maxTime + 1) {
+              const vidId = currentVideo.id || 'vid_default';
+              const maxTime = maxTimeRefs.current[vidId] ?? 0;
+
+              // [FIX 5]: منع الترجيع والتقديم عبر فحص الفرق المطلق واستدعاء الخصم عند أي محاولة تلاعب
+              if (Math.abs(v.currentTime - maxTime) > 1) {
                 v.currentTime = maxTime;
                 onSeek?.();
               }
@@ -156,7 +163,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
         )}
       </div>
 
-      {/* 3. Multi-Parts Interactive Bar (تنسيق الشاشة أوتوماتيك للعمل على جميع الأجهزة) */}
+      {/* 3. Multi-Parts Interactive Bar */}
       {hasMultipleParts && (
         <div className="p-3.5 sm:p-4 bg-slate-950/90 border-t border-slate-800/80 space-y-3">
           <div className="flex items-center justify-between text-xs text-slate-300 font-bold">
