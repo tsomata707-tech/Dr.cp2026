@@ -51,7 +51,7 @@ import {
   deleteStudentActivity,
   subscribeToLevelActivityConfigs,
 } from '../utils/studentActivityStorage';
-import { useEducationalVideos } from '../utils/videoStorage';
+import { useEducationalVideos, isPlaceholderVideo } from '../utils/videoStorage';
 import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { DraggableLevelInstructions } from './DraggableLevelInstructions';
@@ -177,7 +177,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadStatusText, setUploadStatusText] = useState<string>('جاري قراءة الملف...');
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [previewMediaZoom, setPreviewMediaZoom] = useState<LevelMediaItem | null>(null);
   const currentLevelVideos = useEducationalVideos(`level-${selectedLevelNum}`);
   const [feedbackModal, setFeedbackModal] = useState<{
     result: CompletedLevelResult;
@@ -287,6 +286,52 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   // Current level definition
   const currentLevelDef =
     GAME_LEVELS_DATA.find((l) => l.levelNumber === selectedLevelNum) || GAME_LEVELS_DATA[0];
+
+  const [previewMediaZoom, setPreviewMediaZoom] = useState<LevelMediaItem | null>(null);
+
+  // Authentic videos uploaded by the Admin for the current level (strictly no placeholders or Rickrolls!)
+  const currentDisplayVideos = useMemo(() => {
+    const list: EducationalVideo[] = [];
+    const seenUrls = new Set<string>();
+
+    // 1. Videos from Admin Video Manager for this level
+    (currentLevelVideos || []).forEach((v) => {
+      if (v.isActive && !isPlaceholderVideo(v) && v.videoUrl?.trim()) {
+        const norm = v.videoUrl.trim();
+        if (!seenUrls.has(norm)) {
+          seenUrls.add(norm);
+          list.push(v);
+        }
+      }
+    });
+
+    // 2. Videos from Admin Level Instructions Manager for this level
+    (currentLevelDef.videos || []).forEach((v, idx) => {
+      if (v.url && !v.url.includes('dQw4w9WgXcQ') && v.url.trim()) {
+        const norm = v.url.trim();
+        if (!seenUrls.has(norm)) {
+          seenUrls.add(norm);
+          list.push({
+            id: v.id || `lvl_def_vid_${idx}`,
+            title: v.title || `شرح المستوى ${selectedLevelNum}`,
+            targetSlotId: `level-${selectedLevelNum}`,
+            targetSlotName: `المستوى ${selectedLevelNum}`,
+            videoUrl: norm,
+            videoType: 'file',
+            partNumber: idx + 1,
+            partTitle: v.title,
+            partCustomTitle: v.partCustomTitle,
+            addedAt: v.addedAt || new Date().toISOString(),
+            isActive: true,
+          });
+        }
+      }
+    });
+
+    // Sort cleanly by partNumber
+    list.sort((a, b) => (a.partNumber || 1) - (b.partNumber || 1));
+    return list;
+  }, [currentLevelVideos, currentLevelDef.videos, selectedLevelNum]);
 
   const isLevelCompleted = !!progress.completedLevels[selectedLevelNum];
   const completedResult = progress.completedLevels[selectedLevelNum];
@@ -948,13 +993,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         </div>
       </div>
 
-      {/* 🌟 STAGE VIDEOS */}
-      {((currentLevelDef.videos && currentLevelDef.videos.length > 0) || currentLevelVideos.length > 0) && (
+      {/* 🌟 STAGE VIDEOS (STRICTLY AUTHENTIC ADMIN-UPLOADED VIDEOS) */}
+      {currentDisplayVideos.length > 0 ? (
         <div className="my-6 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-amber-300 font-['Cairo'] flex items-center gap-1.5">
               <Video className="w-4 h-4 text-blue-400" />
-              <span>فيديوهات شرح المستوى {selectedLevelNum} ({(currentLevelDef.videos?.length || 0) + currentLevelVideos.length} فيديو متاح):</span>
+              <span>فيديوهات شرح المستوى {selectedLevelNum} ({currentDisplayVideos.length} فيديو متاح - مرفوع من المشرف):</span>
             </span>
 
             <button
@@ -969,24 +1014,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
           {isVideoOpen && (
             <MultiPartVideoPlayer
-              videos={[
-                ...(currentLevelDef.videos || []).map((v, idx): EducationalVideo => ({
-                  id: v.id,
-                  title: v.title,
-                  targetSlotId: `level-${selectedLevelNum}`,
-                  targetSlotName: `المستوى ${selectedLevelNum}`,
-                  videoUrl: v.url,
-                  videoType: 'file',
-                  partNumber: idx + 1,
-                  partTitle: v.title,
-                  partCustomTitle: v.partCustomTitle,
-                  addedAt: v.addedAt || new Date().toISOString(),
-                  isActive: true,
-                })),
-                ...currentLevelVideos.filter(
-                  (cv) => !(currentLevelDef.videos || []).some((v) => v.url === cv.videoUrl)
-                ),
-              ]}
+              videos={currentDisplayVideos}
               title={`شرح المستوى ${selectedLevelNum}: ${currentLevelDef.title}`}
               onSeek={handleVideoSeek}
               onVideoFinish={() => {
@@ -1014,6 +1042,18 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 : (videoScorePerLevel[selectedLevelNum] ?? 0)} / 25 XP
             </span>
           </div>
+        </div>
+      ) : (
+        <div className="my-6 p-4 rounded-2xl bg-slate-950/70 border border-slate-800 text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <Video className="w-4 h-4 text-amber-400" />
+            <span>لم يقم المشرف برفع فيديو تعليمي لهذا المستوى بعد (لا توجد أي فيديوهات افتراضية أخرى).</span>
+          </div>
+          {isAdmin && (
+            <span className="text-[11px] text-amber-300 font-bold">
+              يمكنك رفع فيديوهات هذا المستوى من شاشة "إدارة ورفع الفيديوهات" في لوحة التحكم.
+            </span>
+          )}
         </div>
       )}
 

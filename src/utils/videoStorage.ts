@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { EducationalVideo, VideoSlotDef } from '../types';
 import { storeVideoBlob, getVideoBlobUrl, deleteVideoBlob } from './indexedDbVideo';
+import { syncGlobalQuestionsAndLevels } from './realtimeService';
 
 export const VIDEO_SLOTS: VideoSlotDef[] = [
   {
@@ -90,95 +91,100 @@ export const VIDEO_SLOTS: VideoSlotDef[] = [
 const VIDEOS_STORAGE_KEY = 'cp_educational_videos_v2';
 const PREV_VIDEOS_STORAGE_KEY = 'cp_educational_videos_v1';
 
-// Initial educational videos seeding (Only title, slot, and url - NO description!)
-const INITIAL_VIDEOS: EducationalVideo[] = [
-  {
-    id: 'vid-1',
-    title: 'مقدمة في إنتاج وتصميم الوسائط المتعددة',
-    targetSlotId: 'level-1',
-    targetSlotName: 'المستوى 1: أساسيات الوسائط وتثبيت Adobe Captivate 2019',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    videoType: 'youtube',
-    duration: '04:30',
-    addedAt: '2026-03-01 10:00',
-    isActive: true,
-  },
-  {
-    id: 'vid-2',
-    title: 'جولة استكشافية في واجهة Adobe Captivate 2019',
-    targetSlotId: 'level-2',
-    targetSlotName: 'المرحلة 2: التعرف على واجهة Adobe Captivate 2019',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    videoType: 'youtube',
-    duration: '06:15',
-    addedAt: '2026-03-01 10:30',
-    isActive: true,
-  },
-  {
-    id: 'vid-3',
-    title: 'إدارة وتخطيط الشرائح والمشاهد في كابتيفيت',
-    targetSlotId: 'level-3',
-    targetSlotName: 'المرحلة 3: إدارة وتصميم الشرائح والمشاهد التفاعلية',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    videoType: 'youtube',
-    duration: '05:45',
-    addedAt: '2026-03-01 11:00',
-    isActive: true,
-  },
-  {
-    id: 'vid-8',
-    title: 'تقنيات الفيديو التفاعلي في Adobe Captivate',
-    targetSlotId: 'level-8',
-    targetSlotName: 'المرحلة 8: إدراج ومعالجة الفيديو التفاعلي والمحاكاة',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    videoType: 'youtube',
-    duration: '08:00',
-    addedAt: '2026-03-01 12:00',
-    isActive: true,
-  },
-  {
-    id: 'vid-task',
-    title: 'دليل تنفيذ المهمة التطبيقية العملية',
-    targetSlotId: 'app-task',
-    targetSlotName: 'شاشة المهمة التطبيقية (Practical Application Task)',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    videoType: 'youtube',
-    duration: '05:00',
-    addedAt: '2026-03-01 13:00',
-    isActive: true,
-  },
-];
+/**
+ * Helper to identify and purge any dummy/placeholder videos (such as YouTube Rickroll dQw4w9WgXcQ)
+ */
+export function isPlaceholderVideo(video: { videoUrl?: string; id?: string; title?: string }): boolean {
+  if (!video) return true;
+  const url = video.videoUrl || '';
+  if (url.includes('dQw4w9WgXcQ')) return true;
+  if (video.id && ['vid-1', 'vid-2', 'vid-3', 'vid-8', 'vid-task'].includes(video.id) && url.includes('dQw4w9WgXcQ')) {
+    return true;
+  }
+  return false;
+}
+
+// Initial educational videos seeding: Strictly empty so ONLY real admin-uploaded videos ever exist!
+const INITIAL_VIDEOS: EducationalVideo[] = [];
 
 export function getEducationalVideos(): EducationalVideo[] {
   try {
     const raw = localStorage.getItem(VIDEOS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        // Strictly purge any dummy placeholder videos from browser cache
+        const clean = parsed.filter((v) => !isPlaceholderVideo(v));
+        if (clean.length !== parsed.length) {
+          localStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(clean));
+        }
+        return clean;
+      }
     }
 
-    // Try migration from v1
+    // Try migration from v1, also purging placeholders
     const prevRaw = localStorage.getItem(PREV_VIDEOS_STORAGE_KEY);
     if (prevRaw) {
       const prevParsed = JSON.parse(prevRaw);
       if (Array.isArray(prevParsed)) {
-        localStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(prevParsed));
-        return prevParsed;
+        const cleanPrev = prevParsed.filter((v) => !isPlaceholderVideo(v));
+        localStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(cleanPrev));
+        return cleanPrev;
       }
     }
 
-    localStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(INITIAL_VIDEOS));
     return INITIAL_VIDEOS;
   } catch {
     return INITIAL_VIDEOS;
   }
 }
 
-export function saveEducationalVideos(videos: EducationalVideo[]): void {
-  localStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(videos));
+export function saveEducationalVideos(videos: EducationalVideo[], syncRemote: boolean = true): void {
+  const clean = videos.filter((v) => !isPlaceholderVideo(v));
+  localStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(clean));
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('videos-storage-updated', { detail: videos }));
+    window.dispatchEvent(new CustomEvent('videos-storage-updated', { detail: clean }));
   }
+
+  if (syncRemote) {
+    try {
+      // Sync URL-based and meta videos to Firebase RTDB so all student clients receive them immediately
+      const syncPayload = clean.map((v) => ({
+        ...v,
+        // If it's a local object URL (blob:http...), don't broadcast broken local blob url across network
+        videoUrl: v.videoUrl.startsWith('blob:') ? '' : v.videoUrl,
+      }));
+      syncGlobalQuestionsAndLevels('videos', syncPayload).catch(() => {});
+    } catch {
+      // Ignore background network errors
+    }
+  }
+}
+
+/**
+ * Merge remote educational videos from Firebase RTDB with local storage
+ */
+export function syncRemoteEducationalVideos(remoteVideos: EducationalVideo[]): void {
+  if (!Array.isArray(remoteVideos)) return;
+  const currentLocal = getEducationalVideos();
+  const remoteClean = remoteVideos.filter((v) => !isPlaceholderVideo(v));
+
+  // Merge remote videos while preserving local working blob URLs for file uploads
+  const mergedMap = new Map<string, EducationalVideo>();
+  currentLocal.forEach((v) => mergedMap.set(v.id, v));
+
+  remoteClean.forEach((rv) => {
+    const existing = mergedMap.get(rv.id);
+    if (existing && existing.blobId && existing.videoUrl.startsWith('blob:')) {
+      // Keep working local blob url for device uploads
+      mergedMap.set(rv.id, { ...rv, videoUrl: existing.videoUrl });
+    } else {
+      mergedMap.set(rv.id, rv);
+    }
+  });
+
+  const mergedList = Array.from(mergedMap.values());
+  saveEducationalVideos(mergedList, false);
 }
 
 export function getVideoBySlot(slotId: string): EducationalVideo | undefined {

@@ -532,7 +532,7 @@ export const fetchAllTestAccessAuditFromCloud = async (): Promise<Record<string,
 /**
  * Sync global question banks and level definitions to Firebase RTDB for instant real-time updates across all students
  */
-export type GlobalSyncType = 'pretest' | 'posttest' | 'levels' | 'instructions' | 'splash' | 'supervisors' | 'siteTitle' | 'users';
+export type GlobalSyncType = 'pretest' | 'posttest' | 'levels' | 'instructions' | 'splash' | 'supervisors' | 'siteTitle' | 'users' | 'videos';
 
 
 

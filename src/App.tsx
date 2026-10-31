@@ -8,7 +8,7 @@ import { PortalHome } from './components/PortalHome';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { Mail } from 'lucide-react';
-import { rehydrateLocalVideoUrls } from './utils/videoStorage';
+import { rehydrateLocalVideoUrls, syncRemoteEducationalVideos } from './utils/videoStorage';
 import { subscribeToGlobalData } from './utils/realtimeService';
 import { savePreTestQuestions, savePostTestQuestions } from './data/preTestData';
 import { saveCustomGameLevels } from './data/gameLevelsData';
@@ -87,6 +87,11 @@ export default function App() {
         saveSiteTitleConfig(data, false);
       }
     });
+    const unsubVideos = subscribeToGlobalData('videos', (data) => {
+      if (Array.isArray(data)) {
+        syncRemoteEducationalVideos(data);
+      }
+    });
 
     return () => {
       unsubPre();
@@ -96,6 +101,7 @@ export default function App() {
       unsubSplash();
       unsubSupervisors();
       unsubSiteTitle();
+      unsubVideos();
     };
   }, []);
 

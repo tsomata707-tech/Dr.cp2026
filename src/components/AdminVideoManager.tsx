@@ -31,6 +31,7 @@ import {
   deleteEducationalVideo,
   rehydrateLocalVideoUrls,
   formatActualDuration,
+  isPlaceholderVideo,
 } from '../utils/videoStorage';
 import { storeVideoBlob } from '../utils/indexedDbVideo';
 import { addActivityLog } from '../utils/adminStorage';
@@ -78,7 +79,7 @@ export const AdminVideoManager: React.FC = () => {
   // Helper to get all videos for a slot (sorted by partNumber)
   const getSlotVideos = (slotId: string) => {
     return videos
-      .filter((v) => v.targetSlotId === slotId && v.isActive)
+      .filter((v) => v.targetSlotId === slotId && v.isActive && !isPlaceholderVideo(v))
       .sort((a, b) => (a.partNumber || 1) - (b.partNumber || 1));
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Compass,
   Lock,
@@ -21,19 +21,69 @@ import {
 } from 'lucide-react';
 import { GameLevelDef, GAME_LEVELS_DATA } from '../data/gameLevelsData';
 import { getStudentProgress } from '../utils/gameStorage';
-import { useEducationalVideos } from '../utils/videoStorage';
+import { useEducationalVideos, isPlaceholderVideo } from '../utils/videoStorage';
+import { EducationalVideo } from '../types';
 import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { Gamepad2 } from 'lucide-react';
 
 const StageIntroVideoPlayer: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
-  const videos = useEducationalVideos(`level-${levelNumber}`);
+  const slotVideos = useEducationalVideos(`level-${levelNumber}`);
+  const levelDef = GAME_LEVELS_DATA.find((l) => l.levelNumber === levelNumber);
+
+  const cleanVideos = useMemo(() => {
+    const list: EducationalVideo[] = [];
+    const seen = new Set<string>();
+
+    (slotVideos || []).forEach((v) => {
+      if (v.isActive && !isPlaceholderVideo(v) && v.videoUrl?.trim()) {
+        const u = v.videoUrl.trim();
+        if (!seen.has(u)) {
+          seen.add(u);
+          list.push(v);
+        }
+      }
+    });
+
+    (levelDef?.videos || []).forEach((v, idx) => {
+      if (v.url && !v.url.includes('dQw4w9WgXcQ') && v.url.trim()) {
+        const u = v.url.trim();
+        if (!seen.has(u)) {
+          seen.add(u);
+          list.push({
+            id: v.id || `lvl_def_vid_${idx}`,
+            title: v.title || `شرح المستوى ${levelNumber}`,
+            targetSlotId: `level-${levelNumber}`,
+            targetSlotName: `المستوى ${levelNumber}`,
+            videoUrl: u,
+            videoType: 'file',
+            partNumber: idx + 1,
+            partTitle: v.title,
+            partCustomTitle: v.partCustomTitle,
+            addedAt: v.addedAt || new Date().toISOString(),
+            isActive: true,
+          });
+        }
+      }
+    });
+
+    list.sort((a, b) => (a.partNumber || 1) - (b.partNumber || 1));
+    return list;
+  }, [slotVideos, levelDef?.videos, levelNumber]);
+
+  if (cleanVideos.length === 0) {
+    return (
+      <div className="mb-5 rounded-2xl overflow-hidden border border-slate-800 bg-[#080a18] p-4 text-center text-xs text-slate-400">
+        لم يقم المشرف برفع فيديو تعليمي لهذا المستوى بعد.
+      </div>
+    );
+  }
 
   return (
     <div className="mb-5 rounded-2xl overflow-hidden border border-blue-500/30 bg-[#080a18] p-3 shadow-lg">
       <MultiPartVideoPlayer
-        videos={videos}
-        title={`فيديوهات شرح المستوى ${levelNumber}`}
+        videos={cleanVideos}
+        title={`فيديوهات شرح المستوى ${levelNumber} (${cleanVideos.length} فيديو مرفوع من المشرف)`}
       />
     </div>
   );
