@@ -481,6 +481,20 @@ export const fetchAllStudentsProgressFromCloud = async (): Promise<Record<string
   }
 };
 
+export const fetchStudentProgressFromCloud = async (username: string): Promise<StudentGameProgress | null> => {
+  try {
+    const studentRef = ref(rtdb, `studentsProgress/${username}`);
+    const snapshot = await rtdbGet(studentRef);
+    if (snapshot.exists()) {
+      return snapshot.val() as StudentGameProgress;
+    }
+    return null;
+  } catch (err) {
+    console.warn(`Failed to fetch progress for ${username} from RTDB:`, err);
+    return null;
+  }
+};
+
 /**
  * One-shot direct fetch of all student login audits from Firebase Realtime Database
  */

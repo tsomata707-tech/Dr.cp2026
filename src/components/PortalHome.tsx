@@ -23,6 +23,7 @@ import { getSupervisorsBoardConfig } from '../utils/supervisorsStorage';
 import { getGroupByUsername } from '../data/studentAccounts';
 import { getStudentProgress, getAllStudentsProgress, saveAllStudentsProgress, saveSingleStudentProgress } from '../utils/gameStorage';
 import { subscribeToStudentProgress } from '../utils/realtimeService';
+import { StudentGameProgress } from '../types';
 import { GAME_LEVELS_DATA } from '../data/gameLevelsData';
 import {
   GraduationCap,
@@ -75,8 +76,21 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
   const userGroupMeta = getGroupByUsername(username);
   const isCollaborative = userGroupMeta?.learningMode === 'تعاوني';
 
-  // Student Game Progress
-  const [studentGame, setStudentGame] = useState(() => getStudentProgress(username));
+  // Student Game Progress (Loaded directly from cloud/memory)
+  const [studentGame, setStudentGame] = useState<StudentGameProgress>(() => {
+    return getStudentProgress(username);
+  });
+
+  // Fetch initial progress from cloud immediately on mount
+  useEffect(() => {
+    import('../utils/realtimeService').then(({ fetchStudentProgressFromCloud }) => {
+      fetchStudentProgressFromCloud(username).then((cloudProg) => {
+        if (cloudProg) {
+          setStudentGame(cloudProg);
+        }
+      });
+    });
+  }, [username]);
 
   // Main Section Navigation:
   const [activeMainSection, setActiveMainSection] = useState<PortalSection>(() => {
