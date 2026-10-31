@@ -41,6 +41,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
+  const [studentToReset, setStudentToReset] = useState<string>('all');
 
   // Edit User Modal
   const [editingUser, setEditingUser] = useState<PortalUser | null>(null);
@@ -394,21 +395,42 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
         </div>
 
         {/* Reset All Button */}
-        <button
-          type="button"
-          onClick={() => {
-            if (window.confirm('هل أنت متأكد من تصفير وإعادة تهيئة إجابات ودرجات المستويات لجميع الطلاب؟ (سيتم الإبقاء على نتائج الاختبار القبلي)')) {
-              resetAllLevelsProgressKeepingPreTest();
-              addActivityLog('قام المشرف بإعادة تهيئة مستويات الطلاب مع الإبقاء على الاختبار القبلي', 'admin', 'danger');
-              showToast('✓ تم إعادة تهيئة مستويات الطلاب بنجاح', 'success');
-              setUsers(getPortalUsers());
-            }
-          }}
-          className="p-3 rounded-2xl bg-red-950/60 border border-red-500 text-red-200 text-center font-black text-xs hover:bg-red-900 transition cursor-pointer flex flex-col items-center justify-center"
-        >
-          <RotateCcw className="w-5 h-5 mb-1" />
-          تصفير جميع المستويات
-        </button>
+        <div className="flex flex-col gap-2">
+          <select
+            value={studentToReset}
+            onChange={(e) => setStudentToReset(e.target.value)}
+            className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs"
+          >
+            <option value="all">جميع الطلاب</option>
+            {users.filter(u => u.role !== 'supervisor').map(u => (
+              <option key={u.id} value={u.username}>{u.fullName || u.username}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => {
+              if (studentToReset === 'all') {
+                if (window.confirm('هل أنت متأكد من تصفير وإعادة تهيئة إجابات ودرجات المستويات لجميع الطلاب؟ (سيتم الإبقاء على نتائج الاختبار القبلي)')) {
+                  resetAllLevelsProgressKeepingPreTest();
+                  addActivityLog('قام المشرف بإعادة تهيئة مستويات الطلاب مع الإبقاء على الاختبار القبلي', 'admin', 'danger');
+                  showToast('✓ تم إعادة تهيئة مستويات الطلاب بنجاح', 'success');
+                  setUsers(getPortalUsers());
+                }
+              } else {
+                if (window.confirm(`هل أنت متأكد من تصفير وإعادة تهيئة إجابات ودرجات المستويات للطالب ${studentToReset}؟`)) {
+                  resetStudentProgress(studentToReset);
+                  addActivityLog(`قام المشرف بإعادة تهيئة مستويات الطالب: ${studentToReset}`, 'admin', 'danger');
+                  showToast(`✓ تم إعادة تهيئة مستويات الطالب ${studentToReset} بنجاح`, 'success');
+                  setUsers(getPortalUsers());
+                }
+              }
+            }}
+            className="p-3 rounded-2xl bg-red-950/60 border border-red-500 text-red-200 text-center font-black text-xs hover:bg-red-900 transition cursor-pointer flex flex-col items-center justify-center"
+          >
+            <RotateCcw className="w-5 h-5 mb-1" />
+            تصفير المستويات
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs & Search Bar */}
