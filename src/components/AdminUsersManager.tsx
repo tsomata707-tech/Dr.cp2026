@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { PortalUser } from '../types';
 import { getPortalUsers, savePortalUsers, addActivityLog } from '../utils/adminStorage';
-import { resetStudentProgress, resetAllStudentsToRealCleanState } from '../utils/gameStorage';
+import { resetStudentProgress, resetAllLevelsProgressKeepingPreTest } from '../utils/gameStorage';
 import { RESEARCH_GROUPS_META, getStudentPassword } from '../data/studentAccounts';
 
 interface AdminUsersManagerProps {
@@ -392,6 +392,23 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
           <span className="text-[11px] font-black text-slate-900 font-['Cairo'] block mb-1">المجموعة G4 (تعاوني/مرجأ)</span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 font-['Cairo']">{g4Count}</span>
         </div>
+
+        {/* Reset All Button */}
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm('هل أنت متأكد من تصفير وإعادة تهيئة إجابات ودرجات المستويات لجميع الطلاب؟ (سيتم الإبقاء على نتائج الاختبار القبلي)')) {
+              resetAllLevelsProgressKeepingPreTest();
+              addActivityLog('قام المشرف بإعادة تهيئة مستويات الطلاب مع الإبقاء على الاختبار القبلي', 'admin', 'danger');
+              showToast('✓ تم إعادة تهيئة مستويات الطلاب بنجاح', 'success');
+              setUsers(getPortalUsers());
+            }
+          }}
+          className="p-3 rounded-2xl bg-red-950/60 border border-red-500 text-red-200 text-center font-black text-xs hover:bg-red-900 transition cursor-pointer flex flex-col items-center justify-center"
+        >
+          <RotateCcw className="w-5 h-5 mb-1" />
+          تصفير جميع المستويات
+        </button>
       </div>
 
       {/* Filter Tabs & Search Bar */}

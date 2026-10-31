@@ -538,6 +538,43 @@ export function resetAllStudentsToRealCleanState(): Record<string, StudentGamePr
   return clean;
 }
 
+export function resetAllLevelsProgressKeepingPreTest(): Record<string, StudentGameProgress> {
+  const all = getAllStudentsProgress();
+  const keys = Object.keys(all);
+  keys.forEach((username) => {
+    const prog = all[username];
+    const preTestResult = prog.preTestResult;
+    
+    // Reset to initial state
+    all[username] = {
+      username: prog.username,
+      avatarId: prog.avatarId,
+      currentLevel: 1,
+      completedLevels: {},
+      studentActivities: {},
+      totalScore: 0,
+      hearts: 3,
+      badges: [],
+      lastActive: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      preTestResult: preTestResult, // Keep preTestResult
+    };
+  });
+  
+  saveAllStudentsProgress(all);
+  
+  // Sync to Firebase
+  Object.values(all).forEach((prog) => {
+    syncStudentProgressToFirestore(prog).catch(() => {});
+  });
+  
+  try {
+    window.dispatchEvent(new CustomEvent('cp_student_progress_reset', { detail: { all: true } }));
+  } catch {}
+  
+  addActivityLog('قام المشرف بإعادة تهيئة جميع المستويات والأنشطة للطلاب مع الإبقاء على الاختبار القبلي فقط', 'admin', 'warning');
+  return all;
+}
+
 // Generates clean real initial state for all 60 students (0 answered questions, 0 scores)
 function generateCleanRealStudents(): Record<string, StudentGameProgress> {
   const clean: Record<string, StudentGameProgress> = {};
