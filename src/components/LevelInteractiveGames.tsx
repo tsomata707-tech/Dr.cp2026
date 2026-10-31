@@ -78,7 +78,7 @@ export const LevelInteractiveGames: React.FC<LevelInteractiveGamesProps> = ({
               </span>
             </div>
             <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-1">
-              {levelNumber === 1 && 'لعبة ترتيب خطوات تثبيت Adobe Captivate 2019 وتفعيل دعم اللغة العربية'}
+              {levelNumber === 1 && 'المهمة التطبيقية للمستوى الأول: تسليم وعرض نشاط التثبيت والإعداد'}
               {levelNumber === 2 && 'لعبة مطابقة لوحات وأدوات واجهة Captivate مع وظائفها المحددة'}
               {levelNumber === 3 && 'لعبة تصنيف واختيار نمط المشروع المناسب للموقف التعليمي'}
               {levelNumber === 4 && 'استوديو بناء الأزرار التفاعلية باستخدام الأشكال الذكية (Smart Shapes)'}
@@ -108,7 +108,7 @@ export const LevelInteractiveGames: React.FC<LevelInteractiveGamesProps> = ({
 
       {/* RENDER THE SPECIFIC GAME 1..9 */}
       <div className="pt-2">
-        {levelNumber === 1 && <GameLevel1 onFinish={handleSuccess} isDone={completed} />}
+        {levelNumber === 1 && <GameLevel1Notice onFinish={handleSuccess} isDone={completed} />}
         {levelNumber === 2 && <GameLevel2 onFinish={handleSuccess} isDone={completed} />}
         {levelNumber === 3 && <GameLevel3 onFinish={handleSuccess} isDone={completed} />}
         {levelNumber === 4 && <GameLevel4 onFinish={handleSuccess} isDone={completed} />}
@@ -137,117 +137,30 @@ export const LevelInteractiveGames: React.FC<LevelInteractiveGamesProps> = ({
 };
 
 // =========================================================================
-// GAME 1: Steps Sequencer (تثبيت البرنامج ودعم العربية)
+// GAME 1: Notice (تمت إزالة لعبة ترتيب الخطوات لبرنامج 2019)
 // =========================================================================
-const GameLevel1: React.FC<{ onFinish: () => void; isDone: boolean }> = ({ onFinish, isDone }) => {
-  const correctOrder = [
-    'التحقق من معمارية نظام التشغيل 64-Bit لتشغيل Adobe Captivate 2019',
-    'تشغيل معالج التثبيت القياسي Setup.exe ومتابعة خطوات التنصيب',
-    'فتح البرنامج واختيار قائمة التفضيلات Edit > Preferences',
-    'تفعيل خيار دعم نصوص الشرق الأوسط (Indic Composer) لكتابة العربية السليمة',
-  ];
-
-  const [items, setItems] = useState<string[]>(() => [
-    correctOrder[2],
-    correctOrder[0],
-    correctOrder[3],
-    correctOrder[1],
-  ]);
-  const [solved, setSolved] = useState<boolean>(isDone);
-  const [errorNotice, setErrorNotice] = useState<string | null>(null);
-
-  const moveUp = (index: number) => {
-    if (index === 0 || solved) return;
-    const next = [...items];
-    const temp = next[index - 1];
-    next[index - 1] = next[index];
-    next[index] = temp;
-    setItems(next);
-  };
-
-  const moveDown = (index: number) => {
-    if (index === items.length - 1 || solved) return;
-    const next = [...items];
-    const temp = next[index + 1];
-    next[index + 1] = next[index];
-    next[index] = temp;
-    setItems(next);
-  };
-
-  const handleCheck = () => {
-    const isCorrect = items.every((val, idx) => val === correctOrder[idx]);
-    if (isCorrect) {
-      setSolved(true);
-      setErrorNotice(null);
-      onFinish();
-    } else {
-      setErrorNotice('الترتيب الحالي غير صحيح! راجع الترتيب المنطقي لخطوات التثبيت ثم التفضيلات ثم تفعيل اللغة العربية وحاول ثانية.');
-    }
-  };
-
+const GameLevel1Notice: React.FC<{ onFinish: () => void; isDone: boolean }> = ({ onFinish, isDone }) => {
   return (
-    <div className="space-y-4">
-      <p className="text-xs sm:text-sm text-cyan-200 leading-relaxed">
-        📋 <strong>المهمة التفاعلية:</strong> رتّب الخطوات العملية الأربعة التالية بالترتيب الزمني الصحيح لتثبيت Adobe Captivate 2019 وضمان كتابة النصوص العربية باتجاه صحيح:
-      </p>
-
-      <div className="space-y-2.5">
-        {items.map((text, idx) => (
-          <div
-            key={text}
-            className={`p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between gap-3 ${
-              solved
-                ? 'bg-emerald-950/40 border-emerald-500 text-emerald-200'
-                : 'bg-slate-950/80 border-slate-700 text-slate-100 hover:border-cyan-500'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="w-7 h-7 rounded-xl bg-cyan-500/20 border border-cyan-400 text-cyan-300 font-black text-xs flex items-center justify-center shrink-0">
-                {idx + 1}
-              </span>
-              <span className="text-xs sm:text-sm font-medium">{text}</span>
-            </div>
-
-            {!solved && (
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  disabled={idx === 0}
-                  onClick={() => moveUp(idx)}
-                  className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-xs text-white"
-                  title="تحريك لأعلى"
-                >
-                  ▲
-                </button>
-                <button
-                  type="button"
-                  disabled={idx === items.length - 1}
-                  onClick={() => moveDown(idx)}
-                  className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-xs text-white"
-                  title="تحريك لأسفل"
-                >
-                  ▼
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {errorNotice && (
-        <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500 text-rose-200 text-xs">
-          {errorNotice}
+    <div className="p-5 rounded-2xl bg-cyan-950/40 border-2 border-cyan-500/50 space-y-3 text-right">
+      <div className="flex items-center gap-3">
+        <CheckCircle2 className="w-7 h-7 text-emerald-400 shrink-0" />
+        <div>
+          <h4 className="text-sm font-black text-white font-['Tajawal']">
+            المهمة التطبيقية للمستوى الأول
+          </h4>
+          <p className="text-xs text-cyan-200 mt-1 leading-relaxed">
+            تمت إزالة لعبة ترتيب الخطوات لبرنامج 2019. يُعتمد النشاط التطبيقي للمستوى الأول مباشرة من خلال تسليم ملف النشاط التطبيقي في النموذج المخصص بأسفل الصفحة.
+          </p>
         </div>
-      )}
-
-      {!solved && (
+      </div>
+      {!isDone && (
         <button
           type="button"
-          onClick={handleCheck}
-          className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg transition cursor-pointer"
+          onClick={() => onFinish()}
+          className="mt-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 text-slate-950 font-black text-xs flex items-center gap-2 cursor-pointer shadow-md transition-all"
         >
-          <Check className="w-4 h-4" />
-          <span>تحقق من صحة ترتيب الخطوات</span>
+          <CheckCircle2 className="w-4 h-4" />
+          <span>تأكيد واعتماد جاهزية النشاط التطبيقي (+25 درجة)</span>
         </button>
       )}
     </div>
