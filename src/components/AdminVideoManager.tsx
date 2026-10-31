@@ -23,7 +23,7 @@ import {
   Edit3,
 } from 'lucide-react';
 import { EducationalVideo, VideoSlotDef } from '../types';
-import { ref as sRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref as sRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 import {
   VIDEO_SLOTS,
@@ -85,9 +85,29 @@ export const AdminVideoManager: React.FC = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploadingMedia, setIsUploadingMedia] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const level1FileInputRef = useRef<HTMLInputElement>(null);
+  const uploadTaskRef = useRef<any>(null);
+
+  const cancelUpload = () => {
+    if (uploadTaskRef.current) {
+      try {
+        uploadTaskRef.current.cancel();
+      } catch (err) {
+        console.warn('Error canceling upload task:', err);
+      }
+      uploadTaskRef.current = null;
+    }
+    setIsUploadingMedia(false);
+    setUploadProgress(0);
+    setIsProcessingLevel1(false);
+    setIsPublishing(false);
+    setSuccessMessage(null);
+    setFormError('تم إلغاء عملية الرفع بطلب من المستخدم.');
+  };
 
   // Helper to get all videos for a slot (sorted by partNumber)
   const getSlotVideos = (slotId: string) => {
@@ -120,6 +140,11 @@ export const AdminVideoManager: React.FC = () => {
       return;
     }
 
+    if (file.size > 50 * 1024 * 1024) {
+      setFormError('حجم الفيديو كبير جداً (أكبر من 50 ميجابايت). يرجى ضغط الفيديو أو اختيار ملف أصغر حجماً.');
+      return;
+    }
+
     setIsProcessingLevel1(true);
     setFormError(null);
 
@@ -148,44 +173,65 @@ export const AdminVideoManager: React.FC = () => {
       const cleanFileName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
 
       // NEW: Upload to Firebase Storage for sharing!
-      let finalUrl = objectUrl;
-      try {
-        const storagePath = `educational_videos/level1/${generatedBlobId}_${file.name}`;
-        const fileRef = sRef(storage, storagePath);
-        await uploadBytes(fileRef, file);
-        finalUrl = await getDownloadURL(fileRef);
-      } catch (storageErr) {
-        console.warn('Firebase Storage upload failed, falling back to local only:', storageErr);
-      }
+      setIsUploadingMedia(true);
+      setUploadProgress(1);
+      setSuccessMessage('جاري بدء رفع الفيديو للسحابة...');
 
-      addEducationalVideo({
-        title: `مقدمة في إنتاج وتصميم الوسائط المتعددة (الجزء ${nextPart})`,
-        partNumber: nextPart,
-        partTitle: `الجزء ${nextPart}: ${cleanFileName}`,
-        targetSlotId: 'level-1',
-        videoUrl: finalUrl,
-        videoType: 'file',
-        duration: detectedDuration,
-        blobId: generatedBlobId,
-        isActive: true,
-      });
+      const storagePath = `educational_videos/level1/${generatedBlobId}_${file.name}`;
+      const fileRef = sRef(storage, storagePath);
+      const uploadTask = uploadBytesResumable(fileRef, file);
+      uploadTaskRef.current = uploadTask;
 
-      addActivityLog(
-        `قام المشرف برفع الجزء ${nextPart} من فيديو المرحلة 1 من جهازه: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB) - المدة الفعلية: ${detectedDuration}`,
-        'المشرف',
-        'success'
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const total = snapshot.totalBytes;
+          const transferred = snapshot.bytesTransferred;
+          const pct = total > 0 ? (transferred / total) * 100 : 0;
+          setUploadProgress(Math.max(1, Math.round(pct)));
+        },
+        (storageErr) => {
+          console.warn('Firebase Storage upload failed:', storageErr);
+          setFormError('حدث خطأ أثناء الرفع للسحابة. يرجى المحاولة مرة ثانية.');
+          setIsUploadingMedia(false);
+          setIsProcessingLevel1(false);
+        },
+        async () => {
+          const finalUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          addEducationalVideo({
+            title: `مقدمة في إنتاج وتصميم الوسائط المتعددة (الجزء ${nextPart})`,
+            partNumber: nextPart,
+            partTitle: `الجزء ${nextPart}: ${cleanFileName}`,
+            targetSlotId: 'level-1',
+            videoUrl: finalUrl,
+            videoType: 'file',
+            duration: detectedDuration,
+            blobId: generatedBlobId,
+            isActive: true,
+          });
+
+          addActivityLog(
+            `قام المشرف برفع الجزء ${nextPart} من فيديو المرحلة 1 من جهازه: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB) - المدة الفعلية: ${detectedDuration}`,
+            'المشرف',
+            'success'
+          );
+
+          setSuccessMessage(
+            `✅ تم تحميل الفيديو بنجاح للمستوى 1 من جهازك (${file.name})! المدة الفعلية: ${detectedDuration}. متاح الآن لجميع الطلاب.`
+          );
+
+          refreshVideos();
+          setIsUploadingMedia(false);
+          setUploadProgress(0);
+          setIsProcessingLevel1(false);
+          setTimeout(() => setSuccessMessage(null), 6000);
+        }
       );
-
-      setSuccessMessage(
-        `✅ تم تحميل الفيديو بنجاح للمستوى 1 من جهازك (${file.name})! المدة الفعلية: ${detectedDuration}. متاح الآن لجميع الطلاب.`
-      );
-
-      refreshVideos();
+    } catch (err) {
+      console.error('Level 1 upload trigger error:', err);
       setIsProcessingLevel1(false);
-      setTimeout(() => setSuccessMessage(null), 6000);
-    } catch {
-      setIsProcessingLevel1(false);
-      setFormError('حدث خطأ أثناء رفع ملف الفيديو من الجهاز، يرجى المحاولة مرة ثانية.');
+      setIsUploadingMedia(false);
+      setFormError('حدث خطأ غير متوقع أثناء محاولة بدء الرفع.');
     } finally {
       if (e.target) e.target.value = '';
     }
@@ -328,52 +374,78 @@ export const AdminVideoManager: React.FC = () => {
       const customPartLabel = partCustomTitle.trim() || `الجزء ${partNumber}`;
 
       // NEW: Upload to Firebase Storage for sharing if it's a file!
-      let finalUrl = videoUrl.trim();
       if (uploadSource === 'file' && selectedFile) {
-        try {
-          const storagePath = `educational_videos/${targetSlotId}/${blobId || Date.now()}_${selectedFile.name}`;
-          const fileRef = sRef(storage, storagePath);
-          await uploadBytes(fileRef, selectedFile);
-          finalUrl = await getDownloadURL(fileRef);
-        } catch (storageErr) {
-          console.warn('Firebase Storage upload failed, using local blob URL:', storageErr);
-          // finalUrl remains the local blob URL
-        }
+        setIsUploadingMedia(true);
+        setUploadProgress(1);
+        setSuccessMessage('جاري رفع الفيديو...');
+
+        const storagePath = `educational_videos/${targetSlotId}/${blobId || Date.now()}_${selectedFile.name}`;
+        const fileRef = sRef(storage, storagePath);
+        const uploadTask = uploadBytesResumable(fileRef, selectedFile);
+        uploadTaskRef.current = uploadTask;
+
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const total = snapshot.totalBytes;
+            const transferred = snapshot.bytesTransferred;
+            const pct = total > 0 ? (transferred / total) * 100 : 0;
+            setUploadProgress(Math.max(1, Math.round(pct)));
+          },
+          (storageErr) => {
+            console.warn('Firebase Storage upload failed:', storageErr);
+            setFormError('فشل الرفع للسحابة. يرجى المحاولة لاحقاً.');
+            setIsUploadingMedia(false);
+            setIsPublishing(false);
+          },
+          async () => {
+            const finalUrl = await getDownloadURL(uploadTask.snapshot.ref);
+            completePublish(finalUrl, customPartLabel, slotName, finalTitle);
+          }
+        );
+      } else {
+        // Direct URL case
+        completePublish(videoUrl.trim(), customPartLabel, slotName, finalTitle);
       }
-
-      addEducationalVideo({
-        title: finalTitle,
-        partNumber,
-        partCustomTitle: customPartLabel,
-        partTitle: `${customPartLabel}: ${finalTitle}`,
-        targetSlotId,
-        videoUrl: finalUrl,
-        videoType,
-        duration: actualDuration,
-        blobId,
-        isActive: true,
-      });
-
-      addActivityLog(
-        `تم رفع ونشر فيديو: "${finalTitle}" (${customPartLabel}) في ${slotName} - المدة الفعلية: ${actualDuration}`,
-        'المشرف',
-        'success'
-      );
-
-      // Success Notification
-      setSuccessMessage(
-        `✅ تم تحميل الفيديو بنجاح! متاح الآن لجميع الطلاب في: ${slotName} (المدة الفعلية: ${actualDuration}).`
-      );
-      refreshVideos();
-      setIsPublishing(false);
-      setShowAddModal(false);
-
-      // Auto-hide success message after 5 seconds
-      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (err: any) {
       setIsPublishing(false);
+      setIsUploadingMedia(false);
       setFormError(err?.message || 'حدث خطأ أثناء نشر الفيديو، يرجى المحاولة مرة أخرى.');
     }
+  };
+
+  const completePublish = (finalUrl: string, customPartLabel: string, slotName: string, finalTitle: string) => {
+    addEducationalVideo({
+      title: finalTitle,
+      partNumber,
+      partCustomTitle: customPartLabel,
+      partTitle: `${customPartLabel}: ${finalTitle}`,
+      targetSlotId,
+      videoUrl: finalUrl,
+      videoType,
+      duration: actualDuration,
+      blobId,
+      isActive: true,
+    });
+
+    addActivityLog(
+      `تم رفع ونشر فيديو: "${finalTitle}" (${customPartLabel}) في ${slotName} - المدة الفعلية: ${actualDuration}`,
+      'المشرف',
+      'success'
+    );
+
+    // Success Notification
+    setSuccessMessage(
+      `✅ تم تحميل الفيديو بنجاح! متاح الآن لجميع الطلاب في: ${slotName} (المدة الفعلية: ${actualDuration}).`
+    );
+    refreshVideos();
+    setIsPublishing(false);
+    setIsUploadingMedia(false);
+    setUploadProgress(0);
+    setShowAddModal(false);
+
+    // Auto-hide success message after 5 seconds
+    setTimeout(() => setSuccessMessage(null), 5000);
   };
 
   // 🌟 Edit Part Name & Video Details Handler
@@ -441,7 +513,8 @@ export const AdminVideoManager: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 text-right font-['Cairo',_sans-serif]" id="admin-video-manager">
+    <>
+      <div className="space-y-6 text-right font-['Cairo',_sans-serif]" id="admin-video-manager">
       {/* 1. Header Banner */}
       <div className="rounded-3xl bg-gradient-to-r from-[#171330] via-[#100c24] to-[#0a0817] border-2 border-[#ffd700]/70 p-6 sm:p-8 shadow-[0_0_35px_rgba(212,175,55,0.25)] relative overflow-hidden">
         <div className="absolute top-0 right-1/4 w-96 h-28 bg-[#ffd700]/10 blur-3xl pointer-events-none" />
@@ -1367,5 +1440,64 @@ export const AdminVideoManager: React.FC = () => {
         </div>
       )}
     </div>
+      {/* 8. GLOBAL MODAL: جاري رفع الفيديو (Authentic Progress Modal) */}
+      {isUploadingMedia && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl bg-[#0c0f20] border-2 border-blue-500/50 p-8 text-center shadow-[0_0_50px_rgba(37,99,235,0.3)] space-y-6">
+            <div className="relative w-24 h-24 mx-auto">
+              <div className="absolute inset-0 rounded-full border-4 border-slate-800" />
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="44"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  className="text-blue-600 transition-all duration-300"
+                  strokeDasharray={2 * Math.PI * 44}
+                  strokeDashoffset={2 * Math.PI * 44 * (1 - uploadProgress / 100)}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-2xl font-black text-white font-['Outfit']">
+                  {uploadProgress}%
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-white font-['Tajawal']">
+                جاري رفع الفيديو...
+              </h3>
+              <p className="text-xs text-slate-400 font-['Cairo']">
+                يرجى عدم إغلاق النافذة حتى يتم اكتمال الرفع بنجاح للسحابة
+              </p>
+            </div>
+
+            <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+              <div
+                className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+
+            <div className="pt-2 flex flex-col items-center gap-4">
+              <span className="px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold animate-pulse">
+                🚀 جاري المعالجة والرفع المباشر...
+              </span>
+              
+              <button
+                type="button"
+                onClick={cancelUpload}
+                className="px-6 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-black cursor-pointer transition-colors"
+              >
+                إلغاء عملية الرفع وإغلاق النافذة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };

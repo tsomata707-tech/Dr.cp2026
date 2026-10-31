@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Gamepad2,
   Trophy,
@@ -183,13 +183,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   const handleVideoFinishReward = () => {
     if (isLevelCompleted) return;
-    if ((videoScorePerLevel[selectedLevelNum] || 0) >= 25) return;
+    if ((videoScorePerLevel[selectedLevelNum] || 0) >= 0) return;
     
     setVideoScorePerLevel(prev => ({
       ...prev,
-      [selectedLevelNum]: 25
+      [selectedLevelNum]: 0
     }));
-    setVideoWarning('مبروك! حصلت على 25 نقطة لمشاهدة فيديو الشرح بالكامل 🎓');
+    setVideoWarning('مبروك! شاهدت فيديو الشرح بالكامل 🎓');
     setTimeout(() => setVideoWarning(null), 5000);
   };
 
@@ -692,7 +692,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     setIsTransitioning5s(true);
   };
 
-  const handle5sTransitionComplete = () => {
+  const handle5sTransitionComplete = useCallback(() => {
     setIsTransitioning5s(false);
     if (selectedLevelNum < 9) {
       const nextLvl = selectedLevelNum + 1;
@@ -707,9 +707,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       }
       window.dispatchEvent(new CustomEvent('cp_navigate_to_posttest'));
     }
-  };
+  }, [selectedLevelNum, username, onCompleteAllLevels]);
 
-  const handleNextLevel = () => {
+  const handleNextLevel = useCallback(() => {
     setFeedbackModal(null);
     if (selectedLevelNum < 9) {
       setSelectedLevelNum(selectedLevelNum + 1);
@@ -719,7 +719,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       }
       window.dispatchEvent(new CustomEvent('cp_navigate_to_posttest'));
     }
-  };
+  }, [selectedLevelNum, onCompleteAllLevels]);
 
   return (
     <div className="space-y-6 text-right" id="educational-game-arena">
@@ -1048,9 +1048,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               onSeek={handleVideoSeek}
               onVideoFinish={() => {
                 const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
-                const earned = penalty ? 20 : 25;
+                const earned = 0;
                 setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
-                setVideoWarning(penalty ? 'تم إتمام مشاهدة الفيديو مع تطبيق خصم التقديم (−5 درجات): +20 درجة.' : 'تم إتمام مشاهدة الفيديو بنجاح! +25 درجة.');
+                setVideoWarning(penalty ? 'تم إتمام مشاهدة الفيديو مع تطبيق تنبيه التقديم.' : 'تم إتمام مشاهدة الفيديو بنجاح!');
                 setTimeout(() => setVideoWarning(null), 5000);
               }}
             />
@@ -1068,7 +1068,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             <span className="px-3 py-1 rounded-xl bg-emerald-950/80 border border-emerald-400 text-emerald-300 font-black font-['Outfit']">
               {isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined
                 ? completedResult.questionScores['video_watch']
-                : (videoScorePerLevel[selectedLevelNum] ?? 0)} / 25 XP
+                : (videoScorePerLevel[selectedLevelNum] ?? 0)} / 0 XP
             </span>
           </div>
         </div>
@@ -1373,13 +1373,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             </span>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                سؤال التحدي (25 درجة): <strong className="text-amber-400">{isLevelCompleted && completedResult?.questionScores?.[q1?.id ?? ''] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0)} / {q1Points} XP</strong>
+                سؤال التحدي (100 درجة): <strong className="text-amber-400">{isLevelCompleted && completedResult?.questionScores?.[q1?.id ?? ''] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0)} / 100 XP</strong>
               </span>
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{studentActivity ? (studentActivity.grade ?? 50) : 0} / 50 XP</strong>
+                النشاط التطبيقي (0 درجة): <strong className="text-cyan-400">{studentActivity ? (studentActivity.grade ?? 0) : 0} / 0 XP</strong>
               </span>
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                مشاهدة الفيديو (25 درجة): <strong className="text-emerald-400">{isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined ? completedResult.questionScores['video_watch'] : (videoScorePerLevel[selectedLevelNum] ?? 0)} / 25 XP</strong>
+                مشاهدة الفيديو (0 درجة): <strong className="text-emerald-400">{isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined ? completedResult.questionScores['video_watch'] : (videoScorePerLevel[selectedLevelNum] ?? 0)} / 0 XP</strong>
               </span>
               <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
                 المجموع المعتمد للمستوى: {(isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined ? completedResult.questionScores['video_watch'] : (videoScorePerLevel[selectedLevelNum] ?? 0)) + (studentActivity ? (studentActivity.grade ?? 50) : 0) + (isLevelCompleted && q1 && completedResult?.questionScores?.[q1.id] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0))} / 100 XP
@@ -1594,7 +1594,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     </div>
                   </div>
                   <div className="px-4 py-2 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 font-black text-base font-['Outfit'] shrink-0 shadow-md">
-                    {studentActivity.grade} / {studentActivity.maxPoints || 50} XP ⭐
+                    {studentActivity.grade} / {studentActivity.maxPoints || 0} XP ⭐
                   </div>
                 </div>
               ) : (
@@ -1605,15 +1605,15 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     </div>
                     <div>
                       <div className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal']">
-                        ✅ تم منح 50 درجة تلقائياً — بانتظار مراجعة الأدمن
+                        ✅ تم إكمال النشاط — بانتظار مراجعة الأدمن
                       </div>
                       <div className="text-[11px] text-slate-300 mt-0.5">
-                        تم احتساب الـ 50 درجة الخاصة بالنشاط فور رفع الملف، وهي بانتظار الاعتماد والمراجعة النهائية من المشرف.
+                        تم توثيق النشاط فور رفع الملف، وهو بانتظار الاعتماد والمراجعة النهائية من المشرف.
                       </div>
                     </div>
                   </div>
                   <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-black text-xs shrink-0">
-                    50 / 50 XP (ممنوحة تلقائياً)
+                    0 / 0 XP (ممنوحة تلقائياً)
                   </span>
                 </div>
               )}
@@ -1749,13 +1749,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
           levelNumber={loadingLevelForGame.levelNumber}
           levelTitle={loadingLevelForGame.title}
           badgeEmoji={loadingLevelForGame.badgeEmoji}
-          onComplete={() => {
+          onComplete={useCallback(() => {
             const num = loadingLevelForGame.levelNumber;
             setSelectedLevelNum(num);
             setIsVideoOpen(true);
             setLoadingLevelForGame(null);
-          }}
-          onCancel={() => setLoadingLevelForGame(null)}
+          }, [loadingLevelForGame])}
+          onCancel={useCallback(() => setLoadingLevelForGame(null), [])}
         />
       )}
 

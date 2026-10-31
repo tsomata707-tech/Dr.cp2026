@@ -19,7 +19,7 @@ import {
   Sparkles,
   Link2,
 } from 'lucide-react';
-import { ref as sRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref as sRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 import {
   getCustomGameLevels,
@@ -49,6 +49,8 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [previewMedia, setPreviewMedia] = useState<LevelMediaItem | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploadingMedia, setIsUploadingMedia] = useState<boolean>(false);
 
   // Hidden inputs for file uploads
   const videoInputRef = useRef<HTMLInputElement | null>(null);
@@ -58,6 +60,21 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const replaceImageInputRef = useRef<HTMLInputElement | null>(null);
   const [replacingImageId, setReplacingImageId] = useState<string | null>(null);
+  const uploadTaskRef = useRef<any>(null);
+
+  const cancelUpload = () => {
+    if (uploadTaskRef.current) {
+      try {
+        uploadTaskRef.current.cancel();
+      } catch (err) {
+        console.warn('Error canceling upload task:', err);
+      }
+      uploadTaskRef.current = null;
+    }
+    setIsUploadingMedia(false);
+    setUploadProgress(0);
+    showError('تم إلغاء عملية الرفع بطلب من المستخدم.');
+  };
 
   // Question editing modal or inline
   const [editingQuestion, setEditingQuestion] = useState<LevelQuestion | null>(null);
@@ -135,32 +152,52 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     }
 
     const videoId = `vid-${Date.now()}`;
-    showToast('جاري رفع الفيديو...');
+    setIsUploadingMedia(true);
+    setUploadProgress(1);
+    showToast('جاري بدء رفع الفيديو...');
     
-    let url = '';
     try {
-      // NEW: Upload to Firebase Storage for sharing!
       const storagePath = `level_instructions/level${selectedLevelNum}/${videoId}_${file.name}`;
       const fileRef = sRef(storage, storagePath);
-      await uploadBytes(fileRef, file);
-      url = await getDownloadURL(fileRef);
+      const uploadTask = uploadBytesResumable(fileRef, file);
+      uploadTaskRef.current = uploadTask;
 
-      const newMedia: LevelMediaItem = {
-        id: videoId,
-        title: file.name.replace(/\.[^/.]+$/, ''),
-        url,
-        type: 'video',
-        format: file.type || 'video/mp4',
-        size: file.size,
-        addedAt: new Date().toISOString(),
-      };
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const total = snapshot.totalBytes;
+          const transferred = snapshot.bytesTransferred;
+          const progressVal = total > 0 ? (transferred / total) * 100 : 0;
+          setUploadProgress(Math.max(1, Math.round(progressVal)));
+        },
+        (error) => {
+          console.error('Storage upload error:', error);
+          showError('فشل رفع الفيديو للسحابة. يرجى المحاولة مرة أخرى.');
+          setIsUploadingMedia(false);
+        },
+        async () => {
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          const newMedia: LevelMediaItem = {
+            id: videoId,
+            title: file.name.replace(/\.[^/.]+$/, ''),
+            url,
+            type: 'video',
+            format: file.type || 'video/mp4',
+            size: file.size,
+            addedAt: new Date().toISOString(),
+          };
 
-      const updated = addMediaToLevel(selectedLevelNum, newMedia);
-      setLevels([...updated]);
-      showToast(`✅ تم تحميل الفيديو (${file.name}) بنجاح للمستوى ${selectedLevelNum}`);
+          const updated = addMediaToLevel(selectedLevelNum, newMedia);
+          setLevels([...updated]);
+          showToast(`✅ تم تحميل الفيديو (${file.name}) بنجاح للمستوى ${selectedLevelNum}`);
+          setIsUploadingMedia(false);
+          setUploadProgress(0);
+        }
+      );
     } catch (err: any) {
-      console.error('Storage upload error:', err);
-      showError('فشل رفع الفيديو للسحابة. يرجى المحاولة مرة أخرى.');
+      console.error('Initial upload trigger error:', err);
+      showError('تعذر بدء عملية الرفع.');
+      setIsUploadingMedia(false);
     }
     
     e.target.value = '';
@@ -177,31 +214,53 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       return;
     }
 
-    showToast('جاري رفع الفيديو...');
+    setIsUploadingMedia(true);
+    setUploadProgress(1);
+    showToast('جاري بدء استبدال الفيديو...');
 
     try {
       const storagePath = `level_instructions/level${selectedLevelNum}/${replacingVideoId}_${file.name}`;
       const fileRef = sRef(storage, storagePath);
-      await uploadBytes(fileRef, file);
-      const url = await getDownloadURL(fileRef);
+      const uploadTask = uploadBytesResumable(fileRef, file);
+      uploadTaskRef.current = uploadTask;
 
-      const updatedMedia: LevelMediaItem = {
-        id: replacingVideoId,
-        title: file.name.replace(/\.[^/.]+$/, ''),
-        url,
-        type: 'video',
-        format: file.type || 'video/mp4',
-        size: file.size,
-        addedAt: new Date().toISOString(),
-      };
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const total = snapshot.totalBytes;
+          const transferred = snapshot.bytesTransferred;
+          const progressVal = total > 0 ? (transferred / total) * 100 : 0;
+          setUploadProgress(Math.max(1, Math.round(progressVal)));
+        },
+        (error) => {
+          console.error('Storage replacement error:', error);
+          showError('فشل استبدال الفيديو في السحابة.');
+          setIsUploadingMedia(false);
+        },
+        async () => {
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          const updatedMedia: LevelMediaItem = {
+            id: replacingVideoId,
+            title: file.name.replace(/\.[^/.]+$/, ''),
+            url,
+            type: 'video',
+            format: file.type || 'video/mp4',
+            size: file.size,
+            addedAt: new Date().toISOString(),
+          };
 
-      const updated = replaceMediaInLevel(selectedLevelNum, replacingVideoId, updatedMedia);
-      setLevels([...updated]);
-      showToast('✅ تم تحميل الفيديو واستبداله بنجاح!');
-      setReplacingVideoId(null);
+          const updated = replaceMediaInLevel(selectedLevelNum, replacingVideoId, updatedMedia);
+          setLevels([...updated]);
+          showToast('✅ تم تحميل الفيديو واستبداله بنجاح!');
+          setReplacingVideoId(null);
+          setIsUploadingMedia(false);
+          setUploadProgress(0);
+        }
+      );
     } catch (err: any) {
-      console.error('Storage replacement error:', err);
-      showError('فشل استبدال الفيديو في السحابة.');
+      console.error('Initial replace trigger error:', err);
+      showError('تعذر بدء عملية الاستبدال.');
+      setIsUploadingMedia(false);
     }
     
     e.target.value = '';
@@ -382,6 +441,43 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         <div className="fixed top-24 right-6 z-50 px-5 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-[0_0_30px_rgba(239,68,68,0.5)] border-2 border-red-300 flex items-center gap-2">
           <AlertCircle className="w-5 h-5" />
           <span>{errorMsg}</span>
+        </div>
+      )}
+
+      {/* Real-time Upload Progress Modal */}
+      {isUploadingMedia && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="w-full max-w-md p-8 rounded-3xl bg-[#0c0f20] border-2 border-blue-500/50 shadow-2xl space-y-6 text-center">
+            <div className="w-20 h-20 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto shadow-inner">
+              <Upload className="w-10 h-10 animate-bounce" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-white font-['Tajawal']">جاري رفع الفيديو...</h3>
+              <p className="text-sm text-slate-400">يرجى الانتظار حتى اكتمال المعالجة السحابية</p>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-blue-300 px-1">
+                <span>تقدم الرفع الفعلي:</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div className="w-full h-4 bg-slate-900 rounded-full overflow-hidden p-1 border border-slate-800 shadow-inner">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full transition-all duration-300 shadow-[0_0_15px_rgba(37,99,235,0.6)]"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={cancelUpload}
+                className="px-6 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-black cursor-pointer transition-colors w-full"
+              >
+                إلغاء الرفع وإغلاق النافذة
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

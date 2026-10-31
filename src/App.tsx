@@ -39,7 +39,7 @@ export default function App() {
 
     // Ensure all 60 students have completed and passed the Pre-Test, starting directly at levels 1..9
     try {
-      seedPreTestSubmissions(false);
+      seedPreTestSubmissions(true);
     } catch {
       // Ignore
     }

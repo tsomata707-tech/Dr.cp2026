@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Trophy, Rocket, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Trophy, Rocket, ArrowLeft, CheckCircle2, X } from 'lucide-react';
 
 interface LevelTransitionLoader5sProps {
   currentLevel: number;
@@ -41,6 +41,11 @@ export const LevelTransitionLoader5s: React.FC<LevelTransitionLoader5sProps> = (
     return () => clearInterval(timer);
   }, [onComplete]);
 
+  const handleSkip = () => {
+    setProgressPercent(100);
+    onComplete();
+  };
+
   const targetHeading = isFinalLevel
     ? 'جاري الانتقال الي الاختبار البعدي'
     : `جاري الانتقال الي ليفل ${nextLevel}`;
@@ -51,6 +56,16 @@ export const LevelTransitionLoader5s: React.FC<LevelTransitionLoader5sProps> = (
         {/* Glow Auras */}
         <div className="absolute -top-16 -right-16 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Skip Button (Close Button Request) */}
+        <button
+          type="button"
+          onClick={handleSkip}
+          className="absolute top-4 left-4 p-2 rounded-full bg-slate-900/80 border border-amber-400/50 text-amber-300 hover:text-white cursor-pointer z-10 transition-colors"
+          title="تخطي والبدء"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
         {/* Mascot / Icon */}
         <div className="relative inline-flex items-center justify-center">
@@ -95,6 +110,17 @@ export const LevelTransitionLoader5s: React.FC<LevelTransitionLoader5sProps> = (
             <span className="text-amber-300">{Math.round(progressPercent)}%</span>
             <span>باقي: {secondsLeft} ثوانٍ</span>
           </div>
+        </div>
+
+        {/* Bottom Skip Text Link */}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={handleSkip}
+            className="text-xs text-amber-400 hover:text-amber-300 underline font-black cursor-pointer"
+          >
+            تخطي الانتظار والبدء الآن
+          </button>
         </div>
       </div>
     </div>

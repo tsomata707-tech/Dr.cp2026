@@ -241,15 +241,15 @@ export function submitLevelChallenge(
 
   // Calculate real score based on actual student answers
   let scoreGained = 0;
-  let q1MaxScore = levelDef.section1Score ?? (levelDef.questions[0]?.points || 25);
-  let totalLevelMax = levelDef.totalMaxScore ?? (q1MaxScore + (levelDef.section2Score ?? 25));
+  let q1MaxScore = levelDef.section1Score ?? 100;
+  let totalLevelMax = levelDef.totalMaxScore ?? 100;
   const questionScores: Record<string, number> = {};
   const questionDetails: Record<string, any> = {};
   const completedAtStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
   // Score Question 1 (or all questions if answered)
   levelDef.questions.forEach((q, idx) => {
-    const qPoints = idx === 0 ? (levelDef.section1Score ?? q.points ?? 25) : q.points;
+    const qPoints = idx === 0 ? (levelDef.section1Score ?? 100) : (q.points || 0);
     const chosen = chosenAnswers[q.id];
     const isCorrect = chosen === q.correctIndex;
     if (isCorrect) {
@@ -281,7 +281,7 @@ export function submitLevelChallenge(
   });
 
   // Add applied activity score from Section 2
-  const actScore = Math.min(levelDef.section2Score ?? 25, Math.max(0, appliedActivityScore));
+  const actScore = Math.min(levelDef.section2Score ?? 0, Math.max(0, appliedActivityScore));
   scoreGained += actScore;
   questionScores['section2_activity'] = actScore;
   questionDetails['section2_activity'] = {
@@ -300,10 +300,10 @@ export function submitLevelChallenge(
     scoreGained += videoScore;
     questionScores['video_watch'] = videoScore;
     questionDetails['video_watch'] = {
-      chosenIndex: videoScore >= 25 ? 1 : 0,
+      chosenIndex: videoScore >= 0 ? 1 : 0,
       isCorrect: videoScore > 0,
       answeredAt: completedAtStr,
-      chosenText: videoScore >= 25 ? 'تمت مشاهدة الفيديو بالكامل دون تقديم أو تأخير' : `تمت مشاهدة الفيديو مع تقديم/تأخير (الدرجة: ${videoScore})`,
+      chosenText: videoScore >= 0 ? 'تمت مشاهدة الفيديو بالكامل دون تقديم أو تأخير' : `تمت مشاهدة الفيديو مع تقديم/تأخير (الدرجة: ${videoScore})`,
       correctText: 'مشاهدة الفيديو التعليمي كاملاً دون تخطي',
       explanation: 'الالتزام بمشاهدة الفيديو التعليمي يمنحك الدرجة الكاملة.',
       questionText: 'مشاهدة الفيديو التعليمي للمستوى',
