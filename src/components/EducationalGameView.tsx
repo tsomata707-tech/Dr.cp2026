@@ -789,9 +789,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               title="انقر لتغيير الشخصية الكرتونية"
             >
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-purple-600/20 border-2 border-[#ffd700] flex items-center justify-center text-3xl sm:text-4xl shadow-[0_0_20px_rgba(212,175,55,0.4)] group-hover:scale-105 transition-all overflow-hidden relative">
-                {progress.customPhotoUrl ? (
+                {progress.customPhotoUrl && progress.customPhotoUrl.trim() ? (
                   <img
-                    src={progress.customPhotoUrl}
+                    src={progress.customPhotoUrl.trim()}
                     alt={username}
                     className="w-full h-full object-cover"
                   />
@@ -1082,12 +1082,16 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     <FileText className="w-8 h-8" />
                     <span className="text-[10px] font-bold mt-1">مستند PDF</span>
                   </div>
-                ) : (
+                ) : imgItem.url && imgItem.url.trim() ? (
                   <img
-                    src={imgItem.url}
+                    src={imgItem.url.trim()}
                     alt={imgItem.title}
                     className="w-full h-24 object-contain rounded-lg"
                   />
+                ) : (
+                  <div className="w-full h-24 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 text-xs font-bold">
+                    صورة
+                  </div>
                 )}
                 <span className="text-[10px] font-bold text-slate-300 line-clamp-1 group-hover:text-amber-300">
                   {imgItem.title}
@@ -1225,11 +1229,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               {q1.question}
             </h4>
 
-            {q1.imageUrl && (
+            {q1.imageUrl && q1.imageUrl.trim() && (
               <div className="my-3 flex justify-center items-center">
                 <div className="relative max-w-full rounded-2xl overflow-hidden border-2 border-amber-400/50 bg-[#070914] shadow-2xl p-1.5">
                   <img
-                    src={q1.imageUrl}
+                    src={q1.imageUrl.trim()}
                     alt="توضيح السؤال"
                     className="max-h-56 sm:max-h-80 w-auto max-w-full rounded-xl object-contain shadow-md mx-auto"
                   />
@@ -1504,7 +1508,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               </div>
 
               <div className="rounded-xl overflow-hidden border border-slate-800 bg-black/60 p-2 flex justify-center items-center">
-                {!studentActivity.fileUrl ? (
+                {!studentActivity.fileUrl || !studentActivity.fileUrl.trim() ? (
                   <div className="p-10 text-center space-y-3">
                     <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto text-blue-400">
                       <HardDrive className="w-8 h-8" />
@@ -1763,18 +1767,20 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             </div>
             <div className="max-h-[70vh] overflow-auto flex justify-center items-center">
               {previewMediaZoom.type === 'pdf' ? (
-                <iframe
-                  src={previewMediaZoom.url}
-                  className="w-full h-96 rounded-xl border border-slate-800"
-                  title="معاينة PDF"
-                />
-              ) : (
+                previewMediaZoom.url && previewMediaZoom.url.trim() ? (
+                  <iframe
+                    src={previewMediaZoom.url.trim()}
+                    className="w-full h-96 rounded-xl border border-slate-800"
+                    title="معاينة PDF"
+                  />
+                ) : null
+              ) : previewMediaZoom.url && previewMediaZoom.url.trim() ? (
                 <img
-                  src={previewMediaZoom.url}
+                  src={previewMediaZoom.url.trim()}
                   alt={previewMediaZoom.title}
                   className="max-h-[65vh] w-auto max-w-full rounded-xl object-contain"
                 />
-              )}
+              ) : null}
             </div>
           </div>
         </div>

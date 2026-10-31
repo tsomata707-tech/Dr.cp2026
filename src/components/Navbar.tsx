@@ -91,9 +91,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         ) : isLoggedIn ? (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sky-50 border-2 border-sky-300 text-xs text-sky-950 font-bold shadow-sm">
-              {profile?.customPhotoUrl ? (
+              {profile?.customPhotoUrl && profile.customPhotoUrl.trim() ? (
                 <img
-                  src={profile.customPhotoUrl}
+                  src={profile.customPhotoUrl.trim()}
                   alt={username}
                   className="w-5 h-5 rounded-full object-cover border border-sky-500"
                 />

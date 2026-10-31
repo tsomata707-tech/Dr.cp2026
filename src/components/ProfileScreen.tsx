@@ -114,9 +114,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ username, onNaviga
             {/* Avatar with Change Action */}
             <div className="relative group cursor-pointer" onClick={() => setShowAvatarModal(true)}>
               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-blue-500/30 to-purple-600/30 border-2 border-[#ffd700] flex items-center justify-center text-5xl sm:text-6xl shadow-[0_0_25px_rgba(255,215,0,0.35)] group-hover:scale-105 transition-all overflow-hidden relative">
-                {progress.customPhotoUrl ? (
+                {progress.customPhotoUrl && progress.customPhotoUrl.trim() ? (
                   <img
-                    src={progress.customPhotoUrl}
+                    src={progress.customPhotoUrl.trim()}
                     alt={username}
                     className="w-full h-full object-cover"
                   />

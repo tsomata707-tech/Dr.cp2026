@@ -1087,11 +1087,11 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
               </h2>
 
               {/* Question Image (if attached) */}
-              {currentQ.imageUrl && (
+              {currentQ.imageUrl && currentQ.imageUrl.trim() && (
                 <div className="my-4 flex justify-center items-center">
                   <div className="relative max-w-full rounded-2xl overflow-hidden border-2 border-amber-400/50 bg-[#070914] shadow-2xl p-1.5">
                     <img
-                      src={currentQ.imageUrl}
+                      src={currentQ.imageUrl.trim()}
                       alt="توضيح السؤال"
                       className="max-h-56 sm:max-h-80 w-auto max-w-full rounded-xl object-contain shadow-md mx-auto"
                     />
@@ -1263,10 +1263,10 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                         </div>
 
                         {/* Optional Answer Image - Balanced & Layout Preserving */}
-                        {optImage && (
+                        {optImage && optImage.trim() && (
                           <div className="w-full h-32 sm:h-40 mb-3 rounded-xl overflow-hidden border border-slate-700/80 bg-black/60 p-2 flex justify-center items-center shadow-inner group-hover:border-amber-400/50 transition-colors">
                             <img
-                              src={optImage}
+                              src={optImage.trim()}
                               alt={`صورة الخيار ${letter}`}
                               className="max-h-full max-w-full object-contain rounded-lg hover:scale-105 transition-transform"
                               loading="lazy"
@@ -1336,10 +1336,10 @@ export const PreTestGameView: React.FC<PreTestGameViewProps> = ({
                         </div>
 
                         {/* Optional Answer Image - Balanced & Layout Preserving */}
-                        {optImage && (
+                        {optImage && optImage.trim() && (
                           <div className="w-full h-32 sm:h-40 mb-3 rounded-xl overflow-hidden border border-amber-500/40 bg-black/70 p-2 flex justify-center items-center shadow-inner group-hover:border-amber-400/70 transition-colors">
                             <img
-                              src={optImage}
+                              src={optImage.trim()}
                               alt={`صورة الخيار رقم ${boxNumber}`}
                               className="max-h-full max-w-full object-contain rounded-lg hover:scale-105 transition-transform"
                               loading="lazy"

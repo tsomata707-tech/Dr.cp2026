@@ -1822,10 +1822,10 @@ export const AdminTestsSettingsManager: React.FC = () => {
               </div>
 
               {/* Image Preview if present */}
-              {formImageUrl && (
+              {formImageUrl && formImageUrl.trim() && (
                 <div className="relative rounded-2xl overflow-hidden border-2 border-amber-500/50 bg-black/60 p-2 flex justify-center items-center">
                   <img
-                    src={formImageUrl}
+                    src={formImageUrl.trim()}
                     alt="معاينة صورة السؤال"
                     className="max-h-56 w-auto max-w-full rounded-xl object-contain shadow-lg cursor-pointer"
                     onClick={() => setZoomedImageUrl(formImageUrl)}
@@ -1957,7 +1957,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                       </div>
 
                       {/* Attached Option Image Preview and URL Input */}
-                      {optImage ? (
+                      {optImage && optImage.trim() ? (
                         <div className="flex items-center gap-3 pr-8 pt-1">
                           <div
                             onClick={() => setZoomedImageUrl(optImage)}
@@ -1965,7 +1965,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                             title="انقر لتكبير صورة الإجابة"
                           >
                             <img
-                              src={optImage}
+                              src={optImage.trim()}
                               alt={`صورة الخيار ${idx + 1}`}
                               className="w-full h-full object-contain"
                             />
@@ -2072,7 +2072,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
       )}
 
       {/* ======================= IMAGE ZOOM MODAL ======================= */}
-      {zoomedImageUrl && (
+      {zoomedImageUrl && zoomedImageUrl.trim() && (
         <div
           onClick={() => setZoomedImageUrl(null)}
           className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fadeIn cursor-pointer"
@@ -2086,7 +2086,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
             <img
-              src={zoomedImageUrl}
+              src={zoomedImageUrl.trim()}
               alt="تكبير الصورة"
               className="max-h-[82vh] w-auto max-w-full rounded-2xl object-contain mx-auto"
             />
@@ -2497,10 +2497,10 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
               )}
             </div>
 
-            {draftImageUrl && (
+            {draftImageUrl && draftImageUrl.trim() && (
               <div className="relative rounded-xl overflow-hidden border border-amber-500/40 bg-black/50 p-2 flex justify-center">
                 <img
-                  src={draftImageUrl}
+                  src={draftImageUrl.trim()}
                   alt="معاينة"
                   className="max-h-48 w-auto max-w-full rounded-lg object-contain cursor-pointer"
                   onClick={() => onZoomImage(draftImageUrl)}
@@ -2614,7 +2614,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                     </div>
 
                     {/* Attached Option Image Preview and URL Input */}
-                    {optImage ? (
+                    {optImage && optImage.trim() ? (
                       <div className="flex items-center gap-3 pr-8 pt-1">
                         <div
                           onClick={() => onZoomImage(optImage)}
@@ -2622,7 +2622,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                           title="انقر لتكبير صورة الإجابة"
                         >
                           <img
-                            src={optImage}
+                            src={optImage.trim()}
                             alt={`صورة الخيار ${optIdx + 1}`}
                             className="w-full h-full object-contain"
                           />
@@ -2737,11 +2737,13 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                 onClick={() => onZoomImage(question.imageUrl!)}
                 className="relative rounded-xl overflow-hidden border-2 border-amber-400/50 bg-black/50 p-1 cursor-pointer max-w-xs shadow-md group"
               >
-                <img
-                  src={question.imageUrl}
-                  alt="صورة السؤال"
-                  className="max-h-36 w-auto object-contain rounded-lg transition-transform group-hover:scale-105"
-                />
+                {question.imageUrl && question.imageUrl.trim() && (
+                  <img
+                    src={question.imageUrl.trim()}
+                    alt="صورة السؤال"
+                    className="max-h-36 w-auto object-contain rounded-lg transition-transform group-hover:scale-105"
+                  />
+                )}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-bold gap-1">
                   <Eye className="w-4 h-4" />
                   <span>انقر لتكبير صورة السؤال</span>
@@ -2803,11 +2805,13 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                       className="relative rounded-xl overflow-hidden border-2 border-amber-400/70 bg-black/70 p-1 cursor-pointer hover:border-amber-400 flex items-center justify-center max-h-28 group/img shadow-inner"
                       title="انقر لتكبير صورة الخيار"
                     >
-                      <img
-                        src={optImg}
-                        alt={`صورة الخيار ${optIdx + 1}`}
-                        className="max-h-24 w-auto object-contain rounded-lg group-hover/img:scale-105 transition-transform"
-                      />
+                      {optImg && optImg.trim() && (
+                        <img
+                          src={optImg.trim()}
+                          alt={`صورة الخيار ${optIdx + 1}`}
+                          className="max-h-24 w-auto object-contain rounded-lg group-hover/img:scale-105 transition-transform"
+                        />
+                      )}
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white text-[10px] font-bold gap-1 transition-opacity">
                         <Eye className="w-3 h-3" />
                         <span>تكبير</span>

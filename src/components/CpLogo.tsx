@@ -56,9 +56,9 @@ export const CpLogo: React.FC<CpLogoProps> = ({
         >
           {/* Inner Badge Surface */}
           <div className="w-full h-full rounded-[13px] bg-gradient-to-b from-white via-sky-50/90 to-sky-100/70 flex items-center justify-center overflow-hidden relative shadow-inner">
-            {customLogoUrl ? (
+            {customLogoUrl && customLogoUrl.trim() ? (
               <img
-                src={customLogoUrl}
+                src={customLogoUrl.trim()}
                 alt="شعار الموقع"
                 className="w-full h-full object-cover rounded-[13px]"
               />

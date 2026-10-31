@@ -1030,7 +1030,7 @@ export const AdminVideoManager: React.FC = () => {
               </div>
 
               {/* Instant Mini Player Preview (if videoUrl is present) */}
-              {videoUrl && (
+              {videoUrl && videoUrl.trim() && (
                 <div className="p-3 rounded-2xl bg-black/60 border border-slate-800 space-y-2">
                   <div className="flex items-center justify-between text-xs text-slate-400">
                     <span className="font-bold text-emerald-400 flex items-center gap-1">

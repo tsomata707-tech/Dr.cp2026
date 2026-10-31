@@ -132,7 +132,12 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
 
       {/* 2. Responsive Video Player Container (16:9 on all devices) */}
       <div className="relative aspect-video w-full bg-black border-y border-slate-900/60 overflow-hidden shadow-inner flex items-center justify-center">
-        {currentVideo.videoType === 'youtube' ||
+        {!currentVideo?.videoUrl || !currentVideo.videoUrl.trim() ? (
+          <div className="flex flex-col items-center justify-center p-6 text-center text-slate-400 gap-2">
+            <Film className="w-8 h-8 text-amber-400/80" />
+            <span className="text-xs font-bold font-['Cairo']">لم يتم تعيين رابط أو ملف لهذا الفيديو بعد</span>
+          </div>
+        ) : currentVideo.videoType === 'youtube' ||
         currentVideo.videoUrl.includes('youtube.com') ||
         currentVideo.videoUrl.includes('youtu.be') ? (
           <iframe

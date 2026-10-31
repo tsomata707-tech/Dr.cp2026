@@ -515,11 +515,13 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
                                 className="w-full h-20 sm:h-24 rounded-xl overflow-hidden bg-white border border-slate-200 flex items-center justify-center p-1 cursor-zoom-in shadow-sm"
                                 title="اضغط لتكبير الصورة"
                               >
-                                <img
-                                  src={placedCard.imageUrl}
-                                  alt="صورة التوصيل"
-                                  className="max-h-full max-w-full object-contain rounded-lg"
-                                />
+                                {placedCard.imageUrl && placedCard.imageUrl.trim() && (
+                                  <img
+                                    src={placedCard.imageUrl.trim()}
+                                    alt="صورة التوصيل"
+                                    className="max-h-full max-w-full object-contain rounded-lg"
+                                  />
+                                )}
                               </div>
 
                               <div className="mt-1.5 flex items-center justify-between w-full text-[11px] text-slate-800 px-1 font-bold font-['Cairo']">
@@ -609,12 +611,14 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
 
                     {/* Image Preview */}
                     <div className="w-full h-24 sm:h-28 rounded-xl overflow-hidden bg-white border border-slate-200 p-1 flex items-center justify-center shadow-inner">
-                      <img
-                        src={card.imageUrl}
-                        alt="صورة خيار"
-                        className="max-h-full max-w-full object-contain rounded-lg"
-                        loading="lazy"
-                      />
+                      {card.imageUrl && card.imageUrl.trim() && (
+                        <img
+                          src={card.imageUrl.trim()}
+                          alt="صورة خيار"
+                          className="max-h-full max-w-full object-contain rounded-lg"
+                          loading="lazy"
+                        />
+                      )}
                     </div>
 
                     <div className="mt-2 flex items-center justify-between w-full text-[11px] font-bold text-slate-800 font-['Cairo']">
@@ -717,11 +721,13 @@ export const MatchingQuestionTableView: React.FC<MatchingQuestionTableViewProps>
               </button>
             </div>
             <div className="w-full flex items-center justify-center max-h-[75vh] overflow-hidden rounded-xl bg-slate-50 border border-slate-200 p-2">
-              <img
-                src={zoomedImageUrl}
-                alt="معاينة مكبرة"
-                className="max-h-[70vh] w-auto max-w-full object-contain rounded-lg shadow-sm"
-              />
+              {zoomedImageUrl && zoomedImageUrl.trim() && (
+                <img
+                  src={zoomedImageUrl.trim()}
+                  alt="معاينة مكبرة"
+                  className="max-h-[70vh] w-auto max-w-full object-contain rounded-lg shadow-sm"
+                />
+              )}
             </div>
           </div>
         </div>

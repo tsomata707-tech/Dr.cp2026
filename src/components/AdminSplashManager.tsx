@@ -144,13 +144,13 @@ export const AdminSplashManager: React.FC = () => {
           </div>
 
           <div className="relative rounded-2xl overflow-hidden border-2 border-[#ffd700]/70 bg-slate-950 aspect-[4/3] flex items-center justify-center shadow-[0_0_30px_rgba(255,215,0,0.25)]">
-            {previewError ? (
+            {previewError || !currentUrl || !currentUrl.trim() ? (
               <div className="p-6 text-center text-xs text-rose-300">
                 تعذر تحميل معاينة الصورة. يرجى التأكد من الرابط.
               </div>
             ) : (
               <img
-                src={currentUrl}
+                src={currentUrl.trim()}
                 alt="معاينة صورة الدخول"
                 onError={() => setPreviewError(true)}
                 className="w-full h-full object-cover"
@@ -194,12 +194,16 @@ export const AdminSplashManager: React.FC = () => {
                         : 'bg-slate-900/80 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
                     }`}
                   >
-                    <div className="relative rounded-xl overflow-hidden aspect-video border border-slate-700 bg-black">
-                      <img
-                        src={preset.url}
-                        alt={preset.name}
-                        className="w-full h-full object-cover"
-                      />
+                    <div className="relative rounded-xl overflow-hidden aspect-video border border-slate-700 bg-black flex items-center justify-center">
+                      {preset.url && preset.url.trim() ? (
+                        <img
+                          src={preset.url.trim()}
+                          alt={preset.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-[10px] text-slate-500 font-bold">صورة</span>
+                      )}
                       {isSelected && (
                         <div className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-[#ffd700] text-slate-950 flex items-center justify-center shadow">
                           <Check className="w-3.5 h-3.5" />

@@ -152,7 +152,7 @@ export const ApplicationTaskModal: React.FC<ApplicationTaskModalProps> = ({
         </div>
 
         {/* Embedded Video Guide if available */}
-        {taskVideo && (
+        {taskVideo && taskVideo.videoUrl && taskVideo.videoUrl.trim() && (
           <div className="p-4 rounded-2xl bg-[#060814] border border-blue-500/40 mb-6">
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-xs font-bold text-blue-300 flex items-center gap-1.5 font-['Tajawal']">

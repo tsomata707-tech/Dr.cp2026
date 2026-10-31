@@ -63,9 +63,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             {/* Avatar Circle */}
             <div className="relative">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-blue-500/20 to-purple-600/30 border-2 border-[#ffd700] flex items-center justify-center text-4xl sm:text-5xl shadow-[0_0_25px_rgba(255,215,0,0.35)] overflow-hidden">
-                {progress.customPhotoUrl ? (
+                {progress.customPhotoUrl && progress.customPhotoUrl.trim() ? (
                   <img
-                    src={progress.customPhotoUrl}
+                    src={progress.customPhotoUrl.trim()}
                     alt={username}
                     className="w-full h-full object-cover"
                   />

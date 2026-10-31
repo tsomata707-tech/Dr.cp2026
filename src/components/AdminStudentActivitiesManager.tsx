@@ -727,18 +727,22 @@ export const AdminStudentActivitiesManager: React.FC = () => {
 
             <div className="rounded-2xl overflow-hidden border border-slate-800 bg-black p-2 flex items-center justify-center min-h-[300px]">
               {previewSubmission.fileType === 'video' ? (
-                <video
-                  controls
-                  autoPlay
-                  src={previewSubmission.fileUrl}
-                  className="max-h-[60vh] w-auto max-w-full rounded-xl"
-                />
+                previewSubmission.fileUrl && previewSubmission.fileUrl.trim() ? (
+                  <video
+                    controls
+                    autoPlay
+                    src={previewSubmission.fileUrl.trim()}
+                    className="max-h-[60vh] w-auto max-w-full rounded-xl"
+                  />
+                ) : null
               ) : previewSubmission.fileType === 'image' ? (
-                <img
-                  src={previewSubmission.fileUrl}
-                  alt={previewSubmission.fileName}
-                  className="max-h-[60vh] w-auto max-w-full object-contain rounded-xl"
-                />
+                previewSubmission.fileUrl && previewSubmission.fileUrl.trim() ? (
+                  <img
+                    src={previewSubmission.fileUrl.trim()}
+                    alt={previewSubmission.fileName}
+                    className="max-h-[60vh] w-auto max-w-full object-contain rounded-xl"
+                  />
+                ) : null
               ) : (
                 <div className="text-center p-8 space-y-3">
                   <div className="w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-500 text-rose-300 flex items-center justify-center mx-auto text-3xl font-bold">

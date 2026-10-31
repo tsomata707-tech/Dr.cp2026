@@ -313,16 +313,22 @@ export const AdminSupervisorsHonorManager: React.FC = () => {
 
             <div className="relative">
               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1.5 bg-gradient-to-tr from-amber-400 via-[#ffd700] to-emerald-400 shadow-[0_0_25px_rgba(255,215,0,0.45)]">
-                <img
-                  src={researcher.imageUrl}
-                  alt={researcher.name}
-                  className="w-full h-full rounded-full object-cover border-2 border-slate-950"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    target.src =
-                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
-                  }}
-                />
+                {researcher.imageUrl && researcher.imageUrl.trim() ? (
+                  <img
+                    src={researcher.imageUrl.trim()}
+                    alt={researcher.name}
+                    className="w-full h-full rounded-full object-cover border-2 border-slate-950"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      target.src =
+                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center text-slate-500">
+                    📷
+                  </div>
+                )}
               </div>
             </div>
 
@@ -531,16 +537,22 @@ export const AdminSupervisorsHonorManager: React.FC = () => {
               <div className="flex items-center gap-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
                 <div className="relative shrink-0">
                   <div className="w-16 h-16 rounded-full p-1 bg-gradient-to-tr from-amber-500 via-[#ffd700] to-yellow-200 shadow-[0_0_15px_rgba(255,215,0,0.4)]">
-                    <img
-                      src={card.imageUrl}
-                      alt={card.name}
-                      className="w-full h-full rounded-full object-cover border-2 border-slate-950"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        target.src =
-                          'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80';
-                      }}
-                    />
+                    {card.imageUrl && card.imageUrl.trim() ? (
+                      <img
+                        src={card.imageUrl.trim()}
+                        alt={card.name}
+                        className="w-full h-full rounded-full object-cover border-2 border-slate-950"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.src =
+                            'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center text-slate-500 text-xs">
+                        📷
+                      </div>
+                    )}
                   </div>
                 </div>
 

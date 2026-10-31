@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import defaultSplashImg from '../assets/images/captivate_suit_student_1791844175400.jpg';
 import {
   GraduationCap,
   KeyRound,
@@ -96,7 +97,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter, onOpenAdmin
         {/* 4. Student Illustration */}
         <div className="relative w-full max-w-xs sm:max-w-sm rounded-2xl overflow-hidden border-2 border-sky-300 shadow-lg mb-8 bg-sky-50 group">
           <img
-            src={splashImg}
+            src={splashImg && splashImg.trim() ? splashImg : defaultSplashImg}
             alt={titleConfig.mainTitle}
             className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
           />

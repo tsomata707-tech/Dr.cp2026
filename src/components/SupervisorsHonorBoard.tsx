@@ -146,16 +146,22 @@ export const SupervisorsHonorBoard: React.FC<SupervisorsHonorBoardProps> = ({
               {/* Hikmat Photo in Golden Frame */}
               <div className="relative shrink-0">
                 <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1.5 bg-gradient-to-tr from-amber-400 via-[#ffd700] to-yellow-300 shadow-md">
-                  <img
-                    src={researcher.imageUrl}
-                    alt={researcher.name}
-                    className="w-full h-full rounded-full object-cover border-2 border-white"
-                    onError={(e) => {
-                      const target = e.currentTarget;
-                      target.src =
-                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
-                    }}
-                  />
+                  {researcher.imageUrl && researcher.imageUrl.trim() ? (
+                    <img
+                      src={researcher.imageUrl.trim()}
+                      alt={researcher.name}
+                      className="w-full h-full rounded-full object-cover border-2 border-white"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        target.src =
+                          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                      👤
+                    </div>
+                  )}
                 </div>
                 <div className="absolute -bottom-1 -left-1 p-1.5 rounded-full bg-gradient-to-tr from-amber-500 to-[#ffd700] text-slate-950 shadow-md">
                   <Sparkles className="w-4 h-4 stroke-[2.5]" />
@@ -230,16 +236,22 @@ export const SupervisorsHonorBoard: React.FC<SupervisorsHonorBoardProps> = ({
                 {/* Supervisor Photo */}
                 <div className="relative my-2 sm:my-3">
                   <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 sm:p-1.5 bg-gradient-to-tr from-amber-500 via-[#ffd700] to-yellow-200 shadow-md group-hover:scale-105 transition-transform duration-300">
-                    <img
-                      src={card.imageUrl}
-                      alt={card.name}
-                      className="w-full h-full rounded-full object-cover border-2 border-white"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        target.src =
-                          'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80';
-                      }}
-                    />
+                    {card.imageUrl && card.imageUrl.trim() ? (
+                      <img
+                        src={card.imageUrl.trim()}
+                        alt={card.name}
+                        className="w-full h-full rounded-full object-cover border-2 border-white"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.src =
+                            'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                        👤
+                      </div>
+                    )}
                   </div>
                   <div className="absolute -bottom-1 -left-1 p-1 sm:p-1.5 rounded-full bg-gradient-to-tr from-amber-500 to-[#ffd700] text-slate-950 shadow-md">
                     <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />

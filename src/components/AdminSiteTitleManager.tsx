@@ -245,8 +245,8 @@ export const AdminSiteTitleManager: React.FC = () => {
           </label>
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="w-24 h-24 rounded-2xl bg-slate-900 border-2 border-sky-400 flex items-center justify-center overflow-hidden shrink-0 shadow-md">
-              {customLogoUrl ? (
-                <img src={customLogoUrl} alt="معاينة الشعار" className="w-full h-full object-cover" />
+              {customLogoUrl && customLogoUrl.trim() ? (
+                <img src={customLogoUrl.trim()} alt="معاينة الشعار" className="w-full h-full object-cover" />
               ) : (
                 <span className="text-sm font-black text-amber-400 font-['Outfit']">Cp</span>
               )}

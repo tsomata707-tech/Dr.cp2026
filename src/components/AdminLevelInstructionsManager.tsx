@@ -604,11 +604,15 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                 </div>
 
                 <div className="relative aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-slate-800">
-                  <video
-                    src={vid.url}
-                    controls
-                    className="w-full h-full object-contain"
-                  />
+                  {vid.url && vid.url.trim() ? (
+                    <video
+                      src={vid.url.trim()}
+                      controls
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <span className="text-xs text-slate-500 font-bold">لا يوجد فيديو</span>
+                  )}
                 </div>
 
                 <div className="pt-2">
@@ -754,14 +758,14 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                         فتح المستند في نافذة معاينة
                       </a>
                     </div>
-                  ) : (
+                  ) : img.url && img.url.trim() ? (
                     <img
-                      src={img.url}
+                      src={img.url.trim()}
                       alt={img.title}
                       className="w-full h-full object-contain cursor-zoom-in"
                       onClick={() => setPreviewMedia(img)}
                     />
-                  )}
+                  ) : null}
                 </div>
 
                 <p className="text-xs font-bold text-white truncate" title={img.title}>
@@ -1017,9 +1021,9 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                   </button>
                 )}
               </div>
-              {editingQuestion.imageUrl && (
+              {editingQuestion.imageUrl && editingQuestion.imageUrl.trim() && (
                 <div className="mt-2 h-24 rounded-xl overflow-hidden border border-slate-700 bg-black/50 p-1 flex items-center justify-center">
-                  <img src={editingQuestion.imageUrl} alt="معاينة" className="max-h-full max-w-full object-contain rounded-lg" />
+                  <img src={editingQuestion.imageUrl.trim()} alt="معاينة" className="max-h-full max-w-full object-contain rounded-lg" />
                 </div>
               )}
             </div>
@@ -1062,11 +1066,13 @@ export const AdminLevelInstructionsManager: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
             <div className="flex items-center justify-center p-4">
-              <img
-                src={previewMedia.url}
-                alt={previewMedia.title}
-                className="max-h-[75vh] w-auto object-contain rounded-xl"
-              />
+              {previewMedia.url && previewMedia.url.trim() && (
+                <img
+                  src={previewMedia.url.trim()}
+                  alt={previewMedia.title}
+                  className="max-h-[75vh] w-auto object-contain rounded-xl"
+                />
+              )}
             </div>
             <p className="text-center text-xs font-bold text-amber-300 pb-2">
               {previewMedia.title}
