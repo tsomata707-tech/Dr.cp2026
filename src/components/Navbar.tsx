@@ -81,10 +81,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={onExitAdmin}
               id="btn-navbar-exit-admin"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold transition-all cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-300 text-rose-800 text-xs font-bold transition-all cursor-pointer shadow-sm"
+              style={{ backgroundColor: '#d7a8ac' }}
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>خروج من الأدمن</span>
+              <span style={{ color: '#000000' }}>خروج من الأدمن</span>
             </button>
           </div>
         ) : isLoggedIn ? (

@@ -529,7 +529,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                     {/* Username */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-white text-xs sm:text-sm bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-700">
+                        <span className="font-bold text-xs sm:text-sm px-2.5 py-1 rounded-lg border border-slate-700" style={{ backgroundColor: '#e1dbdb', color: '#000000' }}>
                           {user.username}
                         </span>
                         {isSupervisor && (
@@ -541,7 +541,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                     </td>
 
                     {/* Full Name */}
-                    <td className="py-3 px-4 text-slate-200 font-medium">
+                    <td className="py-3 px-4 font-medium" style={{ color: '#202227', fontFamily: 'Arial, sans-serif' }}>
                       {user.fullName || user.username}
                     </td>
 
@@ -592,16 +592,17 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                             ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300 hover:bg-emerald-900'
                             : 'bg-red-950/80 border-red-500/60 text-red-300 hover:bg-red-900'
                         }`}
+                        style={{ backgroundColor: '#18ff1b', color: '#242927' }}
                       >
                         {user.isActive ? (
                           <>
-                            <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>نشط</span>
+                            <UserCheck className="w-3.5 h-3.5" style={{ color: '#242927' }} />
+                            <span style={{ color: '#242927' }}>نشط</span>
                           </>
                         ) : (
                           <>
-                            <UserX className="w-3.5 h-3.5 text-red-400" />
-                            <span>معطل</span>
+                            <UserX className="w-3.5 h-3.5" style={{ color: '#242927' }} />
+                            <span style={{ color: '#242927' }}>معطل</span>
                           </>
                         )}
                       </button>
@@ -618,7 +619,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                             className="p-1.5 rounded-lg bg-blue-950/70 hover:bg-blue-900 border border-blue-500/50 text-blue-300 hover:text-white text-xs font-bold transition-all cursor-pointer shadow-sm"
                             title="تسجيل الدخول الفوري بهذا اليوزر لتجربة المنظومة كطالب"
                           >
-                            <LogIn className="w-3.5 h-3.5" />
+                            <LogIn className="w-3.5 h-3.5" style={{ color: '#00ffd1' }} />
                           </button>
                         )}
 
@@ -630,9 +631,9 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                           title="نسخ بيانات الدخول"
                         >
                           {copiedId === user.id ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <Check className="w-3.5 h-3.5 text-emerald-400" style={{ color: '#566a4c' }} />
                           ) : (
-                            <Copy className="w-3.5 h-3.5" />
+                            <Copy className="w-3.5 h-3.5" style={{ color: '#566a4c' }} />
                           )}
                         </button>
 
@@ -643,7 +644,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                           className="p-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900 border border-amber-500/50 text-amber-300 hover:text-white cursor-pointer transition-all"
                           title="تعديل بيانات وكلمة مرور اليوزر"
                         >
-                          <Edit className="w-3.5 h-3.5" />
+                          <Edit className="w-3.5 h-3.5" style={{ color: '#ffffff' }} />
                         </button>
 
                         {/* Reset password */}
@@ -653,7 +654,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                           className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-cyan-300 cursor-pointer transition-all"
                           title="إعادة تعيين كلمة المرور الافتراضية"
                         >
-                          <RefreshCw className="w-3.5 h-3.5" />
+                          <RefreshCw className="w-3.5 h-3.5" style={{ color: '#ff0004' }} />
                         </button>
 
                         {/* Reset Student Progress */}
@@ -661,10 +662,11 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                           <button
                             type="button"
                             onClick={() => handleResetStudentProgress(user)}
-                            className="p-1.5 rounded-lg bg-indigo-950/60 hover:bg-indigo-900 border border-indigo-500/50 text-indigo-300 hover:text-white cursor-pointer transition-all"
+                            className="p-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer"
+                            style={{ backgroundColor: '#57ff43', color: '#161e11' }}
                             title="تهيئة بيانات الطالب (تصفير الدرجات والتقدم)"
                           >
-                            <RotateCcw className="w-3.5 h-3.5" />
+                            <RotateCcw className="w-3.5 h-3.5" style={{ color: '#161e11' }} />
                           </button>
                         )}
 
@@ -673,10 +675,11 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                           <button
                             type="button"
                             onClick={() => handleDeleteUser(user)}
-                            className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900 border border-red-500/40 text-red-400 hover:text-white cursor-pointer transition-all"
+                            className="p-1.5 rounded-lg border transition-all cursor-pointer"
+                            style={{ backgroundColor: '#0dffee', color: '#627eff' }}
                             title="حذف المستخدم"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3.5 h-3.5" style={{ color: '#627eff' }} />
                           </button>
                         )}
                       </div>

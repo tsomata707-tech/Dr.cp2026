@@ -298,13 +298,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const currentHearts = heartsPerLevel[selectedLevelNum] ?? 1;
   const isSection1Done = isLevelCompleted || (section1ScorePerLevel[selectedLevelNum] !== undefined && section1ScorePerLevel[selectedLevelNum] > 0);
 
-  // [FIX 7]: تعميم خصم تقديم/ترجيع الفيديو على كل المستويات
+  // [FIX 7]: تعميم خصم تقديم/تأخير الفيديو على كل المستويات
   const [videoWarning, setVideoWarning] = useState<string | null>(null);
   const handleVideoSeek = () => {
     if (!videoPenaltyAppliedPerLevel[selectedLevelNum]) {
       setVideoPenaltyAppliedPerLevel((prev) => ({ ...prev, [selectedLevelNum]: true }));
       setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: 20 }));
-      setVideoWarning('لا يُسمح بتقديم أو ترجيع الفيديو — تم خصم 5 درجات.');
+      setVideoWarning('لا يُسمح بتقديم أو تأخير الفيديو — تم خصم 5 درجات.');
       setTimeout(() => setVideoWarning(null), 5000);
     }
   };
@@ -806,7 +806,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
                 <span>طاقة المحاولة</span>
               </div>
-              <div className="flex items-center justify-center gap-1 text-base pt-0.5">
+              <div className="flex items-center justify-center gap-1 text-base pt-0.5 rounded-lg" style={{ backgroundColor: '#f5dccf' }}>
                 <span className={currentHearts >= 1 ? "text-rose-500 animate-pulse" : "text-slate-600 opacity-60"}>
                   {currentHearts >= 1 ? "❤️" : "🖤"}
                 </span>

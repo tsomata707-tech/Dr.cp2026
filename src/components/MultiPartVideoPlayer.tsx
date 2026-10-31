@@ -139,7 +139,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
               const vidId = currentVideo.id || 'vid_default';
               const maxTime = maxTimeRefs.current[vidId] ?? 0;
 
-              // [FIX 5]: منع تقديم أو ترجيع الفيديو إذا تجاوز الفرق ثانيتين عن الوقت المسموح به
+              // [FIX 5]: منع تقديم أو تأخير الفيديو إذا تجاوز الفرق ثانيتين عن الوقت المسموح به
               if (Math.abs(v.currentTime - maxTime) > 1.5 && v.currentTime > maxTime) {
                 v.currentTime = maxTime;
                 onSeek?.();
@@ -153,7 +153,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
               const vidId = currentVideo.id || 'vid_default';
               const maxTime = maxTimeRefs.current[vidId] ?? 0;
 
-              // [FIX 5]: منع الترجيع والتقديم عبر فحص الفرق المطلق واستدعاء الخصم عند أي محاولة تلاعب
+              // [FIX 5]: منع التقديم والتأخير عبر فحص الفرق المطلق واستدعاء الخصم عند أي محاولة تلاعب
               if (Math.abs(v.currentTime - maxTime) > 1) {
                 v.currentTime = maxTime;
                 onSeek?.();

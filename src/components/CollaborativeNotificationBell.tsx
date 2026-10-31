@@ -180,17 +180,18 @@ export const CollaborativeNotificationBell: React.FC<CollaborativeNotificationBe
         }}
         className={`relative p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 border ${
           unreadCount > 0
-            ? 'bg-gradient-to-r from-amber-500/25 to-cyan-500/25 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.4)] animate-pulse'
-            : 'bg-[#151226] border-slate-700/80 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/50'
+            ? 'border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.4)] animate-pulse'
+            : 'border-slate-700/80 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/50'
         }`}
+        style={{ backgroundColor: '#e9d60f' }}
         title="تنبيهات ورسائل المجموعات التعاونية"
       >
-        <Mail className="w-4 h-4 text-cyan-400" />
-        <Bell className="w-4 h-4 text-amber-400 -mr-1" />
+        <Mail className="w-4 h-4" style={{ color: '#1a1f20' }} />
+        <Bell className="w-4 h-4 -mr-1" style={{ color: '#f53657' }} />
 
         {/* Unread Counter Badge */}
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 border border-white text-white text-[10px] font-black flex items-center justify-center animate-bounce shadow-md">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full border border-white text-white text-[10px] font-black flex items-center justify-center animate-bounce shadow-md" style={{ backgroundColor: '#f5118d' }}>
             {unreadCount > 9 ? '+9' : unreadCount}
           </span>
         )}
