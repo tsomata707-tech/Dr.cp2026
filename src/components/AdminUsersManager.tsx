@@ -41,7 +41,6 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
-  const [studentToReset, setStudentToReset] = useState<string>('all');
 
   // Edit User Modal
   const [editingUser, setEditingUser] = useState<PortalUser | null>(null);
@@ -395,42 +394,21 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
         </div>
 
         {/* Reset All Button */}
-        <div className="flex flex-col gap-2">
-          <select
-            value={studentToReset}
-            onChange={(e) => setStudentToReset(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs"
-          >
-            <option value="all">جميع الطلاب</option>
-            {users.filter(u => u.role !== 'supervisor').map(u => (
-              <option key={u.id} value={u.username}>{u.fullName || u.username}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => {
-              if (studentToReset === 'all') {
-                if (window.confirm('هل أنت متأكد من تصفير وإعادة تهيئة إجابات ودرجات المستويات لجميع الطلاب؟ (سيتم الإبقاء على نتائج الاختبار القبلي)')) {
-                  resetAllLevelsProgressKeepingPreTest();
-                  addActivityLog('قام المشرف بإعادة تهيئة مستويات الطلاب مع الإبقاء على الاختبار القبلي', 'admin', 'warning');
-                  showToast('✓ تم إعادة تهيئة مستويات الطلاب بنجاح', 'success');
-                  setUsers(getPortalUsers());
-                }
-              } else {
-                if (window.confirm(`هل أنت متأكد من تصفير وإعادة تهيئة إجابات ودرجات المستويات للطالب ${studentToReset}؟`)) {
-                  resetStudentProgress(studentToReset);
-                  addActivityLog(`قام المشرف بإعادة تهيئة مستويات الطالب: ${studentToReset}`, 'admin', 'warning');
-                  showToast(`✓ تم إعادة تهيئة مستويات الطالب ${studentToReset} بنجاح`, 'success');
-                  setUsers(getPortalUsers());
-                }
-              }
-            }}
-            className="p-3 rounded-2xl bg-red-950/60 border border-red-500 text-red-200 text-center font-black text-xs hover:bg-red-900 transition cursor-pointer flex flex-col items-center justify-center"
-          >
-            <RotateCcw className="w-5 h-5 mb-1" />
-            تصفير المستويات
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm('هل أنت متأكد من تصفير وإعادة تهيئة إجابات ودرجات المستويات لجميع الطلاب؟ (سيتم الإبقاء على نتائج الاختبار القبلي)')) {
+              resetAllLevelsProgressKeepingPreTest();
+              addActivityLog('قام المشرف بإعادة تهيئة مستويات الطلاب مع الإبقاء على الاختبار القبلي', 'admin', 'danger');
+              showToast('✓ تم إعادة تهيئة مستويات الطلاب بنجاح', 'success');
+              setUsers(getPortalUsers());
+            }
+          }}
+          className="p-3 rounded-2xl bg-red-950/60 border border-red-500 text-red-200 text-center font-black text-xs hover:bg-red-900 transition cursor-pointer flex flex-col items-center justify-center"
+        >
+          <RotateCcw className="w-5 h-5 mb-1" />
+          تصفير جميع المستويات
+        </button>
       </div>
 
       {/* Filter Tabs & Search Bar */}
@@ -440,7 +418,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
           <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            value={searchQuery || ''}
+            value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="بحث باليوزر (G1_Cp_01) أو اسم الطالب أو المجموعة..."
             className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700/80 text-white text-xs placeholder:text-slate-500 focus:border-blue-500 focus:outline-none transition-all"
@@ -775,7 +753,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                 <label className="block text-xs font-bold text-slate-300 mb-1">اسم الطالب الكامل:</label>
                 <input
                   type="text"
-                  value={editFullName || ''}
+                  value={editFullName}
                   onChange={(e) => setEditFullName(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none focus:border-amber-400"
                 />
@@ -785,7 +763,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                 <label className="block text-xs font-bold text-slate-300 mb-1">كلمة المرور:</label>
                 <input
                   type="text"
-                  value={editPassword || ''}
+                  value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-bold text-xs outline-none focus:border-amber-400"
                   required
@@ -853,7 +831,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                   </label>
                   <input
                     type="text"
-                    value={newUsername || ''}
+                    value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
                     placeholder="مثال: G1_Cp_16 أو student1"
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold text-xs outline-none focus:border-blue-500"
@@ -867,7 +845,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                   </label>
                   <input
                     type="text"
-                    value={newPassword || ''}
+                    value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="مثال: Cp@9116 أو 123456"
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-bold text-xs outline-none focus:border-blue-500"
@@ -880,7 +858,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                 <label className="block text-xs font-bold text-slate-300 mb-1">الاسم الكامل للطالب:</label>
                 <input
                   type="text"
-                  value={newFullName || ''}
+                  value={newFullName}
                   onChange={(e) => setNewFullName(e.target.value)}
                   placeholder="الاسم الرباعي للطالب..."
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none focus:border-blue-500"

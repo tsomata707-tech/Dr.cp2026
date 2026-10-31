@@ -927,7 +927,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             <div className="text-right">
               <span className="text-[10px] text-slate-400 block font-['Cairo']">إجمالي النقاط المتاحة</span>
               <span className="text-xl font-black text-amber-300 font-['Outfit']">
-                100 XP
+                75 XP
               </span>
             </div>
           </div>
@@ -1282,7 +1282,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             </span>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                سؤال التحدي (25 درجة): <strong className="text-amber-400">{chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0} / {q1Points} XP</strong>
+                سؤال التحدي (50 درجة): <strong className="text-amber-400">{chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0} / {q1Points} XP</strong>
               </span>
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
                 النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{studentActivity ? 50 : 0} / 50 XP</strong>
@@ -1291,7 +1291,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 مشاهدة الفيديو (25 درجة): <strong className="text-emerald-400">{videoScorePerLevel[selectedLevelNum] ?? 25} / 25 XP</strong>
               </span>
               <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
-                المجموع المعتمد للمستوى: {(chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0) + (studentActivity ? 50 : 0) + (videoScorePerLevel[selectedLevelNum] ?? 25)} / 100 XP
+                المجموع المعتمد للمستوى: {(chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0) + (studentActivity ? 50 : 0) + (videoScorePerLevel[selectedLevelNum] ?? 25)} / 125 XP
               </span>
             </div>
           </div>

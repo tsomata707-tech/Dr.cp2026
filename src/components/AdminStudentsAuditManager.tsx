@@ -53,7 +53,7 @@ import {
   fetchAllLoginsAuditFromCloud,
   fetchAllTestAccessAuditFromCloud,
 } from '../utils/realtimeService';
-import { getAllStudentsProgress, saveAllStudentsProgress, resetAllStudentsToRealCleanState, resetStudentProgress } from '../utils/gameStorage';
+import { getAllStudentsProgress, saveAllStudentsProgress, resetAllStudentsToRealCleanState } from '../utils/gameStorage';
 import { seedPreTestSubmissions } from '../data/preTestSubmissionsSeed';
 
 type AuditTabFilter = 'all' | 'pretest_sheet' | 'test_visits' | 'detailed_answers' | 'logins';
@@ -176,7 +176,6 @@ export const AdminStudentsAuditManager: React.FC = () => {
 
   // Selected student for session inspection modal
   const [inspectStudent, setInspectStudent] = useState<EnrichedStudentRow | null>(null);
-  const [auditStudentToReset, setAuditStudentToReset] = useState<string>('all');
 
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
 
@@ -1185,41 +1184,15 @@ export const AdminStudentsAuditManager: React.FC = () => {
               <span>{copiedType === 'table' ? 'تم النسخ!' : 'نسخ كجدول شيت'}</span>
             </button>
 
-            <div className="flex flex-col gap-2">
-              <select
-                value={auditStudentToReset}
-                onChange={(e) => setAuditStudentToReset(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs"
-              >
-                <option value="all">جميع الطلاب</option>
-                {enrichedStudents.map(s => (
-                  <option key={s.username} value={s.username}>{s.fullName || s.username}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => {
-                  if (auditStudentToReset === 'all') {
-                    handleMasterResetAllData();
-                  } else {
-                    if (
-                      window.confirm(
-                        `تأكيد تصفير الاختبارات والنتائج للطالب ${auditStudentToReset} بالكامل؟\n\nسيتم حذف جميع إجابات الطالب، وتصفير الدرجات إلى (0)، وإعادة تعيين التايمر ليظهر الاختبار كأنه لم يجاوب عليه.`
-                      )
-                    ) {
-                      resetStudentProgress(auditStudentToReset);
-                      setProgressMap(getAllStudentsProgress());
-                      showToast(`تمت إعادة ضبط وتصفير كافة الإجابات والاختبارات للطالب ${auditStudentToReset} بنجاح!`);
-                    }
-                  }
-                }}
-                className="px-4 py-3 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-500/70 font-black text-xs flex items-center gap-2 cursor-pointer transition shrink-0 shadow-lg shadow-rose-950/50"
-                title="إعادة ضبط وتصفير كافة إجابات ودرجات الطلاب والاختبارات والتايمر من البداية"
-              >
-                <RefreshCw className="w-4 h-4 text-rose-400" />
-                <span>تصفير الاختبارات 🔄</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleMasterResetAllData}
+              className="px-4 py-3 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-500/70 font-black text-xs flex items-center gap-2 cursor-pointer transition shrink-0 shadow-lg shadow-rose-950/50"
+              title="إعادة ضبط وتصفير كافة إجابات ودرجات الطلاب والاختبارات والتايمر من البداية"
+            >
+              <RefreshCw className="w-4 h-4 text-rose-400" />
+              <span>تصفير وإعادة ضبط كافة الاختبارات (0) 🔄</span>
+            </button>
           </div>
 
         </div>
