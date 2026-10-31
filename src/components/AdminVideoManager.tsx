@@ -77,6 +77,7 @@ export const AdminVideoManager: React.FC = () => {
   const [editVideoUrl, setEditVideoUrl] = useState<string>('');
   const [editFormError, setEditFormError] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
+  const [deletingVideo, setDeletingVideo] = useState<EducationalVideo | null>(null);
 
   // Processing & Feedback State
   const [isProcessingFile, setIsProcessingFile] = useState(false);
@@ -425,13 +426,18 @@ export const AdminVideoManager: React.FC = () => {
   };
 
   const handleDelete = (v: EducationalVideo) => {
-    if (confirm(`هل أنت متأكد من حذف الفيديو "${v.title}"؟`)) {
-      deleteEducationalVideo(v.id);
-      addActivityLog(`تم حذف الفيديو: "${v.title}"`, 'المشرف', 'warning');
-      refreshVideos();
-      setSuccessMessage(`تم حذف الفيديو "${v.title}" بنجاح.`);
-      setTimeout(() => setSuccessMessage(null), 3000);
-    }
+    setDeletingVideo(v);
+  };
+
+  const confirmDelete = () => {
+    if (!deletingVideo) return;
+    const v = deletingVideo;
+    deleteEducationalVideo(v.id);
+    addActivityLog(`تم حذف الفيديو: "${v.title}"`, 'المشرف', 'warning');
+    refreshVideos();
+    setSuccessMessage(`تم حذف الفيديو "${v.title}" بنجاح.`);
+    setDeletingVideo(null);
+    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   return (
@@ -738,7 +744,10 @@ export const AdminVideoManager: React.FC = () => {
                       <div className="flex items-center justify-center gap-2">
                         <button
                           type="button"
-                          onClick={() => setPreviewVideo(v)}
+                          onClick={() => {
+                            setPreviewVideo(v);
+                            setPreviewSlotId(v.targetSlotId);
+                          }}
                           title="معاينة وتشغيل الفيديو"
                           className="px-2.5 py-1.5 rounded-xl bg-blue-950/80 border border-blue-500/50 hover:bg-blue-600 text-blue-300 hover:text-white font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors"
                         >
@@ -1317,6 +1326,43 @@ export const AdminVideoManager: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* 7. MODAL: تأكيد الحذف */}
+      {deletingVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl bg-[#0c0f20] border-2 border-red-500/70 p-6 sm:p-8 text-right shadow-2xl space-y-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-black text-white font-['Tajawal']">
+                  هل أنت متأكد من حذف الفيديو؟
+                </h3>
+                <p className="text-sm text-slate-400">
+                  سيتم حذف "{deletingVideo.title}" نهائياً من المنصة ولن يتمكن الطلاب من مشاهدته.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingVideo(null)}
+                className="flex-1 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-sm cursor-pointer transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-black text-sm shadow-lg shadow-red-900/40 cursor-pointer transition-all transform hover:-translate-y-0.5"
+              >
+                نعم، احذف الفيديو
+              </button>
+            </div>
           </div>
         </div>
       )}
