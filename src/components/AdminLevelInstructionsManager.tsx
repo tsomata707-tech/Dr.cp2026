@@ -135,7 +135,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     }
 
     const videoId = `vid-${Date.now()}`;
-    showToast('جاري رفع الفيديو للسحابة ليتمكن الطلاب من مشاهدته...');
+    showToast('جاري رفع الفيديو...');
     
     let url = '';
     try {
@@ -157,7 +157,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
 
       const updated = addMediaToLevel(selectedLevelNum, newMedia);
       setLevels([...updated]);
-      showToast(`تم رفع الفيديو (${file.name}) بنجاح للمستوى ${selectedLevelNum}`);
+      showToast(`✅ تم تحميل الفيديو (${file.name}) بنجاح للمستوى ${selectedLevelNum}`);
     } catch (err: any) {
       console.error('Storage upload error:', err);
       showError('فشل رفع الفيديو للسحابة. يرجى المحاولة مرة أخرى.');
@@ -177,7 +177,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       return;
     }
 
-    showToast('جاري استبدال الفيديو ورفعه للسحابة...');
+    showToast('جاري رفع الفيديو...');
 
     try {
       const storagePath = `level_instructions/level${selectedLevelNum}/${replacingVideoId}_${file.name}`;
@@ -197,7 +197,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
 
       const updated = replaceMediaInLevel(selectedLevelNum, replacingVideoId, updatedMedia);
       setLevels([...updated]);
-      showToast('تم استبدال الفيديو بنجاح!');
+      showToast('✅ تم تحميل الفيديو واستبداله بنجاح!');
       setReplacingVideoId(null);
     } catch (err: any) {
       console.error('Storage replacement error:', err);

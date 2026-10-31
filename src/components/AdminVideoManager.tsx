@@ -177,7 +177,7 @@ export const AdminVideoManager: React.FC = () => {
       );
 
       setSuccessMessage(
-        `✅ تم رفع ونشر الجزء ${nextPart} من فيديو المستوى 1 بنجاح من جهازك (${file.name})! المدة الفعلية: ${detectedDuration}. متاح الآن لجميع الطلاب.`
+        `✅ تم تحميل الفيديو بنجاح للمستوى 1 من جهازك (${file.name})! المدة الفعلية: ${detectedDuration}. متاح الآن لجميع الطلاب.`
       );
 
       refreshVideos();
@@ -362,7 +362,7 @@ export const AdminVideoManager: React.FC = () => {
 
       // Success Notification
       setSuccessMessage(
-        `✅ تم رفع ونشر (${customPartLabel}) بنجاح! متاح الآن لجميع الطلاب في: ${slotName} (المدة الفعلية: ${actualDuration}).`
+        `✅ تم تحميل الفيديو بنجاح! متاح الآن لجميع الطلاب في: ${slotName} (المدة الفعلية: ${actualDuration}).`
       );
       refreshVideos();
       setIsPublishing(false);
@@ -543,7 +543,7 @@ export const AdminVideoManager: React.FC = () => {
                 {isProcessingLevel1 ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>جاري رفع ومعالجة الفيديو وحساب مدته الفعلية...</span>
+                    <span>جاري رفع الفيديو...</span>
                   </>
                 ) : (
                   <>
@@ -906,7 +906,7 @@ export const AdminVideoManager: React.FC = () => {
                   {isProcessingFile && (
                     <div className="p-3 rounded-xl bg-blue-950/60 border border-blue-500/60 text-blue-200 text-xs flex items-center gap-2">
                       <RefreshCw className="w-4 h-4 animate-spin text-blue-400" />
-                      <span>جاري معالجة الفيديو وحساب مدته ذاتياً...</span>
+                      <span>جاري رفع الفيديو...</span>
                     </div>
                   )}
                 </div>
@@ -1118,7 +1118,7 @@ export const AdminVideoManager: React.FC = () => {
                   {isPublishing ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>جاري الرفع والنشر...</span>
+                      <span>جاري رفع الفيديو...</span>
                     </>
                   ) : (
                     <>
