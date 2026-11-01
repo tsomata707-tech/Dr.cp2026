@@ -1050,13 +1050,13 @@ export const AdminVideoManager: React.FC = () => {
                     رابط الفيديو المباشر (رابط MP4/WebM، رابط مرفوع من مركز التخزين، أو يوتيوب):
                   </label>
                   <div className="relative">
-                  <input
-                    type="text"
-                    value={videoUrl ?? ''}
-                    onChange={(e) => handleUrlChange(e.target.value)}
-                    placeholder="أدخل أي رابط فيديو (رابط مباشر، رابط مأخوذ من مكان التخزين، أو يوتيوب)..."
-                    className="w-full h-12 pr-11 pl-4 rounded-xl bg-[#070914] text-white text-xs sm:text-sm border-2 border-slate-700 focus:border-blue-500 focus:outline-none"
-                  />
+                    <input
+                      type="text"
+                      value={videoUrl}
+                      onChange={(e) => handleUrlChange(e.target.value)}
+                      placeholder="أدخل أي رابط فيديو (رابط مباشر، رابط مأخوذ من مكان التخزين، أو يوتيوب)..."
+                      className="w-full h-12 pr-11 pl-4 rounded-xl bg-[#070914] text-white text-xs sm:text-sm border-2 border-slate-700 focus:border-blue-500 focus:outline-none"
+                    />
                     <div className="absolute top-1/2 -translate-y-1/2 right-3.5 text-slate-400 pointer-events-none">
                       <LinkIcon className="w-4 h-4" />
                     </div>
@@ -1079,7 +1079,7 @@ export const AdminVideoManager: React.FC = () => {
                 </div>
 
                 <select
-                  value={targetSlotId ?? VIDEO_SLOTS[0].slotId}
+                  value={targetSlotId}
                   onChange={(e) => {
                     const newSlot = e.target.value;
                     setTargetSlotId(newSlot);
@@ -1150,7 +1150,7 @@ export const AdminVideoManager: React.FC = () => {
                 <div className="relative">
                   <input
                     type="text"
-                    value={partCustomTitle ?? ''}
+                    value={partCustomTitle}
                     onChange={(e) => setPartCustomTitle(e.target.value)}
                     placeholder={`مثال: الجزء ${partNumber}، أو المقدمة، أو شرح السؤال الأول، أو التطبيق العملي...`}
                     className="w-full h-11 px-4 rounded-xl bg-[#070914] text-white text-xs sm:text-sm font-black border-2 border-amber-500/70 focus:border-amber-400 focus:outline-none"
@@ -1178,7 +1178,7 @@ export const AdminVideoManager: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={title ?? ''}
+                  value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="اسم الفيديو أو موضوع الشرح"
                   className="w-full h-12 px-4 rounded-xl bg-[#070914] text-white text-sm font-bold border-2 border-slate-700 focus:border-blue-500 focus:outline-none"
@@ -1360,7 +1360,7 @@ export const AdminVideoManager: React.FC = () => {
 
                 <input
                   type="text"
-                  value={editPartCustomTitle ?? ''}
+                  value={editPartCustomTitle}
                   onChange={(e) => setEditPartCustomTitle(e.target.value)}
                   placeholder="مثال: المقدمة، أو شرح السؤال الأول، أو التطبيق العملي..."
                   className="w-full h-11 px-4 rounded-xl bg-[#070914] text-white text-sm font-black border-2 border-amber-500 focus:border-amber-400 focus:outline-none"
@@ -1406,7 +1406,7 @@ export const AdminVideoManager: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={editTitle ?? ''}
+                  value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
                   placeholder="عنوان الفيديو"
                   className="w-full h-11 px-4 rounded-xl bg-[#070914] text-white text-sm font-bold border-2 border-slate-700 focus:border-blue-500 focus:outline-none"
@@ -1421,7 +1421,7 @@ export const AdminVideoManager: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={editVideoUrl ?? ''}
+                    value={editVideoUrl}
                     onChange={(e) => setEditVideoUrl(e.target.value)}
                     className="w-full h-11 px-4 rounded-xl bg-[#070914] text-white text-xs border border-slate-700 focus:border-blue-500 focus:outline-none"
                   />
