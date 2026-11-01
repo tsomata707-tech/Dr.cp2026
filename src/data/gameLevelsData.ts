@@ -358,8 +358,53 @@ export function getCustomGameLevels(): GameLevelDef[] {
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
+      let needsSave = false;
+
+      // Check if real videos exist in cp_educational_videos_v2 for level-1
+      let realLvl1Videos: LevelMediaItem[] = [];
+      try {
+        const rawEdVids = localStorage.getItem('cp_educational_videos_v2');
+        if (rawEdVids) {
+          const parsedEdVids = JSON.parse(rawEdVids);
+          if (Array.isArray(parsedEdVids)) {
+            const lvl1 = parsedEdVids
+              .filter((v: any) => v.targetSlotId === 'level-1' && v.isActive && v.videoUrl)
+              .sort((a: any, b: any) => (a.partNumber || 1) - (b.partNumber || 1));
+            if (lvl1.length > 0) {
+              realLvl1Videos = lvl1.map((v: any) => ({
+                id: v.id,
+                title: v.title || v.partTitle || 'فيديو المستوى 1',
+                partCustomTitle: v.partCustomTitle || v.title,
+                url: v.videoUrl,
+                type: 'video' as const,
+                format: v.videoType === 'youtube' ? 'YouTube' : 'MP4/WebM',
+                size: 0,
+                addedAt: v.addedAt || new Date().toISOString(),
+              }));
+            }
+          }
+        }
+      } catch {
+        // Ignore JSON error
+      }
+
       // Sync into memory array
       parsed.forEach((customLvl: GameLevelDef) => {
+        // If Level 1 has stale videos, replace with the exact real videos uploaded by the admin
+        if (customLvl.levelNumber === 1 && realLvl1Videos.length > 0) {
+          customLvl.videos = realLvl1Videos;
+          needsSave = true;
+        } else if (customLvl.videos && customLvl.videos.length > 0) {
+          // Clean out any placeholder videos or oversized base64 data URLs
+          const cleanedVids = customLvl.videos.filter(
+            (v) => v.url && !v.url.includes('dQw4w9WgXcQ') && !v.url.startsWith('data:video')
+          );
+          if (cleanedVids.length !== customLvl.videos.length) {
+            customLvl.videos = cleanedVids;
+            needsSave = true;
+          }
+        }
+
         const found = GAME_LEVELS_DATA.find((l) => l.levelNumber === customLvl.levelNumber);
         if (found) {
           found.title = customLvl.title || found.title;
@@ -378,6 +423,15 @@ export function getCustomGameLevels(): GameLevelDef[] {
           found.questions = customLvl.questions || found.questions;
         }
       });
+
+      if (needsSave) {
+        try {
+          localStorage.setItem(GAME_LEVELS_STORAGE_KEY, JSON.stringify(parsed));
+        } catch {
+          // Ignore
+        }
+      }
+
       return GAME_LEVELS_DATA;
     }
     return GAME_LEVELS_DATA;
@@ -387,19 +441,35 @@ export function getCustomGameLevels(): GameLevelDef[] {
 }
 
 export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean = true): void {
+  // Sanitize levels: Strip any oversized base64 data URLs before saving to localStorage to prevent QuotaExceededError
+  const sanitizedLevels = levels.map((lvl) => ({
+    ...lvl,
+    videos: (lvl.videos || [])
+      .filter((v) => !v.url?.startsWith('data:video') && !v.url?.includes('dQw4w9WgXcQ'))
+      .map((v) => ({
+        ...v,
+        url: v.url && v.url.length > 50000 ? '' : v.url,
+      })),
+    images: (lvl.images || []).map((img) => ({
+      ...img,
+      url: img.url && img.url.length > 2500000 ? '' : img.url,
+    })),
+  }));
+
   try {
-    localStorage.setItem(GAME_LEVELS_STORAGE_KEY, JSON.stringify(levels));
+    localStorage.setItem(GAME_LEVELS_STORAGE_KEY, JSON.stringify(sanitizedLevels));
   } catch (err: unknown) {
-    console.error('Failed to save custom game levels:', err);
-    if (
-      err instanceof DOMException &&
-      (err.name === 'QuotaExceededError' ||
-        err.code === 22 ||
-        err.name === 'NS_ERROR_DOM_QUOTA_REACHED')
-    ) {
-      throw new Error('حجم الملف كبير جداً وتجاوز السعة المسموحة لذاكرة المتصفح (5 ميجابايت). يرجى ضغط الفيديو أو اختيار ملف أصغر حجماً.');
+    console.warn('Quota exceeded on custom game levels, saving lightweight metadata fallback:', err);
+    try {
+      const lightweight = sanitizedLevels.map((lvl) => ({
+        ...lvl,
+        videos: (lvl.videos || []).map((v) => ({ ...v, url: v.url.startsWith('http') ? v.url : '' })),
+        images: (lvl.images || []).map((img) => ({ ...img, url: img.url.startsWith('http') ? img.url : '' })),
+      }));
+      localStorage.setItem(GAME_LEVELS_STORAGE_KEY, JSON.stringify(lightweight));
+    } catch {
+      // Ignore
     }
-    throw new Error('فشل حفظ البيانات في التخزين المحلي.');
   }
 
   try {

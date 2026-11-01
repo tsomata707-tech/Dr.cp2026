@@ -32,6 +32,7 @@ import {
 } from '../data/gameLevelsData';
 import { LevelMediaItem, LevelQuestion } from '../types';
 import { normalizeVideoUrl } from '../utils/videoStorage';
+import { storeVideoBlob } from '../utils/indexedDbVideo';
 
 export const AdminLevelInstructionsManager: React.FC = () => {
   const [levels, setLevels] = useState<GameLevelDef[]>(() => getCustomGameLevels());
@@ -265,12 +266,17 @@ export const AdminLevelInstructionsManager: React.FC = () => {
             setUploadProgress(0);
             return;
           }
-          console.log('Storage notice, applying DataURL fallback:', error);
-          const fallbackUrl = await dataUrlPromise;
+          console.log('Storage notice, applying IndexedDB fallback:', error);
+          let safeUrl = '';
+          try {
+            safeUrl = await storeVideoBlob(videoId, file, file.name);
+          } catch {
+            safeUrl = URL.createObjectURL(file);
+          }
           const newMedia: LevelMediaItem = {
             id: videoId,
             title: file.name.replace(/\.[^/.]+$/, ''),
-            url: fallbackUrl || '',
+            url: safeUrl || '',
             type: 'video',
             format: file.type || 'video/mp4',
             size: file.size,
@@ -288,13 +294,17 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           try {
             url = await getDownloadURL(uploadTask.snapshot.ref);
           } catch {
-            url = await dataUrlPromise;
+            try {
+              url = await storeVideoBlob(videoId, file, file.name);
+            } catch {
+              url = URL.createObjectURL(file);
+            }
           }
 
           const newMedia: LevelMediaItem = {
             id: videoId,
             title: file.name.replace(/\.[^/.]+$/, ''),
-            url: url || (await dataUrlPromise),
+            url: url || '',
             type: 'video',
             format: file.type || 'video/mp4',
             size: file.size,
@@ -359,12 +369,17 @@ export const AdminLevelInstructionsManager: React.FC = () => {
             setUploadProgress(0);
             return;
           }
-          console.log('Storage replacement notice, applying DataURL fallback:', error);
-          const fallbackUrl = await dataUrlPromise;
+          console.log('Storage replacement notice, applying IndexedDB fallback:', error);
+          let safeUrl = '';
+          try {
+            safeUrl = await storeVideoBlob(replacingVideoId, file, file.name);
+          } catch {
+            safeUrl = URL.createObjectURL(file);
+          }
           const updatedMedia: LevelMediaItem = {
             id: replacingVideoId,
             title: file.name.replace(/\.[^/.]+$/, ''),
-            url: fallbackUrl || '',
+            url: safeUrl || '',
             type: 'video',
             format: file.type || 'video/mp4',
             size: file.size,
@@ -383,13 +398,17 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           try {
             url = await getDownloadURL(uploadTask.snapshot.ref);
           } catch {
-            url = await dataUrlPromise;
+            try {
+              url = await storeVideoBlob(replacingVideoId, file, file.name);
+            } catch {
+              url = URL.createObjectURL(file);
+            }
           }
 
           const updatedMedia: LevelMediaItem = {
             id: replacingVideoId,
             title: file.name.replace(/\.[^/.]+$/, ''),
-            url: url || (await dataUrlPromise),
+            url: url || '',
             type: 'video',
             format: file.type || 'video/mp4',
             size: file.size,

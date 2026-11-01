@@ -320,23 +320,30 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   // Authentic videos uploaded by the Admin for the current level (strictly no placeholders or Rickrolls!)
   const currentDisplayVideos = useMemo(() => {
-    const list: EducationalVideo[] = [];
-    const seenUrls = new Set<string>();
+    // 1. If the admin uploaded videos in Admin Video Manager for this level, prioritize and display ONLY those videos!
+    const adminSlotVideos = (currentLevelVideos || []).filter(
+      (v) => v.isActive && !isPlaceholderVideo(v) && v.videoUrl?.trim()
+    );
 
-    // 1. Videos from Admin Video Manager for this level
-    (currentLevelVideos || []).forEach((v) => {
-      if (v.isActive && !isPlaceholderVideo(v) && v.videoUrl?.trim()) {
+    if (adminSlotVideos.length > 0) {
+      const list: EducationalVideo[] = [];
+      const seenUrls = new Set<string>();
+      adminSlotVideos.forEach((v) => {
         const norm = normalizeVideoUrl(v.videoUrl.trim());
         if (!seenUrls.has(norm)) {
           seenUrls.add(norm);
           list.push({ ...v, videoUrl: norm });
         }
-      }
-    });
+      });
+      list.sort((a, b) => (a.partNumber || 1) - (b.partNumber || 1));
+      return list;
+    }
 
-    // 2. Videos from Admin Level Instructions Manager for this level
+    // 2. Only fallback to Admin Level Instructions Manager if no videos exist in Video Manager
+    const list: EducationalVideo[] = [];
+    const seenUrls = new Set<string>();
     (currentLevelDef.videos || []).forEach((v, idx) => {
-      if (v.url && !v.url.includes('dQw4w9WgXcQ') && v.url.trim()) {
+      if (v.url && !v.url.includes('dQw4w9WgXcQ') && !v.url.startsWith('data:video') && v.url.trim()) {
         const norm = normalizeVideoUrl(v.url.trim());
         const isYt = norm.includes('youtube.com') || norm.includes('youtu.be');
         if (!seenUrls.has(norm)) {
