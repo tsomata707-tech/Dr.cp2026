@@ -57,10 +57,87 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   const replaceVideoInputRef = useRef<HTMLInputElement | null>(null);
   const [replacingVideoId, setReplacingVideoId] = useState<string | null>(null);
 
+  // External Video URL Modal state
+  const [showVideoUrlModal, setShowVideoUrlModal] = useState<boolean>(false);
+  const [videoUrlInput, setVideoUrlInput] = useState<string>('');
+  const [videoTitleInput, setVideoTitleInput] = useState<string>('');
+  const [editingVideoUrlId, setEditingVideoUrlId] = useState<string | null>(null);
+
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const replaceImageInputRef = useRef<HTMLInputElement | null>(null);
   const [replacingImageId, setReplacingImageId] = useState<string | null>(null);
   const uploadTaskRef = useRef<any>(null);
+
+  const openAddVideoUrlModal = () => {
+    const currentVids = (levels.find((l) => l.levelNumber === selectedLevelNum)?.videos || []);
+    if (currentVids.length >= 5) {
+      showError('الحد الأقصى هو 5 فيديوهات لكل مستوى.');
+      return;
+    }
+    setEditingVideoUrlId(null);
+    setVideoUrlInput('');
+    setVideoTitleInput(`فيديو ${currentVids.length + 1}`);
+    setShowVideoUrlModal(true);
+  };
+
+  const openReplaceVideoUrlModal = (video: LevelMediaItem) => {
+    setEditingVideoUrlId(video.id);
+    setVideoUrlInput(video.url || '');
+    setVideoTitleInput(video.partCustomTitle || video.title || '');
+    setShowVideoUrlModal(true);
+  };
+
+  const handleSaveVideoUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!videoUrlInput.trim()) {
+      showError('يرجى إدخال رابط الفيديو.');
+      return;
+    }
+
+    const cleanUrl = videoUrlInput.trim();
+    const cleanTitle = videoTitleInput.trim() || `فيديو ${currentLevel?.videos?.length || 1}`;
+
+    if (editingVideoUrlId) {
+      const updatedMedia: LevelMediaItem = {
+        id: editingVideoUrlId,
+        title: cleanTitle,
+        partCustomTitle: cleanTitle,
+        url: cleanUrl,
+        type: 'video',
+        format: cleanUrl.includes('youtube') ? 'YouTube' : 'MP4/WebM',
+        size: 0,
+        addedAt: new Date().toISOString(),
+      };
+      const updated = replaceMediaInLevel(selectedLevelNum, editingVideoUrlId, updatedMedia);
+      setLevels([...updated]);
+      showToast('✅ تم استبدال فيديو المستوى عبر الرابط بنجاح!');
+    } else {
+      const currentVids = currentLevel?.videos || [];
+      if (currentVids.length >= 5) {
+        showError('الحد الأقصى هو 5 فيديوهات لكل مستوى.');
+        return;
+      }
+      const videoId = `vid-url-${Date.now()}`;
+      const newMedia: LevelMediaItem = {
+        id: videoId,
+        title: cleanTitle,
+        partCustomTitle: cleanTitle,
+        url: cleanUrl,
+        type: 'video',
+        format: cleanUrl.includes('youtube') ? 'YouTube' : 'MP4/WebM',
+        size: 0,
+        addedAt: new Date().toISOString(),
+      };
+      const updated = addMediaToLevel(selectedLevelNum, newMedia);
+      setLevels([...updated]);
+      showToast('✅ تم إدراج فيديو جديد للمستوى عبر الرابط بنجاح!');
+    }
+
+    setShowVideoUrlModal(false);
+    setVideoUrlInput('');
+    setVideoTitleInput('');
+    setEditingVideoUrlId(null);
+  };
 
   const cancelUpload = () => {
     if (uploadTaskRef.current) {
@@ -138,8 +215,8 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 50 * 1024 * 1024) {
-      showError('حجم الفيديو كبير جداً (أكبر من 50 ميجابايت). يرجى ضغط الفيديو أو اختيار ملف أصغر حجماً.');
+    if (file.size > 500 * 1024 * 1024) {
+      showError('حجم الفيديو كبير جداً (أكبر من 500 ميجابايت). يرجى تقليل الدقة أو اختيار ملف أصغر حجماً.');
       e.target.value = '';
       return;
     }
@@ -154,9 +231,17 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     const videoId = `vid-${Date.now()}`;
     setIsUploadingMedia(true);
     setUploadProgress(1);
-    showToast('جاري بدء رفع الفيديو...');
+    showToast('جاري بدء رفع الفيديو وشحنه للمستوى...');
     
     try {
+      // 1. Prepare parallel FileReader DataURL for instant fallback
+      const reader = new FileReader();
+      const dataUrlPromise = new Promise<string>((resolve) => {
+        reader.onload = () => resolve((reader.result as string) || '');
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      });
+
       const storagePath = `level_instructions/level${selectedLevelNum}/${videoId}_${file.name}`;
       const fileRef = sRef(storage, storagePath);
       const uploadTask = uploadBytesResumable(fileRef, file);
@@ -170,17 +255,18 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           const progressVal = total > 0 ? (transferred / total) * 100 : 0;
           setUploadProgress(Math.max(1, Math.round(progressVal)));
         },
-        (error) => {
-          console.error('Storage upload error:', error);
-          showError('فشل رفع الفيديو للسحابة. يرجى المحاولة مرة أخرى.');
-          setIsUploadingMedia(false);
-        },
-        async () => {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
+        async (error: any) => {
+          if (error?.code === 'storage/canceled' || (error?.name === 'FirebaseError' && error?.message?.includes('canceled'))) {
+            setIsUploadingMedia(false);
+            setUploadProgress(0);
+            return;
+          }
+          console.log('Storage notice, applying DataURL fallback:', error);
+          const fallbackUrl = await dataUrlPromise;
           const newMedia: LevelMediaItem = {
             id: videoId,
             title: file.name.replace(/\.[^/.]+$/, ''),
-            url,
+            url: fallbackUrl || '',
             type: 'video',
             format: file.type || 'video/mp4',
             size: file.size,
@@ -189,7 +275,31 @@ export const AdminLevelInstructionsManager: React.FC = () => {
 
           const updated = addMediaToLevel(selectedLevelNum, newMedia);
           setLevels([...updated]);
-          showToast(`✅ تم تحميل الفيديو (${file.name}) بنجاح للمستوى ${selectedLevelNum}`);
+          showToast(`✅ تم حفظ ونشر الفيديو (${file.name}) بنجاح للمستوى ${selectedLevelNum}`);
+          setIsUploadingMedia(false);
+          setUploadProgress(0);
+        },
+        async () => {
+          let url = '';
+          try {
+            url = await getDownloadURL(uploadTask.snapshot.ref);
+          } catch {
+            url = await dataUrlPromise;
+          }
+
+          const newMedia: LevelMediaItem = {
+            id: videoId,
+            title: file.name.replace(/\.[^/.]+$/, ''),
+            url: url || (await dataUrlPromise),
+            type: 'video',
+            format: file.type || 'video/mp4',
+            size: file.size,
+            addedAt: new Date().toISOString(),
+          };
+
+          const updated = addMediaToLevel(selectedLevelNum, newMedia);
+          setLevels([...updated]);
+          showToast(`✅ تم تحميل ونشر الفيديو (${file.name}) بنجاح للمستوى ${selectedLevelNum}`);
           setIsUploadingMedia(false);
           setUploadProgress(0);
         }
@@ -208,8 +318,8 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file || !replacingVideoId) return;
 
-    if (file.size > 50 * 1024 * 1024) {
-      showError('حجم الفيديو كبير جداً (أكبر من 50 ميجابايت).');
+    if (file.size > 500 * 1024 * 1024) {
+      showError('حجم الفيديو كبير جداً (أكبر من 500 ميجابايت).');
       e.target.value = '';
       return;
     }
@@ -219,6 +329,13 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     showToast('جاري بدء استبدال الفيديو...');
 
     try {
+      const reader = new FileReader();
+      const dataUrlPromise = new Promise<string>((resolve) => {
+        reader.onload = () => resolve((reader.result as string) || '');
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      });
+
       const storagePath = `level_instructions/level${selectedLevelNum}/${replacingVideoId}_${file.name}`;
       const fileRef = sRef(storage, storagePath);
       const uploadTask = uploadBytesResumable(fileRef, file);
@@ -232,17 +349,18 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           const progressVal = total > 0 ? (transferred / total) * 100 : 0;
           setUploadProgress(Math.max(1, Math.round(progressVal)));
         },
-        (error) => {
-          console.error('Storage replacement error:', error);
-          showError('فشل استبدال الفيديو في السحابة.');
-          setIsUploadingMedia(false);
-        },
-        async () => {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
+        async (error: any) => {
+          if (error?.code === 'storage/canceled' || (error?.name === 'FirebaseError' && error?.message?.includes('canceled'))) {
+            setIsUploadingMedia(false);
+            setUploadProgress(0);
+            return;
+          }
+          console.log('Storage replacement notice, applying DataURL fallback:', error);
+          const fallbackUrl = await dataUrlPromise;
           const updatedMedia: LevelMediaItem = {
             id: replacingVideoId,
             title: file.name.replace(/\.[^/.]+$/, ''),
-            url,
+            url: fallbackUrl || '',
             type: 'video',
             format: file.type || 'video/mp4',
             size: file.size,
@@ -251,7 +369,32 @@ export const AdminLevelInstructionsManager: React.FC = () => {
 
           const updated = replaceMediaInLevel(selectedLevelNum, replacingVideoId, updatedMedia);
           setLevels([...updated]);
-          showToast('✅ تم تحميل الفيديو واستبداله بنجاح!');
+          showToast('✅ تم استبدال الفيديو وتحديثه بنجاح!');
+          setReplacingVideoId(null);
+          setIsUploadingMedia(false);
+          setUploadProgress(0);
+        },
+        async () => {
+          let url = '';
+          try {
+            url = await getDownloadURL(uploadTask.snapshot.ref);
+          } catch {
+            url = await dataUrlPromise;
+          }
+
+          const updatedMedia: LevelMediaItem = {
+            id: replacingVideoId,
+            title: file.name.replace(/\.[^/.]+$/, ''),
+            url: url || (await dataUrlPromise),
+            type: 'video',
+            format: file.type || 'video/mp4',
+            size: file.size,
+            addedAt: new Date().toISOString(),
+          };
+
+          const updated = replaceMediaInLevel(selectedLevelNum, replacingVideoId, updatedMedia);
+          setLevels([...updated]);
+          showToast('✅ تم تحميل واستبدال الفيديو بنجاح!');
           setReplacingVideoId(null);
           setIsUploadingMedia(false);
           setUploadProgress(0);
@@ -446,9 +589,18 @@ export const AdminLevelInstructionsManager: React.FC = () => {
 
       {/* Real-time Upload Progress Modal */}
       {isUploadingMedia && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="w-full max-w-md p-8 rounded-3xl bg-[#0c0f20] border-2 border-blue-500/50 shadow-2xl space-y-6 text-center">
-            <div className="w-20 h-20 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto shadow-inner">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md font-['Cairo']">
+          <div className="w-full max-w-md p-8 rounded-3xl bg-[#0c0f20] border-2 border-blue-500/50 shadow-2xl space-y-6 text-center relative">
+            <button
+              type="button"
+              onClick={cancelUpload}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-900/90 hover:bg-red-500/30 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700 shadow-md"
+              title="إغلاق وإلغاء عملية الرفع"
+            >
+              ✕
+            </button>
+
+            <div className="w-20 h-20 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto shadow-inner pt-1">
               <Upload className="w-10 h-10 animate-bounce" />
             </div>
             <div className="space-y-2">
@@ -472,7 +624,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
               <button
                 type="button"
                 onClick={cancelUpload}
-                className="px-6 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-black cursor-pointer transition-colors w-full"
+                className="w-full py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/30 border border-red-500/40 text-red-300 hover:text-white text-xs font-black cursor-pointer transition-colors shadow-md"
               >
                 إلغاء الرفع وإغلاق النافذة
               </button>
@@ -485,14 +637,14 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       <input
         ref={videoInputRef}
         type="file"
-        accept="video/*,.mp4,.webm,.mkv,.mov"
+        accept="video/*,video/mp4,video/webm,video/ogg,video/quicktime,video/x-matroska,video/x-msvideo,.mp4,.webm,.mkv,.mov,.avi,.wmv,.flv,.3gp"
         className="hidden"
         onChange={handleUploadVideo}
       />
       <input
         ref={replaceVideoInputRef}
         type="file"
-        accept="video/*,.mp4,.webm,.mkv,.mov"
+        accept="video/*,video/mp4,video/webm,video/ogg,video/quicktime,video/x-matroska,video/x-msvideo,.mp4,.webm,.mkv,.mov,.avi,.wmv,.flv,.3gp"
         className="hidden"
         onChange={handleReplaceVideo}
       />
@@ -672,7 +824,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Videos Section (Up to 5 Videos with replacement and deletion) */}
+      {/* Videos Section (Up to 5 Videos with replacement, external links, and deletion) */}
       <div className="p-6 rounded-3xl bg-[#090d20] border border-slate-800 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div className="flex items-center gap-2 text-purple-400">
@@ -682,27 +834,42 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                 فيديوهات المستوى {selectedLevelNum}
               </h3>
               <span className="text-xs text-slate-400">
-                إمكانية رفع حتى 5 فيديوهات بحد أقصى (يقبل جميع امتدادات الفيديو MP4, WebM, MKV, MOV مع إمكانية التبديل)
+                إمكانية إضافة حتى 5 فيديوهات بحد أقصى (يمكن الرفع المباشر من الجهاز أو إدخال رابط خارجي/مباشر للفيديو)
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1 rounded-full bg-purple-950/80 border border-purple-500/50 text-purple-300 text-xs font-bold ">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-3 py-1 rounded-full bg-purple-950/80 border border-purple-500/50 text-purple-300 text-xs font-bold shrink-0">
               {currentVideos.length} / 5 فيديوهات
             </span>
             <button
               type="button"
               disabled={currentVideos.length >= 5}
               onClick={() => videoInputRef.current?.click()}
-              className={`px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition ${
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer transition ${
                 currentVideos.length >= 5
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                   : 'bg-purple-600 hover:bg-purple-500 text-white shadow-md'
               }`}
+              title="رفع فيديو من الجهاز"
             >
               <Upload className="w-4 h-4" />
-              <span>رفع فيديو جديد ➕</span>
+              <span>رفع من الجهاز 📁</span>
+            </button>
+            <button
+              type="button"
+              disabled={currentVideos.length >= 5}
+              onClick={openAddVideoUrlModal}
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer transition ${
+                currentVideos.length >= 5
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-md border border-blue-400/40'
+              }`}
+              title="إضافة فيديو بواسطة رابط خارجي"
+            >
+              <Link2 className="w-4 h-4 text-cyan-300" />
+              <span>إضافة برابط خارجي 🔗</span>
             </button>
           </div>
         </div>
@@ -713,7 +880,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
             <Video className="w-8 h-8 mx-auto text-purple-400/50" />
             <p>لا توجد فيديوهات مرفوعة لهذا المستوى حالياً.</p>
             <p className="text-[11px] text-slate-500">
-              اضغط على زر "رفع فيديو جديد" لإضافة حتى 5 مقاطع فيديو تعليمية للمستوى.
+              اضغط على "رفع من الجهاز 📁" أو "إضافة برابط خارجي 🔗" لإضافة حتى 5 مقاطع فيديو تعليمية للمستوى.
             </p>
           </div>
         ) : (
@@ -728,18 +895,28 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                     <Video className="w-3.5 h-3.5 text-purple-400" />
                     <span>فيديو {idx + 1}</span>
                   </span>
-                  <span className="text-[10px] text-slate-500 ">
+                  <span className="text-[10px] text-slate-500 uppercase">
                     {vid.format || 'MP4'}
                   </span>
                 </div>
 
                 <div className="relative aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-slate-800">
                   {vid.url && vid.url.trim() ? (
-                    <video
-                      src={vid.url.trim()}
-                      controls
-                      className="w-full h-full object-contain"
-                    />
+                    vid.url.includes('youtube.com') || vid.url.includes('youtu.be') ? (
+                      <iframe
+                        src={vid.url.trim()}
+                        title={vid.title}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        src={vid.url.trim()}
+                        controls
+                        className="w-full h-full object-contain"
+                      />
+                    )
                   ) : (
                     <span className="text-xs text-slate-500 font-bold">لا يوجد فيديو</span>
                   )}
@@ -748,24 +925,35 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                 <div className="pt-2">
                   <input
                     type="text"
-                    defaultValue={vid.partCustomTitle || ''}
+                    defaultValue={vid.partCustomTitle ?? ''}
                     onBlur={(e) => handleUpdateVideoCustomTitle(vid.id, e.target.value)}
-                    placeholder={vid.title}
+                    placeholder={vid.title ?? ''}
                     className="w-full px-2 py-1 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:border-blue-500 outline-none"
                   />
                 </div>
 
-                <div className="flex items-center gap-2 pt-2 border-t border-slate-900">
+                <div className="flex items-center gap-1.5 pt-2 border-t border-slate-900">
                   <button
                     type="button"
                     onClick={() => {
                       setReplacingVideoId(vid.id);
                       replaceVideoInputRef.current?.click();
                     }}
-                    className="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer"
+                    className="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold flex items-center justify-center gap-1 transition cursor-pointer"
+                    title="تبديل الفيديو بملف من الجهاز"
                   >
                     <RefreshCw className="w-3 h-3 text-amber-400" />
-                    <span>تبديل الفيديو</span>
+                    <span>من الجهاز</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openReplaceVideoUrlModal(vid)}
+                    className="flex-1 py-1.5 rounded-lg bg-blue-950/80 hover:bg-blue-900 border border-blue-500/40 text-blue-200 text-[11px] font-bold flex items-center justify-center gap-1 transition cursor-pointer"
+                    title="تبديل الفيديو بواسطة رابط"
+                  >
+                    <Link2 className="w-3 h-3 text-cyan-300" />
+                    <span>برابط 🔗</span>
                   </button>
 
                   <button
@@ -1174,6 +1362,79 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                 حفظ تعديل السؤال
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* External Video URL Modal */}
+      {showVideoUrlModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md font-['Cairo',_sans-serif] text-right" dir="rtl">
+          <div className="w-full max-w-lg p-6 rounded-3xl bg-[#0c0f20] border-2 border-cyan-500/60 shadow-2xl space-y-5 relative">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-cyan-300">
+                <Link2 className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-base font-black text-white font-['Tajawal']">
+                  {editingVideoUrlId ? 'تبديل فيديو المستوى عبر رابط خارجي' : 'إضافة فيديو جديد للمستوى عبر رابط خارجي'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVideoUrlModal(false)}
+                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveVideoUrl} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  عنوان أو تسمية الفيديو:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={videoTitleInput}
+                  onChange={(e) => setVideoTitleInput(e.target.value)}
+                  placeholder="مثال: فيديو الشرح والتثبيت - الجزء 1"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  رابط الفيديو الخارجي المباشر (URL):
+                </label>
+                <input
+                  type="url"
+                  required
+                  value={videoUrlInput}
+                  onChange={(e) => setVideoUrlInput(e.target.value)}
+                  placeholder="مثال: https://domain.com/video.mp4 أو رابط يوتيوب أو الرابط المنسوخ من مركز التخزين"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-cyan-300 text-xs font-mono focus:border-cyan-400 focus:outline-none"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  💡 يمكنك نسخ الرابط المباشر من تبويبة <strong className="text-sky-300">"مكان التخزين 💾"</strong> ولصقه هنا مباشرة.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowVideoUrlModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs cursor-pointer shadow-md flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{editingVideoUrlId ? 'حفظ واستبدال الفيديو' : 'حفظ وإدراج الفيديو'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

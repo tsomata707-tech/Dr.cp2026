@@ -49,6 +49,38 @@ import {
 
 type ActiveTestTab = 'pretest' | 'posttest' | 'levels';
 
+export const isVideoMediaUrl = (url?: string): boolean => {
+  if (!url) return false;
+  const trimmed = url.trim().toLowerCase();
+  if (trimmed.startsWith('data:video/')) return true;
+  if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be') || trimmed.includes('vimeo.com')) return true;
+  if (/\.(mp4|webm|mov|mkv|avi|wmv|flv|3gp|m4v)(\?.*)?$/i.test(trimmed)) return true;
+  return false;
+};
+
+// Global helper: process image or video file to standard optimal dataURL
+export const processMediaFile = (
+  file: File,
+  callback: (dataUrl: string) => void,
+  onComplete?: () => void
+) => {
+  const isVid = file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv|avi|wmv|flv|3gp|m4v)$/i.test(file.name);
+  if (isVid) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = (reader.result as string) || '';
+      callback(result);
+      if (onComplete) onComplete();
+    };
+    reader.onerror = () => {
+      if (onComplete) onComplete();
+    };
+    reader.readAsDataURL(file);
+  } else {
+    compressImage(file, callback, onComplete);
+  }
+};
+
 // Global helper: compress image file to standard optimal lightweight dataURL
 export const compressImage = (
   file: File,
@@ -83,6 +115,9 @@ export const compressImage = (
       if (onComplete) onComplete();
     };
     img.onerror = () => {
+      // If image loading fails, fallback to direct data URL
+      const fallbackUrl = (event.target?.result as string) || '';
+      if (fallbackUrl) callback(fallbackUrl);
       if (onComplete) onComplete();
     };
     img.src = event.target?.result as string;
@@ -269,39 +304,41 @@ export const AdminTestsSettingsManager: React.FC = () => {
     setTimeout(() => setFeedbackMsg(null), 4000);
   };
 
-  // Upload handler for Modal question image
+  // Upload handler for Modal question image or video
   const handleModalImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploadingImage(true);
-    compressImage(
+    processMediaFile(
       file,
       (dataUrl) => {
         setFormImageUrl(dataUrl);
-        showNotification('✓ تم رفع ومعالجة صورة السؤال بنجاح');
+        const isVid = isVideoMediaUrl(dataUrl);
+        showNotification(isVid ? '✓ تم رفع ومعالجة فيديو السؤال بنجاح' : '✓ تم رفع ومعالجة صورة السؤال بنجاح');
       },
       () => setIsUploadingImage(false)
     );
     e.target.value = '';
   };
 
-  // Upload handler for Modal answer option image
+  // Upload handler for Modal answer option image or video
   const handleModalOptionImagePick = (optIdx: number) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
+    input.accept = 'image/*,video/*,.mp4,.webm,.mov,.mkv,.png,.jpg,.jpeg,.gif,.webp';
     input.onchange = (e: any) => {
       const file = e.target.files?.[0];
       if (file) {
         setIsUploadingImage(true);
-        compressImage(
+        processMediaFile(
           file,
           (dataUrl) => {
             const updated = [...formOptionImages];
             updated[optIdx] = dataUrl;
             setFormOptionImages(updated);
-            showNotification(`✓ تم رفع وتثبيت صورة الإجابة رقم ${optIdx + 1}`);
+            const isVid = isVideoMediaUrl(dataUrl);
+            showNotification(isVid ? `✓ تم رفع وتثبيت فيديو الإجابة رقم ${optIdx + 1}` : `✓ تم رفع وتثبيت صورة الإجابة رقم ${optIdx + 1}`);
           },
           () => setIsUploadingImage(false)
         );
@@ -314,7 +351,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
     const updated = [...formOptionImages];
     updated[optIdx] = '';
     setFormOptionImages(updated);
-    showNotification(`✓ تم حذف صورة الإجابة رقم ${optIdx + 1}`);
+    showNotification(`✓ تم حذف ملف الإجابة رقم ${optIdx + 1}`);
   };
 
   // Trigger direct card upload
@@ -326,30 +363,32 @@ export const AdminTestsSettingsManager: React.FC = () => {
     }
   };
 
-  // Handle direct file selection on card
+  // Handle direct file selection on card (image or video)
   const handleDirectFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !directUploadTarget) return;
 
     setSavingCardId(directUploadTarget.questionId);
     setIsUploadingImage(true);
-    compressImage(
+    processMediaFile(
       file,
       (dataUrl) => {
+        const isVid = isVideoMediaUrl(dataUrl);
+        const mediaLabel = isVid ? 'فيديو' : 'صورة';
         if (directUploadTarget.type === 'pretest') {
           const updated = preTestQuestions.map((q) =>
             q.id === directUploadTarget.questionId ? { ...q, imageUrl: dataUrl } : q
           );
           setPreTestQuestions(updated);
           savePreTestQuestions(updated, true);
-          showNotification('✓ تم رفع صورة السؤال في الاختبار القبلي ومزامنتها للجميع فوراً');
+          showNotification(`✓ تم رفع ${mediaLabel} السؤال في الاختبار القبلي ومزامنتها للجميع فوراً`);
         } else if (directUploadTarget.type === 'posttest') {
           const updated = postTestQuestions.map((q) =>
             q.id === directUploadTarget.questionId ? { ...q, imageUrl: dataUrl } : q
           );
           setPostTestQuestions(updated);
           savePostTestQuestions(updated, true);
-          showNotification('✓ تم رفع صورة السؤال في الاختبار البعدي ومزامنتها للجميع فوراً');
+          showNotification(`✓ تم رفع ${mediaLabel} السؤال في الاختبار البعدي ومزامنتها للجميع فوراً`);
         } else if (directUploadTarget.type === 'levels' && directUploadTarget.levelNum !== undefined) {
           const updatedLevels = gameLevels.map((lvl) => {
             if (lvl.levelNumber !== directUploadTarget.levelNum) return lvl;
@@ -362,7 +401,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
           });
           setGameLevels(updatedLevels);
           saveCustomGameLevels(updatedLevels, true);
-          showNotification(`✓ تم رفع صورة السؤال في المستوى ${directUploadTarget.levelNum} ومزامنتها للجميع فوراً`);
+          showNotification(`✓ تم رفع ${mediaLabel} السؤال في المستوى ${directUploadTarget.levelNum} ومزامنتها للجميع فوراً`);
         }
         setSavingCardId(null);
         setDirectUploadTarget(null);
@@ -1027,7 +1066,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
         type="file"
         ref={directFileInputRef}
         onChange={handleDirectFileSelected}
-        accept="image/*"
+        accept="image/*,video/*,.mp4,.webm,.mov,.mkv,.avi,.wmv,.flv,.3gp"
         className="hidden"
       />
 
@@ -1036,7 +1075,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
         type="file"
         ref={modalFileInputRef}
         onChange={handleModalImageUpload}
-        accept="image/*"
+        accept="image/*,video/*,.mp4,.webm,.mov,.mkv,.avi,.wmv,.flv,.3gp"
         className="hidden"
       />
 
@@ -1802,12 +1841,12 @@ export const AdminTestsSettingsManager: React.FC = () => {
               />
             </div>
 
-            {/* QUESTION IMAGE ATTACHMENT SECTION */}
+            {/* QUESTION IMAGE/VIDEO ATTACHMENT SECTION */}
             <div className="p-4 rounded-2xl bg-[#0a0d1f] border border-amber-500/40 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-amber-300 flex items-center gap-2">
                   <ImageIcon className="w-4 h-4 text-amber-400" />
-                  <span>الصورة التوضيحية للسؤال (رفع ملف من الجهاز أو رابط مباشر)</span>
+                  <span>الملف التوضيحي للسؤال (صورة أو فيديو - رفع ملف من الجهاز أو رابط مباشر)</span>
                 </span>
                 {formImageUrl && (
                   <button
@@ -1816,20 +1855,28 @@ export const AdminTestsSettingsManager: React.FC = () => {
                     className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 font-bold cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>حذف الصورة</span>
+                    <span>حذف المرفق</span>
                   </button>
                 )}
               </div>
 
-              {/* Image Preview if present */}
+              {/* Media Preview if present (Image or Video) */}
               {formImageUrl && formImageUrl.trim() && (
                 <div className="relative rounded-2xl overflow-hidden border-2 border-amber-500/50 bg-black/60 p-2 flex justify-center items-center">
-                  <img
-                    src={formImageUrl.trim()}
-                    alt="معاينة صورة السؤال"
-                    className="max-h-56 w-auto max-w-full rounded-xl object-contain shadow-lg cursor-pointer"
-                    onClick={() => setZoomedImageUrl(formImageUrl)}
-                  />
+                  {isVideoMediaUrl(formImageUrl) ? (
+                    <video
+                      src={formImageUrl.trim()}
+                      controls
+                      className="max-h-56 w-auto max-w-full rounded-xl object-contain shadow-lg"
+                    />
+                  ) : (
+                    <img
+                      src={formImageUrl.trim()}
+                      alt="معاينة المرفق"
+                      className="max-h-56 w-auto max-w-full rounded-xl object-contain shadow-lg cursor-pointer"
+                      onClick={() => setZoomedImageUrl(formImageUrl)}
+                    />
+                  )}
                 </div>
               )}
 
@@ -1841,7 +1888,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   className="px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
                 >
                   <Upload className="w-4 h-4" />
-                  <span>اختر ملف صورة السؤال من جهازك</span>
+                  <span>اختر ملف صورة أو فيديو للسؤال من جهازك 🎬📷</span>
                 </button>
 
                 <div className="relative">
@@ -1850,7 +1897,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                     type="url"
                     value={formImageUrl.startsWith('data:') ? '' : formImageUrl}
                     onChange={(e) => setFormImageUrl(e.target.value)}
-                    placeholder="أو الصق رابط صورة مباشر (URL)..."
+                    placeholder="أو الصق رابط صورة أو فيديو مباشر (URL)..."
                     className="w-full pr-9 pl-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 text-white text-xs outline-none"
                   />
                 </div>
@@ -2150,11 +2197,11 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
   const handlePickDirectOptionImage = (optIdx: number) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
+    input.accept = 'image/*,video/*,.mp4,.webm,.mov,.mkv,.png,.jpg,.jpeg,.gif,.webp';
     input.onchange = (e: any) => {
       const file = e.target.files?.[0];
       if (file) {
-        compressImage(file, (dataUrl) => {
+        processMediaFile(file, (dataUrl) => {
           onSetOptionImage(optIdx, dataUrl);
         });
       }
@@ -2244,11 +2291,11 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
   const handlePickOptionImage = (optIdx: number) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
+    input.accept = 'image/*,video/*,.mp4,.webm,.mov,.mkv,.png,.jpg,.jpeg,.gif,.webp';
     input.onchange = (e: any) => {
       const file = e.target.files?.[0];
       if (file) {
-        compressImage(file, (dataUrl) => {
+        processMediaFile(file, (dataUrl) => {
           const updated = [...draftOptionImages];
           updated[optIdx] = dataUrl;
           setDraftOptionImages(updated);
@@ -2730,24 +2777,34 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
             {question.question}
           </h3>
 
-          {/* Question Image Thumbnail if attached */}
+          {/* Question Image or Video Thumbnail if attached */}
           {question.imageUrl && (
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <div
-                onClick={() => onZoomImage(question.imageUrl!)}
+                onClick={() => isVideoMediaUrl(question.imageUrl) ? null : onZoomImage(question.imageUrl!)}
                 className="relative rounded-xl overflow-hidden border-2 border-amber-400/50 bg-black/50 p-1 cursor-pointer max-w-xs shadow-md group"
               >
                 {question.imageUrl && question.imageUrl.trim() && (
-                  <img
-                    src={question.imageUrl.trim()}
-                    alt="صورة السؤال"
-                    className="max-h-36 w-auto object-contain rounded-lg transition-transform group-hover:scale-105"
-                  />
+                  isVideoMediaUrl(question.imageUrl) ? (
+                    <video
+                      src={question.imageUrl.trim()}
+                      controls
+                      className="max-h-36 w-auto object-contain rounded-lg"
+                    />
+                  ) : (
+                    <img
+                      src={question.imageUrl.trim()}
+                      alt="صورة السؤال"
+                      className="max-h-36 w-auto object-contain rounded-lg transition-transform group-hover:scale-105"
+                    />
+                  )
                 )}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-bold gap-1">
-                  <Eye className="w-4 h-4" />
-                  <span>انقر لتكبير صورة السؤال</span>
-                </div>
+                {!isVideoMediaUrl(question.imageUrl) && (
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-bold gap-1">
+                    <Eye className="w-4 h-4" />
+                    <span>انقر لتكبير صورة السؤال</span>
+                  </div>
+                )}
               </div>
 
               <button
@@ -2756,7 +2813,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
                 className="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1 bg-red-950/30 px-3 py-1.5 rounded-lg border border-red-500/30 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>حذف الصورة</span>
+                <span>حذف المرفق</span>
               </button>
             </div>
           )}

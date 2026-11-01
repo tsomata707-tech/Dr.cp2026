@@ -266,6 +266,7 @@ export interface EducationalVideo {
   updatedAt?: string;
   isActive: boolean;
   blobId?: string;
+  dataUrl?: string;
 }
 
 export interface ResearcherInfo {

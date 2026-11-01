@@ -148,11 +148,11 @@ export function saveEducationalVideos(videos: EducationalVideo[], syncRemote: bo
 
   if (syncRemote) {
     try {
-      // Sync URL-based and meta videos to Firebase RTDB so all student clients receive them immediately
+      // Sync all valid video URLs (HTTPS Cloud URLs, Data URLs, YouTube URLs) to Firebase RTDB for real-time student updates
       const syncPayload = clean.map((v) => ({
         ...v,
-        // If it's a local object URL (blob:http...), don't broadcast broken local blob url across network
-        videoUrl: v.videoUrl.startsWith('blob:') ? '' : v.videoUrl,
+        videoUrl: v.videoUrl && !v.videoUrl.startsWith('blob:') ? v.videoUrl : (v.dataUrl || v.videoUrl || ''),
+        dataUrl: v.dataUrl || (v.videoUrl?.startsWith('data:') ? v.videoUrl : undefined),
       }));
       syncGlobalQuestionsAndLevels('videos', syncPayload).catch(() => {});
     } catch {
@@ -167,16 +167,15 @@ export function saveEducationalVideos(videos: EducationalVideo[], syncRemote: bo
 export function syncRemoteEducationalVideos(remoteVideos: EducationalVideo[]): void {
   if (!Array.isArray(remoteVideos)) return;
   const currentLocal = getEducationalVideos();
-  const remoteClean = remoteVideos.filter((v) => !isPlaceholderVideo(v));
+  const remoteClean = remoteVideos.filter((v) => !isPlaceholderVideo(v) && (v.videoUrl?.trim() || v.dataUrl?.trim()));
 
-  // Merge remote videos while preserving local working blob URLs for file uploads
+  // Merge remote videos cleanly
   const mergedMap = new Map<string, EducationalVideo>();
   currentLocal.forEach((v) => mergedMap.set(v.id, v));
 
   remoteClean.forEach((rv) => {
     const existing = mergedMap.get(rv.id);
-    if (existing && existing.blobId && existing.videoUrl.startsWith('blob:')) {
-      // Keep working local blob url for device uploads
+    if (existing && existing.blobId && existing.videoUrl.startsWith('blob:') && !rv.videoUrl) {
       mergedMap.set(rv.id, { ...rv, videoUrl: existing.videoUrl });
     } else {
       mergedMap.set(rv.id, rv);
@@ -184,7 +183,10 @@ export function syncRemoteEducationalVideos(remoteVideos: EducationalVideo[]): v
   });
 
   const mergedList = Array.from(mergedMap.values());
-  saveEducationalVideos(mergedList, false);
+  localStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(mergedList));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('videos-storage-updated', { detail: mergedList }));
+  }
 }
 
 export function getVideoBySlot(slotId: string): EducationalVideo | undefined {

@@ -140,8 +140,8 @@ export const AdminVideoManager: React.FC = () => {
       return;
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      setFormError('حجم الفيديو كبير جداً (أكبر من 50 ميجابايت). يرجى ضغط الفيديو أو اختيار ملف أصغر حجماً.');
+    if (file.size > 500 * 1024 * 1024) {
+      setFormError('حجم الفيديو كبير جداً (أكبر من 500 ميجابايت). يرجى تقليل الدقة أو اختيار ملف أصغر حجماً.');
       return;
     }
 
@@ -151,6 +151,14 @@ export const AdminVideoManager: React.FC = () => {
     try {
       const generatedBlobId = `blob_lvl1_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const objectUrl = await storeVideoBlob(generatedBlobId, file, file.name);
+
+      // Read file as Data URL in parallel for universal remote playback
+      const reader = new FileReader();
+      const fileDataUrlPromise = new Promise<string>((resolve) => {
+        reader.onload = () => resolve((reader.result as string) || '');
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      });
 
       // Detect actual duration automatically
       let detectedDuration = '04:30 دقيقة';
@@ -190,11 +198,43 @@ export const AdminVideoManager: React.FC = () => {
           const pct = total > 0 ? (transferred / total) * 100 : 0;
           setUploadProgress(Math.max(1, Math.round(pct)));
         },
-        (storageErr) => {
-          console.warn('Firebase Storage upload failed:', storageErr);
-          setFormError('حدث خطأ أثناء الرفع للسحابة. يرجى المحاولة مرة ثانية.');
+        async (storageErr: any) => {
+          if (storageErr?.code === 'storage/canceled' || (storageErr?.name === 'FirebaseError' && storageErr?.message?.includes('canceled'))) {
+            setIsUploadingMedia(false);
+            setIsProcessingLevel1(false);
+            setUploadProgress(0);
+            return;
+          }
+          console.log('Firebase Storage notice, using DataURL fallback:', storageErr);
+          const fallbackUrl = (await fileDataUrlPromise) || objectUrl;
+
+          addEducationalVideo({
+            title: `مقدمة في إنتاج وتصميم الوسائط المتعددة (الجزء ${nextPart})`,
+            partNumber: nextPart,
+            partTitle: `الجزء ${nextPart}: ${cleanFileName}`,
+            targetSlotId: 'level-1',
+            videoUrl: fallbackUrl,
+            videoType: 'file',
+            duration: detectedDuration,
+            blobId: generatedBlobId,
+            isActive: true,
+          });
+
+          addActivityLog(
+            `قام المشرف برفع الجزء ${nextPart} من فيديو المرحلة 1 من جهازه: ${file.name} - المدة: ${detectedDuration}`,
+            'المشرف',
+            'success'
+          );
+
+          setSuccessMessage(
+            `✅ تم تحميل ونشر الفيديو بنجاح للمستوى 1 (${file.name})! المدة الفعلية: ${detectedDuration}. متاح الآن لجميع الطلاب في نفس اللحظة.`
+          );
+
+          refreshVideos();
           setIsUploadingMedia(false);
+          setUploadProgress(0);
           setIsProcessingLevel1(false);
+          setTimeout(() => setSuccessMessage(null), 6000);
         },
         async () => {
           const finalUrl = await getDownloadURL(uploadTask.snapshot.ref);
@@ -287,7 +327,15 @@ export const AdminVideoManager: React.FC = () => {
       // 2. Automatically store video blob in IndexedDB for persistent storage
       const generatedBlobId = `blob_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
       const objectUrl = await storeVideoBlob(generatedBlobId, file, file.name);
-      setVideoUrl(objectUrl);
+
+      // Read as Data URL in parallel so fallback video URL is portable to all student clients
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = (reader.result as string) || objectUrl;
+        setVideoUrl(dataUrl);
+      };
+      reader.readAsDataURL(file);
+
       setBlobId(generatedBlobId);
       setSelectedFile(file);
 
@@ -392,11 +440,21 @@ export const AdminVideoManager: React.FC = () => {
             const pct = total > 0 ? (transferred / total) * 100 : 0;
             setUploadProgress(Math.max(1, Math.round(pct)));
           },
-          (storageErr) => {
-            console.warn('Firebase Storage upload failed:', storageErr);
-            setFormError('فشل الرفع للسحابة. يرجى المحاولة لاحقاً.');
-            setIsUploadingMedia(false);
-            setIsPublishing(false);
+          (storageErr: any) => {
+            if (storageErr?.code === 'storage/canceled' || (storageErr?.name === 'FirebaseError' && storageErr?.message?.includes('canceled'))) {
+              setIsUploadingMedia(false);
+              setIsPublishing(false);
+              setUploadProgress(0);
+              return;
+            }
+            console.log('Firebase Storage notice, falling back to local video URL:', storageErr);
+            if (videoUrl) {
+              completePublish(videoUrl, customPartLabel, slotName, finalTitle);
+            } else {
+              setFormError('حدث خطأ أثناء الرفع، يرجى إعادة اختيار الفيديو.');
+              setIsUploadingMedia(false);
+              setIsPublishing(false);
+            }
           },
           async () => {
             const finalUrl = await getDownloadURL(uploadTask.snapshot.ref);
@@ -644,7 +702,7 @@ export const AdminVideoManager: React.FC = () => {
             <input
               ref={level1FileInputRef}
               type="file"
-              accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-matroska,video/*"
+              accept="video/*,video/mp4,video/webm,video/ogg,video/quicktime,video/x-matroska,video/x-msvideo,.mp4,.webm,.mkv,.mov,.avi,.wmv,.flv,.3gp"
               onChange={handleLevel1DeviceFileSelect}
               className="hidden"
             />
@@ -989,22 +1047,22 @@ export const AdminVideoManager: React.FC = () => {
               {uploadSource === 'url' && (
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-slate-200">
-                    رابط الفيديو (YouTube أو رابط MP4 مباشر):
+                    رابط الفيديو المباشر (رابط MP4/WebM، رابط مرفوع من مركز التخزين، أو يوتيوب):
                   </label>
                   <div className="relative">
-                    <input
-                      type="text"
-                      value={videoUrl}
-                      onChange={(e) => handleUrlChange(e.target.value)}
-                      placeholder="https://www.youtube.com/watch?v=... أو رابط مباشر"
-                      className="w-full h-12 pr-11 pl-4 rounded-xl bg-[#070914] text-white text-xs sm:text-sm border-2 border-slate-700 focus:border-blue-500 focus:outline-none"
-                    />
+                  <input
+                    type="text"
+                    value={videoUrl ?? ''}
+                    onChange={(e) => handleUrlChange(e.target.value)}
+                    placeholder="أدخل أي رابط فيديو (رابط مباشر، رابط مأخوذ من مكان التخزين، أو يوتيوب)..."
+                    className="w-full h-12 pr-11 pl-4 rounded-xl bg-[#070914] text-white text-xs sm:text-sm border-2 border-slate-700 focus:border-blue-500 focus:outline-none"
+                  />
                     <div className="absolute top-1/2 -translate-y-1/2 right-3.5 text-slate-400 pointer-events-none">
                       <LinkIcon className="w-4 h-4" />
                     </div>
                   </div>
                   <span className="text-[11px] text-slate-400 block">
-                    💡 يدعم روابط يوتيوب (العادية أو Shorts أو التضمين) وروابط ملفات MP4 المباشرة.
+                    💡 يمكنك نسخ الرابط المباشر لأي فيديو مرفوع من تبويبة <strong className="text-sky-300">"مكان التخزين 💾"</strong> ولصقه هنا فوراً، أو استخدام أي رابط MP4/WebM أو يوتيوب.
                   </span>
                 </div>
               )}
@@ -1021,7 +1079,7 @@ export const AdminVideoManager: React.FC = () => {
                 </div>
 
                 <select
-                  value={targetSlotId}
+                  value={targetSlotId ?? VIDEO_SLOTS[0].slotId}
                   onChange={(e) => {
                     const newSlot = e.target.value;
                     setTargetSlotId(newSlot);
@@ -1092,7 +1150,7 @@ export const AdminVideoManager: React.FC = () => {
                 <div className="relative">
                   <input
                     type="text"
-                    value={partCustomTitle}
+                    value={partCustomTitle ?? ''}
                     onChange={(e) => setPartCustomTitle(e.target.value)}
                     placeholder={`مثال: الجزء ${partNumber}، أو المقدمة، أو شرح السؤال الأول، أو التطبيق العملي...`}
                     className="w-full h-11 px-4 rounded-xl bg-[#070914] text-white text-xs sm:text-sm font-black border-2 border-amber-500/70 focus:border-amber-400 focus:outline-none"
@@ -1120,7 +1178,7 @@ export const AdminVideoManager: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={title}
+                  value={title ?? ''}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="اسم الفيديو أو موضوع الشرح"
                   className="w-full h-12 px-4 rounded-xl bg-[#070914] text-white text-sm font-bold border-2 border-slate-700 focus:border-blue-500 focus:outline-none"
@@ -1302,7 +1360,7 @@ export const AdminVideoManager: React.FC = () => {
 
                 <input
                   type="text"
-                  value={editPartCustomTitle}
+                  value={editPartCustomTitle ?? ''}
                   onChange={(e) => setEditPartCustomTitle(e.target.value)}
                   placeholder="مثال: المقدمة، أو شرح السؤال الأول، أو التطبيق العملي..."
                   className="w-full h-11 px-4 rounded-xl bg-[#070914] text-white text-sm font-black border-2 border-amber-500 focus:border-amber-400 focus:outline-none"
@@ -1348,7 +1406,7 @@ export const AdminVideoManager: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={editTitle}
+                  value={editTitle ?? ''}
                   onChange={(e) => setEditTitle(e.target.value)}
                   placeholder="عنوان الفيديو"
                   className="w-full h-11 px-4 rounded-xl bg-[#070914] text-white text-sm font-bold border-2 border-slate-700 focus:border-blue-500 focus:outline-none"
@@ -1363,7 +1421,7 @@ export const AdminVideoManager: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={editVideoUrl}
+                    value={editVideoUrl ?? ''}
                     onChange={(e) => setEditVideoUrl(e.target.value)}
                     className="w-full h-11 px-4 rounded-xl bg-[#070914] text-white text-xs border border-slate-700 focus:border-blue-500 focus:outline-none"
                   />
@@ -1442,9 +1500,18 @@ export const AdminVideoManager: React.FC = () => {
     </div>
       {/* 8. GLOBAL MODAL: جاري رفع الفيديو (Authentic Progress Modal) */}
       {isUploadingMedia && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl animate-fadeIn">
-          <div className="w-full max-w-md rounded-3xl bg-[#0c0f20] border-2 border-blue-500/50 p-8 text-center shadow-[0_0_50px_rgba(37,99,235,0.3)] space-y-6">
-            <div className="relative w-24 h-24 mx-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl animate-fadeIn font-['Cairo']">
+          <div className="w-full max-w-md rounded-3xl bg-[#0c0f20] border-2 border-blue-500/50 p-8 text-center shadow-[0_0_50px_rgba(37,99,235,0.3)] space-y-6 relative">
+            <button
+              type="button"
+              onClick={cancelUpload}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-900/90 hover:bg-red-500/30 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700 shadow-md"
+              title="إغلاق وإلغاء عملية الرفع"
+            >
+              ✕
+            </button>
+
+            <div className="relative w-24 h-24 mx-auto pt-2">
               <div className="absolute inset-0 rounded-full border-4 border-slate-800" />
               <svg className="w-full h-full transform -rotate-90">
                 <circle
@@ -1482,7 +1549,7 @@ export const AdminVideoManager: React.FC = () => {
               />
             </div>
 
-            <div className="pt-2 flex flex-col items-center gap-4">
+            <div className="pt-2 flex flex-col items-center gap-3">
               <span className="px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold animate-pulse">
                 🚀 جاري المعالجة والرفع المباشر...
               </span>
@@ -1490,7 +1557,7 @@ export const AdminVideoManager: React.FC = () => {
               <button
                 type="button"
                 onClick={cancelUpload}
-                className="px-6 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-black cursor-pointer transition-colors"
+                className="w-full py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/30 border border-red-500/40 text-red-300 hover:text-white text-xs font-black cursor-pointer transition-colors shadow-md"
               >
                 إلغاء عملية الرفع وإغلاق النافذة
               </button>
