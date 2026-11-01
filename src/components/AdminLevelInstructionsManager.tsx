@@ -906,21 +906,30 @@ export const AdminLevelInstructionsManager: React.FC = () => {
 
                 <div className="relative aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-slate-800">
                   {vid.url && vid.url.trim() ? (
-                    vid.url.includes('youtube.com') || vid.url.includes('youtu.be') ? (
-                      <iframe
-                        src={vid.url.trim()}
-                        title={vid.title}
-                        className="w-full h-full border-0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    ) : (
-                      <video
-                        src={vid.url.trim()}
-                        controls
-                        className="w-full h-full object-contain"
-                      />
-                    )
+                    (() => {
+                      const norm = normalizeVideoUrl(vid.url.trim());
+                      const isEmbed =
+                        norm.includes('drive.google.com') ||
+                        norm.includes('youtube.com') ||
+                        norm.includes('youtu.be') ||
+                        norm.includes('vimeo.com');
+
+                      return isEmbed ? (
+                        <iframe
+                          src={norm}
+                          title={vid.title}
+                          className="w-full h-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video
+                          src={norm}
+                          controls
+                          className="w-full h-full object-contain"
+                        />
+                      );
+                    })()
                   ) : (
                     <span className="text-xs text-slate-500 font-bold">لا يوجد فيديو</span>
                   )}

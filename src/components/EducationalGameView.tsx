@@ -1057,18 +1057,41 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
           </div>
 
           {isVideoOpen && (
-            <MultiPartVideoPlayer
-              videos={currentDisplayVideos}
-              title={`شرح المستوى ${selectedLevelNum}: ${currentLevelDef.title}`}
-              onSeek={handleVideoSeek}
-              onVideoFinish={() => {
-                const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
-                const earned = penalty ? 20 : 25;
-                setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
-                setVideoWarning(penalty ? 'تم إتمام مشاهدة الفيديو مع تطبيق خصم التقديم السريع (20 من 25 درجة).' : 'مبروك! شاهدت فيديو الشرح بالكامل وحصلت على 25 من 25 درجة 🎓');
-                setTimeout(() => setVideoWarning(null), 5000);
-              }}
-            />
+            <div className="space-y-2">
+              <MultiPartVideoPlayer
+                videos={currentDisplayVideos}
+                title={`شرح المستوى ${selectedLevelNum}: ${currentLevelDef.title}`}
+                onSeek={handleVideoSeek}
+                onVideoFinish={() => {
+                  const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
+                  const earned = penalty ? 20 : 25;
+                  setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
+                  setVideoWarning(penalty ? 'تم إتمام مشاهدة الفيديو مع تطبيق خصم التقديم السريع (20 من 25 درجة).' : 'مبروك! شاهدت فيديو الشرح بالكامل وحصلت على 25 من 25 درجة 🎓');
+                  setTimeout(() => setVideoWarning(null), 5000);
+                }}
+              />
+              {!isLevelCompleted && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 text-xs">
+                  <span className="text-slate-400">
+                    عند إتمام استماعك وشرحك للفيديو، يمكنك الضغط هنا لتوثيق المشاهدة واحتساب درجتك:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
+                      const earned = penalty ? 20 : 25;
+                      setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
+                      setVideoWarning(penalty ? 'تم تسجيل إتمام المشاهدة مع تطبيق خصم التقديم السريع (20 من 25 درجة).' : 'مبروك! تم تأكيد مشاهدة فيديو الشرح بالكامل (25 من 25 درجة) 🎓');
+                      setTimeout(() => setVideoWarning(null), 5000);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600 border border-emerald-500/50 text-emerald-200 hover:text-white font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>أتممت مشاهدة الفيديو بالكامل ✓</span>
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Video Warning Banner if penalty applied */}

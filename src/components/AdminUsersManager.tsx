@@ -42,6 +42,8 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
   const [copiedAll, setCopiedAll] = useState(false);
   const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
   const [studentToReset, setStudentToReset] = useState<string>('all');
+  const [confirmResetStudent, setConfirmResetStudent] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<PortalUser | null>(null);
 
   // Edit User Modal
   const [editingUser, setEditingUser] = useState<PortalUser | null>(null);
@@ -68,11 +70,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
 
   // Reset student progress to initial state
   const handleResetStudentProgress = (user: PortalUser) => {
-    if (window.confirm(`هل أنت متأكد من تصفير وإعادة تهيئة بيانات الطالب ${user.username} بالكامل؟`)) {
-      resetStudentProgress(user.username);
-      addActivityLog(`قام المشرف بإعادة تهيئة بيانات الطالب: ${user.username}`, 'admin', 'warning');
-      showToast(`✓ تم إعادة تهيئة بيانات الطالب ${user.username} بنجاح`);
-    }
+    setConfirmResetStudent(user.username);
   };
 
   // Toggle user active status
@@ -408,26 +406,11 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
           </select>
           <button
             type="button"
-            onClick={() => {
-              if (studentToReset === 'all') {
-                if (window.confirm('هل أنت متأكد من تصفير وإعادة تهيئة إجابات ودرجات المستويات لجميع الطلاب؟ (سيتم الإبقاء على نتائج الاختبار القبلي)')) {
-                  resetAllLevelsProgressKeepingPreTest();
-                  addActivityLog('قام المشرف بإعادة تهيئة مستويات الطلاب مع الإبقاء على الاختبار القبلي', 'admin', 'warning');
-                  showToast('✓ تم إعادة تهيئة مستويات الطلاب بنجاح', 'success');
-                  setUsers(getPortalUsers());
-                }
-              } else {
-                if (window.confirm(`هل أنت متأكد من تصفير وإعادة تهيئة إجابات ودرجات المستويات للطالب ${studentToReset}؟`)) {
-                  resetStudentProgress(studentToReset);
-                  addActivityLog(`قام المشرف بإعادة تهيئة مستويات الطالب: ${studentToReset}`, 'admin', 'warning');
-                  showToast(`✓ تم إعادة تهيئة مستويات الطالب ${studentToReset} بنجاح`, 'success');
-                  setUsers(getPortalUsers());
-                }
-              }
-            }}
-            className="p-3 rounded-2xl bg-red-950/60 border border-red-500 text-red-200 text-center font-black text-xs hover:bg-red-900 transition cursor-pointer flex flex-col items-center justify-center"
+            onClick={() => setConfirmResetStudent(studentToReset)}
+            className="p-3 rounded-2xl bg-red-950/60 border border-red-500 text-red-200 text-center font-black text-xs hover:bg-red-900 transition cursor-pointer flex flex-col items-center justify-center shadow-lg hover:scale-105 active:scale-95"
+            title="إعادة تهيئة وتصفير المستويات"
           >
-            <RotateCcw className="w-5 h-5 mb-1" />
+            <RotateCcw className="w-5 h-5 mb-1 text-red-400" />
             تصفير المستويات
           </button>
         </div>
@@ -933,6 +916,109 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: تأكيد تصفير وإعادة تهيئة المستويات */}
+      {confirmResetStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl bg-[#0c0f20] border-2 border-red-500/80 p-6 sm:p-8 text-right shadow-2xl space-y-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                <RotateCcw className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-white font-['Tajawal']">
+                  تأكيد تصفير وإعادة تهيئة المستويات
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {confirmResetStudent === 'all' ? (
+                    <span>
+                      هل أنت متأكد من تصفير وإعادة تهيئة إجابات ودرجات المستويات <strong className="text-amber-300">لجميع الطلاب</strong>؟ (سيتم الإبقاء على نتائج الاختبار القبلي، وإرجاع جميع الطلاب للمستوى 1).
+                    </span>
+                  ) : (
+                    <span>
+                      هل أنت متأكد من تصفير وإعادة تهيئة إجابات ودرجات المستويات للطالب <strong className="text-amber-300">{confirmResetStudent}</strong> بالكامل؟ (سيتم تصفير المستويات وإرجاعه للمستوى 1 وحذف أنشطته السابقة).
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmResetStudent(null)}
+                className="flex-1 px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs cursor-pointer transition-colors"
+              >
+                إلغاء التراجع
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirmResetStudent === 'all') {
+                    resetAllLevelsProgressKeepingPreTest();
+                    addActivityLog('قام المشرف بإعادة تهيئة مستويات الطلاب مع الإبقاء على الاختبار القبلي', 'admin', 'warning');
+                    showToast('✓ تم إعادة تهيئة مستويات جميع الطلاب بنجاح (مع الإبقاء على القبلي)', 'success');
+                  } else {
+                    resetStudentProgress(confirmResetStudent);
+                    addActivityLog(`قام المشرف بإعادة تهيئة مستويات الطالب: ${confirmResetStudent}`, 'admin', 'warning');
+                    showToast(`✓ تم إعادة تهيئة مستويات الطالب ${confirmResetStudent} بنجاح`, 'success');
+                  }
+                  setUsers(getPortalUsers());
+                  setConfirmResetStudent(null);
+                }}
+                className="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-black text-xs shadow-lg shadow-red-950/50 cursor-pointer transition-all transform hover:-translate-y-0.5"
+              >
+                نعم، تصفير الآن
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: تأكيد حذف المستخدم */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl bg-[#0c0f20] border-2 border-red-500/80 p-6 sm:p-8 text-right shadow-2xl space-y-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-black text-white font-['Tajawal']">
+                  تأكيد حذف الحساب
+                </h3>
+                <p className="text-xs text-slate-300">
+                  هل أنت متأكد من حذف حساب الطالب <strong className="text-amber-300">{userToDelete.username}</strong> نهائياً؟
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setUserToDelete(null)}
+                className="flex-1 px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs cursor-pointer transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = users.filter((u) => u.id !== userToDelete.id);
+                  setUsers(updated);
+                  savePortalUsers(updated);
+                  addActivityLog(`حذف المستخدم: ${userToDelete.username}`, 'admin', 'warning');
+                  showToast(`✓ تم حذف المستخدم ${userToDelete.username} بنجاح`);
+                  setUserToDelete(null);
+                }}
+                className="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-black text-xs shadow-lg shadow-red-950/50 cursor-pointer transition-all transform hover:-translate-y-0.5"
+              >
+                نعم، احذف الحساب
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -472,6 +472,7 @@ export function resetStudentProgress(username: string): StudentGameProgress {
     avatarId: currentAvatar,
     currentLevel: 1,
     completedLevels: {},
+    studentActivities: {},
     totalScore: 0,
     hearts: 3,
     badges: ['وسام المستكشف التمهيدي (الاختبار القبلي)'],
@@ -491,6 +492,36 @@ export function resetStudentProgress(username: string): StudentGameProgress {
     localStorage.removeItem(`cp_post_answers_${cleanUsername}`);
     localStorage.removeItem(`cp_post_started_${cleanUsername}`);
     localStorage.removeItem(`cp_active_portal_section_${cleanUsername}`);
+    for (let lvl = 1; lvl <= 9; lvl++) {
+      localStorage.removeItem(`cp_level_${lvl}_answers_${cleanUsername}`);
+      localStorage.removeItem(`cp_level_${lvl}_time_${cleanUsername}`);
+    }
+
+    // Clear student activity submissions for this student
+    const rawSubs = localStorage.getItem('cp_student_activities_submissions_v2');
+    if (rawSubs) {
+      const parsedSubs = JSON.parse(rawSubs);
+      if (Array.isArray(parsedSubs)) {
+        const filteredSubs = parsedSubs.filter(
+          (s: any) => s.studentUsername?.toLowerCase() !== cleanUsername.toLowerCase()
+        );
+        localStorage.setItem('cp_student_activities_submissions_v2', JSON.stringify(filteredSubs));
+      }
+    }
+
+    // Clear collaborative team answers if any
+    const rawTeam = localStorage.getItem('cp_collab_team_answers_v1');
+    if (rawTeam) {
+      const parsedTeam = JSON.parse(rawTeam);
+      if (typeof parsedTeam === 'object' && parsedTeam !== null) {
+        Object.keys(parsedTeam).forEach((k) => {
+          if (parsedTeam[k]?.completedBy?.toLowerCase() === cleanUsername.toLowerCase()) {
+            delete parsedTeam[k];
+          }
+        });
+        localStorage.setItem('cp_collab_team_answers_v1', JSON.stringify(parsedTeam));
+      }
+    }
   } catch {
     // Ignore
   }

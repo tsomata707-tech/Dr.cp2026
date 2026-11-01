@@ -399,13 +399,13 @@ export function normalizeVideoUrl(url: string): string {
   }
 
   // 2. Google Drive video share link: https://drive.google.com/file/d/XXXX/view -> /preview
-  const driveMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  const driveMatch = trimmed.match(/drive\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)([a-zA-Z0-9_-]+)/);
   if (driveMatch && driveMatch[1]) {
     return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
   }
-  const driveOpenMatch = trimmed.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
-  if (driveOpenMatch && driveOpenMatch[1]) {
-    return `https://drive.google.com/file/d/${driveOpenMatch[1]}/preview`;
+  const driveDirectMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveDirectMatch && driveDirectMatch[1]) {
+    return `https://drive.google.com/file/d/${driveDirectMatch[1]}/preview`;
   }
 
   // 3. Vimeo link: https://vimeo.com/XXXX -> https://player.vimeo.com/video/XXXX
