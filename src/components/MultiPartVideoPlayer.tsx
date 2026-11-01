@@ -12,6 +12,7 @@ import {
   Film,
 } from 'lucide-react';
 import { EducationalVideo } from '../types';
+import { normalizeVideoUrl } from '../utils/videoStorage';
 
 interface MultiPartVideoPlayerProps {
   videos: EducationalVideo[];
@@ -132,62 +133,82 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
 
       {/* 2. Responsive Video Player Container (16:9 on all devices) */}
       <div className="relative aspect-video w-full bg-black border-y border-slate-900/60 overflow-hidden shadow-inner flex items-center justify-center">
-        {!currentVideo?.videoUrl || !currentVideo.videoUrl.trim() ? (
-          <div className="flex flex-col items-center justify-center p-6 text-center text-slate-400 gap-2">
-            <Film className="w-8 h-8 text-amber-400/80" />
-            <span className="text-xs font-bold font-['Cairo']">لم يتم تعيين رابط أو ملف لهذا الفيديو بعد</span>
-          </div>
-        ) : currentVideo.videoType === 'youtube' ||
-        currentVideo.videoUrl.includes('youtube.com') ||
-        currentVideo.videoUrl.includes('youtu.be') ? (
-          <iframe
-            key={currentVideo.id}
-            src={currentVideo.videoUrl}
-            title={currentVideo.title}
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        ) : (
-          <video
-            key={currentVideo.id}
-            src={currentVideo.videoUrl}
-            controls
-            preload="metadata"
-            className="w-full h-full object-contain"
-            onTimeUpdate={(e) => {
-              const v = e.currentTarget;
-              const vidId = currentVideo.id || 'vid_default';
-              const maxTime = maxTimeRefs.current[vidId] ?? 0;
+        {(() => {
+          const rawUrl = currentVideo?.videoUrl?.trim() || '';
+          if (!rawUrl) {
+            return (
+              <div className="flex flex-col items-center justify-center p-6 text-center text-slate-400 gap-2">
+                <Film className="w-8 h-8 text-amber-400/80" />
+                <span className="text-xs font-bold font-['Cairo']">لم يتم تعيين رابط أو ملف لهذا الفيديو بعد</span>
+              </div>
+            );
+          }
 
-              // Only block forward seeking past unwatched portion (> 1.5s ahead)
-              if (v.currentTime > maxTime + 1.5) {
-                v.currentTime = maxTime;
-                onSeek?.();
-              } else if (v.currentTime > maxTime) {
-                maxTimeRefs.current[vidId] = v.currentTime;
-              }
-            }}
-            onSeeking={(e) => {
-              const v = e.currentTarget;
-              const vidId = currentVideo.id || 'vid_default';
-              const maxTime = maxTimeRefs.current[vidId] ?? 0;
+          const finalPlayUrl = normalizeVideoUrl(rawUrl);
+          const isEmbed =
+            currentVideo.videoType === 'youtube' ||
+            finalPlayUrl.includes('youtube.com') ||
+            finalPlayUrl.includes('youtu.be') ||
+            finalPlayUrl.includes('drive.google.com') ||
+            finalPlayUrl.includes('player.vimeo.com');
 
-              // Only block forward seeking past unwatched portion (> 1.5s ahead); allow rewinding backwards
-              if (v.currentTime > maxTime + 1.5) {
-                v.currentTime = maxTime;
-                onSeek?.();
-              }
-            }}
-            onEnded={() => {
-              if (selectedPartIndex === videos.length - 1) {
-                onVideoFinish?.();
-              } else {
-                handleNextPart();
-              }
-            }}
-          />
-        )}
+          if (isEmbed) {
+            return (
+              <iframe
+                key={currentVideo.id}
+                src={finalPlayUrl}
+                title={currentVideo.title}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            );
+          }
+
+          return (
+            <video
+              key={currentVideo.id}
+              src={finalPlayUrl}
+              controls
+              preload="metadata"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                console.warn('Video failed to load:', finalPlayUrl);
+              }}
+              onTimeUpdate={(e) => {
+                const v = e.currentTarget;
+                const vidId = currentVideo.id || 'vid_default';
+                const maxTime = maxTimeRefs.current[vidId] ?? 0;
+
+                // Only block forward seeking past unwatched portion (> 1.5s ahead)
+                if (v.currentTime > maxTime + 1.5) {
+                  v.currentTime = maxTime;
+                  onSeek?.();
+                } else if (v.currentTime > maxTime) {
+                  maxTimeRefs.current[vidId] = v.currentTime;
+                }
+              }}
+              onSeeking={(e) => {
+                const v = e.currentTarget;
+                const vidId = currentVideo.id || 'vid_default';
+                const maxTime = maxTimeRefs.current[vidId] ?? 0;
+
+                // Only block forward seeking past unwatched portion (> 1.5s ahead); allow rewinding backwards
+                if (v.currentTime > maxTime + 1.5) {
+                  v.currentTime = maxTime;
+                  onSeek?.();
+                }
+              }}
+              onEnded={() => {
+                if (selectedPartIndex === videos.length - 1) {
+                  onVideoFinish?.();
+                } else {
+                  handleNextPart();
+                }
+              }}
+            />
+          );
+        })()}
       </div>
 
       {/* 3. Multi-Parts Interactive Bar */}

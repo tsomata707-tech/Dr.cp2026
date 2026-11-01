@@ -28,6 +28,7 @@ import {
   deleteStoredAsset,
 } from '../utils/mediaStorage';
 import { subscribeToGlobalData } from '../utils/realtimeService';
+import { normalizeVideoUrl } from '../utils/videoStorage';
 
 export const AdminMediaStorageManager: React.FC = () => {
   const [assets, setAssets] = useState<StoredAsset[]>(() => getStoredAssets());
@@ -113,15 +114,20 @@ export const AdminMediaStorageManager: React.FC = () => {
     }
   };
 
+  const [copyNotice, setCopyNotice] = useState<string | null>(null);
+
   const handleAddUrlAssetSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!urlInput.trim() || !urlTitleInput.trim()) return;
 
-    addUrlAsset(urlInput.trim(), urlTitleInput.trim(), urlTypeInput);
+    const normalized = urlTypeInput === 'video' ? normalizeVideoUrl(urlInput.trim()) : urlInput.trim();
+    addUrlAsset(normalized, urlTitleInput.trim(), urlTypeInput);
     setAssets(getStoredAssets());
     setShowUrlModal(false);
     setUrlInput('');
     setUrlTitleInput('');
+    setCopyNotice('✅ تم إضافة الرابط بنجاح وجاهز للاستخدام الفوري لجميع الطلاب!');
+    setTimeout(() => setCopyNotice(null), 4000);
   };
 
   const handleCopyLink = (asset: StoredAsset) => {
@@ -130,7 +136,15 @@ export const AdminMediaStorageManager: React.FC = () => {
 
     navigator.clipboard.writeText(linkToCopy).then(() => {
       setCopiedId(asset.id);
-      setTimeout(() => setCopiedId(null), 2500);
+      if (linkToCopy.startsWith('blob:')) {
+        setCopyNotice('⚠️ تم نسخ الرابط المحلي (Blob). لكي يشاهد الطلاب هذا الفيديو من أجهزتهم، يفضل استخدام رابط خارجي سحابي (مثل يوتيوب أو Google Drive).');
+      } else {
+        setCopyNotice('✅ تم نسخ الرابط السحابي بنجاح! يعمل لدى جميع الطلاب في نفس الوقت.');
+      }
+      setTimeout(() => {
+        setCopiedId(null);
+        setCopyNotice(null);
+      }, 5000);
     });
   };
 
@@ -248,6 +262,14 @@ export const AdminMediaStorageManager: React.FC = () => {
           </div>
         )}
       </div>
+
+      {copyNotice && (
+        <div className={`p-4 rounded-2xl border-2 text-xs font-black flex items-center gap-2 shadow-xl animate-fadeIn ${
+          copyNotice.startsWith('⚠️') ? 'bg-amber-950/90 border-amber-500 text-amber-200' : 'bg-emerald-950/90 border-emerald-400 text-emerald-200'
+        }`}>
+          <span>{copyNotice}</span>
+        </div>
+      )}
 
       {/* Usage Quick Guide Banner */}
       <div className="bg-sky-950/50 border border-sky-800/60 rounded-2xl p-4 text-sky-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">

@@ -384,18 +384,39 @@ export function deleteEducationalVideo(id: string): boolean {
 }
 
 /**
- * Normalizes YouTube URLs into proper embed iframe URLs
+ * Normalizes YouTube, Google Drive, Vimeo, Dropbox, and cloud URLs into proper embed / stream URLs
  */
 export function normalizeVideoUrl(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) return '';
 
-  // YouTube watch URL: https://www.youtube.com/watch?v=XXXX or shorts or embed or youtu.be
+  // 1. YouTube watch URL: https://www.youtube.com/watch?v=XXXX or shorts or embed or youtu.be
   const watchMatch = trimmed.match(
     /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
   );
   if (watchMatch && watchMatch[1]) {
     return `https://www.youtube.com/embed/${watchMatch[1]}?rel=0&modestbranding=1`;
+  }
+
+  // 2. Google Drive video share link: https://drive.google.com/file/d/XXXX/view -> /preview
+  const driveMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveMatch && driveMatch[1]) {
+    return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+  }
+  const driveOpenMatch = trimmed.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+  if (driveOpenMatch && driveOpenMatch[1]) {
+    return `https://drive.google.com/file/d/${driveOpenMatch[1]}/preview`;
+  }
+
+  // 3. Vimeo link: https://vimeo.com/XXXX -> https://player.vimeo.com/video/XXXX
+  const vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?([0-9]+)/);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  }
+
+  // 4. Dropbox share link: convert dl=0 to raw=1 for direct streaming
+  if (trimmed.includes('dropbox.com') && trimmed.includes('dl=0')) {
+    return trimmed.replace('dl=0', 'raw=1');
   }
 
   return trimmed;

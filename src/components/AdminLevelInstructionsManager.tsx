@@ -31,6 +31,7 @@ import {
   updateMediaItemInLevel,
 } from '../data/gameLevelsData';
 import { LevelMediaItem, LevelQuestion } from '../types';
+import { normalizeVideoUrl } from '../utils/videoStorage';
 
 export const AdminLevelInstructionsManager: React.FC = () => {
   const [levels, setLevels] = useState<GameLevelDef[]>(() => getCustomGameLevels());
@@ -94,8 +95,11 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       return;
     }
 
-    const cleanUrl = videoUrlInput.trim();
+    const rawUrl = videoUrlInput.trim();
+    const cleanUrl = normalizeVideoUrl(rawUrl);
     const cleanTitle = videoTitleInput.trim() || `فيديو ${currentLevel?.videos?.length || 1}`;
+
+    const isYt = cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be');
 
     if (editingVideoUrlId) {
       const updatedMedia: LevelMediaItem = {
@@ -104,13 +108,13 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         partCustomTitle: cleanTitle,
         url: cleanUrl,
         type: 'video',
-        format: cleanUrl.includes('youtube') ? 'YouTube' : 'MP4/WebM',
+        format: isYt ? 'YouTube' : 'MP4/WebM',
         size: 0,
         addedAt: new Date().toISOString(),
       };
       const updated = replaceMediaInLevel(selectedLevelNum, editingVideoUrlId, updatedMedia);
       setLevels([...updated]);
-      showToast('✅ تم استبدال فيديو المستوى عبر الرابط بنجاح!');
+      showToast('✅ تم استبدال فيديو المستوى عبر الرابط وتحديثه لجميع الطلاب بنجاح!');
     } else {
       const currentVids = currentLevel?.videos || [];
       if (currentVids.length >= 5) {
@@ -124,13 +128,13 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         partCustomTitle: cleanTitle,
         url: cleanUrl,
         type: 'video',
-        format: cleanUrl.includes('youtube') ? 'YouTube' : 'MP4/WebM',
+        format: isYt ? 'YouTube' : 'MP4/WebM',
         size: 0,
         addedAt: new Date().toISOString(),
       };
       const updated = addMediaToLevel(selectedLevelNum, newMedia);
       setLevels([...updated]);
-      showToast('✅ تم إدراج فيديو جديد للمستوى عبر الرابط بنجاح!');
+      showToast('✅ تم إدراج فيديو جديد للمستوى عبر الرابط وتحديثه لجميع الطلاب فوراً!');
     }
 
     setShowVideoUrlModal(false);

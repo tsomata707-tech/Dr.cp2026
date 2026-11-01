@@ -51,7 +51,7 @@ import {
   deleteStudentActivity,
   subscribeToLevelActivityConfigs,
 } from '../utils/studentActivityStorage';
-import { useEducationalVideos, isPlaceholderVideo } from '../utils/videoStorage';
+import { useEducationalVideos, isPlaceholderVideo, normalizeVideoUrl } from '../utils/videoStorage';
 import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { DraggableLevelInstructions } from './DraggableLevelInstructions';
@@ -326,10 +326,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     // 1. Videos from Admin Video Manager for this level
     (currentLevelVideos || []).forEach((v) => {
       if (v.isActive && !isPlaceholderVideo(v) && v.videoUrl?.trim()) {
-        const norm = v.videoUrl.trim();
+        const norm = normalizeVideoUrl(v.videoUrl.trim());
         if (!seenUrls.has(norm)) {
           seenUrls.add(norm);
-          list.push(v);
+          list.push({ ...v, videoUrl: norm });
         }
       }
     });
@@ -337,7 +337,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     // 2. Videos from Admin Level Instructions Manager for this level
     (currentLevelDef.videos || []).forEach((v, idx) => {
       if (v.url && !v.url.includes('dQw4w9WgXcQ') && v.url.trim()) {
-        const norm = v.url.trim();
+        const norm = normalizeVideoUrl(v.url.trim());
+        const isYt = norm.includes('youtube.com') || norm.includes('youtu.be');
         if (!seenUrls.has(norm)) {
           seenUrls.add(norm);
           list.push({
@@ -346,7 +347,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             targetSlotId: `level-${selectedLevelNum}`,
             targetSlotName: `المستوى ${selectedLevelNum}`,
             videoUrl: norm,
-            videoType: 'file',
+            videoType: isYt ? 'youtube' : norm.startsWith('http') ? 'mp4' : 'file',
             partNumber: idx + 1,
             partTitle: v.title,
             partCustomTitle: v.partCustomTitle,
