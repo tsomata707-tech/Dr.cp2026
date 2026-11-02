@@ -313,26 +313,53 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     );
   }, [currentLevelDef.images]);
 
+  const [videoStorageTick, setVideoStorageTick] = useState<number>(0);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setVideoStorageTick((prev) => prev + 1);
+    };
+    window.addEventListener('videos-storage-updated', handleUpdate);
+    window.addEventListener('game-levels-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('videos-storage-updated', handleUpdate);
+      window.removeEventListener('game-levels-updated', handleUpdate);
+    };
+  }, []);
+
   // Level videos uploaded by admin (view-only, displayed at top before questions)
   const currentDisplayVideos = useMemo(() => {
-    const listFromLevel = (currentLevelDef.videos || []).filter(
-      (v) => v.url && v.url.trim() && isSafeExternalUrl(v.url)
-    );
-    if (listFromLevel.length > 0) return listFromLevel;
+    const listFromLevel = (currentLevelDef.videos || [])
+      .filter((v) => v.url && v.url.trim() && isSafeExternalUrl(v.url))
+      .map((v) => ({
+        id: v.id,
+        title: v.partCustomTitle || v.title || `فيديو المستوى ${selectedLevelNum}`,
+        partCustomTitle: v.partCustomTitle || v.title,
+        url: v.url,
+        type: 'video' as const,
+        format: v.format || 'video',
+      }));
 
-    // Check global video storage for targetSlotId level-N
-    const globalVids = getEducationalVideos().filter(
-      (v) => v.targetSlotId === `level-${selectedLevelNum}` && v.videoUrl && isSafeExternalUrl(v.videoUrl)
-    );
-    return globalVids.map((v) => ({
-      id: v.id,
-      title: v.partCustomTitle || v.title || `فيديو المستوى ${selectedLevelNum}`,
-      partCustomTitle: v.partCustomTitle || v.title,
-      url: v.videoUrl,
-      type: 'video' as const,
-      format: v.videoType,
-    }));
-  }, [currentLevelDef, selectedLevelNum]);
+    const globalVids = getEducationalVideos()
+      .filter((v) => v.targetSlotId === `level-${selectedLevelNum}` && v.videoUrl && isSafeExternalUrl(v.videoUrl))
+      .map((v) => ({
+        id: v.id,
+        title: v.partCustomTitle || v.title || `فيديو المستوى ${selectedLevelNum}`,
+        partCustomTitle: v.partCustomTitle || v.title,
+        url: v.videoUrl,
+        type: 'video' as const,
+        format: v.videoType,
+      }));
+
+    const combined = [...listFromLevel];
+    globalVids.forEach((g) => {
+      if (!combined.some((c) => c.url.trim() === g.url.trim())) {
+        combined.push(g);
+      }
+    });
+
+    return combined;
+  }, [currentLevelDef, selectedLevelNum, videoStorageTick]);
 
   const isLevelCompleted = !!progress.completedLevels[selectedLevelNum];
   const completedResult = progress.completedLevels[selectedLevelNum];
@@ -1283,6 +1310,18 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                         {['أ', 'ب', 'ج', 'د', 'هـ'][optIdx] || optIdx + 1}
                       </span>
                     </div>
+
+                    {/* Option Image Display */}
+                    {q1.optionImages?.[optIdx] && q1.optionImages[optIdx]?.trim() && (
+                      <div className="w-full h-32 sm:h-36 my-1 rounded-xl overflow-hidden border border-slate-700/80 bg-black/60 p-1.5 flex justify-center items-center shadow-inner">
+                        <img
+                          src={q1.optionImages[optIdx]!.trim()}
+                          alt={`صورة الخيار ${['أ', 'ب', 'ج', 'د', 'هـ'][optIdx] || optIdx + 1}`}
+                          className="max-h-full max-w-full object-contain rounded-lg"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
 
                     {isEliminatedByHint && (
                       <span className="text-[11px] text-rose-400 font-bold font-['Cairo'] block pt-1 border-t border-rose-900/40">

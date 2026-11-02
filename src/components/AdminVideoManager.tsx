@@ -177,8 +177,8 @@ export const AdminVideoManager: React.FC = () => {
     setFormError(null);
 
     const existingInSlot = getSlotVideos(targetSlotId);
-    if (existingInSlot.length >= 5) {
-      setFormError('عذراً، وصل هذا العنوان للحد الأقصى المسموح وهو ٥ أجزاء للشرح.');
+    if (existingInSlot.length >= 7) {
+      setFormError('عذراً، وصل هذا العنوان للحد الأقصى المسموح وهو ٧ أجزاء للشرح.');
       return;
     }
 
@@ -655,7 +655,7 @@ export const AdminVideoManager: React.FC = () => {
                     onChange={(e) => {
                       setTargetSlotId(e.target.value);
                       const slotVids = getSlotVideos(e.target.value);
-                      setPartNumber(Math.min(5, slotVids.length + 1));
+                      setPartNumber(Math.min(7, slotVids.length + 1));
                     }}
                     className="w-full h-12 px-3 rounded-xl bg-[#070914] text-white text-xs sm:text-sm border-2 border-[#ffd700]/70 focus:border-[#ffd700] focus:outline-none cursor-pointer"
                   >
@@ -666,18 +666,18 @@ export const AdminVideoManager: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-200">ترتيب الجزء (1-5):</label>
-                  <div className="grid grid-cols-5 gap-2">
-                    {[1, 2, 3, 4, 5].map((num) => (
+                  <label className="block text-xs font-bold text-slate-200">ترتيب الجزء (1-7):</label>
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {[1, 2, 3, 4, 5, 6, 7].map((num) => (
                       <button
                         key={num}
                         type="button"
                         onClick={() => setPartNumber(num)}
-                        className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                        className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
                           partNumber === num ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-300'
                         }`}
                       >
-                        الجزء {num}
+                        جـ{num}
                       </button>
                     ))}
                   </div>

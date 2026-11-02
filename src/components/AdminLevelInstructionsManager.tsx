@@ -74,8 +74,8 @@ export const AdminLevelInstructionsManager: React.FC = () => {
 
   const openAddVideoUrlModal = () => {
     const currentVids = currentLevel?.videos || [];
-    if (currentVids.length >= 5) {
-      showError('الحد الأقصى هو 5 فيديوهات لكل مستوى.');
+    if (currentVids.length >= 7) {
+      showError('الحد الأقصى هو 7 أجزاء فيديوهات لكل مستوى.');
       return;
     }
     setEditingVideoUrlId(null);
@@ -455,7 +455,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           </div>
           <button
             type="button"
-            disabled={currentVideos.length >= 5}
+            disabled={currentVideos.length >= 7}
             onClick={openAddVideoUrlModal}
             className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
           >
@@ -572,30 +572,109 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className="bg-[#0f1228] border-2 border-amber-400 rounded-3xl p-6 max-w-2xl w-full text-right shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-black text-white">تعديل السؤال</h3>
-              <button onClick={() => setEditingQuestion(null)} className="text-slate-400"><X className="w-5 h-5" /></button>
+              <h3 className="text-base font-black text-white font-['Tajawal']">تعديل السؤال وإضافة صور الخيارات 🖼️</h3>
+              <button onClick={() => setEditingQuestion(null)} className="text-slate-400 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
-            <textarea
-              rows={3}
-              value={editingQuestion.question}
-              onChange={(e) => setEditingQuestion({ ...editingQuestion, question: e.target.value })}
-              className="w-full px-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
-            />
-            <div className="space-y-2">
-              {editingQuestion.options.map((opt, optIdx) => (
-                <div key={optIdx} className="flex items-center gap-2">
-                  <input type="radio" checked={editingQuestion.correctIndex === optIdx} onChange={() => setEditingQuestion({ ...editingQuestion, correctIndex: optIdx })} />
-                  <input type="text" value={opt} onChange={(e) => {
-                    const newOpts = [...editingQuestion.options];
-                    newOpts[optIdx] = e.target.value;
-                    setEditingQuestion({ ...editingQuestion, options: newOpts });
-                  }} className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none" />
-                </div>
-              ))}
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">نص السؤال:</label>
+              <textarea
+                rows={3}
+                value={editingQuestion.question}
+                onChange={(e) => setEditingQuestion({ ...editingQuestion, question: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none focus:border-amber-400"
+              />
             </div>
-            <div className="pt-4 flex justify-end gap-2">
-              <button onClick={() => setEditingQuestion(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-white text-xs">إلغاء</button>
-              <button onClick={() => handleSaveQuestion(editingQuestion)} className="px-6 py-2 rounded-xl bg-amber-500 text-slate-950 font-black text-xs">حفظ</button>
+
+            <div>
+              <label className="block text-xs font-bold text-amber-300 mb-1">رابط صورة السؤال الرئيسية (اختياري URL):</label>
+              <input
+                type="url"
+                value={editingQuestion.imageUrl || ''}
+                onChange={(e) => setEditingQuestion({ ...editingQuestion, imageUrl: e.target.value })}
+                placeholder="https://... (رابط الصورة الرئيسية للتوضيح فوق الإجابات)"
+                className="w-full px-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-amber-200 text-xs outline-none focus:border-amber-400"
+              />
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <label className="block text-xs font-bold text-slate-200">
+                خيارات الإجابة والصور المخصصة للخيارات (اختر الإجابة الصحيحة بالراديو):
+              </label>
+              {editingQuestion.options.map((opt, optIdx) => {
+                const optImg = editingQuestion.optionImages?.[optIdx] || '';
+                return (
+                  <div key={optIdx} className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="q-correct-idx"
+                        checked={editingQuestion.correctIndex === optIdx}
+                        onChange={() => setEditingQuestion({ ...editingQuestion, correctIndex: optIdx })}
+                        className="w-4 h-4 accent-amber-400 cursor-pointer"
+                        title="عين كإجابة صحيحة"
+                      />
+                      <span className="text-xs font-bold text-amber-400 shrink-0 w-6">
+                        {['أ', 'ب', 'ج', 'د', 'هـ'][optIdx] || optIdx + 1}:
+                      </span>
+                      <input
+                        type="text"
+                        value={opt}
+                        onChange={(e) => {
+                          const newOpts = [...editingQuestion.options];
+                          newOpts[optIdx] = e.target.value;
+                          setEditingQuestion({ ...editingQuestion, options: newOpts });
+                        }}
+                        placeholder={`نص الخيار ${['أ', 'ب', 'ج', 'د'][optIdx] || optIdx + 1}`}
+                        className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none focus:border-amber-400"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 pr-12">
+                      <span className="text-[11px] font-bold text-emerald-400 shrink-0 flex items-center gap-1">
+                        🖼️ رابط صورة الخيار:
+                      </span>
+                      <input
+                        type="url"
+                        value={optImg}
+                        onChange={(e) => {
+                          const newImgs = [...(editingQuestion.optionImages || ['', '', '', ''])];
+                          newImgs[optIdx] = e.target.value;
+                          setEditingQuestion({ ...editingQuestion, optionImages: newImgs });
+                        }}
+                        placeholder="ضع رابط صورة الإجابة المباشرة هنا (https://...)"
+                        className="flex-1 px-3 py-1.5 rounded-xl bg-slate-900 border border-emerald-500/40 text-emerald-200 text-xs outline-none focus:border-emerald-400"
+                      />
+                    </div>
+
+                    {optImg.trim() && (
+                      <div className="mr-12 mt-1">
+                        <img
+                          src={optImg.trim()}
+                          alt={`معاينة خيار ${optIdx + 1}`}
+                          className="h-16 w-auto object-contain rounded-lg border border-emerald-500/30 bg-black/50 p-1"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">التغذية الراجعة والتوضيح:</label>
+              <textarea
+                rows={2}
+                value={editingQuestion.explanation || ''}
+                onChange={(e) => setEditingQuestion({ ...editingQuestion, explanation: e.target.value })}
+                placeholder="شرح الإجابة الصحيحة والتوجيه الأكاديمي للطالب..."
+                className="w-full px-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-300 text-xs outline-none focus:border-amber-400"
+              />
+            </div>
+
+            <div className="pt-3 flex justify-end gap-2 border-t border-slate-800">
+              <button onClick={() => setEditingQuestion(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold cursor-pointer">إلغاء</button>
+              <button onClick={() => handleSaveQuestion(editingQuestion)} className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer shadow-lg">حفظ ونشر السؤال 💾</button>
             </div>
           </div>
         </div>
