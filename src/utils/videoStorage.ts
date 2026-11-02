@@ -311,9 +311,9 @@ export function addEducationalVideo(
   const all = getEducationalVideos();
   const existingInSlot = all.filter((v) => v.targetSlotId === videoData.targetSlotId);
 
-  // Maximum 5 videos allowed per slot
-  if (existingInSlot.length >= 5) {
-    throw new Error('تم الوصول للحد الأقصى (٥ فيديوهات) لهذا العنوان. يرجى حذف جزء أولاً.');
+  // Maximum 7 videos allowed per slot
+  if (existingInSlot.length >= 7) {
+    throw new Error('تم الوصول للحد الأقصى (٧ أجزاء) لهذا العنوان. يرجى حذف جزء أولاً.');
   }
 
   const slotDef = VIDEO_SLOTS.find((s) => s.slotId === videoData.targetSlotId);

@@ -390,8 +390,7 @@ export function getCustomGameLevels(): GameLevelDef[] {
 
       // Sync into memory array
       parsed.forEach((customLvl: GameLevelDef) => {
-        // Keep customLvl.videos empty so useEducationalVideos via Admin Video Manager is the sole source of truth
-        customLvl.videos = [];
+        customLvl.videos = Array.isArray(customLvl.videos) ? customLvl.videos : [];
 
         const found = GAME_LEVELS_DATA.find((l) => l.levelNumber === customLvl.levelNumber);
         if (found) {
@@ -433,10 +432,10 @@ export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean
   const sanitizedLevels = levels.map((lvl) => ({
     ...lvl,
     videos: (lvl.videos || [])
-      .filter((v) => !v.url?.startsWith('data:video') && !v.url?.includes('dQw4w9WgXcQ'))
+      .filter((v) => !v.url?.includes('dQw4w9WgXcQ'))
       .map((v) => ({
         ...v,
-        url: v.url && v.url.length > 50000 ? '' : v.url,
+        url: v.url && v.url.length > 50000 && v.blobId ? '' : v.url,
       })),
     images: (lvl.images || []).map((img) => ({
       ...img,
@@ -514,8 +513,8 @@ export function addMediaToLevel(
 
   if (media.type === 'video') {
     if (!target.videos) target.videos = [];
-    if (target.videos.length >= 5) {
-      throw new Error('الحد الأقصى للفيديوهات في كل مستوى هو 5 فيديوهات');
+    if (target.videos.length >= 7) {
+      throw new Error('الحد الأقصى للفيديوهات في كل مستوى هو 7 أجزاء');
     }
     target.videos.push(media);
   } else {

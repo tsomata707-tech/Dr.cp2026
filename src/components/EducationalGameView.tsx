@@ -36,6 +36,7 @@ import {
   Video,
 } from 'lucide-react';
 import { normalizeVideoUrl, getEducationalVideos } from '../utils/videoStorage';
+import { getVideoBlobUrl } from '../utils/indexedDbVideo';
 import { CARTOON_AVATARS, GAME_LEVELS_DATA, GameLevelDef } from '../data/gameLevelsData';
 import {
   getStudentProgress,
@@ -327,19 +328,52 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     };
   }, []);
 
+  const [rehydratedBlobUrls, setRehydratedBlobUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let isMounted = true;
+    const rehydrate = async () => {
+      const vids = currentLevelDef?.videos || [];
+      for (const v of vids) {
+        if (v.blobId) {
+          const freshUrl = await getVideoBlobUrl(v.blobId);
+          if (freshUrl && isMounted) {
+            setRehydratedBlobUrls((prev) => ({ ...prev, [v.id]: freshUrl }));
+          }
+        }
+      }
+    };
+    rehydrate();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentLevelDef, videoStorageTick]);
+
   // Level videos uploaded by admin (view-only, displayed at top before questions)
   const currentDisplayVideos = useMemo(() => {
-    const listFromLevel = (currentLevelDef.videos || [])
-      .filter((v) => v.url && v.url.trim() && isSafeExternalUrl(v.url))
-      .map((v) => ({
-        id: v.id,
-        title: v.partCustomTitle || v.title || `فيديو المستوى ${selectedLevelNum}`,
-        partCustomTitle: v.partCustomTitle || v.title,
-        url: v.url,
-        type: 'video' as const,
-        format: v.format || 'video',
-      }));
+    // 1. Strictly use the videos belonging to this level
+    const levelVideos = currentLevelDef.videos;
+    if (Array.isArray(levelVideos)) {
+      const resolvedList = levelVideos
+        .map((v) => {
+          const resolvedUrl = (v.blobId && rehydratedBlobUrls[v.id]) ? rehydratedBlobUrls[v.id] : v.url;
+          return {
+            id: v.id,
+            title: v.partCustomTitle || v.title || `فيديو المستوى ${selectedLevelNum}`,
+            partCustomTitle: v.partCustomTitle || v.title,
+            url: resolvedUrl,
+            type: 'video' as const,
+            format: v.format || 'video',
+            size: v.size,
+          };
+        })
+        .filter((v) => v.url && v.url.trim() && isSafeExternalUrl(v.url));
 
+      // Return exactly what the admin configured for this level (no unwanted additions)
+      return resolvedList;
+    }
+
+    // 2. Fallback to global slot videos only if levelVideos is not defined
     const globalVids = getEducationalVideos()
       .filter((v) => v.targetSlotId === `level-${selectedLevelNum}` && v.videoUrl && isSafeExternalUrl(v.videoUrl))
       .map((v) => ({
@@ -349,17 +383,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         url: v.videoUrl,
         type: 'video' as const,
         format: v.videoType,
+        size: v.size,
       }));
 
-    const combined = [...listFromLevel];
-    globalVids.forEach((g) => {
-      if (!combined.some((c) => c.url.trim() === g.url.trim())) {
-        combined.push(g);
-      }
-    });
-
-    return combined;
-  }, [currentLevelDef, selectedLevelNum, videoStorageTick]);
+    return globalVids;
+  }, [currentLevelDef, selectedLevelNum, videoStorageTick, rehydratedBlobUrls]);
 
   const isLevelCompleted = !!progress.completedLevels[selectedLevelNum];
   const completedResult = progress.completedLevels[selectedLevelNum];
@@ -1142,7 +1170,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         </div>
       )}
 
-      {/* LEVEL VIDEO PLAYER (BEFORE QUESTIONS - VIEW ONLY) */}
+      {/* LEVEL VIDEO PLAYER (BEFORE QUESTIONS) */}
       {currentDisplayVideos.length > 0 && (
         <div className="mt-6 p-5 sm:p-6 rounded-3xl bg-slate-950/90 border-2 border-cyan-500/80 shadow-[0_0_35px_rgba(6,182,212,0.25)] space-y-4 text-right">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
@@ -1151,42 +1179,50 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 <Video className="w-6 h-6 text-cyan-300" />
               </div>
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 text-[10px] font-black">
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>فيديو المستوى - مشاهدة فقط 📺</span>
-                </div>
                 <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-0.5">
-                  فيديو المادة التعليمية للمستوى {selectedLevelNum}
+                  فيديو شرح المستوى {selectedLevelNum}
                 </h3>
+                <p className="text-xs text-slate-300 font-['Cairo'] mt-0.5">
+                  {currentDisplayVideos.length > 1
+                    ? `شاهد أجزاء الفيديو التعليمية (${currentDisplayVideos.length} أجزاء) بعناية قبل البدء في التحدي`
+                    : 'شاهد الفيديو التعليمي بعناية قبل البدء في التحدي'}
+                </p>
               </div>
             </div>
-            <span className="text-xs text-slate-400 font-['Cairo'] bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800">
-              📺 مشاهدة مباشرة مخصصة لجميع الطلاب
-            </span>
+            {currentDisplayVideos.length > 1 && (
+              <span className="text-xs text-cyan-300 font-['Cairo'] font-bold bg-cyan-950/80 px-3 py-1.5 rounded-xl border border-cyan-500/30">
+                {currentDisplayVideos.length} أجزاء مرئية
+              </span>
+            )}
           </div>
 
           <div className="space-y-4">
             {currentDisplayVideos.map((vid, idx) => {
+              const isLocal = vid.url?.startsWith('data:') || vid.url?.startsWith('blob:') || vid.url?.endsWith('.mp4') || vid.url?.endsWith('.webm');
               const videoEmbedUrl = normalizeVideoUrl(vid.url);
               return (
                 <div key={vid.id || idx} className="rounded-2xl bg-black/90 border-2 border-cyan-500/40 overflow-hidden shadow-2xl">
-                  <div className="p-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-cyan-200">
+                  <div className="p-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-white">
                     <span className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-amber-400" />
-                      <span>{vid.partCustomTitle || vid.title || `فيديو الشرح ${idx + 1}`}</span>
+                      <span>{vid.partCustomTitle || vid.title || `الجزء ${idx + 1}`}</span>
                     </span>
                     <span className="text-[11px] text-cyan-300 bg-cyan-950/60 px-2.5 py-0.5 rounded-full border border-cyan-500/30 font-bold">
-                      مشاهدة فقط 👁️
+                      الجزء {idx + 1} من {currentDisplayVideos.length}
                     </span>
                   </div>
-                  <div className="aspect-video w-full relative bg-black">
-                    <iframe
-                      src={videoEmbedUrl}
-                      title={vid.title || `Level Video ${idx + 1}`}
-                      className="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
+                  <div className="aspect-video w-full relative bg-black flex items-center justify-center">
+                    {vid.url && isLocal ? (
+                      <video controls className="w-full h-full object-contain bg-black" src={vid.url} preload="metadata" />
+                    ) : (
+                      <iframe
+                        src={videoEmbedUrl}
+                        title={vid.title || `Level Video ${idx + 1}`}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    )}
                   </div>
                 </div>
               );

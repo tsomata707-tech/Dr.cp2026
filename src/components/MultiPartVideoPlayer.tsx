@@ -107,12 +107,6 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
                     {currentVideo.partCustomTitle || (currentVideo.partNumber ? `الجزء ${currentVideo.partNumber}` : `الجزء ${selectedPartIndex + 1}`)}
                   </span>
                 )}
-
-                {currentVideo.videoType === 'file' && (
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold">
-                    ملف من الجهاز 🟢
-                  </span>
-                )}
               </div>
 
               {hasMultipleParts && (
@@ -237,7 +231,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
           <div className="flex items-center justify-between text-xs text-slate-300 font-bold">
             <div className="flex items-center gap-1.5 text-amber-300">
               <Layers className="w-4 h-4" />
-              <span>أجزاء الشرح المتاحة (بحد أقصى ٥ أجزاء):</span>
+              <span>أجزاء الشرح المتاحة (حتى ٧ أجزاء):</span>
             </div>
 
             <div className="text-[11px] text-slate-400 ">
@@ -246,7 +240,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
           </div>
 
           {/* Responsive Parts Grid / Pills */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
             {videos.map((vid, idx) => {
               const isSelected = idx === selectedPartIndex;
               const partLabel = vid.partCustomTitle || (vid.partNumber ? `الجزء ${vid.partNumber}` : `الجزء ${idx + 1}`);

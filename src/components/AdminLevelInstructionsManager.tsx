@@ -15,6 +15,7 @@ import {
   Link2,
   Plus,
   Eye,
+  Upload,
 } from 'lucide-react';
 import {
   getCustomGameLevels,
@@ -27,6 +28,8 @@ import {
 } from '../data/gameLevelsData';
 import { LevelMediaItem, LevelQuestion } from '../types';
 import { normalizeVideoUrl } from '../utils/videoStorage';
+import { storeVideoBlob, getVideoBlobUrl } from '../utils/indexedDbVideo';
+import { formatRealFileSize } from '../utils/mediaSafety';
 
 export const AdminLevelInstructionsManager: React.FC = () => {
   const [levels, setLevels] = useState<GameLevelDef[]>(() => getCustomGameLevels());
@@ -42,6 +45,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   }, []);
 
   const [selectedLevelNum, setSelectedLevelNum] = useState<number>(1);
+  const currentLevel = levels.find((l) => l.levelNumber === selectedLevelNum) || levels[0];
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [previewMedia, setPreviewMedia] = useState<LevelMediaItem | null>(null);
@@ -53,14 +57,182 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   const [editingVideoUrlId, setEditingVideoUrlId] = useState<string | null>(null);
   const [videoLevelSelect, setVideoLevelSelect] = useState<number>(1);
 
+  // Device Video Upload Modal state
+  const [showDeviceVideoModal, setShowDeviceVideoModal] = useState<boolean>(false);
+  const [deviceVideoFile, setDeviceVideoFile] = useState<File | null>(null);
+  const [deviceVideoTitle, setDeviceVideoTitle] = useState<string>('');
+  const [deviceVideoLevelSelect, setDeviceVideoLevelSelect] = useState<number>(1);
+  const [isUploadingDeviceVideo, setIsUploadingDeviceVideo] = useState<boolean>(false);
+
   // External Image/PDF URL Modal state
   const [showImageUrlModal, setShowImageUrlModal] = useState<boolean>(false);
   const [imageUrlInput, setImageUrlInput] = useState<string>('');
   const [imageTitleInput, setImageTitleInput] = useState<string>('');
   const [imageTypeInput, setImageTypeInput] = useState<'image' | 'pdf'>('image');
   const [editingImageUrlId, setEditingImageUrlId] = useState<string | null>(null);
+  const [imageLevelSelect, setImageLevelSelect] = useState<number>(1);
 
-  const currentLevel = levels.find((l) => l.levelNumber === selectedLevelNum) || levels[0];
+  // Device Image/PDF Upload Modal state
+  const [showDeviceImageModal, setShowDeviceImageModal] = useState<boolean>(false);
+  const [deviceImageFile, setDeviceImageFile] = useState<File | null>(null);
+  const [deviceImageTitle, setDeviceImageTitle] = useState<string>('');
+  const [deviceImageLevelSelect, setDeviceImageLevelSelect] = useState<number>(1);
+  const [isUploadingDeviceImage, setIsUploadingDeviceImage] = useState<boolean>(false);
+
+  const [rehydratedBlobUrls, setRehydratedBlobUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let isMounted = true;
+    const rehydrate = async () => {
+      const vids = currentLevel?.videos || [];
+      for (const v of vids) {
+        if (v.blobId) {
+          const freshUrl = await getVideoBlobUrl(v.blobId);
+          if (freshUrl && isMounted) {
+            setRehydratedBlobUrls((prev) => ({ ...prev, [v.id]: freshUrl }));
+          }
+        }
+      }
+    };
+    rehydrate();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentLevel]);
+
+  const openDeviceVideoModal = () => {
+    setDeviceVideoFile(null);
+    setDeviceVideoTitle('');
+    setDeviceVideoLevelSelect(selectedLevelNum);
+    setShowDeviceVideoModal(true);
+  };
+
+  const handleDeviceVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDeviceVideoFile(file);
+    const cleanFileName = file.name.replace(/\.[^/.]+$/, '').trim();
+    if (!deviceVideoTitle.trim()) {
+      setDeviceVideoTitle(cleanFileName);
+    }
+    e.target.value = '';
+  };
+
+  const handleConfirmDeviceVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deviceVideoFile) {
+      showError('يرجى اختيار ملف الفيديو من جهازك أولاً.');
+      return;
+    }
+    const targetLvl = levels.find((l) => l.levelNumber === deviceVideoLevelSelect) || currentLevel;
+    const currentVids = targetLvl?.videos || [];
+    if (currentVids.length >= 7) {
+      showError(`عذراً، المستوى ${deviceVideoLevelSelect} يحتوي بالفعل على الحد الأقصى (7 أجزاء فيديوهات).`);
+      return;
+    }
+
+    setIsUploadingDeviceVideo(true);
+    try {
+      const mediaId = `vid-device-${Date.now()}`;
+      // Store in IndexedDB for reliable video storage without localStorage quota crashes
+      const objectUrl = await storeVideoBlob(mediaId, deviceVideoFile, deviceVideoFile.name);
+      const cleanFileName = deviceVideoFile.name.replace(/\.[^/.]+$/, '').trim();
+      const partNum = currentVids.length + 1;
+      const finalTitle = deviceVideoTitle.trim() || cleanFileName || `فيديو المستوى ${deviceVideoLevelSelect} (الجزء ${partNum})`;
+      const finalPartTitle = `الجزء ${partNum}: ${finalTitle}`;
+
+      const newMedia: LevelMediaItem = {
+        id: mediaId,
+        blobId: mediaId,
+        title: finalTitle,
+        partCustomTitle: finalPartTitle,
+        url: objectUrl,
+        type: 'video',
+        format: deviceVideoFile.type || 'video/mp4',
+        size: deviceVideoFile.size, // Real file size in bytes
+        addedAt: new Date().toISOString(),
+      };
+
+      const updated = addMediaToLevel(deviceVideoLevelSelect, newMedia);
+      setLevels([...updated]);
+      setSelectedLevelNum(deviceVideoLevelSelect);
+      const sizeText = formatRealFileSize(deviceVideoFile.size);
+      showToast(`✅ تم رفع ونشر الفيديو في المستوى ${deviceVideoLevelSelect} بنجاح! ${sizeText ? `(الحجم: ${sizeText})` : ''}`);
+      setShowDeviceVideoModal(false);
+      setDeviceVideoFile(null);
+      setDeviceVideoTitle('');
+    } catch (err: any) {
+      showError(err?.message || 'حدث خطأ أثناء قراءة وحفظ ملف الفيديو.');
+    } finally {
+      setIsUploadingDeviceVideo(false);
+    }
+  };
+
+  const openDeviceImageModal = () => {
+    setDeviceImageFile(null);
+    setDeviceImageTitle('');
+    setDeviceImageLevelSelect(selectedLevelNum);
+    setShowDeviceImageModal(true);
+  };
+
+  const handleDeviceImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDeviceImageFile(file);
+    const cleanFileName = file.name.replace(/\.[^/.]+$/, '').trim();
+    if (!deviceImageTitle.trim()) {
+      setDeviceImageTitle(cleanFileName);
+    }
+    e.target.value = '';
+  };
+
+  const handleConfirmDeviceImage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deviceImageFile) {
+      showError('يرجى اختيار ملف الصورة أو المستند من جهازك أولاً.');
+      return;
+    }
+    const targetLvl = levels.find((l) => l.levelNumber === deviceImageLevelSelect) || currentLevel;
+    const currentImgs = targetLvl?.images || [];
+    if (currentImgs.length >= 5) {
+      showError(`عذراً، المستوى ${deviceImageLevelSelect} يحتوي بالفعل على الحد الأقصى (5 صور/مستندات).`);
+      return;
+    }
+
+    setIsUploadingDeviceImage(true);
+    const isPdf = deviceImageFile.type === 'application/pdf' || deviceImageFile.name.toLowerCase().endsWith('.pdf');
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const mediaId = `img-device-${Date.now()}`;
+      const cleanFileName = deviceImageFile.name.replace(/\.[^/.]+$/, '').trim();
+      const finalTitle = deviceImageTitle.trim() || cleanFileName || 'ملف مرفق';
+
+      const newMedia: LevelMediaItem = {
+        id: mediaId,
+        title: finalTitle,
+        url: dataUrl,
+        type: isPdf ? 'pdf' : 'image',
+        format: isPdf ? 'application/pdf' : 'image/jpeg',
+        size: deviceImageFile.size,
+        addedAt: new Date().toISOString(),
+      };
+
+      const updated = addMediaToLevel(deviceImageLevelSelect, newMedia);
+      setLevels([...updated]);
+      setSelectedLevelNum(deviceImageLevelSelect);
+      showToast(`✅ تم رفع ونشر الملف في المستوى ${deviceImageLevelSelect} بنجاح!`);
+      setShowDeviceImageModal(false);
+      setDeviceImageFile(null);
+      setDeviceImageTitle('');
+      setIsUploadingDeviceImage(false);
+    };
+    reader.onerror = () => {
+      showError('حدث خطأ أثناء قراءة الملف.');
+      setIsUploadingDeviceImage(false);
+    };
+    reader.readAsDataURL(deviceImageFile);
+  };
 
   const showToast = (msg: string) => {
     setSaveSuccessMsg(msg);
@@ -120,6 +292,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       };
       const updated = replaceMediaInLevel(targetLvlNum, editingVideoUrlId, updatedMedia);
       setLevels([...updated]);
+      setSelectedLevelNum(targetLvlNum);
       showToast(`✅ تم استبدال فيديو المستوى ${targetLvlNum} عبر الرابط بنجاح!`);
     } else {
       const videoId = `vid-url-${Date.now()}`;
@@ -135,6 +308,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       };
       const updated = addMediaToLevel(targetLvlNum, newMedia);
       setLevels([...updated]);
+      setSelectedLevelNum(targetLvlNum);
       showToast(`✅ تم إدراج فيديو جديد للمستوى ${targetLvlNum} عبر الرابط بنجاح!`);
     }
 
@@ -154,6 +328,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     setImageUrlInput('');
     setImageTitleInput(`صورة أو مستند ${currentImgs.length + 1}`);
     setImageTypeInput('image');
+    setImageLevelSelect(selectedLevelNum);
     setShowImageUrlModal(true);
   };
 
@@ -162,6 +337,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     setImageUrlInput(item.url || '');
     setImageTitleInput(item.title || '');
     setImageTypeInput(item.type === 'pdf' ? 'pdf' : 'image');
+    setImageLevelSelect(selectedLevelNum);
     setShowImageUrlModal(true);
   };
 
@@ -176,6 +352,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     const cleanTitle = imageTitleInput.trim() || `ملف خارجي`;
     const isPdf = imageTypeInput === 'pdf' || rawUrl.toLowerCase().endsWith('.pdf');
     const finalType = isPdf ? 'pdf' : 'image';
+    const targetLvlNum = imageLevelSelect || selectedLevelNum;
 
     if (editingImageUrlId) {
       const updatedMedia: LevelMediaItem = {
@@ -187,9 +364,10 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         size: 0,
         addedAt: new Date().toISOString(),
       };
-      const updated = replaceMediaInLevel(selectedLevelNum, editingImageUrlId, updatedMedia);
+      const updated = replaceMediaInLevel(targetLvlNum, editingImageUrlId, updatedMedia);
       setLevels([...updated]);
-      showToast('✅ تم استبدال الملف عبر الرابط بنجاح!');
+      setSelectedLevelNum(targetLvlNum);
+      showToast(`✅ تم استبدال الملف في المستوى ${targetLvlNum} عبر الرابط بنجاح!`);
     } else {
       const mediaId = `img-url-${Date.now()}`;
       const newMedia: LevelMediaItem = {
@@ -201,9 +379,10 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         size: 0,
         addedAt: new Date().toISOString(),
       };
-      const updated = addMediaToLevel(selectedLevelNum, newMedia);
+      const updated = addMediaToLevel(targetLvlNum, newMedia);
       setLevels([...updated]);
-      showToast('✅ تم إدراج ملف جديد عبر الرابط بنجاح!');
+      setSelectedLevelNum(targetLvlNum);
+      showToast(`✅ تم إدراج ملف جديد في المستوى ${targetLvlNum} عبر الرابط بنجاح!`);
     }
 
     setShowImageUrlModal(false);
@@ -257,11 +436,14 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   };
 
   const handleUpdateVideoCustomTitle = (videoId: string, customTitle: string) => {
+    const trimmed = customTitle.trim();
+    if (!trimmed) return;
     const updated = updateMediaItemInLevel(selectedLevelNum, videoId, {
-      partCustomTitle: customTitle.trim() || undefined,
+      title: trimmed,
+      partCustomTitle: trimmed,
     });
     setLevels([...updated]);
-    showToast('تم حفظ مسمى جزء الفيديو بنجاح ✅');
+    showToast(`✅ تم تعديل اسم الفيديو إلى "${trimmed}" بنجاح!`);
   };
 
   const handleDeleteImageOrPdf = (mediaId: string) => {
@@ -449,49 +631,137 @@ export const AdminLevelInstructionsManager: React.FC = () => {
 
       <div className="p-6 rounded-3xl bg-[#090d20] border border-slate-800 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-          <div className="flex items-center gap-2 text-purple-400">
-            <Video className="w-5 h-5" />
-            <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">فيديوهات المستوى {selectedLevelNum}</h3>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2 text-purple-400">
+              <Video className="w-5 h-5" />
+              <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">فيديوهات المستوى {selectedLevelNum}</h3>
+            </div>
+            <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-300">
+              {currentVideos.length} من 7 أجزاء مرفوعة
+            </span>
           </div>
-          <button
-            type="button"
-            disabled={currentVideos.length >= 7}
-            onClick={openAddVideoUrlModal}
-            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
-          >
-            <Link2 className="w-4 h-4" />
-            <span>إضافة فيديو برابط خارجي 🔗</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              disabled={currentVideos.length >= 7}
+              onClick={openDeviceVideoModal}
+              className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50 transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              <span>رفع فيديو من الجهاز 💻</span>
+            </button>
+            <button
+              type="button"
+              disabled={currentVideos.length >= 7}
+              onClick={openAddVideoUrlModal}
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50 transition-colors"
+            >
+              <Link2 className="w-4 h-4" />
+              <span>رابط خارجي 🔗</span>
+            </button>
+          </div>
         </div>
 
         {currentVideos.length === 0 ? (
-          <div className="p-8 text-center rounded-2xl bg-slate-950 border border-dashed border-slate-800 text-slate-400 text-xs">لا توجد فيديوهات.</div>
+          <div className="p-8 text-center rounded-2xl bg-slate-950 border border-dashed border-slate-800 text-slate-400 text-xs">
+            لا توجد فيديوهات لهذا المستوى حالياً. يمكنك رفع حتى ٧ أجزاء فيديو من جهازك أو إضافة رابط خارجي مباشر.
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {currentVideos.map((vid) => (
-              <div key={vid.id} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-                <div className="aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-slate-800">
-                  {vid.url && (
-                    <iframe
-                      src={normalizeVideoUrl(vid.url)}
-                      title={vid.title}
-                      className="w-full h-full border-0"
-                      allowFullScreen
-                    />
-                  )}
+            {currentVideos.map((vid, idx) => {
+              const activeUrl = (vid.blobId && rehydratedBlobUrls[vid.id]) ? rehydratedBlobUrls[vid.id] : vid.url;
+              const isLocal = activeUrl?.startsWith('data:') || activeUrl?.startsWith('blob:') || activeUrl?.endsWith('.mp4') || activeUrl?.endsWith('.webm');
+              const sizeText = formatRealFileSize(vid.size);
+
+              return (
+                <div key={vid.id || idx} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 flex flex-col justify-between shadow-lg">
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-300 text-xs font-black">
+                        🎬 الجزء {idx + 1} من {currentVideos.length}
+                      </span>
+                      {sizeText ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
+                          💾 الحجم الحقيقي: {sizeText}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-950/80 border border-blue-500/40 text-blue-300 text-[11px] font-bold">
+                          🔗 رابط خارجي
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-slate-800">
+                      {activeUrl && isLocal ? (
+                        <video controls className="w-full h-full object-contain bg-black" src={activeUrl} preload="metadata" />
+                      ) : activeUrl ? (
+                        <iframe
+                          src={normalizeVideoUrl(activeUrl)}
+                          title={vid.title}
+                          className="w-full h-full border-0"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <div className="text-slate-500 text-xs">جاري تجهيز مشغل الفيديو...</div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1 pt-1 text-right">
+                      <label className="block text-[11px] font-bold text-slate-300 font-['Cairo']">
+                        اسم / مسمى الفيديو:
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          defaultValue={vid.partCustomTitle || vid.title}
+                          id={`vid-title-input-${vid.id}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleUpdateVideoCustomTitle(vid.id, (e.target as HTMLInputElement).value);
+                            }
+                          }}
+                          placeholder="أدخل اسم الفيديو..."
+                          className="flex-1 px-3 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400 font-['Cairo']"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const inputEl = document.getElementById(`vid-title-input-${vid.id}`) as HTMLInputElement | null;
+                            if (inputEl) {
+                              handleUpdateVideoCustomTitle(vid.id, inputEl.value);
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1 shrink-0 cursor-pointer shadow-sm transition-colors"
+                          title="حفظ اسم الفيديو الجديد"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                          <span>حفظ</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 pt-2 border-t border-slate-800/80">
+                    <button
+                      type="button"
+                      onClick={() => openReplaceVideoUrlModal(vid)}
+                      className="flex-1 py-1.5 rounded-xl bg-blue-900/40 hover:bg-blue-800/50 border border-blue-500/30 text-blue-300 text-xs font-bold transition cursor-pointer"
+                    >
+                      تبديل الرابط 🔗
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteVideo(vid.id)}
+                      className="p-1.5 rounded-xl bg-red-900/40 hover:bg-red-800/50 border border-red-500/30 text-red-300 transition cursor-pointer"
+                      title="حذف هذا الجزء"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <input
-                  type="text"
-                  defaultValue={vid.partCustomTitle || vid.title}
-                  onBlur={(e) => handleUpdateVideoCustomTitle(vid.id, e.target.value)}
-                  className="w-full px-2 py-1 text-xs bg-slate-900 border border-slate-700 rounded-lg text-white"
-                />
-                <div className="flex items-center gap-1.5 pt-2">
-                  <button onClick={() => openReplaceVideoUrlModal(vid)} className="flex-1 py-1.5 rounded-lg bg-blue-900/40 border border-blue-500/30 text-blue-300 text-[11px] font-bold">تبديل الرابط 🔗</button>
-                  <button onClick={() => handleDeleteVideo(vid.id)} className="p-1.5 rounded-lg bg-red-900/40 border border-red-500/30 text-red-300"><Trash2 className="w-3.5 h-3.5" /></button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -502,19 +772,30 @@ export const AdminLevelInstructionsManager: React.FC = () => {
             <ImageIcon className="w-5 h-5" />
             <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">{imagesTitleDraft || `صور ومستندات المستوى ${selectedLevelNum}`}</h3>
           </div>
-          <button
-            type="button"
-            disabled={currentImages.length >= 5}
-            onClick={openAddImageUrlModal}
-            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
-          >
-            <Link2 className="w-4 h-4" />
-            <span>إضافة صورة/PDF برابط خارجي 🔗</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              disabled={currentImages.length >= 5}
+              onClick={openDeviceImageModal}
+              className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
+            >
+              <Upload className="w-4 h-4" />
+              <span>رفع ملف من الجهاز 💻</span>
+            </button>
+            <button
+              type="button"
+              disabled={currentImages.length >= 5}
+              onClick={openAddImageUrlModal}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
+            >
+              <Link2 className="w-4 h-4" />
+              <span>رابط خارجي 🔗</span>
+            </button>
+          </div>
         </div>
 
         {currentImages.length === 0 ? (
-          <div className="p-8 text-center rounded-2xl bg-slate-950 border border-dashed border-slate-800 text-slate-400 text-xs">لا توجد صور أو مستندات.</div>
+          <div className="p-8 text-center rounded-2xl bg-slate-950 border border-dashed border-slate-800 text-slate-400 text-xs">لا توجد صور أو مستندات. يمكنك رفع ملف من جهازك أو إضافة رابط خارجي.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {currentImages.map((img) => (
@@ -680,52 +961,85 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         </div>
       )}
 
+      {/* 1. Modal: External Image/PDF URL */}
       {showImageUrlModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="w-full max-w-lg p-6 rounded-3xl bg-[#0c0f20] border-2 border-emerald-500 shadow-2xl space-y-5">
-            <h3 className="text-lg font-black text-white">{editingImageUrlId ? 'تبديل الملف' : 'إضافة ملف جديد'}</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => setImageTypeInput('image')} className={`py-2 rounded-xl border ${imageTypeInput === 'image' ? 'bg-emerald-600 text-white border-emerald-300' : 'bg-slate-900 text-slate-400'}`}>صورة 🖼️</button>
-              <button onClick={() => setImageTypeInput('pdf')} className={`py-2 rounded-xl border ${imageTypeInput === 'pdf' ? 'bg-rose-600 text-white border-rose-300' : 'bg-slate-900 text-slate-400'}`}>PDF 📄</button>
+          <div className="w-full max-w-lg p-6 rounded-3xl bg-[#0c0f20] border-2 border-emerald-500 shadow-2xl space-y-5 text-right font-['Cairo']">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-black text-white">{editingImageUrlId ? 'تبديل الملف عبر رابط 🔗' : 'إضافة ملف برابط خارجي 🔗'}</h3>
+              <button onClick={() => setShowImageUrlModal(false)} className="text-slate-400 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
-            <input type="text" value={imageTitleInput} onChange={(e) => setImageTitleInput(e.target.value)} placeholder="عنوان الملف" className="w-full px-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none" />
-            <input type="url" value={imageUrlInput} onChange={(e) => setImageUrlInput(e.target.value)} placeholder="رابط الملف المباشر (URL)" className="w-full px-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-emerald-300 text-xs outline-none" />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowImageUrlModal(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-white text-xs">إلغاء</button>
-              <button onClick={handleSaveImageUrl} className="px-6 py-2 rounded-xl bg-emerald-600 text-white font-black text-xs">حفظ</button>
+
+            <div>
+              <label className="block text-xs font-bold text-amber-300 mb-1">🎯 اختر المستوى للملف (1 إلى 9):</label>
+              <select
+                value={imageLevelSelect}
+                onChange={(e) => setImageLevelSelect(Number(e.target.value))}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-bold text-xs outline-none cursor-pointer"
+              >
+                {levels.map((num) => (
+                  <option key={num.levelNumber} value={num.levelNumber}>
+                    المستوى {num.levelNumber}: {num.shortTitle || num.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setImageTypeInput('image')} className={`py-2 rounded-xl border font-bold text-xs cursor-pointer ${imageTypeInput === 'image' ? 'bg-emerald-600 text-white border-emerald-300' : 'bg-slate-900 text-slate-400 border-slate-800'}`}>صورة 🖼️</button>
+              <button onClick={() => setImageTypeInput('pdf')} className={`py-2 rounded-xl border font-bold text-xs cursor-pointer ${imageTypeInput === 'pdf' ? 'bg-rose-600 text-white border-rose-300' : 'bg-slate-900 text-slate-400 border-slate-800'}`}>PDF 📄</button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">عنوان الملف:</label>
+              <input type="text" value={imageTitleInput} onChange={(e) => setImageTitleInput(e.target.value)} placeholder="عنوان الملف" className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none focus:border-emerald-400" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-emerald-300 mb-1">رابط الملف المباشر (URL):</label>
+              <input type="url" value={imageUrlInput} onChange={(e) => setImageUrlInput(e.target.value)} placeholder="https://... رابط الصورة أو مستند PDF" className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-emerald-300 text-xs outline-none focus:border-emerald-400" />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <button onClick={() => setShowImageUrlModal(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold cursor-pointer">إلغاء</button>
+              <button onClick={handleSaveImageUrl} className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs cursor-pointer shadow-lg">حفظ الملف 💾</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* 2. Modal: External Video URL */}
       {showVideoUrlModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="w-full max-w-lg p-6 rounded-3xl bg-[#0c0f20] border-2 border-cyan-500 shadow-2xl space-y-5">
-            <h3 className="text-lg font-black text-white">{editingVideoUrlId ? 'تعديل/تبديل فيديو المستوى' : 'رفع/إضافة فيديو في المستوى 📺'}</h3>
-            
+          <div className="w-full max-w-lg p-6 rounded-3xl bg-[#0c0f20] border-2 border-cyan-500 shadow-2xl space-y-5 text-right font-['Cairo']">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-black text-white font-['Tajawal']">{editingVideoUrlId ? 'تعديل/تبديل فيديو المستوى عبر رابط' : 'رفع/إضافة فيديو في المستوى عبر رابط 📺'}</h3>
+              <button onClick={() => setShowVideoUrlModal(false)} className="text-slate-400 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">اختر المستوى للفيديو (1 إلى 9):</label>
+              <label className="block text-xs font-bold text-amber-300 mb-1">🎯 اختر المستوى للفيديو (1 إلى 9):</label>
               <select
                 value={videoLevelSelect}
                 onChange={(e) => setVideoLevelSelect(Number(e.target.value))}
                 className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-bold text-xs outline-none cursor-pointer"
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                  <option key={num} value={num}>
-                    المستوى {num}: {levels.find((l) => l.levelNumber === num)?.shortTitle || `المستوى ${num}`}
+                {levels.map((lvl) => (
+                  <option key={lvl.levelNumber} value={lvl.levelNumber}>
+                    المستوى {lvl.levelNumber}: {lvl.shortTitle || lvl.title}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">عنوان الفيديو:</label>
+              <label className="block text-xs font-bold text-slate-300 mb-1">عنوان أو اسم الفيديو:</label>
               <input
                 type="text"
                 value={videoTitleInput}
                 onChange={(e) => setVideoTitleInput(e.target.value)}
-                placeholder="مثال: فيديو شرح السؤال الأول"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
+                placeholder="مثال: فيديو شرح الدرس الأول..."
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none focus:border-cyan-400"
               />
             </div>
 
@@ -736,11 +1050,11 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                 value={videoUrlInput}
                 onChange={(e) => setVideoUrlInput(e.target.value)}
                 placeholder="ضع رابط الفيديو هنا... https://..."
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-cyan-500/50 text-cyan-200 text-xs outline-none"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-cyan-500/50 text-cyan-200 text-xs outline-none focus:border-cyan-400"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowVideoUrlModal(false)}
@@ -757,6 +1071,190 @@ export const AdminLevelInstructionsManager: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 3. Modal: Device Video Upload with Target Level Selector */}
+      {showDeviceVideoModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <form onSubmit={handleConfirmDeviceVideo} className="w-full max-w-lg p-6 rounded-3xl bg-[#0c0f20] border-2 border-cyan-500 shadow-2xl space-y-5 text-right font-['Cairo']">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-cyan-400">
+                <Video className="w-5 h-5" />
+                <h3 className="text-lg font-black text-white font-['Tajawal']">رفع فيديو من الجهاز 💻</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeviceVideoModal(false)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Target Level Selection */}
+            <div>
+              <label className="block text-xs font-bold text-amber-300 mb-1.5">
+                🎯 اختر المستوى المستهدف لوضع الفيديو فيه (1 إلى 9):
+              </label>
+              <select
+                value={deviceVideoLevelSelect}
+                onChange={(e) => setDeviceVideoLevelSelect(Number(e.target.value))}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-bold text-xs outline-none cursor-pointer"
+              >
+                {levels.map((lvl) => (
+                  <option key={lvl.levelNumber} value={lvl.levelNumber}>
+                    المستوى {lvl.levelNumber}: {lvl.shortTitle || lvl.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* File Chooser */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                📁 اختر ملف الفيديو من جهازك:
+              </label>
+              <input
+                type="file"
+                accept="video/*,.mp4,.webm,.mov,.mkv,.avi"
+                onChange={handleDeviceVideoFileChange}
+                className="w-full text-xs text-slate-400 file:mr-0 file:ml-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-cyan-600 file:text-white hover:file:bg-cyan-500 cursor-pointer bg-slate-950 p-2.5 rounded-xl border border-slate-800"
+              />
+              {deviceVideoFile && (
+                <div className="mt-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-200 truncate">{deviceVideoFile.name}</span>
+                  <span className="font-bold text-emerald-400 shrink-0 mr-2">
+                    💾 {formatRealFileSize(deviceVideoFile.size)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Video Title */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                ✏️ اسم أو مسمى الفيديو في المستوى:
+              </label>
+              <input
+                type="text"
+                value={deviceVideoTitle}
+                onChange={(e) => setDeviceVideoTitle(e.target.value)}
+                placeholder="مثال: فيديو شرح الدرس الأول..."
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none focus:border-cyan-400"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowDeviceVideoModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                disabled={!deviceVideoFile || isUploadingDeviceVideo}
+                className="px-6 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black text-xs cursor-pointer shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                <Upload className="w-4 h-4" />
+                <span>{isUploadingDeviceVideo ? 'جاري الرفع والحفظ...' : 'تأكيد ورفع الفيديو للمستوى المحدد 🚀'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* 4. Modal: Device Image/PDF Upload with Target Level Selector */}
+      {showDeviceImageModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <form onSubmit={handleConfirmDeviceImage} className="w-full max-w-lg p-6 rounded-3xl bg-[#0c0f20] border-2 border-emerald-500 shadow-2xl space-y-5 text-right font-['Cairo']">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-emerald-400">
+                <ImageIcon className="w-5 h-5" />
+                <h3 className="text-lg font-black text-white font-['Tajawal']">رفع صورة أو مستند من الجهاز 💻</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeviceImageModal(false)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Target Level Selection */}
+            <div>
+              <label className="block text-xs font-bold text-amber-300 mb-1.5">
+                🎯 اختر المستوى المستهدف لوضع الصورة أو المستند فيه (1 إلى 9):
+              </label>
+              <select
+                value={deviceImageLevelSelect}
+                onChange={(e) => setDeviceImageLevelSelect(Number(e.target.value))}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-emerald-300 font-bold text-xs outline-none cursor-pointer"
+              >
+                {levels.map((lvl) => (
+                  <option key={lvl.levelNumber} value={lvl.levelNumber}>
+                    المستوى {lvl.levelNumber}: {lvl.shortTitle || lvl.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* File Chooser */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                📁 اختر الملف من جهازك (صورة أو PDF):
+              </label>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleDeviceImageFileChange}
+                className="w-full text-xs text-slate-400 file:mr-0 file:ml-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer bg-slate-950 p-2.5 rounded-xl border border-slate-800"
+              />
+              {deviceImageFile && (
+                <div className="mt-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-200 truncate">{deviceImageFile.name}</span>
+                  <span className="font-bold text-emerald-400 shrink-0 mr-2">
+                    💾 {formatRealFileSize(deviceImageFile.size)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Title Input */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                ✏️ مسمى أو عنوان الملف في المستوى:
+              </label>
+              <input
+                type="text"
+                value={deviceImageTitle}
+                onChange={(e) => setDeviceImageTitle(e.target.value)}
+                placeholder="مثال: مخطط الواجهة والمشروع..."
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none focus:border-emerald-400"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowDeviceImageModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                disabled={!deviceImageFile || isUploadingDeviceImage}
+                className="px-6 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs cursor-pointer shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                <Upload className="w-4 h-4" />
+                <span>{isUploadingDeviceImage ? 'جاري الرفع...' : 'تأكيد رفع الملف للمستوى المحدد 🚀'}</span>
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

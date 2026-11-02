@@ -151,6 +151,7 @@ export interface LevelMediaItem {
   format?: string;
   size?: number;
   addedAt?: string;
+  blobId?: string;
 }
 
 export interface StudentActivitySubmission {
@@ -269,6 +270,7 @@ export interface EducationalVideo {
   isActive: boolean;
   blobId?: string;
   dataUrl?: string;
+  size?: number;
 }
 
 export interface ResearcherInfo {

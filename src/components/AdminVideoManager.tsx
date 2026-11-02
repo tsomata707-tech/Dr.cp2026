@@ -395,7 +395,7 @@ export const AdminVideoManager: React.FC = () => {
                   فيديو المرحلة: مقدمة في إنتاج وتصميم الوسائط المتعددة
                 </span>
                 <span className="px-3 py-1 rounded-full bg-purple-950/80 border border-purple-400 text-purple-300 text-xs font-bold">
-                  {level1Videos.length} من 5 أجزاء مرفوعة
+                  {level1Videos.length} من 7 أجزاء مرفوعة
                 </span>
               </div>
 
@@ -403,7 +403,7 @@ export const AdminVideoManager: React.FC = () => {
                 المستوى 1: أساسيات الوسائط وتثبيت Adobe Captivate 2019
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl font-['Cairo'] leading-relaxed">
-                يمكنك إضافة حتى <strong className="text-amber-300">٥ أجزاء فيديو</strong> للمستوى الأول عبر <strong className="text-white underline">روابط Google Drive أو YouTube</strong>.
+                يمكنك إضافة حتى <strong className="text-amber-300">٧ أجزاء فيديو</strong> للمستوى الأول عبر <strong className="text-white underline">روابط Google Drive أو YouTube</strong>.
               </p>
             </div>
 
