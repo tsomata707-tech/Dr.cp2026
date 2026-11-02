@@ -5,6 +5,7 @@ import { getAllStudentsProgress, saveAllStudentsProgress } from '../utils/gameSt
 import { getGroupByUsername } from '../data/studentAccounts';
 import { CARTOON_AVATARS } from '../data/gameLevelsData';
 import { subscribeToAllStudentsProgress } from '../utils/realtimeService';
+import { getStudentFullName } from '../utils/studentNameStorage';
 import { StudentGameProgress } from '../types';
 
 export interface HonorStudent {
@@ -68,7 +69,7 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
       return {
         id: s.username,
         rank: index + 1,
-        name: s.username,
+        name: getStudentFullName(s.username) || s.username,
         username: s.username,
         avatarBg: avatar.bgGradient,
         points: s.totalScore,
@@ -220,7 +221,12 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
                         </div>
                       </div>
 
-                      <h3 className="text-sm sm:text-base font-black text-sky-950 font-['Tajawal']">{stu.username}</h3>
+                      <h3 className="text-sm sm:text-base font-black text-sky-950 font-['Tajawal']">
+                        {getStudentFullName(stu.username) || stu.username}
+                      </h3>
+                      {getStudentFullName(stu.username) ? (
+                        <span className="text-[10px] text-slate-600 font-bold block">@{stu.username}</span>
+                      ) : null}
                       <span className="inline-block px-2.5 py-0.5 rounded-md bg-slate-200 border border-slate-300 text-slate-900 font-black font-['Cairo'] text-xs mt-1">
                         {stu.groupName}
                       </span>
@@ -260,7 +266,7 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
                   <thead>
                     <tr className="border-b border-slate-800 text-slate-400 font-['Cairo']">
                       <th className="py-3 px-3 sm:px-4">الترتيب</th>
-                      <th className="py-3 px-3 sm:px-4">اسم المستخدم</th>
+                      <th className="py-3 px-3 sm:px-4">اسم الطالب</th>
                       <th className="py-3 px-3 sm:px-4">المجموعة التجريبية</th>
                       <th className="py-3 px-3 sm:px-4 text-center">النقاط الحقيقية ⭐</th>
                       <th className="py-3 px-3 sm:px-4 text-center">المستويات</th>
@@ -280,7 +286,12 @@ export const HonorBoard: React.FC<HonorBoardProps> = ({
                         <td className="py-3 px-3 sm:px-4  font-bold text-amber-400">
                           {stu.rank === 1 ? '🥇 1' : stu.rank === 2 ? '🥈 2' : stu.rank === 3 ? '🥉 3' : `#${stu.rank}`}
                         </td>
-                        <td className="py-3 px-3 sm:px-4 font-bold text-white ">{stu.username}</td>
+                        <td className="py-3 px-3 sm:px-4 font-bold text-white">
+                          <div>{getStudentFullName(stu.username) || stu.username}</div>
+                          {getStudentFullName(stu.username) ? (
+                            <div className="text-[10px] text-slate-400 font-bold">@{stu.username}</div>
+                          ) : null}
+                        </td>
                         <td className="py-3 px-3 sm:px-4">
                           <span className="inline-block px-2 py-0.5 rounded bg-slate-200 border border-slate-300 text-slate-900 font-black font-['Cairo'] text-[11px]">
                             {stu.groupName}

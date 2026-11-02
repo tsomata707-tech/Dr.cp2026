@@ -431,18 +431,19 @@ export function normalizeVideoUrl(url: string): string {
     return `https://www.youtube.com/embed/${watchMatch[1]}?rel=0&modestbranding=1`;
   }
 
-  // 2. Google Drive video share link or raw file ID
-  const driveMatch = trimmed.match(/drive\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)([a-zA-Z0-9_-]+)/);
+  // 2. Google Drive video share link, open link, uc export link, or raw file ID
+  // e.g. https://drive.google.com/file/d/1ijsE-OgNHzErtRm2OtmFPMV-RWx2X8mo/view
+  // MUST use /preview format for clean iframe embedding without X-Frame-Options "refused to connect" errors!
+  const driveMatch = trimmed.match(
+    /(?:drive\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)|docs\.google\.com\/file\/d\/)([a-zA-Z0-9_-]{20,})/
+  );
   if (driveMatch && driveMatch[1]) {
-    return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+    return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
   }
-  const driveDirectMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (driveDirectMatch && driveDirectMatch[1]) {
-    return `https://drive.google.com/uc?export=download&id=${driveDirectMatch[1]}`;
-  }
+
   // Raw Google Drive file ID detection (e.g. 1ijsE-OgNHzErtRm2OtmFPMV-RWx2X8mo)
   if (/^[a-zA-Z0-9_-]{20,}$/.test(trimmed) && !trimmed.includes('http') && !trimmed.includes('youtube')) {
-    return `https://drive.google.com/uc?export=download&id=${trimmed}`;
+    return `https://drive.google.com/file/d/${trimmed}/preview`;
   }
 
   // 3. Vimeo link: https://vimeo.com/XXXX -> https://player.vimeo.com/video/XXXX

@@ -32,9 +32,35 @@ export function saveAllTripartiteNames(map: Record<string, TripartiteName>): voi
  * Get student's three-part name (الاسم، الأب، اللقب)
  */
 export function getStudentTripartiteName(username: string): TripartiteName {
+  if (!username) return { firstName: '', fatherName: '', familyName: '' };
   const norm = normalizeStudentUsername(username).toUpperCase();
   const map = getAllTripartiteNames();
   
+  // 1. Check if PortalUser in adminStorage has a valid non-username fullName (e.g. set or edited by Admin)
+  const users = getPortalUsers();
+  const user = users.find((u) => u.username?.toUpperCase() === norm);
+
+  if (user && user.fullName && user.fullName.trim() !== user.username) {
+    const trimmedFull = user.fullName.trim();
+    const currentFullFromMap = map[norm] 
+      ? `${map[norm].firstName || ''} ${map[norm].fatherName || ''} ${map[norm].familyName || ''}`.trim()
+      : '';
+
+    // If admin set or updated user.fullName and it doesn't match map, re-parse and sync map!
+    if (trimmedFull !== currentFullFromMap) {
+      const parts = trimmedFull.split(/\s+/);
+      const parsed: TripartiteName = {
+        firstName: parts[0] || '',
+        fatherName: parts[1] || '',
+        familyName: parts.slice(2).join(' ') || '',
+      };
+      map[norm] = parsed;
+      saveAllTripartiteNames(map);
+      return parsed;
+    }
+  }
+
+  // 2. Check local tripartite names map
   if (map[norm] && (map[norm].firstName || map[norm].fatherName || map[norm].familyName)) {
     return {
       firstName: map[norm].firstName || '',
@@ -43,21 +69,17 @@ export function getStudentTripartiteName(username: string): TripartiteName {
     };
   }
 
-  // Fallback: check if PortalUser has a non-username fullName that can be split into 3 parts
-  const users = getPortalUsers();
-  const user = users.find((u) => u.username.toUpperCase() === norm);
+  // 3. Fallback: check PortalUser.fullName
   if (user && user.fullName && user.fullName.trim() !== user.username) {
     const parts = user.fullName.trim().split(/\s+/);
-    if (parts.length >= 3) {
-      const parsed: TripartiteName = {
-        firstName: parts[0],
-        fatherName: parts[1],
-        familyName: parts.slice(2).join(' '),
-      };
-      map[norm] = parsed;
-      saveAllTripartiteNames(map);
-      return parsed;
-    }
+    const parsed: TripartiteName = {
+      firstName: parts[0] || '',
+      fatherName: parts[1] || '',
+      familyName: parts.slice(2).join(' ') || '',
+    };
+    map[norm] = parsed;
+    saveAllTripartiteNames(map);
+    return parsed;
   }
 
   return { firstName: '', fatherName: '', familyName: '' };
@@ -81,6 +103,7 @@ export function isStudentTripartiteNameCompleted(username: string): boolean {
  * Assemble student's full name: firstName + fatherName + familyName
  */
 export function getStudentFullName(username: string): string {
+  if (!username) return '';
   if (username.trim().toLowerCase() === 'admin') {
     return 'مدير المنظومة (المشرف العام)';
   }
@@ -89,7 +112,7 @@ export function getStudentFullName(username: string): string {
   if (full) return full;
 
   const users = getPortalUsers();
-  const user = users.find((u) => u.username.toUpperCase() === normalizeStudentUsername(username).toUpperCase());
+  const user = users.find((u) => u.username?.toUpperCase() === normalizeStudentUsername(username).toUpperCase());
   if (user && user.fullName && user.fullName.trim() !== user.username) {
     return user.fullName.trim();
   }
