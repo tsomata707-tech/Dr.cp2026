@@ -121,7 +121,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       if (!res) return;
       const num = Number(lvlNum);
       const lvlDef = allLevels.find((l) => l.levelNumber === num) || GAME_LEVELS_DATA.find((l) => l.levelNumber === num);
-      const q1Id = lvlDef?.questions[0]?.id;
+      const q1Id = lvlDef?.questions?.[0]?.id;
       if (q1Id && res.questionScores && res.questionScores[q1Id] !== undefined) {
         initScores[num] = res.questionScores[q1Id];
       } else if (res.score) {
@@ -258,8 +258,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       // If we are resetting, clear local state
       if (current.currentLevel === 1 && Object.keys(current.completedLevels).length === 0) {
         setChosenAnswers({});
-        setVideoPenaltyAppliedPerLevel({});
-        setVideoScorePerLevel({});
       }
     };
 
@@ -317,7 +315,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const completedResult = progress.completedLevels[selectedLevelNum];
   const isLevelUnlocked = selectedLevelNum <= progress.currentLevel;
 
-  const q1 = currentLevelDef.questions[0];
+  const q1 = currentLevelDef?.questions?.[0];
   const q1Points = currentLevelDef.section1Score ?? q1?.points ?? 25;
 
   // [FIX 3]: القلوب الحالية تنزل إلى 1 افتراضياً
@@ -445,7 +443,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   }, [username, selectedLevelNum]);
 
   const handleTriggerUpload = () => {
-    const questionsList = currentLevelDef.questions || [];
+    const questionsList = currentLevelDef?.questions || [];
     const minRequired = Math.min(3, questionsList.length);
     const answeredCount = questionsList.filter((q) => chosenAnswers[q.id] !== undefined).length;
 
@@ -585,7 +583,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       return;
     }
 
-    const firstQ = currentLevelDef.questions[0];
+    const firstQ = currentLevelDef?.questions?.[0];
     if (!isAdmin && firstQ && chosenAnswers[firstQ.id] === undefined && !isLevelCompleted) {
       alert('يرجى الإجابة على سؤال تحدي المعرفة (القسم الأول) قبل إنهاء المستوى');
       return;
@@ -1541,7 +1539,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     return;
                   }
                   if (!isAdmin) {
-                    const unanswered = currentLevelDef.questions.some(
+                    const unanswered = (currentLevelDef?.questions || []).some(
                       (q) => chosenAnswers[q.id] === undefined
                     );
                     if (unanswered) {

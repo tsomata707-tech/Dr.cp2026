@@ -258,6 +258,7 @@ export interface EducationalVideo {
   targetSlotId: string; // e.g. 'level-1', 'level-2', ..., 'level-10', 'app-task'
   targetSlotName: string;
   videoUrl: string; // YouTube, MP4 or file
+  levelNumber?: number;
   videoType: 'youtube' | 'mp4' | 'embed' | 'file';
   duration?: string;
   partNumber?: number; // 1, 2, 3, 4, 5 (up to 5 videos per topic)

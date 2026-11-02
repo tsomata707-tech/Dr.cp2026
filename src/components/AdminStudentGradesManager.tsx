@@ -272,7 +272,7 @@ export const AdminStudentGradesManager: React.FC = () => {
           <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
             <span className="text-xs font-bold text-slate-400">الاختبار البعدي:</span>
             <span className="text-sm font-black text-purple-400">
-              {studentProg.postTestPostResult?.completed || studentProg.postTestResult?.score !== undefined ? `${studentProg.postTestResult?.score ?? 0} / 53` : 'غير مكتمل'}
+              {studentProg.postTestResult?.completed || studentProg.postTestResult?.score !== undefined ? `${studentProg.postTestResult?.score ?? 0} / 53` : 'غير مكتمل'}
             </span>
           </div>
         </div>

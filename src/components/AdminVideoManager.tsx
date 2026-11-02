@@ -108,7 +108,7 @@ export const AdminVideoManager: React.FC = () => {
     const cleanList = deduplicateEducationalVideos(rawList);
     saveEducationalVideos(cleanList, true);
     setVideos(cleanList);
-    addActivityLog('قام المشرف بتنظيف الفيديوهات المكررة وعدم دمج الصفوف', 'المشرف', 'info');
+    addActivityLog('قام المشرف بتنظيف الفيديوهات المكررة وعدم دمج الصفوف', 'المشرف', 'warning');
     setSuccessMessage(`✅ تم تنظيف الصفوف المكررة بنجاح! الإجمالي الحقيقي الآن: ${cleanList.length} فيديوهات.`);
     setTimeout(() => setSuccessMessage(null), 4000);
   };

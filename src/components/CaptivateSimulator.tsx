@@ -92,7 +92,7 @@ export const CaptivateSimulator: React.FC<CaptivateSimulatorProps> = ({
           text: 'إجابة دقيقة وصحيحة فورياً! تم تعزيز التقبل التكنولوجي وإتقان المهارة بنجاح.',
         });
         setScore((prev) => prev + 25);
-        if (onObjectiveAchieved && currentModule.objectives[0]) {
+        if (onObjectiveAchieved && currentModule?.objectives?.[0]) {
           onObjectiveAchieved(currentModule.objectives[0].id);
         }
       } else {
