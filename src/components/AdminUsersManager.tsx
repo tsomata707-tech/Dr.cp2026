@@ -28,7 +28,6 @@ import { PortalUser } from '../types';
 import { getPortalUsers, savePortalUsers, addActivityLog } from '../utils/adminStorage';
 import { resetStudentProgress, resetAllLevelsProgressKeepingPreTest } from '../utils/gameStorage';
 import { RESEARCH_GROUPS_META, getStudentPassword } from '../data/studentAccounts';
-import { getStudentFullName, saveStudentTripartiteName } from '../utils/studentNameStorage';
 
 interface AdminUsersManagerProps {
   onLoginAsStudent?: (username: string) => void;
@@ -117,7 +116,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
   // Open Edit Modal
   const openEditModal = (user: PortalUser) => {
     setEditingUser(user);
-    setEditFullName(getStudentFullName(user.username) || user.fullName || user.username);
+    setEditFullName(user.fullName || user.username);
     setEditPassword(user.password || '');
     setEditIsActive(user.isActive);
   };
@@ -131,24 +130,11 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
       return;
     }
 
-    const cleanFullName = editFullName.trim();
-    const parts = cleanFullName.split(/\s+/);
-    const firstName = parts[0] || '';
-    const fatherName = parts[1] || '';
-    const familyName = parts.slice(2).join(' ') || '';
-
-    // Save tripartite name & sync across map, adminStorage, RTDB, and events
-    saveStudentTripartiteName(editingUser.username, {
-      firstName,
-      fatherName,
-      familyName,
-    });
-
     const updated = users.map((u) => {
       if (u.id === editingUser.id) {
         return {
           ...u,
-          fullName: cleanFullName || u.username,
+          fullName: editFullName.trim() || u.username,
           password: editPassword.trim(),
           isActive: editIsActive,
         };
@@ -158,9 +144,9 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
 
     setUsers(updated);
     savePortalUsers(updated);
-    addActivityLog(`تعديل بيانات المستخدم ${editingUser.username} - الاسم: ${cleanFullName}`, 'admin', 'success');
+    addActivityLog(`تعديل بيانات المستخدم ${editingUser.username}`, 'admin', 'success');
     setEditingUser(null);
-    showToast(`✓ تم حفظ تعديلات وتغيير اسم الطالب (${editingUser.username}) بنجاح`);
+    showToast(`✓ تم حفظ تعديلات المستخدم ${editingUser.username} بنجاح`);
   };
 
   // Add New User
@@ -178,21 +164,11 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
       return;
     }
 
-    const cleanFullName = newFullName.trim();
-    if (cleanFullName) {
-      const parts = cleanFullName.split(/\s+/);
-      saveStudentTripartiteName(cleanUser, {
-        firstName: parts[0] || '',
-        fatherName: parts[1] || '',
-        familyName: parts.slice(2).join(' ') || '',
-      });
-    }
-
     const meta = RESEARCH_GROUPS_META[newGroupCode];
     const created: PortalUser = {
       id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       username: cleanUser,
-      fullName: cleanFullName || cleanUser,
+      fullName: newFullName.trim() || cleanUser,
       role: newRole,
       password: newPassword.trim() || '123456',
       isActive: true,
@@ -587,8 +563,8 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
                     </td>
 
                     {/* Full Name */}
-                    <td className="py-3 px-4 font-bold text-slate-900" style={{ fontFamily: 'Cairo, sans-serif' }}>
-                      {getStudentFullName(user.username) || user.fullName || user.username}
+                    <td className="py-3 px-4 font-medium" style={{ color: '#202227', fontFamily: 'Arial, sans-serif' }}>
+                      {user.fullName || user.username}
                     </td>
 
                     {/* Group & Learning Mode */}

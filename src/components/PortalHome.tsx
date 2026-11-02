@@ -21,7 +21,6 @@ import { PreTestGameView } from './PreTestGameView';
 import { StudentWelcomeFloatingCard } from './StudentWelcomeFloatingCard';
 import { getSupervisorsBoardConfig } from '../utils/supervisorsStorage';
 import { getGroupByUsername } from '../data/studentAccounts';
-import { getStudentFullName } from '../utils/studentNameStorage';
 import { getStudentProgress, getAllStudentsProgress, saveAllStudentsProgress, saveSingleStudentProgress } from '../utils/gameStorage';
 import { subscribeToStudentProgress } from '../utils/realtimeService';
 import { StudentGameProgress } from '../types';
@@ -378,7 +377,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
                 )}
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-white font-['Tajawal'] mt-1">
-                بيئة الألعاب التعليمية الإلكترونية: مرحباً بك، <span className="text-[#ffd700] ">{getStudentFullName(username) || username}</span>
+                بيئة الألعاب التعليمية الإلكترونية: مرحباً بك، <span className="text-[#ffd700] ">{username}</span>
               </h1>
               <p className="text-xs text-slate-300 mt-1 font-['Cairo']">
                 جامعة طنطا - كلية التربية النوعية • قسم تكنولوجيا التعليم

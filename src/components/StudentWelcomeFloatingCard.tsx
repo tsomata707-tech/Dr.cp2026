@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { CpLogo } from './CpLogo';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { getGroupByUsername } from '../data/studentAccounts';
-import { getStudentFullName } from '../utils/studentNameStorage';
 
 interface StudentWelcomeFloatingCardProps {
   username: string;
@@ -38,8 +37,6 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
     return () => clearInterval(timer);
   }, [durationSeconds, onFinish]);
 
-  const studentFullName = getStudentFullName(username);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl animate-in fade-in duration-500 font-['Cairo',_sans-serif] text-right">
       {/* Ambient background glow */}
@@ -73,16 +70,11 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
           </div>
         </div>
 
-        {/* Welcome Message + Student Full Name */}
-        <div className="mb-6 space-y-1">
-          <h2 className="text-2xl sm:text-3xl font-black text-white font-['Tajawal'] tracking-tight">
-            مرحباً بك <span className="text-[#ffd700] font-['Cairo'] font-bold">{studentFullName || username}</span>
+        {/* Welcome Message + Username Only (In Large Font) */}
+        <div className="mb-6">
+          <h2 className="text-3xl sm:text-4xl font-black text-white font-['Tajawal'] tracking-tight">
+            مرحباً بك <span className="text-[#ffd700] font-['Cairo'] font-bold">{username}</span>
           </h2>
-          {studentFullName ? (
-            <p className="text-xs text-amber-200/90 font-bold font-['Cairo']">
-              (@{username})
-            </p>
-          ) : null}
         </div>
 
         {/* Modern Elegant Loading Bar - No Counter, No Sentences, Strict Wait */}

@@ -107,44 +107,14 @@ export function isPlaceholderVideo(video: { videoUrl?: string; id?: string; titl
 // Initial educational videos seeding: Strictly empty so ONLY real admin-uploaded videos ever exist!
 const INITIAL_VIDEOS: EducationalVideo[] = [];
 
-/**
- * Deduplicate videos strictly by normalized URL + slot ID, and purge placeholders
- */
-export function deduplicateEducationalVideos(videos: EducationalVideo[]): EducationalVideo[] {
-  if (!Array.isArray(videos)) return [];
-  const seenKeys = new Set<string>();
-  const cleanList: EducationalVideo[] = [];
-
-  for (const v of videos) {
-    if (!v || isPlaceholderVideo(v) || !v.isActive) continue;
-    const rawUrl = v.videoUrl?.trim() || v.dataUrl?.trim() || '';
-    if (!rawUrl) continue;
-    const normUrl = normalizeVideoUrl(rawUrl);
-    if (!normUrl) continue;
-
-    const dedupeKey = `${v.targetSlotId || 'default'}::${normUrl}`;
-    if (!seenKeys.has(dedupeKey)) {
-      seenKeys.add(dedupeKey);
-      cleanList.push({
-        ...v,
-        videoUrl: normUrl,
-      });
-    }
-  }
-
-  // Sort by partNumber
-  cleanList.sort((a, b) => (a.partNumber || 1) - (b.partNumber || 1));
-  return cleanList;
-}
-
 export function getEducationalVideos(): EducationalVideo[] {
   try {
     const raw = localStorage.getItem(VIDEOS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        // Strictly purge any dummy placeholder videos and deduplicate
-        const clean = deduplicateEducationalVideos(parsed);
+        // Strictly purge any dummy placeholder videos from browser cache
+        const clean = parsed.filter((v) => !isPlaceholderVideo(v));
         if (clean.length !== parsed.length) {
           localStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(clean));
         }
@@ -152,12 +122,12 @@ export function getEducationalVideos(): EducationalVideo[] {
       }
     }
 
-    // Try migration from v1, also purging placeholders and deduplicating
+    // Try migration from v1, also purging placeholders
     const prevRaw = localStorage.getItem(PREV_VIDEOS_STORAGE_KEY);
     if (prevRaw) {
       const prevParsed = JSON.parse(prevRaw);
       if (Array.isArray(prevParsed)) {
-        const cleanPrev = deduplicateEducationalVideos(prevParsed);
+        const cleanPrev = prevParsed.filter((v) => !isPlaceholderVideo(v));
         localStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(cleanPrev));
         return cleanPrev;
       }
@@ -170,7 +140,7 @@ export function getEducationalVideos(): EducationalVideo[] {
 }
 
 export function saveEducationalVideos(videos: EducationalVideo[], syncRemote: boolean = true): void {
-  const clean = deduplicateEducationalVideos(videos);
+  const clean = videos.filter((v) => !isPlaceholderVideo(v));
   localStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(clean));
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('videos-storage-updated', { detail: clean }));
@@ -178,7 +148,7 @@ export function saveEducationalVideos(videos: EducationalVideo[], syncRemote: bo
 
   if (syncRemote) {
     try {
-      // Sync authoritative deduplicated videos to Firebase RTDB for real-time student updates
+      // Sync all valid video URLs (HTTPS Cloud URLs, Data URLs, YouTube URLs) to Firebase RTDB for real-time student updates
       const syncPayload = clean.map((v) => ({
         ...v,
         videoUrl: v.videoUrl && !v.videoUrl.startsWith('blob:') ? v.videoUrl : (v.dataUrl || v.videoUrl || ''),
@@ -201,17 +171,30 @@ export function clearAllEducationalVideos(): void {
 }
 
 /**
- * Authoritative sync of remote educational videos from Firebase RTDB.
- * CRITICAL: Replaces local state with remote state instead of merging,
- * preventing old cached ghost rows and duplicates from accumulating!
+ * Merge remote educational videos from Firebase RTDB with local storage
  */
 export function syncRemoteEducationalVideos(remoteVideos: EducationalVideo[]): void {
   if (!Array.isArray(remoteVideos)) return;
-  const clean = deduplicateEducationalVideos(remoteVideos);
+  const currentLocal = getEducationalVideos();
+  const remoteClean = remoteVideos.filter((v) => !isPlaceholderVideo(v) && (v.videoUrl?.trim() || v.dataUrl?.trim()));
 
-  localStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(clean));
+  // Merge remote videos cleanly
+  const mergedMap = new Map<string, EducationalVideo>();
+  currentLocal.forEach((v) => mergedMap.set(v.id, v));
+
+  remoteClean.forEach((rv) => {
+    const existing = mergedMap.get(rv.id);
+    if (existing && existing.blobId && existing.videoUrl.startsWith('blob:') && !rv.videoUrl) {
+      mergedMap.set(rv.id, { ...rv, videoUrl: existing.videoUrl });
+    } else {
+      mergedMap.set(rv.id, rv);
+    }
+  });
+
+  const mergedList = Array.from(mergedMap.values());
+  localStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(mergedList));
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('videos-storage-updated', { detail: clean }));
+    window.dispatchEvent(new CustomEvent('videos-storage-updated', { detail: mergedList }));
   }
 }
 
@@ -326,11 +309,17 @@ export function addEducationalVideo(
   videoData: Omit<EducationalVideo, 'id' | 'addedAt' | 'targetSlotName'>
 ): EducationalVideo {
   const all = getEducationalVideos();
+  const existingInSlot = all.filter((v) => v.targetSlotId === videoData.targetSlotId);
+
+  // Maximum 5 videos allowed per slot
+  if (existingInSlot.length >= 5) {
+    throw new Error('تم الوصول للحد الأقصى (٥ فيديوهات) لهذا العنوان. يرجى حذف جزء أولاً.');
+  }
+
   const slotDef = VIDEO_SLOTS.find((s) => s.slotId === videoData.targetSlotId);
-  const partNumber = videoData.partNumber || 1;
+  const partNumber = videoData.partNumber || (existingInSlot.length + 1);
   const partCustomTitle = videoData.partCustomTitle?.trim() || `الجزء ${partNumber}`;
   const partTitle = videoData.partTitle || `${partCustomTitle}: ${videoData.title}`;
-  const normUrl = normalizeVideoUrl(videoData.videoUrl);
 
   const newVideo: EducationalVideo = {
     ...videoData,
@@ -339,26 +328,13 @@ export function addEducationalVideo(
     partTitle,
     id: `vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     targetSlotName: slotDef ? slotDef.name : videoData.targetSlotId,
-    videoUrl: normUrl,
+    videoUrl: normalizeVideoUrl(videoData.videoUrl),
     addedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
     isActive: true,
   };
 
-  // Prevent row merging/duplication: If a video with the same part number OR same URL exists in this slot, replace it!
-  const existingIdx = all.findIndex(
-    (v) => v.targetSlotId === videoData.targetSlotId && (v.partNumber === partNumber || normalizeVideoUrl(v.videoUrl) === normUrl)
-  );
-
-  if (existingIdx !== -1) {
-    all[existingIdx] = newVideo;
-  } else {
-    const existingInSlot = all.filter((v) => v.targetSlotId === videoData.targetSlotId);
-    if (existingInSlot.length >= 5) {
-      throw new Error('تم الوصول للحد الأقصى (٥ فيديوهات) لهذا العنوان. يرجى حذف جزء أولاً.');
-    }
-    all.push(newVideo);
-  }
-
+  // Add without deleting existing videos of same slot!
+  all.unshift(newVideo);
   saveEducationalVideos(all);
   return newVideo;
 }
@@ -431,19 +407,18 @@ export function normalizeVideoUrl(url: string): string {
     return `https://www.youtube.com/embed/${watchMatch[1]}?rel=0&modestbranding=1`;
   }
 
-  // 2. Google Drive video share link, open link, uc export link, or raw file ID
-  // e.g. https://drive.google.com/file/d/1ijsE-OgNHzErtRm2OtmFPMV-RWx2X8mo/view
-  // MUST use /preview format for clean iframe embedding without X-Frame-Options "refused to connect" errors!
-  const driveMatch = trimmed.match(
-    /(?:drive\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)|docs\.google\.com\/file\/d\/)([a-zA-Z0-9_-]{20,})/
-  );
+  // 2. Google Drive video share link or raw file ID
+  const driveMatch = trimmed.match(/drive\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)([a-zA-Z0-9_-]+)/);
   if (driveMatch && driveMatch[1]) {
-    return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+    return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
   }
-
+  const driveDirectMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveDirectMatch && driveDirectMatch[1]) {
+    return `https://drive.google.com/uc?export=download&id=${driveDirectMatch[1]}`;
+  }
   // Raw Google Drive file ID detection (e.g. 1ijsE-OgNHzErtRm2OtmFPMV-RWx2X8mo)
   if (/^[a-zA-Z0-9_-]{20,}$/.test(trimmed) && !trimmed.includes('http') && !trimmed.includes('youtube')) {
-    return `https://drive.google.com/file/d/${trimmed}/preview`;
+    return `https://drive.google.com/uc?export=download&id=${trimmed}`;
   }
 
   // 3. Vimeo link: https://vimeo.com/XXXX -> https://player.vimeo.com/video/XXXX

@@ -341,25 +341,57 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   const [previewMediaZoom, setPreviewMediaZoom] = useState<LevelMediaItem | null>(null);
 
-  // Authentic videos uploaded by the Admin for the current level (STRICT: External URLs Only, no fallback)
+  // Authentic videos uploaded by the Admin for the current level (STRICT: External URLs Only!)
   const currentDisplayVideos = useMemo(() => {
+    // 1. If the admin uploaded videos in Admin Video Manager for this level, prioritize and display ONLY those videos!
     const adminSlotVideos = (currentLevelVideos || []).filter(
       (v) => v.isActive && !isPlaceholderVideo(v) && isSafeExternalUrl(v.videoUrl)
     );
 
+    if (adminSlotVideos.length > 0) {
+      const list: EducationalVideo[] = [];
+      const seenUrls = new Set<string>();
+      adminSlotVideos.forEach((v) => {
+        const norm = normalizeVideoUrl(v.videoUrl.trim());
+        if (!seenUrls.has(norm)) {
+          seenUrls.add(norm);
+          list.push({ ...v, videoUrl: norm });
+        }
+      });
+      list.sort((a, b) => (a.partNumber || 1) - (b.partNumber || 1));
+      return list;
+    }
+
+    // 2. Only fallback to Admin Level Instructions Manager if no videos exist in Video Manager
     const list: EducationalVideo[] = [];
     const seenUrls = new Set<string>();
-    adminSlotVideos.forEach((v) => {
-      const norm = normalizeVideoUrl(v.videoUrl.trim());
-      if (!seenUrls.has(norm)) {
-        seenUrls.add(norm);
-        list.push({ ...v, videoUrl: norm });
+    (currentLevelDef.videos || []).forEach((v, idx) => {
+      if (v.url && !v.url.includes('dQw4w9WgXcQ') && isSafeExternalUrl(v.url)) {
+        const norm = normalizeVideoUrl(v.url.trim());
+        const isYt = norm.includes('youtube.com') || norm.includes('youtu.be');
+        if (!seenUrls.has(norm)) {
+          seenUrls.add(norm);
+          list.push({
+            id: v.id || `lvl_def_vid_${idx}`,
+            title: v.title || `شرح المستوى ${selectedLevelNum}`,
+            targetSlotId: `level-${selectedLevelNum}`,
+            targetSlotName: `المستوى ${selectedLevelNum}`,
+            videoUrl: norm,
+            videoType: isYt ? 'youtube' : 'mp4',
+            partNumber: idx + 1,
+            partTitle: v.title,
+            partCustomTitle: v.partCustomTitle,
+            addedAt: v.addedAt || new Date().toISOString(),
+            isActive: true,
+          });
+        }
       }
     });
 
+    // Sort cleanly by partNumber
     list.sort((a, b) => (a.partNumber || 1) - (b.partNumber || 1));
     return list;
-  }, [currentLevelVideos]);
+  }, [currentLevelVideos, currentLevelDef.videos, selectedLevelNum]);
 
   // STRICT FILTER: Only show instructional images/PDFs from external links (no local blobs/data)
   const currentDisplayImages = useMemo(() => {
@@ -387,7 +419,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       const newPenalties = { ...videoPenaltyAppliedPerLevel, [selectedLevelNum]: true };
       setVideoPenaltyAppliedPerLevel(newPenalties);
       setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: 20 }));
-      setVideoWarning('⚠️ تم تحريك مؤشر الفيديو وتم خصم 5 درجات (النتيجة: 20 من 25 XP).');
+      setVideoWarning('⚠️ لم تشاهد الفيديو بشكل مثالي تم خصم 5 درجات (النتيجة: 20 من 25 XP).');
       
       // PERSIST IMMEDIATELY
       const currentProg = getStudentProgress(username);
@@ -1081,7 +1113,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
                   const earned = penalty ? 20 : 25;
                   setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
-                  setVideoWarning(penalty ? '⚠️ تم تحريك مؤشر الفيديو وتم خصم 5 درجات (النتيجة: 20 من 25 XP).' : 'مبروك! شاهدت فيديو الشرح بالكامل وحصلت على 25 من 25 درجة 🎓');
+                  setVideoWarning(penalty ? 'لم تشاهد الفيديو بشكل مثالي تم خصم 5 درجات (النتيجة: 20 من 25 XP).' : 'مبروك! شاهدت فيديو الشرح بالكامل وحصلت على 25 من 25 درجة 🎓');
                   setTimeout(() => setVideoWarning(null), 6000);
                 }}
               />
@@ -1097,7 +1129,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                       onClick={handleVideoSeek}
                       className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/60 text-amber-300 font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0"
                     >
-                      <span>⚡ محاكاة (تم تحريك مؤشر الفيديو وتم خصم 5 درجات (النتيجة: 20 من 25 XP))</span>
+                      <span>⚡ محاكاة (لم تشاهد الفيديو بشكل مثالي تم خصم 5 درجات)</span>
                     </button>
                   </div>
 
@@ -1111,7 +1143,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                         const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
                         const earned = penalty ? 20 : 25;
                         setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
-                        setVideoWarning(penalty ? '⚠️ تم تحريك مؤشر الفيديو وتم خصم 5 درجات (النتيجة: 20 من 25 XP).' : 'مبروك! تم تأكيد مشاهدة فيديو الشرح بالكامل (25 من 25 درجة) 🎓');
+                        setVideoWarning(penalty ? 'لم تشاهد الفيديو بشكل مثالي تم خصم 5 درجات' : 'مبروك! تم تأكيد مشاهدة فيديو الشرح بالكامل (25 من 25 درجة) 🎓');
                         setTimeout(() => setVideoWarning(null), 7000);
                       }}
                       className="px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600 border border-emerald-500/50 text-emerald-200 hover:text-white font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0"

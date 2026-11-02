@@ -30,6 +30,7 @@ import { isSafeExternalUrl } from '../utils/mediaSafety';
 
 const StageIntroVideoPlayer: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
   const slotVideos = useEducationalVideos(`level-${levelNumber}`);
+  const levelDef = GAME_LEVELS_DATA.find((l) => l.levelNumber === levelNumber);
 
   const cleanVideos = useMemo(() => {
     const list: EducationalVideo[] = [];
@@ -45,9 +46,31 @@ const StageIntroVideoPlayer: React.FC<{ levelNumber: number }> = ({ levelNumber 
       }
     });
 
+    (levelDef?.videos || []).forEach((v, idx) => {
+      if (v.url && v.url.trim() && isSafeExternalUrl(v.url) && !v.url.includes('dQw4w9WgXcQ')) {
+        const u = v.url.trim();
+        if (!seen.has(u)) {
+          seen.add(u);
+          list.push({
+            id: v.id || `lvl_def_vid_${idx}`,
+            title: v.title || `شرح المستوى ${levelNumber}`,
+            targetSlotId: `level-${levelNumber}`,
+            targetSlotName: `المستوى ${levelNumber}`,
+            videoUrl: u,
+            videoType: 'file',
+            partNumber: idx + 1,
+            partTitle: v.title,
+            partCustomTitle: v.partCustomTitle,
+            addedAt: v.addedAt || new Date().toISOString(),
+            isActive: true,
+          });
+        }
+      }
+    });
+
     list.sort((a, b) => (a.partNumber || 1) - (b.partNumber || 1));
     return list;
-  }, [slotVideos]);
+  }, [slotVideos, levelDef?.videos, levelNumber]);
 
   if (cleanVideos.length === 0) {
     return (

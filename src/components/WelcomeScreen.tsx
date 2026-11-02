@@ -4,7 +4,6 @@ import { CpLogo } from './CpLogo';
 import { getGroupByUsername, getStudentByUsername } from '../data/studentAccounts';
 import { getStudentProgress } from '../utils/gameStorage';
 import { CARTOON_AVATARS } from '../data/gameLevelsData';
-import { getStudentFullName } from '../utils/studentNameStorage';
 
 interface WelcomeScreenProps {
   username: string;
@@ -93,13 +92,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               </div>
 
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white font-['Tajawal'] tracking-tight">
-                مرحباً بك <span className="text-[#ffd700] font-['Cairo'] font-bold">{getStudentFullName(username) || username}</span>
+                مرحباً بك <span className="text-[#ffd700] font-['Cairo'] font-bold">{username}</span>
               </h1>
-              {getStudentFullName(username) ? (
-                <p className="text-xs text-amber-200/90 font-bold font-['Cairo'] mt-1">
-                  (@{username})
-                </p>
-              ) : null}
             </div>
           </div>
 

@@ -39,7 +39,6 @@ import {
   updateCollabGroupTyping,
   CollabChatMessage,
 } from '../utils/realtimeService';
-import { getStudentFullName, formatStudentDisplayName } from '../utils/studentNameStorage';
 
 interface CollaborativeGroupsChatProps {
   currentUsername: string;
@@ -542,7 +541,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                       <div key={memberUser} className="flex items-center justify-between  text-slate-200 text-xs">
                         <span className="flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                          <span>{getStudentFullName(memberUser) ? `${getStudentFullName(memberUser)} (@${memberUser})` : memberUser}</span>
+                          <span>{memberUser}</span>
                         </span>
                         {memberUser === currentUsername && (
                           <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500">أنت</span>
@@ -641,7 +640,7 @@ export const CollaborativeGroupsChat: React.FC<CollaborativeGroupsChatProps> = (
                             : 'bg-slate-800 text-cyan-300'
                         }`}
                       >
-                        {isMsgAdmin ? '👑 المشرف (Admin)' : formatStudentDisplayName(msg.sender)}
+                        {isMsgAdmin ? '👑 المشرف (Admin)' : msg.sender}
                       </span>
                     </div>
 

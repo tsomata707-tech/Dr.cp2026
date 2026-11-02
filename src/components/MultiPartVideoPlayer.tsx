@@ -10,8 +10,6 @@ import {
   HardDrive,
   Globe,
   Film,
-  Maximize2,
-  Minimize2,
 } from 'lucide-react';
 import { EducationalVideo } from '../types';
 import { normalizeVideoUrl } from '../utils/videoStorage';
@@ -48,7 +46,6 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
   // ...
 
   const [selectedPartIndex, setSelectedPartIndex] = useState<number>(0);
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
   // [FIX 6]: ثبات maxTime عبر أجزاء الفيديو المختلفة باستخدام useRef بدلاً من dataset
   const maxTimeRefs = useRef<Record<string, number>>({});
@@ -88,7 +85,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
     <div
       className={`rounded-2xl bg-gradient-to-br from-[#0c0f24] via-[#090b1c] to-[#060814] border-2 border-blue-500/50 shadow-2xl overflow-hidden font-['Cairo',_sans-serif] text-right transition-all ${className}`}
     >
-      {/* 1. Header Bar: Title, Part Indicator, Duration & Screen Dimension Toggle */}
+      {/* 1. Header Bar: Title, Part Indicator & Actual Duration */}
       {showHeader && (
         <div className="p-3.5 sm:p-4 bg-slate-900/80 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -125,42 +122,17 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
 
           <div className="flex items-center gap-2">
             {currentVideo.duration && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-950/70 border border-amber-500/50 text-amber-300 text-xs font-bold">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-950/70 border border-amber-500/50 text-amber-300 text-xs font-bold ">
                 <Clock className="w-3.5 h-3.5 text-amber-400" />
                 <span>المدة الفعلية: {currentVideo.duration}</span>
               </span>
             )}
-
-            <button
-              type="button"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="px-3 py-1.5 rounded-xl bg-blue-950/80 hover:bg-blue-800 border border-blue-400/50 text-blue-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
-              title={isExpanded ? 'تصغير مشغل الفيديو' : 'تكبير مشغل الفيديو (وضع الشاشة العريضة)'}
-            >
-              {isExpanded ? (
-                <>
-                  <Minimize2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">حجم عادي</span>
-                </>
-              ) : (
-                <>
-                  <Maximize2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">توسيع الشاشة 📺</span>
-                </>
-              )}
-            </button>
           </div>
         </div>
       )}
 
-      {/* 2. Responsive Video Player Container (16:9 Aspect Ratio with Optimal Dimensions & Full Control) */}
-      <div
-        className={`relative aspect-video w-full bg-black border-y border-slate-900/60 overflow-hidden shadow-inner flex items-center justify-center transition-all duration-300 ${
-          isExpanded
-            ? 'min-h-[320px] sm:min-h-[500px] md:min-h-[600px] lg:min-h-[680px]'
-            : 'min-h-[220px] sm:min-h-[360px] md:min-h-[440px] lg:min-h-[500px]'
-        }`}
-      >
+      {/* 2. Responsive Video Player Container (16:9 on all devices) */}
+      <div className="relative aspect-video w-full bg-black border-y border-slate-900/60 overflow-hidden shadow-inner flex items-center justify-center">
         {(() => {
           const rawUrl = currentVideo?.videoUrl?.trim() || '';
           if (!rawUrl) {
@@ -197,6 +169,21 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 />
+                {isDrive && (
+                  <div className="absolute bottom-2 left-2 right-2 z-20 bg-slate-950/90 backdrop-blur-md border border-amber-500/60 p-2.5 rounded-xl flex items-center justify-between gap-2 text-xs shadow-xl">
+                    <span className="text-amber-200 font-bold truncate">
+                      📁 إذا تعذر العرض المباشر، شاهد الفيديو في جوجل درايف:
+                    </span>
+                    <a
+                      href={driveDirectLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shrink-0 flex items-center gap-1 shadow cursor-pointer"
+                    >
+                      <span>فتح في جوجل درايف ↗</span>
+                    </a>
+                  </div>
+                )}
               </div>
             );
           }
