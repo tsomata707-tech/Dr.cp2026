@@ -13,7 +13,6 @@ import {
   Layers,
   MessageSquare,
   FolderCheck,
-  HardDrive,
 } from 'lucide-react';
 import { AdminUsersManager } from './AdminUsersManager';
 import { AdminInstructionsManager } from './AdminInstructionsManager';
@@ -26,7 +25,6 @@ import { AdminSiteTitleManager } from './AdminSiteTitleManager';
 import { AdminLevelInstructionsManager } from './AdminLevelInstructionsManager';
 import { CollaborativeGroupsChat } from './CollaborativeGroupsChat';
 import { AdminStudentActivitiesManager } from './AdminStudentActivitiesManager';
-import { AdminMediaStorageManager } from './AdminMediaStorageManager';
 
 interface AdminPanelProps {
   onExitAdmin: () => void;
@@ -37,7 +35,6 @@ type AdminTab =
   | 'users'
   | 'collab_chat'
   | 'student_activities'
-  | 'media_storage'
   | 'level_instructions'
   | 'tests_settings'
   | 'students_audit'
@@ -118,22 +115,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             >
               <Users className="w-4 h-4 text-sky-700" />
               <span style={{ borderColor: '#cc5959', color: '#000000', fontWeight: 'bold' }}>اليوزر</span>
-            </button>
-
-            {/* TAB: مكان التخزين (جديد) */}
-            <button
-              type="button"
-              id="admin-tab-media-storage"
-              onClick={() => setActiveTab('media_storage')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'media_storage'
-                  ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-lg ring-2 ring-emerald-300'
-                  : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border-2 border-emerald-300 font-black'
-              }`}
-              style={{ backgroundColor: '#97b6ff', color: '#000000', borderColor: '#97b6ff' }}
-            >
-              <HardDrive className="w-4 h-4 text-emerald-700" />
-              <span>مكان التخزين 💾</span>
             </button>
 
             {/* TAB: شات مجموعات التعاون (G3 & G4) */}
@@ -287,7 +268,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
       {/* Main Tab Content - Opens in the same page seamlessly */}
       <div className="bg-[#0b0e1e] border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl transition-all">
         {activeTab === 'users' && <AdminUsersManager onLoginAsStudent={onLoginAsStudent} />}
-        {activeTab === 'media_storage' && <AdminMediaStorageManager />}
         {activeTab === 'collab_chat' && (
           <CollaborativeGroupsChat
             currentUsername="admin"
