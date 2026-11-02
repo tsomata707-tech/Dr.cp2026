@@ -180,8 +180,8 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
                 const vidId = currentVideo.id || 'vid_default';
                 const maxTime = maxTimeRefs.current[vidId] ?? 0;
 
-                // Only block forward seeking past unwatched portion (> 1.5s ahead)
-                if (v.currentTime > maxTime + 1.5) {
+                // [STRICT PENALTY]: Block forward seeking past watched portion
+                if (v.currentTime > maxTime + 2) {
                   v.currentTime = maxTime;
                   onSeek?.();
                 } else if (v.currentTime > maxTime) {
@@ -193,7 +193,7 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
                 const vidId = currentVideo.id || 'vid_default';
                 const maxTime = maxTimeRefs.current[vidId] ?? 0;
 
-                // Only block forward seeking past unwatched portion (> 1.5s ahead); allow rewinding backwards
+                // Any attempt to skip forward triggers the penalty and reverts time
                 if (v.currentTime > maxTime + 1.5) {
                   v.currentTime = maxTime;
                   onSeek?.();

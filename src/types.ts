@@ -195,6 +195,7 @@ export interface StudentGameProgress {
   hearts: number;
   badges: string[];
   lastActive: string;
+  videoPenaltyAppliedPerLevel?: Record<number, boolean>;
 }
 
 export interface RealtimeStudentParticipant {

@@ -161,6 +161,15 @@ export function saveEducationalVideos(videos: EducationalVideo[], syncRemote: bo
   }
 }
 
+export function clearAllEducationalVideos(): void {
+  localStorage.removeItem(VIDEOS_STORAGE_KEY);
+  localStorage.removeItem(PREV_VIDEOS_STORAGE_KEY);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('videos-storage-updated', { detail: [] }));
+  }
+  syncGlobalQuestionsAndLevels('videos', []).catch(() => {});
+}
+
 /**
  * Merge remote educational videos from Firebase RTDB with local storage
  */

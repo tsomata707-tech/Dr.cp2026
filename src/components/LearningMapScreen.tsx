@@ -26,6 +26,7 @@ import { EducationalVideo } from '../types';
 import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { Gamepad2 } from 'lucide-react';
+import { isSafeExternalUrl } from '../utils/mediaSafety';
 
 const StageIntroVideoPlayer: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
   const slotVideos = useEducationalVideos(`level-${levelNumber}`);
@@ -36,7 +37,7 @@ const StageIntroVideoPlayer: React.FC<{ levelNumber: number }> = ({ levelNumber 
     const seen = new Set<string>();
 
     (slotVideos || []).forEach((v) => {
-      if (v.isActive && !isPlaceholderVideo(v) && v.videoUrl?.trim()) {
+      if (v.isActive && v.videoUrl?.trim() && isSafeExternalUrl(v.videoUrl)) {
         const u = v.videoUrl.trim();
         if (!seen.has(u)) {
           seen.add(u);
@@ -46,7 +47,7 @@ const StageIntroVideoPlayer: React.FC<{ levelNumber: number }> = ({ levelNumber 
     });
 
     (levelDef?.videos || []).forEach((v, idx) => {
-      if (v.url && !v.url.includes('dQw4w9WgXcQ') && v.url.trim()) {
+      if (v.url && v.url.trim() && isSafeExternalUrl(v.url) && !v.url.includes('dQw4w9WgXcQ')) {
         const u = v.url.trim();
         if (!seen.has(u)) {
           seen.add(u);
@@ -112,6 +113,7 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
   const [loadingLevelForGame, setLoadingLevelForGame] = useState<GameLevelDef | null>(null);
   const [selectedIntroLevel, setSelectedIntroLevel] = useState<GameLevelDef | null>(null);
   const [lockedStageAlert, setLockedStageAlert] = useState<GameLevelDef | null>(null);
+  const [completedStageLockedAlert, setCompletedStageLockedAlert] = useState<GameLevelDef | null>(null);
   const [preTestRequiredAlert, setPreTestRequiredAlert] = useState(false);
 
   // Skill icons for each of the 10 stages
@@ -134,6 +136,12 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
     const isCompleted = !!progress.completedLevels[lvl.levelNumber];
     const isCurrent = lvl.levelNumber === progress.currentLevel;
     const isUpcoming = lvl.levelNumber > progress.currentLevel;
+
+    // Block entry to completed levels
+    if (isCompleted) {
+      setCompletedStageLockedAlert(lvl);
+      return;
+    }
 
     // Strict sequential locking enforcement
     if (isUpcoming) {
@@ -517,6 +525,41 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
               >
                 <span>الانتقال للمرحلة {progress.currentLevel}</span>
                 <ArrowLeft className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {completedStageLockedAlert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl bg-[#0e0c1c] border-2 border-emerald-500/80 p-6 sm:p-8 text-right shadow-[0_0_40px_rgba(16,185,129,0.3)] space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400 flex items-center justify-center mx-auto text-2xl">
+              🏆
+            </div>
+
+            <div className="text-center">
+              <span className="px-3 py-0.5 rounded-full bg-emerald-900/90 border border-emerald-400 text-emerald-200 text-xs font-black font-['Cairo',_sans-serif]">
+                المرحلة {completedStageLockedAlert.levelNumber}
+              </span>
+              <h3 className="text-xl font-black text-white font-['Cairo',_sans-serif] mt-2">
+                المرحلة مكتملة ومغلقة
+              </h3>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[#070914] border border-slate-800 text-xs text-slate-300 leading-relaxed text-center font-bold">
+              <p className="text-emerald-300">
+                هذا المستوى مكتمل ومقفل تماماً. لا يمكنك العودة إليه إلا بطلب إعادة تهيئة من المشرف.
+              </p>
+            </div>
+
+            <div className="pt-2 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => setCompletedStageLockedAlert(null)}
+                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs cursor-pointer"
+              >
+                فهمت ذلك
               </button>
             </div>
           </div>

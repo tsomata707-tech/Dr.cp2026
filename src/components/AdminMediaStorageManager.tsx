@@ -216,31 +216,17 @@ export const AdminMediaStorageManager: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-sm transition-all flex items-center gap-2 shadow-lg shadow-emerald-950/40 cursor-pointer border border-emerald-400/30 hover:scale-105 active:scale-95"
-            >
-              <Upload className="w-5 h-5" />
-              <span>رفع فيديو / صورة من الجهاز 📁</span>
-            </button>
-
+            <div className="p-3 bg-blue-900/30 border border-blue-500/40 rounded-xl text-[11px] text-blue-200 max-w-xs leading-relaxed">
+              ⚠️ <strong>تنبيه صارم:</strong> يمنع رفع الملفات الضخمة مباشرة. يرجى رفع وسائطك على <strong>Google Drive</strong> أو <strong>YouTube</strong> ثم إضافة الرابط هنا لاستخراج رابط مباشر متوافق.
+            </div>
+            
             <button
               onClick={() => setShowUrlModal(true)}
-              className="px-4 py-3 rounded-2xl bg-sky-600/30 hover:bg-sky-600/50 text-sky-100 font-bold text-sm transition-all flex items-center gap-2 border border-sky-400/40 cursor-pointer"
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-sky-600 via-indigo-600 to-sky-700 hover:from-sky-500 hover:to-indigo-500 text-white font-black text-sm transition-all flex items-center gap-2 shadow-[0_0_25px_rgba(37,99,235,0.4)] border-2 border-sky-400 cursor-pointer transform hover:-translate-y-0.5"
             >
-              <Link className="w-4 h-4 text-sky-300" />
-              <span>إضافة رابط خارجي</span>
+              <Link className="w-5 h-5 text-sky-200" />
+              <span>إضافة رابط خارجي (Google Drive / YouTube) 🔗</span>
             </button>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="video/*,image/*,.mp4,.webm,.mov,.mkv,.avi,.wmv,.flv,.3gp,.pdf,.png,.jpg,.jpeg,.webp,.svg"
-              onChange={handleFileChange}
-              className="hidden"
-            />
           </div>
         </div>
 

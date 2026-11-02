@@ -53,6 +53,7 @@ import {
 } from '../utils/studentActivityStorage';
 import { useEducationalVideos, isPlaceholderVideo, normalizeVideoUrl } from '../utils/videoStorage';
 import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
+import { isSafeExternalUrl } from '../utils/mediaSafety';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { DraggableLevelInstructions } from './DraggableLevelInstructions';
 import { LevelTransitionLoader5s } from './LevelTransitionLoader5s';
@@ -156,7 +157,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const [lastHeartWarning, setLastHeartWarning] = useState<string | null>(null);
 
   // [FIX 7 & FIX 9]: تعميم درجات وخصم الفيديو على كل المستويات - تبدأ بـ 0 حتى يستمع الطالب للفيديو
-  const [videoPenaltyAppliedPerLevel, setVideoPenaltyAppliedPerLevel] = useState<Record<number, boolean>>({});
+  const [videoPenaltyAppliedPerLevel, setVideoPenaltyAppliedPerLevel] = useState<Record<number, boolean>>(() => {
+    const prog = getStudentProgress(username);
+    return prog.videoPenaltyAppliedPerLevel || {};
+  });
   const [videoScorePerLevel, setVideoScorePerLevel] = useState<Record<number, number>>(() => {
     const initScores: Record<number, number> = {};
     const prog = getStudentProgress(username);
@@ -282,11 +286,30 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     };
   }, [selectedLevelNum, username]);
 
-  // Sync progress from local storage
+  // Sync progress from local storage and handle external resets
   useEffect(() => {
-    const current = getStudentProgress(username);
-    setProgress(current);
-    setSelectedLevelNum(current.currentLevel);
+    const syncProgress = () => {
+      const current = getStudentProgress(username);
+      setProgress(current);
+      setSelectedLevelNum(current.currentLevel);
+      // If we are resetting, clear local state
+      if (current.currentLevel === 1 && Object.keys(current.completedLevels).length === 0) {
+        setChosenAnswers({});
+        setVideoPenaltyAppliedPerLevel({});
+        setVideoScorePerLevel({});
+      }
+    };
+
+    syncProgress();
+
+    const handleReset = (e: any) => {
+      if (e.detail?.all || e.detail?.username?.toLowerCase() === username.toLowerCase()) {
+        syncProgress();
+      }
+    };
+
+    window.addEventListener('cp_student_progress_reset', handleReset);
+    return () => window.removeEventListener('cp_student_progress_reset', handleReset);
   }, [username]);
 
   // Current avatar
@@ -318,11 +341,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   const [previewMediaZoom, setPreviewMediaZoom] = useState<LevelMediaItem | null>(null);
 
-  // Authentic videos uploaded by the Admin for the current level (strictly no placeholders or Rickrolls!)
+  // Authentic videos uploaded by the Admin for the current level (STRICT: External URLs Only!)
   const currentDisplayVideos = useMemo(() => {
     // 1. If the admin uploaded videos in Admin Video Manager for this level, prioritize and display ONLY those videos!
     const adminSlotVideos = (currentLevelVideos || []).filter(
-      (v) => v.isActive && !isPlaceholderVideo(v) && v.videoUrl?.trim()
+      (v) => v.isActive && !isPlaceholderVideo(v) && isSafeExternalUrl(v.videoUrl)
     );
 
     if (adminSlotVideos.length > 0) {
@@ -343,7 +366,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     const list: EducationalVideo[] = [];
     const seenUrls = new Set<string>();
     (currentLevelDef.videos || []).forEach((v, idx) => {
-      if (v.url && !v.url.includes('dQw4w9WgXcQ') && !v.url.startsWith('data:video') && v.url.trim()) {
+      if (v.url && !v.url.includes('dQw4w9WgXcQ') && isSafeExternalUrl(v.url)) {
         const norm = normalizeVideoUrl(v.url.trim());
         const isYt = norm.includes('youtube.com') || norm.includes('youtu.be');
         if (!seenUrls.has(norm)) {
@@ -354,7 +377,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             targetSlotId: `level-${selectedLevelNum}`,
             targetSlotName: `المستوى ${selectedLevelNum}`,
             videoUrl: norm,
-            videoType: isYt ? 'youtube' : norm.startsWith('http') ? 'mp4' : 'file',
+            videoType: isYt ? 'youtube' : 'mp4',
             partNumber: idx + 1,
             partTitle: v.title,
             partCustomTitle: v.partCustomTitle,
@@ -369,6 +392,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     list.sort((a, b) => (a.partNumber || 1) - (b.partNumber || 1));
     return list;
   }, [currentLevelVideos, currentLevelDef.videos, selectedLevelNum]);
+
+  // STRICT FILTER: Only show instructional images/PDFs from external links (no local blobs/data)
+  const currentDisplayImages = useMemo(() => {
+    return (currentLevelDef.images || []).filter(
+      (img) => img.url && isSafeExternalUrl(img.url)
+    );
+  }, [currentLevelDef.images]);
 
   const isLevelCompleted = !!progress.completedLevels[selectedLevelNum];
   const completedResult = progress.completedLevels[selectedLevelNum];
@@ -386,13 +416,18 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const [videoWarning, setVideoWarning] = useState<string | null>(null);
   const handleVideoSeek = () => {
     if (!videoPenaltyAppliedPerLevel[selectedLevelNum]) {
-      setVideoPenaltyAppliedPerLevel((prev) => ({ ...prev, [selectedLevelNum]: true }));
-      setVideoScorePerLevel((prev) => {
-        const current = prev[selectedLevelNum] ?? 25;
-        return { ...prev, [selectedLevelNum]: Math.max(0, current - 5) };
-      });
-      setVideoWarning('لم تشاهد الفيديو بشكل مثالي تم خصم 5 درجات (النتيجة: 20 من 25 XP).');
-      setTimeout(() => setVideoWarning(null), 6000);
+      const newPenalties = { ...videoPenaltyAppliedPerLevel, [selectedLevelNum]: true };
+      setVideoPenaltyAppliedPerLevel(newPenalties);
+      setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: 20 }));
+      setVideoWarning('⚠️ لم تشاهد الفيديو بشكل مثالي تم خصم 5 درجات (النتيجة: 20 من 25 XP).');
+      
+      // PERSIST IMMEDIATELY
+      const currentProg = getStudentProgress(username);
+      currentProg.videoPenaltyAppliedPerLevel = newPenalties;
+      saveSingleStudentProgress(username, currentProg);
+      syncStudentProgressToFirestore(currentProg);
+      
+      setTimeout(() => setVideoWarning(null), 8000);
     }
   };
 
@@ -954,6 +989,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 type="button"
                 onClick={() => {
                   if (isUpcoming) return;
+                  // [STRICT RULE]: Students cannot return to completed levels unless they are admins!
+                  if (isCompleted && !isAdmin) {
+                    alert('هذا المستوى مكتمل ومقفل تماماً. لا يمكنك العودة إليه إلا بطلب إعادة تهيئة من المشرف.');
+                    return;
+                  }
                   if (lvl.levelNumber === 1 || lvl.levelNumber !== selectedLevelNum) {
                     setLoadingLevelForGame(lvl);
                   } else {
@@ -963,7 +1003,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 className={`p-3 rounded-2xl border-2 flex flex-col items-center justify-center text-center transition-all cursor-pointer relative overflow-hidden ${
                   isSelected
                     ? 'ring-2 ring-[#ffd700] scale-105'
-                    : 'hover:scale-102'
+                    : (isCompleted && !isAdmin) ? 'opacity-70 grayscale cursor-not-allowed' : 'hover:scale-102'
                 } ${
                   isCompleted
                     ? 'bg-emerald-950/40 border-emerald-500/70 text-emerald-300'
@@ -1089,7 +1129,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                       onClick={handleVideoSeek}
                       className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/60 text-amber-300 font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0"
                     >
-                      <span>⚡ محاكاة تقديم الفيديو (خصم 5 درجات)</span>
+                      <span>⚡ محاكاة (لم تشاهد الفيديو بشكل مثالي تم خصم 5 درجات)</span>
                     </button>
                   </div>
 
@@ -1103,8 +1143,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                         const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
                         const earned = penalty ? 20 : 25;
                         setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
-                        setVideoWarning(penalty ? 'لم تشاهد الفيديو بشكل مثالي تم خصم 5 درجات (النتيجة: 20 من 25 XP).' : 'مبروك! تم تأكيد مشاهدة فيديو الشرح بالكامل (25 من 25 درجة) 🎓');
-                        setTimeout(() => setVideoWarning(null), 6000);
+                        setVideoWarning(penalty ? 'لم تشاهد الفيديو بشكل مثالي تم خصم 5 درجات' : 'مبروك! تم تأكيد مشاهدة فيديو الشرح بالكامل (25 من 25 درجة) 🎓');
+                        setTimeout(() => setVideoWarning(null), 7000);
                       }}
                       className="px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600 border border-emerald-500/50 text-emerald-200 hover:text-white font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0"
                     >
@@ -1148,20 +1188,20 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       )}
 
       {/* STAGE IMAGES & PDF DOCUMENTS */}
-      {currentLevelDef.images && currentLevelDef.images.length > 0 && (
+      {currentDisplayImages.length > 0 && (
         <div className="my-6 p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-amber-500/30 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <span className="text-xs font-bold text-amber-300 font-['Cairo'] flex items-center gap-1.5">
               <ImageIcon className="w-4 h-4 text-purple-400" />
-              <span>{currentLevelDef.imagesSectionTitle || `صور ومستندات المستوى ${selectedLevelNum} (${currentLevelDef.images.length} ملفات):`}</span>
+              <span>{currentLevelDef.imagesSectionTitle || `صور ومستندات المستوى ${selectedLevelNum} (${currentDisplayImages.length} ملفات):`}</span>
             </span>
             <span className="text-[11px] text-slate-300 font-semibold">
-              {currentLevelDef.imagesSectionDesc || 'إمكانية رفع حتى 5 صور أو ملفات PDF بحد أقصى'}
+              {currentLevelDef.imagesSectionDesc || 'إمكانية عرض حتى 5 صور أو ملفات PDF من روابط خارجية'}
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {currentLevelDef.images.map((imgItem) => (
+            {currentDisplayImages.map((imgItem) => (
               <div
                 key={imgItem.id}
                 onClick={() => setPreviewMediaZoom(imgItem)}
@@ -1319,7 +1359,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               {q1.question}
             </h4>
 
-            {q1.imageUrl && q1.imageUrl.trim() && (
+            {q1.imageUrl && q1.imageUrl.trim() && isSafeExternalUrl(q1.imageUrl) && (
               <div className="my-3 flex justify-center items-center">
                 <div className="relative max-w-full rounded-2xl overflow-hidden border-2 border-amber-400/50 bg-[#070914] shadow-2xl p-1.5">
                   <img
@@ -1707,6 +1747,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 type="button"
                 id={`btn-finish-level-${selectedLevelNum}`}
                 onClick={() => {
+                  if (isLevelCompleted && !isAdmin) {
+                    alert('هذا المستوى مكتمل ومقفل تماماً. لا يمكنك العودة إليه إلا بطلب إعادة تهيئة من المشرف.');
+                    return;
+                  }
                   if (!isAdmin) {
                     const unanswered = currentLevelDef.questions.some(
                       (q) => chosenAnswers[q.id] === undefined
@@ -1728,7 +1772,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     : 'bg-slate-800/80 text-slate-400 border border-slate-700/60 hover:border-amber-400/50'
                 }`}
               >
-                <span>finish level {selectedLevelNum}</span>
+                <span>{isLevelCompleted ? 'تم إكمال المستوى بنجاح 🏆' : `إنهاء واعتماد المستوى ${selectedLevelNum} 🚀`}</span>
                 <ArrowLeft className="w-5 h-5 shrink-0" />
               </button>
 
