@@ -219,30 +219,6 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
               onError={(e) => {
                 console.warn('Video failed to load:', finalPlayUrl);
               }}
-              onTimeUpdate={(e) => {
-                const v = e.currentTarget;
-                const vidId = currentVideo.id || 'vid_default';
-                const maxTime = maxTimeRefs.current[vidId] ?? 0;
-
-                // [STRICT PENALTY]: Block forward seeking past watched portion
-                if (v.currentTime > maxTime + 2) {
-                  v.currentTime = maxTime;
-                  onSeek?.();
-                } else if (v.currentTime > maxTime) {
-                  maxTimeRefs.current[vidId] = v.currentTime;
-                }
-              }}
-              onSeeking={(e) => {
-                const v = e.currentTarget;
-                const vidId = currentVideo.id || 'vid_default';
-                const maxTime = maxTimeRefs.current[vidId] ?? 0;
-
-                // Any attempt to skip forward triggers the penalty and reverts time
-                if (v.currentTime > maxTime + 1.5) {
-                  v.currentTime = maxTime;
-                  onSeek?.();
-                }
-              }}
               onEnded={() => {
                 if (selectedPartIndex === videos.length - 1) {
                   onVideoFinish?.();

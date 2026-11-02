@@ -22,8 +22,6 @@ import {
   Radio,
   Wifi,
   Volume2,
-  Video,
-  Play,
   Home,
   Upload,
   Download,
@@ -51,8 +49,6 @@ import {
   deleteStudentActivity,
   subscribeToLevelActivityConfigs,
 } from '../utils/studentActivityStorage';
-import { useEducationalVideos, isPlaceholderVideo, normalizeVideoUrl } from '../utils/videoStorage';
-import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 import { isSafeExternalUrl } from '../utils/mediaSafety';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { DraggableLevelInstructions } from './DraggableLevelInstructions';
@@ -68,7 +64,6 @@ import {
   RealtimeStudentParticipant,
   StudentActivitySubmission,
   LevelMediaItem,
-  EducationalVideo,
   TestAccessSession,
 } from '../types';
 import {
@@ -109,7 +104,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   const [chosenAnswers, setChosenAnswers] = useState<Record<string, number>>({});
   const [showAvatarModal, setShowAvatarModal] = useState<boolean>(false);
-  const [isVideoOpen, setIsVideoOpen] = useState<boolean>(true);
   const [loadingLevelForGame, setLoadingLevelForGame] = useState<GameLevelDef | null>(null);
 
   // [FIX 3]: القلوب لكل مستوى تبدأ بـ 1 فقط بدلاً من 2
@@ -156,24 +150,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   const [lastHeartWarning, setLastHeartWarning] = useState<string | null>(null);
 
-  // [FIX 7 & FIX 9]: تعميم درجات وخصم الفيديو على كل المستويات - تبدأ بـ 0 حتى يستمع الطالب للفيديو
-  const [videoPenaltyAppliedPerLevel, setVideoPenaltyAppliedPerLevel] = useState<Record<number, boolean>>(() => {
-    const prog = getStudentProgress(username);
-    return prog.videoPenaltyAppliedPerLevel || {};
-  });
-  const [videoScorePerLevel, setVideoScorePerLevel] = useState<Record<number, number>>(() => {
-    const initScores: Record<number, number> = {};
-    const prog = getStudentProgress(username);
-    Object.entries(prog.completedLevels || {}).forEach(([lvlNum, res]) => {
-      if (!res) return;
-      const num = Number(lvlNum);
-      if (res.questionScores?.['video_watch'] !== undefined) {
-        initScores[num] = res.questionScores['video_watch'];
-      }
-    });
-    return initScores;
-  });
-
   // Real-time synchronization of levels
   useEffect(() => {
     const handleLevelsUpdate = (e: any) => {
@@ -184,18 +160,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     window.addEventListener('game-levels-updated', handleLevelsUpdate);
     return () => window.removeEventListener('game-levels-updated', handleLevelsUpdate);
   }, []);
-
-  const handleVideoFinishReward = () => {
-    if (isLevelCompleted) return;
-    if ((videoScorePerLevel[selectedLevelNum] || 0) >= 0) return;
-    
-    setVideoScorePerLevel(prev => ({
-      ...prev,
-      [selectedLevelNum]: 0
-    }));
-    setVideoWarning('مبروك! شاهدت فيديو الشرح بالكامل 🎓');
-    setTimeout(() => setVideoWarning(null), 5000);
-  };
 
   // 5-second transition state as requested
   const [isTransitioning5s, setIsTransitioning5s] = useState<boolean>(false);
@@ -210,7 +174,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadStatusText, setUploadStatusText] = useState<string>('جاري قراءة الملف...');
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const currentLevelVideos = useEducationalVideos(`level-${selectedLevelNum}`);
   const [feedbackModal, setFeedbackModal] = useState<{
     result: CompletedLevelResult;
     isImmediate: boolean;
@@ -341,25 +304,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   const [previewMediaZoom, setPreviewMediaZoom] = useState<LevelMediaItem | null>(null);
 
-  // Authentic videos uploaded by the Admin for the current level (STRICT: External URLs Only, no fallback)
-  const currentDisplayVideos = useMemo(() => {
-    const adminSlotVideos = (currentLevelVideos || []).filter(
-      (v) => v.isActive && !isPlaceholderVideo(v) && isSafeExternalUrl(v.videoUrl)
-    );
 
-    const list: EducationalVideo[] = [];
-    const seenUrls = new Set<string>();
-    adminSlotVideos.forEach((v) => {
-      const norm = normalizeVideoUrl(v.videoUrl.trim());
-      if (!seenUrls.has(norm)) {
-        seenUrls.add(norm);
-        list.push({ ...v, videoUrl: norm });
-      }
-    });
-
-    list.sort((a, b) => (a.partNumber || 1) - (b.partNumber || 1));
-    return list;
-  }, [currentLevelVideos]);
 
   // STRICT FILTER: Only show instructional images/PDFs from external links (no local blobs/data)
   const currentDisplayImages = useMemo(() => {
@@ -379,25 +324,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const currentHearts = heartsPerLevel[selectedLevelNum] ?? 1;
   const hasAnsweredQ1 = isLevelCompleted || (q1 ? chosenAnswers[q1.id] !== undefined : false);
   const isSection1Done = hasAnsweredQ1;
-
-  // [FIX 7]: تعميم خصم تقديم/تأخير الفيديو على كل المستويات
-  const [videoWarning, setVideoWarning] = useState<string | null>(null);
-  const handleVideoSeek = () => {
-    if (!videoPenaltyAppliedPerLevel[selectedLevelNum]) {
-      const newPenalties = { ...videoPenaltyAppliedPerLevel, [selectedLevelNum]: true };
-      setVideoPenaltyAppliedPerLevel(newPenalties);
-      setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: 20 }));
-      setVideoWarning('⚠️ تم تحريك مؤشر الفيديو وتم خصم 5 درجات (النتيجة: 20 من 25 XP).');
-      
-      // PERSIST IMMEDIATELY
-      const currentProg = getStudentProgress(username);
-      currentProg.videoPenaltyAppliedPerLevel = newPenalties;
-      saveSingleStudentProgress(username, currentProg);
-      syncStudentProgressToFirestore(currentProg);
-      
-      setTimeout(() => setVideoWarning(null), 8000);
-    }
-  };
 
   // [FIX 8]: استخدام المساعدة (Hint) يستهلك القلب الوحيد ويستبعد خياراً خاطئاً عشوائياً مع خصم 5 درجات
   const [hintMessage, setHintMessage] = useState<string | null>(null);
@@ -676,8 +602,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
     // [FIX 1]: تمرير s2Score = 0 دائماً لمنع حساب الـ 50 درجة مرتين (لأن الدرجة موجودة في studentActivities وتُحسب في calculateStudentTotalScore)
     const s2Score = 0;
-    const videoScore = videoScorePerLevel[selectedLevelNum] ?? 0;
-
     const { progress: updatedProgress } = submitLevelChallenge(
       username,
       selectedLevelNum,
@@ -685,7 +609,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       60,
       s2Score,
       s1ScoreOverride,
-      videoScore
+      0
     );
 
     markTestCompletedInAudit(username, `level-${selectedLevelNum}`);
@@ -736,7 +660,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     if (loadingLevelForGame) {
       const num = loadingLevelForGame.levelNumber;
       setSelectedLevelNum(num);
-      setIsVideoOpen(true);
       setLoadingLevelForGame(null);
     }
   }, [loadingLevelForGame]);
@@ -1052,108 +975,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         </div>
       </div>
 
-      {/* 🌟 STAGE VIDEOS (STRICTLY AUTHENTIC ADMIN-UPLOADED VIDEOS) */}
-      {currentDisplayVideos.length > 0 ? (
-        <div className="my-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-300 font-['Cairo'] flex items-center gap-1.5">
-              <Video className="w-4 h-4 text-blue-400" />
-              <span>فيديوهات شرح المستوى {selectedLevelNum} ({currentDisplayVideos.length} فيديو متاح - مرفوع من المشرف):</span>
-            </span>
 
-            <button
-              type="button"
-              onClick={() => setIsVideoOpen(!isVideoOpen)}
-              className="px-3.5 py-1.5 rounded-xl bg-blue-600/30 hover:bg-blue-600 border border-blue-500/50 text-white text-xs font-bold transition-all cursor-pointer shadow-md flex items-center gap-1.5"
-            >
-              <Play className="w-3.5 h-3.5" />
-              <span>{isVideoOpen ? 'إخفاء الفيديوهات' : 'عرض مشغل الفيديوهات'}</span>
-            </button>
-          </div>
-
-          {isVideoOpen && (
-            <div className="space-y-2">
-              <MultiPartVideoPlayer
-                videos={currentDisplayVideos}
-                title={`شرح المستوى ${selectedLevelNum}: ${currentLevelDef.title}`}
-                onSeek={handleVideoSeek}
-                onVideoFinish={() => {
-                  const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
-                  const earned = penalty ? 20 : 25;
-                  setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
-                  setVideoWarning(penalty ? '⚠️ تم تحريك مؤشر الفيديو وتم خصم 5 درجات (النتيجة: 20 من 25 XP).' : 'مبروك! شاهدت فيديو الشرح بالكامل وحصلت على 25 من 25 درجة 🎓');
-                  setTimeout(() => setVideoWarning(null), 6000);
-                }}
-              />
-              {!isLevelCompleted && (
-                <div className="space-y-2">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
-                    <span className="text-amber-300 font-bold flex items-center gap-1.5">
-                      <span>💡 اختبار تجريبي:</span>
-                      <span>يمكنك محاكاة تقديم أو تخطي الفيديو لتجربة الخصم الفوري:</span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleVideoSeek}
-                      className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/60 text-amber-300 font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0"
-                    >
-                      <span>⚡ محاكاة (تم تحريك مؤشر الفيديو وتم خصم 5 درجات (النتيجة: 20 من 25 XP))</span>
-                    </button>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 text-xs">
-                    <span className="text-slate-400">
-                      عند إتمام استماعك وشرحك للفيديو، يمكنك الضغط هنا لتوثيق المشاهدة واحتساب درجتك:
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
-                        const earned = penalty ? 20 : 25;
-                        setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
-                        setVideoWarning(penalty ? '⚠️ تم تحريك مؤشر الفيديو وتم خصم 5 درجات (النتيجة: 20 من 25 XP).' : 'مبروك! تم تأكيد مشاهدة فيديو الشرح بالكامل (25 من 25 درجة) 🎓');
-                        setTimeout(() => setVideoWarning(null), 7000);
-                      }}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600 border border-emerald-500/50 text-emerald-200 hover:text-white font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>أتممت مشاهدة الفيديو بالكامل ✓</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Video Warning Banner if penalty applied */}
-          {videoWarning && (
-            <div className={`p-3.5 rounded-2xl border text-xs font-bold flex items-center gap-2 shadow-lg ${videoWarning.includes('تم خصم') || videoWarning.includes('لم تشاهد') ? 'bg-red-950/95 border-red-500 text-red-200 animate-bounce' : 'bg-emerald-950/95 border-emerald-500 text-emerald-200'}`}>
-              <span>{videoWarning.includes('تم خصم') || videoWarning.includes('لم تشاهد') ? '⚠️' : '✅'} {videoWarning}</span>
-            </div>
-          )}
-
-          <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-emerald-500/50 flex items-center justify-between text-xs">
-            <span className="text-slate-300 font-bold">درجة الفيديو التعليمي لهذا المستوى:</span>
-            <span className="px-3 py-1 rounded-xl bg-emerald-950/80 border border-emerald-400 text-emerald-300 font-black font-['Outfit']">
-              {isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined
-                ? completedResult.questionScores['video_watch']
-                : (videoScorePerLevel[selectedLevelNum] ?? 25)} / 25 XP
-            </span>
-          </div>
-        </div>
-      ) : (
-        <div className="my-6 p-4 rounded-2xl bg-slate-950/70 border border-slate-800 text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <Video className="w-4 h-4 text-amber-400" />
-            <span>لم يقم المشرف برفع فيديو تعليمي لهذا المستوى بعد (لا توجد أي فيديوهات افتراضية أخرى).</span>
-          </div>
-          {isAdmin && (
-            <span className="text-[11px] text-amber-300 font-bold">
-              يمكنك رفع فيديوهات هذا المستوى من شاشة "إدارة ورفع الفيديوهات" في لوحة التحكم.
-            </span>
-          )}
-        </div>
-      )}
 
       {/* STAGE IMAGES & PDF DOCUMENTS */}
       {currentDisplayImages.length > 0 && (
@@ -1442,16 +1264,15 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             </span>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                سؤال التحدي (25 درجة): <strong className="text-amber-400">{isLevelCompleted && completedResult?.questionScores?.[q1?.id ?? ''] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0)} / 25 XP</strong>
+                سؤال التحدي ({q1Points} درجة): <strong className="text-amber-400">{isLevelCompleted && completedResult?.questionScores?.[q1?.id ?? ''] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0)} / {q1Points} XP</strong>
               </span>
-              <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                مشاهدة الفيديو (25 درجة): <strong className="text-emerald-400">{isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined ? completedResult.questionScores['video_watch'] : (videoScorePerLevel[selectedLevelNum] ?? 25)} / 25 XP</strong>
-              </span>
-              <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{studentActivity ? (studentActivity.grade ?? 50) : 0} / 50 XP</strong>
-              </span>
+              {selectedLevelNum !== 1 && (
+                <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
+                  النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{studentActivity ? (studentActivity.grade ?? 50) : 0} / 50 XP</strong>
+                </span>
+              )}
               <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
-                المجموع المعتمد للمستوى: {(isLevelCompleted && completedResult?.questionScores?.['video_watch'] !== undefined ? completedResult.questionScores['video_watch'] : (videoScorePerLevel[selectedLevelNum] ?? 25)) + (studentActivity ? (studentActivity.grade ?? 50) : 0) + (isLevelCompleted && q1 && completedResult?.questionScores?.[q1.id] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0))} / 100 XP
+                المجموع المعتمد للمستوى: {(selectedLevelNum !== 1 ? (studentActivity ? (studentActivity.grade ?? 50) : 0) : 0) + (isLevelCompleted && q1 && completedResult?.questionScores?.[q1.id] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0))} / {currentLevelDef.totalMaxScore || 100} XP
               </span>
             </div>
           </div>

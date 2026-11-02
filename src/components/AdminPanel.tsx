@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Settings,
   BookOpen,
-  Video,
   Image as ImageIcon,
   Award,
   Users,
@@ -18,7 +17,6 @@ import { AdminUsersManager } from './AdminUsersManager';
 import { AdminInstructionsManager } from './AdminInstructionsManager';
 import { AdminTestsSettingsManager } from './AdminTestsSettingsManager';
 import { AdminStudentsAuditManager } from './AdminStudentsAuditManager';
-import { AdminVideoManager } from './AdminVideoManager';
 import { AdminSplashManager } from './AdminSplashManager';
 import { AdminSupervisorsHonorManager } from './AdminSupervisorsHonorManager';
 import { AdminSiteTitleManager } from './AdminSiteTitleManager';
@@ -42,7 +40,6 @@ type AdminTab =
   | 'students_audit'
   | 'site_title'
   | 'instructions_standards'
-  | 'videos'
   | 'splash'
   | 'supervisors';
 
@@ -251,21 +248,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
               <span>الأهداف والمعايير</span>
             </button>
 
-            {/* TAB 7: إدارة الفيديوهات */}
-            <button
-              type="button"
-              onClick={() => setActiveTab('videos')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'videos'
-                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
-                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
-              }`}
-            >
-              <Video className="w-4 h-4 text-sky-700" />
-              <span>إدارة الفيديوهات</span>
-            </button>
-
-            {/* TAB 8: لوحة المشرفين */}
+            {/* TAB: لوحة المشرفين */}
             <button
               type="button"
               onClick={() => setActiveTab('supervisors')}
@@ -278,7 +261,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
               <Award className="w-4 h-4 text-sky-700" />
               <span>لوحة المشرفين</span>
             </button>
-
           </div>
         </div>
       </div>
@@ -300,7 +282,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
         {activeTab === 'site_title' && <AdminSiteTitleManager />}
         {activeTab === 'splash' && <AdminSplashManager />}
         {activeTab === 'instructions_standards' && <AdminInstructionsManager />}
-        {activeTab === 'videos' && <AdminVideoManager />}
         {activeTab === 'supervisors' && <AdminSupervisorsHonorManager />}
       </div>
     </div>

@@ -295,22 +295,6 @@ export function submitLevelChallenge(
     domain: `المستوى ${levelNumber}: ${levelDef.title}`,
   };
 
-  // Add video score (Level 1 only usually, but supported for all)
-  if (videoScore > 0 || levelNumber === 1) {
-    scoreGained += videoScore;
-    questionScores['video_watch'] = videoScore;
-    questionDetails['video_watch'] = {
-      chosenIndex: videoScore >= 0 ? 1 : 0,
-      isCorrect: videoScore > 0,
-      answeredAt: completedAtStr,
-      chosenText: videoScore >= 0 ? 'تمت مشاهدة الفيديو بالكامل دون تقديم أو تأخير' : `تمت مشاهدة الفيديو مع تقديم/تأخير (الدرجة: ${videoScore})`,
-      correctText: 'مشاهدة الفيديو التعليمي كاملاً دون تخطي',
-      explanation: 'الالتزام بمشاهدة الفيديو التعليمي يمنحك الدرجة الكاملة.',
-      questionText: 'مشاهدة الفيديو التعليمي للمستوى',
-      domain: `المستوى ${levelNumber}: ${levelDef.title}`,
-    };
-  }
-
   // Determine feedback mode from group:
   // G1 (فوري) & G3 (فوري) -> immediate feedback to student
   // G2 (مرجأ) & G4 (مرجأ) -> deferred feedback
