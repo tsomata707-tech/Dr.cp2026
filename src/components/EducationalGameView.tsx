@@ -33,7 +33,9 @@ import {
   FileCheck,
   Target,
   HardDrive,
+  Video,
 } from 'lucide-react';
+import { normalizeVideoUrl, getEducationalVideos } from '../utils/videoStorage';
 import { CARTOON_AVATARS, GAME_LEVELS_DATA, GameLevelDef } from '../data/gameLevelsData';
 import {
   getStudentProgress,
@@ -310,6 +312,27 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       (img) => img.url && isSafeExternalUrl(img.url)
     );
   }, [currentLevelDef.images]);
+
+  // Level videos uploaded by admin (view-only, displayed at top before questions)
+  const currentDisplayVideos = useMemo(() => {
+    const listFromLevel = (currentLevelDef.videos || []).filter(
+      (v) => v.url && v.url.trim() && isSafeExternalUrl(v.url)
+    );
+    if (listFromLevel.length > 0) return listFromLevel;
+
+    // Check global video storage for targetSlotId level-N
+    const globalVids = getEducationalVideos().filter(
+      (v) => v.targetSlotId === `level-${selectedLevelNum}` && v.videoUrl && isSafeExternalUrl(v.videoUrl)
+    );
+    return globalVids.map((v) => ({
+      id: v.id,
+      title: v.partCustomTitle || v.title || `فيديو المستوى ${selectedLevelNum}`,
+      partCustomTitle: v.partCustomTitle || v.title,
+      url: v.videoUrl,
+      type: 'video' as const,
+      format: v.videoType,
+    }));
+  }, [currentLevelDef, selectedLevelNum]);
 
   const isLevelCompleted = !!progress.completedLevels[selectedLevelNum];
   const completedResult = progress.completedLevels[selectedLevelNum];
@@ -1088,6 +1111,59 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 النتيجة المعروضة: {completedResult.score} من {completedResult.maxScore} XP
               </p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* LEVEL VIDEO PLAYER (BEFORE QUESTIONS - VIEW ONLY) */}
+      {currentDisplayVideos.length > 0 && (
+        <div className="mt-6 p-5 sm:p-6 rounded-3xl bg-slate-950/90 border-2 border-cyan-500/80 shadow-[0_0_35px_rgba(6,182,212,0.25)] space-y-4 text-right">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-cyan-500/20 border-2 border-cyan-400 text-cyan-300 flex items-center justify-center shrink-0 shadow-md">
+                <Video className="w-6 h-6 text-cyan-300" />
+              </div>
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 text-[10px] font-black">
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>فيديو المستوى - مشاهدة فقط 📺</span>
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-0.5">
+                  فيديو المادة التعليمية للمستوى {selectedLevelNum}
+                </h3>
+              </div>
+            </div>
+            <span className="text-xs text-slate-400 font-['Cairo'] bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800">
+              📺 مشاهدة مباشرة مخصصة لجميع الطلاب
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {currentDisplayVideos.map((vid, idx) => {
+              const videoEmbedUrl = normalizeVideoUrl(vid.url);
+              return (
+                <div key={vid.id || idx} className="rounded-2xl bg-black/90 border-2 border-cyan-500/40 overflow-hidden shadow-2xl">
+                  <div className="p-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-cyan-200">
+                    <span className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span>{vid.partCustomTitle || vid.title || `فيديو الشرح ${idx + 1}`}</span>
+                    </span>
+                    <span className="text-[11px] text-cyan-300 bg-cyan-950/60 px-2.5 py-0.5 rounded-full border border-cyan-500/30 font-bold">
+                      مشاهدة فقط 👁️
+                    </span>
+                  </div>
+                  <div className="aspect-video w-full relative bg-black">
+                    <iframe
+                      src={videoEmbedUrl}
+                      title={vid.title || `Level Video ${idx + 1}`}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

@@ -51,6 +51,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   const [videoUrlInput, setVideoUrlInput] = useState<string>('');
   const [videoTitleInput, setVideoTitleInput] = useState<string>('');
   const [editingVideoUrlId, setEditingVideoUrlId] = useState<string | null>(null);
+  const [videoLevelSelect, setVideoLevelSelect] = useState<number>(1);
 
   // External Image/PDF URL Modal state
   const [showImageUrlModal, setShowImageUrlModal] = useState<boolean>(false);
@@ -79,7 +80,8 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     }
     setEditingVideoUrlId(null);
     setVideoUrlInput('');
-    setVideoTitleInput(`فيديو ${currentVids.length + 1}`);
+    setVideoTitleInput(`فيديو المستوى ${selectedLevelNum}`);
+    setVideoLevelSelect(selectedLevelNum);
     setShowVideoUrlModal(true);
   };
 
@@ -87,19 +89,22 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     setEditingVideoUrlId(video.id);
     setVideoUrlInput(video.url || '');
     setVideoTitleInput(video.partCustomTitle || video.title || '');
+    setVideoLevelSelect(selectedLevelNum);
     setShowVideoUrlModal(true);
   };
 
   const handleSaveVideoUrl = (e: React.FormEvent) => {
     e.preventDefault();
     if (!videoUrlInput.trim()) {
-      showError('يرجى إدخال رابط الفيديو.');
+      showError('يرجى إدخال رابط الفيديو المباشر.');
       return;
     }
 
     const rawUrl = videoUrlInput.trim();
     const cleanUrl = normalizeVideoUrl(rawUrl);
-    const cleanTitle = videoTitleInput.trim() || `فيديو ${currentLevel?.videos?.length || 1}`;
+    const targetLvlNum = videoLevelSelect || selectedLevelNum;
+    const targetLvl = levels.find((l) => l.levelNumber === targetLvlNum) || currentLevel;
+    const cleanTitle = videoTitleInput.trim() || `فيديو المستوى ${targetLvlNum}`;
     const isYt = cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be');
 
     if (editingVideoUrlId) {
@@ -113,9 +118,9 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         size: 0,
         addedAt: new Date().toISOString(),
       };
-      const updated = replaceMediaInLevel(selectedLevelNum, editingVideoUrlId, updatedMedia);
+      const updated = replaceMediaInLevel(targetLvlNum, editingVideoUrlId, updatedMedia);
       setLevels([...updated]);
-      showToast('✅ تم استبدال فيديو المستوى عبر الرابط بنجاح!');
+      showToast(`✅ تم استبدال فيديو المستوى ${targetLvlNum} عبر الرابط بنجاح!`);
     } else {
       const videoId = `vid-url-${Date.now()}`;
       const newMedia: LevelMediaItem = {
@@ -128,9 +133,9 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         size: 0,
         addedAt: new Date().toISOString(),
       };
-      const updated = addMediaToLevel(selectedLevelNum, newMedia);
+      const updated = addMediaToLevel(targetLvlNum, newMedia);
       setLevels([...updated]);
-      showToast('✅ تم إدراج فيديو جديد للمستوى عبر الرابط بنجاح!');
+      showToast(`✅ تم إدراج فيديو جديد للمستوى ${targetLvlNum} عبر الرابط بنجاح!`);
     }
 
     setShowVideoUrlModal(false);
@@ -617,12 +622,60 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       {showVideoUrlModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className="w-full max-w-lg p-6 rounded-3xl bg-[#0c0f20] border-2 border-cyan-500 shadow-2xl space-y-5">
-            <h3 className="text-lg font-black text-white">{editingVideoUrlId ? 'تبديل الفيديو' : 'إضافة فيديو جديد'}</h3>
-            <input type="text" value={videoTitleInput} onChange={(e) => setVideoTitleInput(e.target.value)} placeholder="عنوان الفيديو" className="w-full px-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none" />
-            <input type="url" value={videoUrlInput} onChange={(e) => setVideoUrlInput(e.target.value)} placeholder="رابط الفيديو المباشر (URL)" className="w-full px-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-cyan-300 text-xs outline-none" />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowVideoUrlModal(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-white text-xs">إلغاء</button>
-              <button onClick={handleSaveVideoUrl} className="px-6 py-2 rounded-xl bg-cyan-600 text-white font-black text-xs">حفظ</button>
+            <h3 className="text-lg font-black text-white">{editingVideoUrlId ? 'تعديل/تبديل فيديو المستوى' : 'رفع/إضافة فيديو في المستوى 📺'}</h3>
+            
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">اختر المستوى للفيديو (1 إلى 9):</label>
+              <select
+                value={videoLevelSelect}
+                onChange={(e) => setVideoLevelSelect(Number(e.target.value))}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-bold text-xs outline-none cursor-pointer"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                  <option key={num} value={num}>
+                    المستوى {num}: {levels.find((l) => l.levelNumber === num)?.shortTitle || `المستوى ${num}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">عنوان الفيديو:</label>
+              <input
+                type="text"
+                value={videoTitleInput}
+                onChange={(e) => setVideoTitleInput(e.target.value)}
+                placeholder="مثال: فيديو شرح السؤال الأول"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-cyan-300 mb-1">رابط الفيديو المباشر (YouTube / Direct MP4 / Google Drive):</label>
+              <input
+                type="url"
+                value={videoUrlInput}
+                onChange={(e) => setVideoUrlInput(e.target.value)}
+                placeholder="ضع رابط الفيديو هنا... https://..."
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-cyan-500/50 text-cyan-200 text-xs outline-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowVideoUrlModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveVideoUrl}
+                className="px-6 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-black text-xs cursor-pointer shadow-lg hover:scale-105 transition-transform"
+              >
+                حفظ ونشر الفيديو 📺
+              </button>
             </div>
           </div>
         </div>
