@@ -85,8 +85,9 @@ export const AdminVideoManager: React.FC = () => {
   };
 
   const getSlotVideos = (slotId: string) => {
+    if (!Array.isArray(videos)) return [];
     return videos
-      .filter((v) => v.targetSlotId === slotId && v.isActive && !isPlaceholderVideo(v))
+      .filter((v) => v && v.targetSlotId === slotId && v.isActive && !isPlaceholderVideo(v))
       .sort((a, b) => (a.partNumber || 1) - (b.partNumber || 1));
   };
 

@@ -25,6 +25,7 @@ import {
   Layers,
   ArrowUpDown,
   BookOpen,
+  Upload,
 } from 'lucide-react';
 import { generateSixtyStudents, RESEARCH_GROUPS_META, getGroupByUsername, getCollaborativeGroupByUsername } from '../data/studentAccounts';
 import { getAllTripartiteNames, getStudentTripartiteName } from '../utils/studentNameStorage';
@@ -52,6 +53,7 @@ import {
   fetchAllStudentsProgressFromCloud,
   fetchAllLoginsAuditFromCloud,
   fetchAllTestAccessAuditFromCloud,
+  syncStudentProgressToFirestore,
 } from '../utils/realtimeService';
 import { getAllStudentsProgress, saveAllStudentsProgress, resetAllStudentsToRealCleanState, resetStudentProgress } from '../utils/gameStorage';
 import { seedPreTestSubmissions } from '../data/preTestSubmissionsSeed';
@@ -242,6 +244,20 @@ export const AdminStudentsAuditManager: React.FC = () => {
     }
   };
 
+  const handlePushToCloud = async () => {
+    setIsSyncingCloud(true);
+    try {
+      const allProg = getAllStudentsProgress();
+      const promises = Object.values(allProg).map((prog) => syncStudentProgressToFirestore(prog));
+      await Promise.all(promises);
+      showToast('تم رفع وتحديث كافة درجات ونتائج الطلاب إلى السحابة (Firebase) بنجاح! ☁️');
+    } catch (err) {
+      showToast('حدث خطأ أثناء رفع النتائج للسحابة.', 'info');
+    } finally {
+      setIsSyncingCloud(false);
+    }
+  };
+
   // Subscribe to real-time updates from Firebase and local events
   useEffect(() => {
     // Initial fetch on mount to pull any submissions students completed on their devices
@@ -308,7 +324,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       setLoginAuditMap(getStudentLoginsAuditMap());
     };
     const handleProgressUpdate = () => {
-      setProgressMap(getAllStudentsProgress());
+      setProgressMap({ ...getAllStudentsProgress() });
     };
     const handleTestAccessUpdate = () => {
       setTestAccessMap(getTestAccessAuditMap());
@@ -1153,6 +1169,17 @@ export const AdminStudentsAuditManager: React.FC = () => {
             >
               <RefreshCw className={`w-4 h-4 ${isSyncingCloud ? 'animate-spin' : ''}`} />
               <span>{isSyncingCloud ? 'جارِ جلب السحابة...' : '⚡ سحب نتائج الطلاب من السحابة (Firebase)'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePushToCloud}
+              disabled={isSyncingCloud}
+              className="px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 hover:from-emerald-500 text-white font-black text-xs shadow-lg shadow-emerald-950/60 flex items-center gap-2 cursor-pointer transition transform hover:scale-105 shrink-0 disabled:opacity-50 border border-emerald-400/40"
+              title="رفع وتحديث جميع درجات وإجابات الطلاب الحالية محلياً إلى قاعدة البيانات السحابية (Firebase)"
+            >
+              <Upload className={`w-4 h-4 ${isSyncingCloud ? 'animate-bounce' : ''}`} />
+              <span>☁️ رفع وتحديث النتائج إلى السحابة</span>
             </button>
 
             <button

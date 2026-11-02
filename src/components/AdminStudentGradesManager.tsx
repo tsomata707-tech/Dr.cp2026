@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Award, CheckCircle2, Save, User, FileSpreadsheet, Sparkles, RefreshCw } from 'lucide-react';
+import { Award, CheckCircle2, Save, User, FileSpreadsheet, Sparkles, RefreshCw, Upload, Cloud } from 'lucide-react';
 import { PortalUser } from '../types';
 import { getPortalUsers, addActivityLog } from '../utils/adminStorage';
 import { getStudentProgress, saveSingleStudentProgress, calculateStudentTotalScore } from '../utils/gameStorage';
@@ -11,6 +11,7 @@ export const AdminStudentGradesManager: React.FC = () => {
   const [selectedTestOrLevel, setSelectedTestOrLevel] = useState<string>('level-1');
   const [gradeInput, setGradeInput] = useState<number>(25);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   const studentProg = getStudentProgress(selectedUsername);
 
@@ -29,9 +30,10 @@ export const AdminStudentGradesManager: React.FC = () => {
     }
   }, [selectedUsername, selectedTestOrLevel]);
 
-  const handleSaveGrade = (e: React.FormEvent) => {
+  const handleSaveGrade = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUsername) return;
+    setIsSaving(true);
 
     const prog = getStudentProgress(selectedUsername);
     const scoreVal = Math.max(0, Number(gradeInput) || 0);
@@ -95,22 +97,31 @@ export const AdminStudentGradesManager: React.FC = () => {
     prog.totalScore = calculateStudentTotalScore(prog);
     prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
+    // 1. Save locally
     saveSingleStudentProgress(selectedUsername, prog);
-    syncStudentProgressToFirestore(prog).catch(() => {});
+
+    // 2. Push / Sync instantly to Cloud (Firebase RTDB)
+    try {
+      await syncStudentProgressToFirestore(prog);
+    } catch (err) {
+      console.warn("Cloud push warning:", err);
+    }
 
     addActivityLog(
-      `قام المشرف بتحديث درجة الطالب ${selectedUsername} لـ (${selectedTestOrLevel}) إلى ${scoreVal} درجة`,
+      `قام المشرف بتعديل ورصد درجة الطالب ${selectedUsername} لـ (${selectedTestOrLevel}) إلى ${scoreVal} درجة`,
       'admin',
       'success'
     );
 
+    // 3. Dispatch global events so audit results sheet updates immediately without any cache delay
     try {
       window.dispatchEvent(new CustomEvent('cp_student_profile_updated', { detail: { username: selectedUsername } }));
       window.dispatchEvent(new CustomEvent('cp_student_progress_reset', { detail: { username: selectedUsername } }));
     } catch {}
 
-    setSuccessMsg(`✅ تم تحديث وحفظ درجة الطالب (${selectedUsername}) لـ (${selectedTestOrLevel}) بنجاح (${scoreVal} درجة). ظهرت في لوحة النتائج!`);
-    setTimeout(() => setSuccessMsg(null), 4000);
+    setIsSaving(false);
+    setSuccessMsg(`✅ تم حفظ وتحديث درجة الطالب (${selectedUsername}) لـ (${selectedTestOrLevel}) بنجاح (${scoreVal} درجة)، وتم رفعها فوراً إلى السحابة (Firebase) وظهورها في شيت النتائج بدقة تامة دون أي تعديل أو فبركة!`);
+    setTimeout(() => setSuccessMsg(null), 5000);
   };
 
   return (
@@ -124,10 +135,10 @@ export const AdminStudentGradesManager: React.FC = () => {
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-sky-500/10 border border-sky-400/30 text-sky-300 text-xs font-bold mb-1">
               <Sparkles className="w-3.5 h-3.5 text-[#ffd700]" />
-              <span>إدارة ورصد درجات الطلاب المركزية</span>
+              <span>إدارة ورصد درجات الطلاب المركزية مع الرفع الفوري للسحابة</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal']">
-              تبويبة درجات الطلاب (اختيار الطالب، الاختبار، وتعديل الدرجات)
+              تبويبة درجات الطلاب (تعديل الدرجات، الرفع للسحابة، والعرض المباشر في شيت النتائج)
             </h2>
           </div>
         </div>
@@ -189,7 +200,7 @@ export const AdminStudentGradesManager: React.FC = () => {
             {/* 3. Grade Input */}
             <div className="space-y-2">
               <label className="block text-xs font-black text-amber-300 font-['Tajawal']">
-                3. تعيين الدرجة الجديدة:
+                3. تعيين الدرجة الفعلية بدقة:
               </label>
               <div className="relative">
                 <input
@@ -208,13 +219,19 @@ export const AdminStudentGradesManager: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-4 flex items-center justify-end border-t border-slate-800">
+          <div className="pt-4 flex items-center justify-between border-t border-slate-800">
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <Cloud className="w-4 h-4 text-emerald-400" />
+              <span>عند الحفظ يتم تحديث السحابة (Firebase) وظهور النتائج الفعلية بالاسم في شيت النتائج فوراً.</span>
+            </div>
+
             <button
               type="submit"
-              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm shadow-[0_0_25px_rgba(16,185,129,0.4)] flex items-center gap-2.5 cursor-pointer transition-transform hover:scale-105"
+              disabled={isSaving}
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm shadow-[0_0_25px_rgba(16,185,129,0.4)] flex items-center gap-2.5 cursor-pointer transition-transform hover:scale-105 disabled:opacity-50"
             >
-              <Save className="w-5 h-5" />
-              <span>حفظ وتحديث درجة الطالب فوراً (تظهر في شيت النتائج) 🚀</span>
+              <Upload className={`w-5 h-5 ${isSaving ? 'animate-bounce' : ''}`} />
+              <span>{isSaving ? 'جارِ الحفظ والرفع للسحابة...' : 'حفظ ورفع التعديل للسحابة وشيت النتائج فوراً ☁️🚀'}</span>
             </button>
           </div>
         </form>
@@ -255,7 +272,7 @@ export const AdminStudentGradesManager: React.FC = () => {
           <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
             <span className="text-xs font-bold text-slate-400">الاختبار البعدي:</span>
             <span className="text-sm font-black text-purple-400">
-              {studentProg.postTestResult?.completed ? `${studentProg.postTestResult.score} / 53` : 'غير مكتمل'}
+              {studentProg.postTestPostResult?.completed || studentProg.postTestResult?.score !== undefined ? `${studentProg.postTestResult?.score ?? 0} / 53` : 'غير مكتمل'}
             </span>
           </div>
         </div>

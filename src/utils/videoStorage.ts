@@ -399,15 +399,7 @@ export function normalizeVideoUrl(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) return '';
 
-  // 1. YouTube watch URL: https://www.youtube.com/watch?v=XXXX or shorts or embed or youtu.be
-  const watchMatch = trimmed.match(
-    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-  );
-  if (watchMatch && watchMatch[1]) {
-    return `https://www.youtube.com/embed/${watchMatch[1]}?rel=0&modestbranding=1`;
-  }
-
-  // 2. Google Drive video share link or raw file ID
+  // 1. Google Drive video share link or raw file ID (Checked FIRST)
   const driveMatch = trimmed.match(/drive\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)([a-zA-Z0-9_-]+)/);
   if (driveMatch && driveMatch[1]) {
     return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
@@ -416,9 +408,17 @@ export function normalizeVideoUrl(url: string): string {
   if (driveDirectMatch && driveDirectMatch[1]) {
     return `https://drive.google.com/file/d/${driveDirectMatch[1]}/preview`;
   }
-  // Raw Google Drive file ID detection (e.g. 1ijsE-OgNHzErtRm2OtmFPMV-RWx2X8mo)
-  if (/^[a-zA-Z0-9_-]{20,}$/.test(trimmed) && !trimmed.includes('http') && !trimmed.includes('youtube')) {
+  // Raw Google Drive file ID detection (e.g. 1lOdEhbyvZnQs0dGz7PdnNcmLgsFnkn0M)
+  if (/^[a-zA-Z0-9_-]{15,}$/.test(trimmed) && !trimmed.includes('http') && !trimmed.includes('youtube')) {
     return `https://drive.google.com/file/d/${trimmed}/preview`;
+  }
+
+  // 2. YouTube watch URL: https://www.youtube.com/watch?v=XXXX or shorts or embed or youtu.be
+  const watchMatch = trimmed.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
+  if (watchMatch && watchMatch[1]) {
+    return `https://www.youtube.com/embed/${watchMatch[1]}?rel=0&modestbranding=1`;
   }
 
   // 3. Vimeo link: https://vimeo.com/XXXX -> https://player.vimeo.com/video/XXXX
@@ -435,17 +435,20 @@ export function normalizeVideoUrl(url: string): string {
   return trimmed;
 }
 
-export function deduplicateEducationalVideos(): void {
-  const all = getEducationalVideos();
+export function deduplicateEducationalVideos(inputList?: EducationalVideo[]): EducationalVideo[] {
+  const all = Array.isArray(inputList) ? inputList : getEducationalVideos();
   const seen = new Set<string>();
   const unique = all.filter((v) => {
-    const key = `${v.levelNumber}_${v.title}`;
+    if (!v) return false;
+    const key = `${v.levelNumber || 1}_${v.title || ''}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
-  if (unique.length !== all.length) {
+  if (unique.length !== all.length && !inputList) {
     saveEducationalVideos(unique);
   }
+  return unique;
 }
+
 

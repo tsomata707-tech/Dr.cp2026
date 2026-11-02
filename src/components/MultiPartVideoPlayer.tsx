@@ -181,14 +181,11 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
             finalPlayUrl.includes('player.vimeo.com');
 
           if (isEmbed) {
-            const isDrive = finalPlayUrl.includes('drive.google.com');
             const rawOriginal = currentVideo?.videoUrl?.trim() || '';
-            const driveDirectLink = rawOriginal.startsWith('http') 
-              ? rawOriginal.replace('/preview', '/view').replace('/uc?', '/file/d/')
-              : `https://drive.google.com/file/d/${rawOriginal}/view`;
+            const openUrl = rawOriginal.startsWith('http') ? rawOriginal : `https://drive.google.com/file/d/${rawOriginal}/view`;
 
             return (
-              <div className="relative w-full h-full">
+              <div className="relative w-full h-full flex flex-col items-center justify-center bg-slate-950">
                 <iframe
                   key={currentVideo.id}
                   src={finalPlayUrl}
@@ -197,6 +194,17 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 />
+                <div className="absolute bottom-3 left-3 z-20">
+                  <a
+                    href={openUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs shadow-lg flex items-center gap-1.5 cursor-pointer border border-blue-400 transition-transform hover:scale-105"
+                    title="فتح الفيديو في نافذة مستقلة في حال تعذر التشغيل المباشر"
+                  >
+                    <span>🔗 فتح ومشاهدة الفيديو في نافذة مستقلة</span>
+                  </a>
+                </div>
               </div>
             );
           }
