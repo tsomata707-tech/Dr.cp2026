@@ -153,15 +153,23 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
             finalPlayUrl.includes('player.vimeo.com');
 
           if (isEmbed) {
+            const isDrive = finalPlayUrl.includes('drive.google.com');
+            const rawOriginal = currentVideo?.videoUrl?.trim() || '';
+            const driveDirectLink = rawOriginal.startsWith('http') 
+              ? rawOriginal.replace('/preview', '/view').replace('/uc?', '/file/d/')
+              : `https://drive.google.com/file/d/${rawOriginal}/view`;
+
             return (
-              <iframe
-                key={currentVideo.id}
-                src={finalPlayUrl}
-                title={currentVideo.title}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
+              <div className="relative w-full h-full">
+                <iframe
+                  key={currentVideo.id}
+                  src={finalPlayUrl}
+                  title={currentVideo.title}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
             );
           }
 

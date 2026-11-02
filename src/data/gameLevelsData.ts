@@ -390,20 +390,8 @@ export function getCustomGameLevels(): GameLevelDef[] {
 
       // Sync into memory array
       parsed.forEach((customLvl: GameLevelDef) => {
-        // If Level 1 has stale videos, replace with the exact real videos uploaded by the admin
-        if (customLvl.levelNumber === 1 && realLvl1Videos.length > 0) {
-          customLvl.videos = realLvl1Videos;
-          needsSave = true;
-        } else if (customLvl.videos && customLvl.videos.length > 0) {
-          // Clean out any placeholder videos or oversized base64 data URLs
-          const cleanedVids = customLvl.videos.filter(
-            (v) => v.url && !v.url.includes('dQw4w9WgXcQ') && !v.url.startsWith('data:video')
-          );
-          if (cleanedVids.length !== customLvl.videos.length) {
-            customLvl.videos = cleanedVids;
-            needsSave = true;
-          }
-        }
+        // Keep customLvl.videos empty so useEducationalVideos via Admin Video Manager is the sole source of truth
+        customLvl.videos = [];
 
         const found = GAME_LEVELS_DATA.find((l) => l.levelNumber === customLvl.levelNumber);
         if (found) {
