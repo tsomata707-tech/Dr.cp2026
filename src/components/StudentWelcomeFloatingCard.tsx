@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { CpLogo } from './CpLogo';
-import { CheckCircle2, Loader2 } from 'lucide-react';
+import { CheckCircle2, Loader2, Sparkles, UserCheck } from 'lucide-react';
 import { getGroupByUsername } from '../data/studentAccounts';
+import { getStudentFullName } from '../utils/studentNameStorage';
 
 interface StudentWelcomeFloatingCardProps {
   username: string;
@@ -16,9 +17,22 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
 }) => {
   const [progressPercent, setProgressPercent] = useState<number>(0);
   const groupMeta = getGroupByUsername(username);
+  
+  const [studentFullName, setStudentFullName] = useState<string>(() => getStudentFullName(username));
+
+  // Listen to admin name updates instantly
+  useEffect(() => {
+    const handleNameUpdate = (e: any) => {
+      if (!e.detail?.username || e.detail.username.toUpperCase() === username.toUpperCase()) {
+        setStudentFullName(getStudentFullName(username));
+      }
+    };
+    window.addEventListener('cp_student_name_updated', handleNameUpdate);
+    return () => window.removeEventListener('cp_student_name_updated', handleNameUpdate);
+  }, [username]);
 
   useEffect(() => {
-    // 5-second smooth progress interval without numeric counter or instructional sentences
+    // 5-second smooth progress interval without numeric counter
     const totalMs = durationSeconds * 1000;
     const intervalMs = 50;
     let elapsedMs = 0;
@@ -37,8 +51,10 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
     return () => clearInterval(timer);
   }, [durationSeconds, onFinish]);
 
+  const displayName = studentFullName || username;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl animate-in fade-in duration-500 font-['Cairo',_sans-serif] text-right">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl animate-in fade-in duration-500 font-['Cairo',_sans-serif] text-right" dir="rtl">
       {/* Ambient background glow */}
       <div className="absolute w-[500px] h-[500px] bg-gradient-to-r from-blue-600/30 via-[#ffd700]/25 to-purple-600/30 rounded-full blur-3xl pointer-events-none animate-pulse" />
 
@@ -49,7 +65,7 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
         {/* Verified Badge: تم التحقق من بياناتك لجميع المجموعات */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
           <span className="px-4 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-sm font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
             <span>تم التحقق من بياناتك</span>
@@ -63,26 +79,38 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
         </div>
 
         {/* Environment Logo */}
-        <div className="relative mb-4">
+        <div className="relative mb-3">
           <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-[#ffd700] to-amber-500 rounded-2xl blur-md opacity-40" />
           <div className="relative p-3 rounded-2xl bg-[#090d1c] border border-[#ffd700]/70">
             <CpLogo size="md" showText={false} />
           </div>
         </div>
 
-        {/* Welcome Message + Username Only (In Large Font) */}
-        <div className="mb-6">
-          <h2 className="text-3xl sm:text-4xl font-black text-white font-['Tajawal'] tracking-tight">
-            مرحباً بك <span className="text-[#ffd700] font-['Cairo'] font-bold">{username}</span>
+        {/* Welcome Message + Student Full Name (Elegantly proportioned tripartite name) */}
+        <div className="mb-6 space-y-2 w-full px-2">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white font-['Tajawal'] tracking-tight leading-tight">
+            مرحباً بك
           </h2>
+          <div className="px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500/15 via-[#ffd700]/20 to-amber-500/15 border-2 border-[#ffd700]/60 shadow-[0_0_25px_rgba(255,215,0,0.25)] flex items-center justify-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#ffd700] shrink-0 animate-bounce" />
+            <span className="text-lg sm:text-xl lg:text-2xl font-black text-[#ffd700] font-['Cairo'] tracking-wide truncate">
+              {displayName}
+            </span>
+          </div>
+          {studentFullName ? (
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-slate-300 text-xs font-bold font-['Cairo']">
+              <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
+              <span>اسم المستخدم: (@{username})</span>
+            </div>
+          ) : null}
         </div>
 
         {/* Modern Elegant Loading Bar - No Counter, No Sentences, Strict Wait */}
-        <div className="w-full bg-[#070a16] p-5 sm:p-6 rounded-2xl border border-slate-800/90 shadow-inner space-y-4">
+        <div className="w-full bg-[#070a16] p-4 sm:p-5 rounded-2xl border border-slate-800/90 shadow-inner space-y-3">
           {/* Fading & moving Welcome text above progress bar */}
-          <div className="overflow-hidden py-1">
+          <div className="overflow-hidden py-0.5">
             <div className="animate-[pulse_1.5s_ease-in-out_infinite] transition-opacity duration-700">
-              <span className="text-xs sm:text-sm font-black text-amber-300 font-['Tajawal'] tracking-widest px-4 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 shadow-[0_0_20px_rgba(251,191,36,0.4)] inline-block transform hover:scale-105 transition-transform">
+              <span className="text-xs sm:text-sm font-black text-amber-300 font-['Tajawal'] tracking-widest px-4 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 shadow-[0_0_20px_rgba(251,191,36,0.4)] inline-block">
                 Welcome ✨ أهلاً بك
               </span>
             </div>
@@ -99,16 +127,14 @@ export const StudentWelcomeFloatingCard: React.FC<StudentWelcomeFloatingCardProp
             </div>
           </div>
 
-          {/* Large harmonious loading text: جاري التحميل انتظر (No seconds or instruction) */}
+          {/* Large harmonious loading text: جاري التحميل انتظر */}
           <div className="pt-1 flex items-center justify-center gap-2.5">
             <Loader2 className="w-5 h-5 text-[#ffd700] animate-spin" />
-            <p className="text-lg sm:text-xl font-black text-amber-300 font-['Tajawal'] tracking-wide">
+            <p className="text-base sm:text-lg font-black text-amber-300 font-['Tajawal'] tracking-wide">
               جاري التحميل انتظر...
             </p>
           </div>
         </div>
-
-        {/* Strict waiting until progress completes - no skip button */}
       </div>
     </div>
   );

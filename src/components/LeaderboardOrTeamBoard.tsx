@@ -17,6 +17,7 @@ import {
 import { getGroupByUsername } from '../data/studentAccounts';
 import { getStudentProgress, getAllStudentsProgress } from '../utils/gameStorage';
 import { CARTOON_AVATARS } from '../data/gameLevelsData';
+import { getStudentFullName } from '../utils/studentNameStorage';
 
 interface LeaderboardOrTeamBoardProps {
   currentUsername: string;
@@ -248,8 +249,9 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
             <div className="p-4 rounded-2xl bg-slate-900/90 border-2 border-slate-400 text-center flex flex-col items-center order-2 sm:order-1 shadow-md">
               <span className="text-2xl mb-1">🥈</span>
               <span className="text-xs font-bold text-slate-300">المركز الثاني</span>
-              <span className="text-sm font-black text-white mt-1 ">{sortedStudents[1].username}</span>
-              <span className="text-xs text-amber-300 font-bold font-['Outfit']">{sortedStudents[1].score} XP</span>
+              <span className="text-sm font-black text-white mt-1">{getStudentFullName(sortedStudents[1].username) || sortedStudents[1].username}</span>
+              <span className="text-[10px] text-slate-400 font-bold">(@{sortedStudents[1].username})</span>
+              <span className="text-xs text-amber-300 font-bold font-['Outfit'] mt-0.5">{sortedStudents[1].score} XP</span>
             </div>
           )}
 
@@ -260,7 +262,8 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
               <span className="px-2 py-0.5 rounded-full bg-[#ffd700] text-slate-950 text-[10px] font-black mb-1">
                 بطل الصدارة
               </span>
-              <span className="text-base font-black text-white ">{sortedStudents[0].username}</span>
+              <span className="text-base font-black text-white">{getStudentFullName(sortedStudents[0].username) || sortedStudents[0].username}</span>
+              <span className="text-xs text-amber-200/90 font-bold">(@{sortedStudents[0].username})</span>
               <span className="text-sm text-[#ffd700] font-black font-['Outfit'] mt-1">{sortedStudents[0].score} XP</span>
             </div>
           )}
@@ -270,8 +273,9 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
             <div className="p-4 rounded-2xl bg-slate-900/90 border-2 border-amber-700 text-center flex flex-col items-center order-3 shadow-md">
               <span className="text-2xl mb-1">🥉</span>
               <span className="text-xs font-bold text-amber-500">المركز الثالث</span>
-              <span className="text-sm font-black text-white mt-1 ">{sortedStudents[2].username}</span>
-              <span className="text-xs text-amber-300 font-bold font-['Outfit']">{sortedStudents[2].score} XP</span>
+              <span className="text-sm font-black text-white mt-1">{getStudentFullName(sortedStudents[2].username) || sortedStudents[2].username}</span>
+              <span className="text-[10px] text-slate-400 font-bold">(@{sortedStudents[2].username})</span>
+              <span className="text-xs text-amber-300 font-bold font-['Outfit'] mt-0.5">{sortedStudents[2].score} XP</span>
             </div>
           )}
         </div>
@@ -314,7 +318,10 @@ export const LeaderboardOrTeamBoard: React.FC<LeaderboardOrTeamBoardProps> = ({ 
 
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-black text-white ">{st.username}</span>
+                    <span className="text-xs sm:text-sm font-black text-white">
+                      {getStudentFullName(st.username) || st.username}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold">(@{st.username})</span>
                     {st.isMe && (
                       <span className="px-2 py-0.5 rounded-full bg-[#ffd700] text-slate-950 text-[10px] font-black">
                         أنت

@@ -25,6 +25,7 @@ import { AdminSiteTitleManager } from './AdminSiteTitleManager';
 import { AdminLevelInstructionsManager } from './AdminLevelInstructionsManager';
 import { CollaborativeGroupsChat } from './CollaborativeGroupsChat';
 import { AdminStudentActivitiesManager } from './AdminStudentActivitiesManager';
+import { AdminStudentGradesManager } from './AdminStudentGradesManager';
 
 interface AdminPanelProps {
   onExitAdmin: () => void;
@@ -35,6 +36,7 @@ type AdminTab =
   | 'users'
   | 'collab_chat'
   | 'student_activities'
+  | 'student_grades'
   | 'level_instructions'
   | 'tests_settings'
   | 'students_audit'
@@ -147,6 +149,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
             >
               <FolderCheck className="w-4 h-4 text-sky-700" />
               <span style={{ backgroundColor: '#96b0eb', borderColor: '#0791e5', color: '#000000' }}>نشاط الطلاب 📁</span>
+            </button>
+
+            {/* TAB: درجات الطلاب */}
+            <button
+              type="button"
+              id="admin-tab-student-grades"
+              onClick={() => setActiveTab('student_grades')}
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTab === 'student_grades'
+                  ? 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 text-white shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-950 border border-sky-200 font-bold'
+              }`}
+              style={{ backgroundColor: '#ffd700', color: '#000000' }}
+            >
+              <Award className="w-4 h-4 text-sky-950" />
+              <span>درجات الطلاب 📊</span>
             </button>
 
             {/* TAB: تعديل الليفل والأهداف */}
@@ -275,6 +293,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin, onLoginAsSt
           />
         )}
         {activeTab === 'student_activities' && <AdminStudentActivitiesManager />}
+        {activeTab === 'student_grades' && <AdminStudentGradesManager />}
         {activeTab === 'level_instructions' && <AdminLevelInstructionsManager />}
         {activeTab === 'tests_settings' && <AdminTestsSettingsManager />}
         {activeTab === 'students_audit' && <AdminStudentsAuditManager />}

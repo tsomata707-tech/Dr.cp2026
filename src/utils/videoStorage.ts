@@ -410,15 +410,15 @@ export function normalizeVideoUrl(url: string): string {
   // 2. Google Drive video share link or raw file ID
   const driveMatch = trimmed.match(/drive\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)([a-zA-Z0-9_-]+)/);
   if (driveMatch && driveMatch[1]) {
-    return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+    return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
   }
   const driveDirectMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
   if (driveDirectMatch && driveDirectMatch[1]) {
-    return `https://drive.google.com/uc?export=download&id=${driveDirectMatch[1]}`;
+    return `https://drive.google.com/file/d/${driveDirectMatch[1]}/preview`;
   }
   // Raw Google Drive file ID detection (e.g. 1ijsE-OgNHzErtRm2OtmFPMV-RWx2X8mo)
   if (/^[a-zA-Z0-9_-]{20,}$/.test(trimmed) && !trimmed.includes('http') && !trimmed.includes('youtube')) {
-    return `https://drive.google.com/uc?export=download&id=${trimmed}`;
+    return `https://drive.google.com/file/d/${trimmed}/preview`;
   }
 
   // 3. Vimeo link: https://vimeo.com/XXXX -> https://player.vimeo.com/video/XXXX
@@ -434,3 +434,18 @@ export function normalizeVideoUrl(url: string): string {
 
   return trimmed;
 }
+
+export function deduplicateEducationalVideos(): void {
+  const all = getEducationalVideos();
+  const seen = new Set<string>();
+  const unique = all.filter((v) => {
+    const key = `${v.levelNumber}_${v.title}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  if (unique.length !== all.length) {
+    saveEducationalVideos(unique);
+  }
+}
+

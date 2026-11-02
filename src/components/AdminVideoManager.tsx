@@ -18,6 +18,8 @@ import { EducationalVideo } from '../types';
 import {
   VIDEO_SLOTS,
   getEducationalVideos,
+  saveEducationalVideos,
+  deduplicateEducationalVideos,
   addEducationalVideo,
   updateEducationalVideo,
   deleteEducationalVideo,
@@ -30,11 +32,11 @@ import { addActivityLog } from '../utils/adminStorage';
 import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 
 export const AdminVideoManager: React.FC = () => {
-  const [videos, setVideos] = useState<EducationalVideo[]>(() => getEducationalVideos());
+  const [videos, setVideos] = useState<EducationalVideo[]>(() => deduplicateEducationalVideos(getEducationalVideos()));
   
   useEffect(() => {
     const handleUpdate = () => {
-      setVideos(getEducationalVideos());
+      setVideos(deduplicateEducationalVideos(getEducationalVideos()));
     };
     window.addEventListener('videos-storage-updated', handleUpdate);
     return () => window.removeEventListener('videos-storage-updated', handleUpdate);
@@ -92,12 +94,26 @@ export const AdminVideoManager: React.FC = () => {
 
   useEffect(() => {
     rehydrateLocalVideoUrls().then((refreshed) => {
-      setVideos(refreshed);
+      const clean = deduplicateEducationalVideos(refreshed);
+      if (clean.length !== refreshed.length) {
+        saveEducationalVideos(clean, true);
+      }
+      setVideos(clean);
     });
   }, []);
 
+  const handleDeduplicate = () => {
+    const rawList = getEducationalVideos();
+    const cleanList = deduplicateEducationalVideos(rawList);
+    saveEducationalVideos(cleanList, true);
+    setVideos(cleanList);
+    addActivityLog('قام المشرف بتنظيف الفيديوهات المكررة وعدم دمج الصفوف', 'المشرف', 'info');
+    setSuccessMessage(`✅ تم تنظيف الصفوف المكررة بنجاح! الإجمالي الحقيقي الآن: ${cleanList.length} فيديوهات.`);
+    setTimeout(() => setSuccessMessage(null), 4000);
+  };
+
   const refreshVideos = () => {
-    setVideos(getEducationalVideos());
+    setVideos(deduplicateEducationalVideos(getEducationalVideos()));
   };
 
   const handleOpenAdd = (defaultSlotId?: string) => {
@@ -312,16 +328,27 @@ export const AdminVideoManager: React.FC = () => {
 
             <div className="flex items-center gap-3 w-full md:w-auto">
               {videos.length > 0 && (
-                <button
-                  type="button"
-                  disabled={isPurging}
-                  onClick={handlePurgeAll}
-                  className="px-5 py-3 rounded-2xl bg-red-600/20 hover:bg-red-600 border-2 border-red-500/50 text-red-400 hover:text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg"
-                  title="تصفير وحذف جميع الفيديوهات الحالية للبدء من جديد"
-                >
-                  {isPurging ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                  <span>مسح جميع الفيديوهات 🧹</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={handleDeduplicate}
+                    className="px-4 py-3 rounded-2xl bg-amber-600/20 hover:bg-amber-600 border-2 border-amber-500/50 text-amber-300 hover:text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg"
+                    title="إزالة أي تكرار فوراً وتنظيف الصفوف المتراكمة"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>تنظيف التكرار ({videos.length}) 🧹</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isPurging}
+                    onClick={handlePurgeAll}
+                    className="px-4 py-3 rounded-2xl bg-red-600/20 hover:bg-red-600 border-2 border-red-500/50 text-red-400 hover:text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg"
+                    title="تصفير وحذف جميع الفيديوهات الحالية للبدء من جديد"
+                  >
+                    {isPurging ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    <span>مسح الكل 🗑️</span>
+                  </button>
+                </>
               )}
               <button
                 type="button"
