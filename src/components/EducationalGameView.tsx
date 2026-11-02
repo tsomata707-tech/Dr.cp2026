@@ -82,7 +82,10 @@ import {
   submitGroupLevelRealtime,
   syncStudentProgressToFirestore,
   getDefaultRoomState,
+  syncGroupAnswer,
+  subscribeToGroupAnswers,
 } from '../utils/realtimeService';
+import { getStudentGroup } from '../data/studentGroups';
 
 interface EducationalGameViewProps {
   username: string;
@@ -134,6 +137,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     });
     return initScores;
   });
+
+  const studentGroup = useMemo(() => getStudentGroup(username), [username]);
+  const [groupAnswers, setGroupAnswers] = useState<Record<string, any>>({});
+  const [groupNotification, setGroupNotification] = useState<string | null>(null);
+
+  // Subscription effect moved below
+
 
   // Section 2 Interactive Activity score earned per level (50 points)
   const [activityScorePerLevel, setActivityScorePerLevel] = useState<Record<number, number>>(() => {
@@ -203,6 +213,23 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const isCollaborative = userGroupMeta?.learningMode === 'تعاوني';
   const isImmediateGroup = userGroupMeta ? userGroupMeta.feedbackMode === 'فورية' : true;
   const studentInfo = useMemo(() => getStudentByUsername(username), [username]);
+
+  useEffect(() => {
+    if (!studentGroup) return;
+    const subscriptionKey = `${groupCode}_${studentGroup}`;
+    const unsub = subscribeToGroupAnswers(subscriptionKey, (answers) => {
+      setGroupAnswers(prev => {
+         const newKeys = Object.keys(answers);
+         const oldKeys = Object.keys(prev);
+         if(newKeys.length > oldKeys.length) {
+            setGroupNotification("قام أحد أعضاء فريقك بالحل");
+            setTimeout(() => setGroupNotification(null), 3000);
+         }
+         return answers;
+      });
+    });
+    return () => unsub();
+  }, [studentGroup, groupCode]);
 
   const collabSubGroup = getCollaborativeGroupByUsername(username);
   const [teammateAnswerInfo, setTeammateAnswerInfo] = useState<{ completedBy: string; score: number } | null>(null);
@@ -455,6 +482,15 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         fullName: studentInfo?.fullName || username,
         avatarEmoji: currentAvatar.emoji,
       });
+
+      // Sync with group answers
+      if (studentGroup) {
+        syncGroupAnswer(`${groupCode}_${studentGroup}`, q1.id, {
+          username,
+          optIdx,
+          isCorrect
+        });
+      }
     }
 
     if (isCorrect) {
@@ -748,6 +784,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   return (
     <div className="space-y-6 text-right" id="educational-game-arena">
+      {groupNotification && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] bg-amber-500 text-slate-950 px-4 py-2 rounded-full font-black text-xs shadow-lg animate-bounce">
+          {groupNotification}
+        </div>
+      )}
       {/* Admin Read-Only Notice Banner */}
       {isAdmin && (
         <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-[#0d1815] to-emerald-950/90 border-2 border-emerald-500/80 shadow-[0_0_25px_rgba(16,185,129,0.3)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs sm:text-sm font-['Cairo'] text-emerald-200">
@@ -868,7 +909,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   <span
                     className="px-3.5 py-1 rounded-full text-xs font-black font-['Cairo'] bg-slate-200 border border-slate-300 text-slate-900 shadow-sm"
                   >
-                    المجموعة {userGroupMeta.code}: {userGroupMeta.name}
+                    المجموعة {userGroupMeta.code}: {userGroupMeta.name} {studentGroup ? `(${studentGroup})` : ''}
                   </span>
                 )}
               </div>
@@ -936,7 +977,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
           <div className="flex items-center gap-2">
             <Gamepad2 className="w-5 h-5 text-[#ffd700]" />
             <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">
-              مراحل بيئة الألعاب (9 مستويات تفاعلية)
+              مراحل بيئة الألعاب - {userGroupMeta ? `${userGroupMeta.name} ${studentGroup ? `(${studentGroup})` : ''}` : `المجموعة ${studentGroup ? `(${studentGroup})` : ''}`}
             </h3>
           </div>
           <span className="text-xs text-amber-300 font-['Cairo']">
@@ -1113,27 +1154,27 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 التزامن اللحظي المباشر للجلسة التفاعلية
               </span>
               <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 text-[10px] font-bold border border-purple-400/30">
-                غرفة {userGroupMeta ? userGroupMeta.name : groupCode}
+                {userGroupMeta ? `${userGroupMeta.name}${studentGroup ? ` - ${studentGroup}` : ''}` : `غرفة ${groupCode}`}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-300 font-['Cairo']">
-              الطلاب المتصلين بالغرفة الآن:
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-[#ffd700]/20 border border-[#ffd700] text-[#ffd700] text-xs font-black">
-              {(Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[]).filter((s) => s.isOnline).length || 1} من 15
-            </span>
-          </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-300 font-['Cairo']">
+                أعضاء الفريق المتصلين الآن:
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-[#ffd700]/20 border border-[#ffd700] text-[#ffd700] text-xs font-black">
+                {(Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[]).filter((p) => isAdmin || (studentGroup && getStudentGroup(p.username) === studentGroup) || p.username === 'admin').length}
+              </span>
+            </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-800/80">
           <span className="text-[11px] text-slate-400 font-['Cairo'] flex items-center gap-1">
             <Users className="w-3 h-3 text-amber-400" />
-            أعضاء المجموعة المتفاعلون:
+            أعضاء المجموعة {studentGroup ? `(${studentGroup})` : ''} المتفاعلون:
           </span>
-          {(Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[]).map((participant) => (
+          {(Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[]).filter((p) => isAdmin || (studentGroup && getStudentGroup(p.username) === studentGroup) || p.username === 'admin').map((participant) => (
             <div
               key={participant.username}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs border transition-all ${

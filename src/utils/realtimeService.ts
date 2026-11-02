@@ -886,3 +886,30 @@ export function subscribeToAllTestAccessAudit(
     return () => {};
   }
 }
+export async function syncGroupAnswer(
+  groupId: string,
+  questionId: string,
+  answerData: any
+): Promise<void> {
+  try {
+    const answerRef = ref(rtdb, `groupAnswers/${groupId}/${questionId}`);
+    await rtdbSet(answerRef, { ...answerData, timestamp: Date.now() });
+  } catch (err) {
+    console.warn(`Failed to sync answer for group ${groupId}:`, err);
+  }
+}
+
+export function subscribeToGroupAnswers(
+  groupId: string,
+  onUpdate: (answers: Record<string, any>) => void
+): () => void {
+  try {
+    const answersRef = ref(rtdb, `groupAnswers/${groupId}`);
+    return onValue(answersRef, (snapshot) => {
+      onUpdate(snapshot.exists() ? snapshot.val() : {});
+    });
+  } catch (err) {
+    console.warn(`Failed to subscribe to group answers ${groupId}:`, err);
+    return () => {};
+  }
+}
