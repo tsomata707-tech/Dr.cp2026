@@ -166,7 +166,15 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
             );
           }
 
-          const finalPlayUrl = normalizeVideoUrl(rawUrl);
+          const finalPlayUrl = (normalizeVideoUrl(rawUrl) || rawUrl).trim();
+          if (!finalPlayUrl) {
+            return (
+              <div className="flex flex-col items-center justify-center p-6 text-center text-slate-400 gap-2">
+                <Film className="w-8 h-8 text-amber-400/80" />
+                <span className="text-xs font-bold font-['Cairo']">لم يتم تعيين رابط أو ملف لهذا الفيديو بعد</span>
+              </div>
+            );
+          }
           const isEmbed =
             currentVideo.videoType === 'youtube' ||
             finalPlayUrl.includes('youtube.com') ||

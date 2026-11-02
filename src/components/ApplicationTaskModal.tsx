@@ -12,7 +12,7 @@ import {
   Award,
   Video,
 } from 'lucide-react';
-import { getVideoBySlot } from '../utils/videoStorage';
+import { getVideoBySlot, normalizeVideoUrl } from '../utils/videoStorage';
 import { getLevelActivityConfig, submitStudentActivity } from '../utils/studentActivityStorage';
 import { getStudentByUsername, getGroupByUsername } from '../data/studentAccounts';
 
@@ -162,17 +162,26 @@ export const ApplicationTaskModal: React.FC<ApplicationTaskModalProps> = ({
               <span className="text-[10px] text-slate-400 ">{taskVideo.duration}</span>
             </div>
             <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-slate-800">
-              {taskVideo.videoType === 'youtube' || taskVideo.videoUrl.includes('youtube.com') || taskVideo.videoUrl.includes('youtu.be') ? (
-                <iframe
-                  src={taskVideo.videoUrl}
-                  title={taskVideo.title}
-                  className="w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              ) : (
-                <video src={taskVideo.videoUrl} controls className="w-full h-full object-contain" />
-              )}
+              {(() => {
+                const cleanUrl = taskVideo.videoUrl?.trim() || '';
+                const isEmbed = taskVideo.videoType === 'youtube' || cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be') || cleanUrl.includes('drive.google.com') || cleanUrl.includes('player.vimeo.com');
+                const embedUrl = normalizeVideoUrl(cleanUrl);
+                if (isEmbed && embedUrl) {
+                  return (
+                    <iframe
+                      src={embedUrl}
+                      title={taskVideo.title}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  );
+                }
+                if (cleanUrl) {
+                  return <video src={cleanUrl} controls className="w-full h-full object-contain" />;
+                }
+                return null;
+              })()}
             </div>
           </div>
         )}

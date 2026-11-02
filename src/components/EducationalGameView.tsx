@@ -1198,8 +1198,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
           <div className="space-y-4">
             {currentDisplayVideos.map((vid, idx) => {
-              const isLocal = vid.url?.startsWith('data:') || vid.url?.startsWith('blob:') || vid.url?.endsWith('.mp4') || vid.url?.endsWith('.webm');
-              const videoEmbedUrl = normalizeVideoUrl(vid.url);
+              const cleanUrl = vid.url?.trim() || '';
+              if (!cleanUrl) return null;
+              const isLocal = cleanUrl.startsWith('data:') || cleanUrl.startsWith('blob:') || cleanUrl.endsWith('.mp4') || cleanUrl.endsWith('.webm');
+              const videoEmbedUrl = normalizeVideoUrl(cleanUrl);
               return (
                 <div key={vid.id || idx} className="rounded-2xl bg-black/90 border-2 border-cyan-500/40 overflow-hidden shadow-2xl">
                   <div className="p-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-white">
@@ -1212,16 +1214,18 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     </span>
                   </div>
                   <div className="aspect-video w-full relative bg-black flex items-center justify-center">
-                    {vid.url && isLocal ? (
-                      <video controls className="w-full h-full object-contain bg-black" src={vid.url} preload="metadata" />
-                    ) : (
+                    {isLocal ? (
+                      <video controls className="w-full h-full object-contain bg-black" src={cleanUrl} preload="metadata" />
+                    ) : videoEmbedUrl && videoEmbedUrl.trim() ? (
                       <iframe
-                        src={videoEmbedUrl}
-                        title={vid.title || `Level Video ${idx + 1}`}
+                        src={videoEmbedUrl.trim()}
+                        title={vid.partCustomTitle || vid.title || `Level Video ${idx + 1}`}
                         className="w-full h-full border-0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       />
+                    ) : (
+                      <div className="text-slate-400 text-xs font-bold">جاري تحميل الفيديو...</div>
                     )}
                   </div>
                 </div>
@@ -1586,12 +1590,12 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 ) : studentActivity.fileType === 'video' ? (
                   <video
                     controls
-                    src={studentActivity.fileUrl}
+                    src={studentActivity.fileUrl.trim()}
                     className="max-h-72 w-auto max-w-full rounded-lg shadow-lg"
                   />
                 ) : studentActivity.fileType === 'image' ? (
                   <img
-                    src={studentActivity.fileUrl}
+                    src={studentActivity.fileUrl.trim()}
                     alt="معاينة نشاطك الخاص"
                     className="max-h-72 w-auto max-w-full rounded-lg object-contain shadow-lg"
                   />

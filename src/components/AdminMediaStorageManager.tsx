@@ -386,18 +386,25 @@ export const AdminMediaStorageManager: React.FC = () => {
                 {/* Media Preview Box */}
                 <div className="relative aspect-video bg-black/60 flex items-center justify-center overflow-hidden border-b border-slate-800">
                   {isVideo ? (
-                    asset.url ? (
+                    asset.url && asset.url.trim() ? (
                       isEmbedVideo(asset.url) ? (
-                        <iframe
-                          src={normalizeVideoUrl(asset.url)}
-                          title={asset.customTitle || asset.name}
-                          className="w-full h-full border-0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
+                        normalizeVideoUrl(asset.url.trim()) ? (
+                          <iframe
+                            src={normalizeVideoUrl(asset.url.trim())}
+                            title={asset.customTitle || asset.name}
+                            className="w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center gap-2 text-purple-400">
+                            <Video className="w-10 h-10" />
+                            <span className="text-xs">فيديو مسجل</span>
+                          </div>
+                        )
                       ) : (
                         <video
-                          src={asset.url}
+                          src={asset.url.trim()}
                           controls
                           preload="metadata"
                           className="w-full h-full object-contain"
@@ -414,9 +421,9 @@ export const AdminMediaStorageManager: React.FC = () => {
                       <FileText className="w-12 h-12" />
                       <span className="text-xs font-bold text-slate-200">{asset.name}</span>
                     </div>
-                  ) : (
+                  ) : asset.url && asset.url.trim() ? (
                     <img
-                      src={asset.url}
+                      src={asset.url.trim()}
                       alt={asset.customTitle || asset.name}
                       className="w-full h-full object-contain"
                       onError={(e) => {
@@ -424,6 +431,11 @@ export const AdminMediaStorageManager: React.FC = () => {
                           'https://placehold.co/400x225/0f172a/38bdf8?text=صورة+معاينة';
                       }}
                     />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-sky-400 p-4 text-center">
+                      <ImageIcon className="w-10 h-10" />
+                      <span className="text-xs font-bold">{asset.name}</span>
+                    </div>
                   )}
 
                   {/* Type Badge */}
@@ -609,19 +621,21 @@ export const AdminMediaStorageManager: React.FC = () => {
             <div className="max-h-[60vh] flex items-center justify-center overflow-hidden rounded-2xl bg-black">
               {previewAsset.type === 'video' ? (
                 isEmbedVideo(previewAsset.url) ? (
-                  <iframe
-                    src={normalizeVideoUrl(previewAsset.url)}
-                    title={previewAsset.customTitle || previewAsset.name}
-                    className="w-full aspect-video border-0 max-h-[55vh]"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : (
-                  <video src={previewAsset.url} controls autoPlay className="max-h-[55vh] w-auto object-contain" />
-                )
-              ) : (
-                <img src={previewAsset.url} alt={previewAsset.name} className="max-h-[55vh] w-auto object-contain" />
-              )}
+                  normalizeVideoUrl(previewAsset.url?.trim() || '') ? (
+                    <iframe
+                      src={normalizeVideoUrl(previewAsset.url.trim())}
+                      title={previewAsset.customTitle || previewAsset.name}
+                      className="w-full aspect-video border-0 max-h-[55vh]"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : null
+                ) : previewAsset.url && previewAsset.url.trim() ? (
+                  <video src={previewAsset.url.trim()} controls autoPlay className="max-h-[55vh] w-auto object-contain" />
+                ) : null
+              ) : previewAsset.url && previewAsset.url.trim() ? (
+                <img src={previewAsset.url.trim()} alt={previewAsset.name} className="max-h-[55vh] w-auto object-contain" />
+              ) : null}
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-slate-800">

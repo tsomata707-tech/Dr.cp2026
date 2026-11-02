@@ -670,7 +670,9 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {currentVideos.map((vid, idx) => {
               const activeUrl = (vid.blobId && rehydratedBlobUrls[vid.id]) ? rehydratedBlobUrls[vid.id] : vid.url;
-              const isLocal = activeUrl?.startsWith('data:') || activeUrl?.startsWith('blob:') || activeUrl?.endsWith('.mp4') || activeUrl?.endsWith('.webm');
+              const cleanActiveUrl = activeUrl?.trim() || '';
+              const isLocal = cleanActiveUrl.startsWith('data:') || cleanActiveUrl.startsWith('blob:') || cleanActiveUrl.endsWith('.mp4') || cleanActiveUrl.endsWith('.webm');
+              const normalizedEmbed = cleanActiveUrl ? normalizeVideoUrl(cleanActiveUrl) : '';
               const sizeText = formatRealFileSize(vid.size);
 
               return (
@@ -692,11 +694,11 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                     </div>
 
                     <div className="aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-slate-800">
-                      {activeUrl && isLocal ? (
-                        <video controls className="w-full h-full object-contain bg-black" src={activeUrl} preload="metadata" />
-                      ) : activeUrl ? (
+                      {cleanActiveUrl && isLocal ? (
+                        <video controls className="w-full h-full object-contain bg-black" src={cleanActiveUrl} preload="metadata" />
+                      ) : normalizedEmbed && normalizedEmbed.trim() ? (
                         <iframe
-                          src={normalizeVideoUrl(activeUrl)}
+                          src={normalizedEmbed.trim()}
                           title={vid.title}
                           className="w-full h-full border-0"
                           allowFullScreen
@@ -803,8 +805,10 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                 <div className="aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-slate-800">
                   {img.type === 'pdf' ? (
                     <div className="text-center p-3"><FileText className="w-10 h-10 mx-auto text-red-400" /><span className="text-[10px] text-slate-300 block truncate">{img.title}</span></div>
+                  ) : img.url && img.url.trim() ? (
+                    <img src={img.url.trim()} alt={img.title} className="w-full h-full object-contain" />
                   ) : (
-                    <img src={img.url} alt={img.title} className="w-full h-full object-contain" />
+                    <div className="text-slate-500 text-xs font-bold">صورة</div>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 pt-2">
@@ -928,7 +932,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                       />
                     </div>
 
-                    {optImg.trim() && (
+                    {optImg && optImg.trim() ? (
                       <div className="mr-12 mt-1">
                         <img
                           src={optImg.trim()}
@@ -936,7 +940,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                           className="h-16 w-auto object-contain rounded-lg border border-emerald-500/30 bg-black/50 p-1"
                         />
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 );
               })}
@@ -1263,7 +1267,11 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           <div className="relative max-w-4xl w-full bg-slate-950 border-2 border-amber-400 rounded-3xl p-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setPreviewMedia(null)} className="absolute top-4 left-4 p-2 rounded-xl bg-slate-900 text-white"><X className="w-5 h-5" /></button>
             <div className="flex items-center justify-center p-4">
-              {previewMedia.type === 'pdf' ? <FileText className="w-32 h-32 text-red-500" /> : <img src={previewMedia.url} alt={previewMedia.title} className="max-h-[75vh] object-contain" />}
+              {previewMedia.type === 'pdf' ? (
+                <FileText className="w-32 h-32 text-red-500" />
+              ) : previewMedia.url && previewMedia.url.trim() ? (
+                <img src={previewMedia.url.trim()} alt={previewMedia.title} className="max-h-[75vh] object-contain" />
+              ) : null}
             </div>
             <p className="text-center text-xs font-bold text-amber-300 pb-2">{previewMedia.title}</p>
           </div>
