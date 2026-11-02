@@ -391,8 +391,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         const current = prev[selectedLevelNum] ?? 25;
         return { ...prev, [selectedLevelNum]: Math.max(0, current - 5) };
       });
-      setVideoWarning('لا يُسمح بتقديم الفيديو للأمام — تم تطبيق خصم 5 درجات عند انتهاء المشاهدة (النتيجة: 20 من 25 XP).');
-      setTimeout(() => setVideoWarning(null), 5000);
+      setVideoWarning('لم تشاهد الفيديو بشكل مثالي تم خصم 5 درجات (النتيجة: 20 من 25 XP).');
+      setTimeout(() => setVideoWarning(null), 6000);
     }
   };
 
@@ -1073,29 +1073,45 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
                   const earned = penalty ? 20 : 25;
                   setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
-                  setVideoWarning(penalty ? 'تم إتمام مشاهدة الفيديو مع تطبيق خصم التقديم السريع (20 من 25 درجة).' : 'مبروك! شاهدت فيديو الشرح بالكامل وحصلت على 25 من 25 درجة 🎓');
-                  setTimeout(() => setVideoWarning(null), 5000);
+                  setVideoWarning(penalty ? 'لم تشاهد الفيديو بشكل مثالي تم خصم 5 درجات (النتيجة: 20 من 25 XP).' : 'مبروك! شاهدت فيديو الشرح بالكامل وحصلت على 25 من 25 درجة 🎓');
+                  setTimeout(() => setVideoWarning(null), 6000);
                 }}
               />
               {!isLevelCompleted && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 text-xs">
-                  <span className="text-slate-400">
-                    عند إتمام استماعك وشرحك للفيديو، يمكنك الضغط هنا لتوثيق المشاهدة واحتساب درجتك:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
-                      const earned = penalty ? 20 : 25;
-                      setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
-                      setVideoWarning(penalty ? 'تم تسجيل إتمام المشاهدة مع تطبيق خصم التقديم السريع (20 من 25 درجة).' : 'مبروك! تم تأكيد مشاهدة فيديو الشرح بالكامل (25 من 25 درجة) 🎓');
-                      setTimeout(() => setVideoWarning(null), 5000);
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600 border border-emerald-500/50 text-emerald-200 hover:text-white font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>أتممت مشاهدة الفيديو بالكامل ✓</span>
-                  </button>
+                <div className="space-y-2">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
+                    <span className="text-amber-300 font-bold flex items-center gap-1.5">
+                      <span>💡 اختبار تجريبي:</span>
+                      <span>يمكنك محاكاة تقديم أو تخطي الفيديو لتجربة الخصم الفوري:</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleVideoSeek}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/60 text-amber-300 font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0"
+                    >
+                      <span>⚡ محاكاة تقديم الفيديو (خصم 5 درجات)</span>
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 text-xs">
+                    <span className="text-slate-400">
+                      عند إتمام استماعك وشرحك للفيديو، يمكنك الضغط هنا لتوثيق المشاهدة واحتساب درجتك:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const penalty = !!videoPenaltyAppliedPerLevel[selectedLevelNum];
+                        const earned = penalty ? 20 : 25;
+                        setVideoScorePerLevel((prev) => ({ ...prev, [selectedLevelNum]: earned }));
+                        setVideoWarning(penalty ? 'لم تشاهد الفيديو بشكل مثالي تم خصم 5 درجات (النتيجة: 20 من 25 XP).' : 'مبروك! تم تأكيد مشاهدة فيديو الشرح بالكامل (25 من 25 درجة) 🎓');
+                        setTimeout(() => setVideoWarning(null), 6000);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600 border border-emerald-500/50 text-emerald-200 hover:text-white font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>أتممت مشاهدة الفيديو بالكامل ✓</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1103,8 +1119,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
           {/* Video Warning Banner if penalty applied */}
           {videoWarning && (
-            <div className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${videoWarning.includes('تم تطبيق') || videoWarning.includes('تم خصم') ? 'bg-red-950/90 border-red-500 text-red-200 animate-bounce' : 'bg-emerald-950/90 border-emerald-500 text-emerald-200'}`}>
-              <span>{videoWarning.includes('تم تطبيق') || videoWarning.includes('تم خصم') ? '⚠️' : '✅'} {videoWarning}</span>
+            <div className={`p-3.5 rounded-2xl border text-xs font-bold flex items-center gap-2 shadow-lg ${videoWarning.includes('تم خصم') || videoWarning.includes('لم تشاهد') ? 'bg-red-950/95 border-red-500 text-red-200 animate-bounce' : 'bg-emerald-950/95 border-emerald-500 text-emerald-200'}`}>
+              <span>{videoWarning.includes('تم خصم') || videoWarning.includes('لم تشاهد') ? '⚠️' : '✅'} {videoWarning}</span>
             </div>
           )}
 

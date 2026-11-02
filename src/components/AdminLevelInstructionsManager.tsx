@@ -65,6 +65,13 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   const [videoTitleInput, setVideoTitleInput] = useState<string>('');
   const [editingVideoUrlId, setEditingVideoUrlId] = useState<string | null>(null);
 
+  // External Image/PDF URL Modal state
+  const [showImageUrlModal, setShowImageUrlModal] = useState<boolean>(false);
+  const [imageUrlInput, setImageUrlInput] = useState<string>('');
+  const [imageTitleInput, setImageTitleInput] = useState<string>('');
+  const [imageTypeInput, setImageTypeInput] = useState<'image' | 'pdf'>('image');
+  const [editingImageUrlId, setEditingImageUrlId] = useState<string | null>(null);
+
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const replaceImageInputRef = useRef<HTMLInputElement | null>(null);
   const [replacingImageId, setReplacingImageId] = useState<string | null>(null);
@@ -87,6 +94,27 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     setVideoUrlInput(video.url || '');
     setVideoTitleInput(video.partCustomTitle || video.title || '');
     setShowVideoUrlModal(true);
+  };
+
+  const openAddImageUrlModal = () => {
+    const currentImgs = (levels.find((l) => l.levelNumber === selectedLevelNum)?.images || []);
+    if (currentImgs.length >= 5) {
+      showError('الحد الأقصى هو 5 صور أو مستندات لكل مستوى.');
+      return;
+    }
+    setEditingImageUrlId(null);
+    setImageUrlInput('');
+    setImageTitleInput(`صورة أو مستند ${currentImgs.length + 1}`);
+    setImageTypeInput('image');
+    setShowImageUrlModal(true);
+  };
+
+  const openReplaceImageUrlModal = (item: LevelMediaItem) => {
+    setEditingImageUrlId(item.id);
+    setImageUrlInput(item.url || '');
+    setImageTitleInput(item.title || '');
+    setImageTypeInput(item.type === 'pdf' ? 'pdf' : 'image');
+    setShowImageUrlModal(true);
   };
 
   const handleSaveVideoUrl = (e: React.FormEvent) => {
@@ -142,6 +170,58 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     setVideoUrlInput('');
     setVideoTitleInput('');
     setEditingVideoUrlId(null);
+  };
+
+  const handleSaveImageUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!imageUrlInput.trim()) {
+      showError('يرجى إدخال رابط الملف.');
+      return;
+    }
+
+    const rawUrl = imageUrlInput.trim();
+    const cleanTitle = imageTitleInput.trim() || `ملف خارجي`;
+    const isPdf = imageTypeInput === 'pdf' || rawUrl.toLowerCase().endsWith('.pdf');
+    const finalType = isPdf ? 'pdf' : 'image';
+
+    if (editingImageUrlId) {
+      const updatedMedia: LevelMediaItem = {
+        id: editingImageUrlId,
+        title: cleanTitle,
+        url: rawUrl,
+        type: finalType,
+        format: finalType === 'pdf' ? 'application/pdf' : 'image/jpeg',
+        size: 0,
+        addedAt: new Date().toISOString(),
+      };
+      const updated = replaceMediaInLevel(selectedLevelNum, editingImageUrlId, updatedMedia);
+      setLevels([...updated]);
+      showToast('✅ تم استبدال الملف عبر الرابط بنجاح!');
+    } else {
+      const currentImgs = currentLevel?.images || [];
+      if (currentImgs.length >= 5) {
+        showError('الحد الأقصى هو 5 صور أو مستندات لكل مستوى.');
+        return;
+      }
+      const mediaId = `img-url-${Date.now()}`;
+      const newMedia: LevelMediaItem = {
+        id: mediaId,
+        title: cleanTitle,
+        url: rawUrl,
+        type: finalType,
+        format: finalType === 'pdf' ? 'application/pdf' : 'image/jpeg',
+        size: 0,
+        addedAt: new Date().toISOString(),
+      };
+      const updated = addMediaToLevel(selectedLevelNum, newMedia);
+      setLevels([...updated]);
+      showToast('✅ تم إدراج ملف جديد عبر الرابط بنجاح!');
+    }
+
+    setShowImageUrlModal(false);
+    setImageUrlInput('');
+    setImageTitleInput('');
+    setEditingImageUrlId(null);
   };
 
   const cancelUpload = () => {
@@ -727,14 +807,21 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                   key={lvlNum}
                   type="button"
                   onClick={() => setSelectedLevelNum(lvlNum)}
+                  style={{
+                    ...(lvlNum >= 1 && lvlNum <= 4 ? { backgroundColor: '#ffffff' } : {}),
+                    ...(lvlNum === 1 ? { borderColor: '#ef6109' } : {}),
+                  }}
                   className={`py-3 px-2 rounded-2xl font-black text-xs sm:text-sm flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${
                     isSelected
                       ? 'bg-gradient-to-b from-amber-500 to-amber-600 text-slate-950 border-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.4)] scale-105 ring-2 ring-amber-400'
                       : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 border-slate-700/80 hover:border-slate-500'
                   }`}
                 >
-                  <span className="text-base sm:text-lg  font-bold">L{lvlNum}</span>
-                  <span className="text-[10px] font-normal truncate max-w-full px-1">
+                  <span className="text-base sm:text-lg  font-bold" style={lvlNum === 1 ? { color: '#ce0a0a' } : undefined}>L{lvlNum}</span>
+                  <span
+                    style={lvlNum === 1 ? { color: '#ce0a0a' } : undefined}
+                    className="text-[10px] font-normal truncate max-w-full px-1"
+                  >
                     المستوى {lvlNum}
                   </span>
                 </button>
@@ -1042,7 +1129,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-bold ">
               {currentImages.length} / 5 ملفات
             </span>
@@ -1050,14 +1137,29 @@ export const AdminLevelInstructionsManager: React.FC = () => {
               type="button"
               disabled={currentImages.length >= 5}
               onClick={() => imageInputRef.current?.click()}
-              className={`px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition ${
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer transition ${
                 currentImages.length >= 5
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                   : 'bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black shadow-md'
               }`}
+              title="رفع صورة أو PDF من الجهاز"
             >
               <Upload className="w-4 h-4" />
-              <span>رفع صورة أو PDF ➕</span>
+              <span>رفع من الجهاز 📁</span>
+            </button>
+            <button
+              type="button"
+              disabled={currentImages.length >= 5}
+              onClick={openAddImageUrlModal}
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer transition ${
+                currentImages.length >= 5
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-md border border-blue-400/40'
+              }`}
+              title="إضافة صورة أو مستند بواسطة رابط خارجي"
+            >
+              <Link2 className="w-4 h-4 text-cyan-300" />
+              <span>إضافة برابط خارجي 🔗</span>
             </button>
           </div>
         </div>
@@ -1122,17 +1224,28 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                   {img.title}
                 </p>
 
-                <div className="flex items-center gap-2 pt-2 border-t border-slate-900">
+                <div className="flex items-center gap-1.5 pt-2 border-t border-slate-900">
                   <button
                     type="button"
                     onClick={() => {
                       setReplacingImageId(img.id);
                       replaceImageInputRef.current?.click();
                     }}
-                    className="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer"
+                    className="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold flex items-center justify-center gap-1 transition cursor-pointer"
+                    title="تبديل بملف من الجهاز"
                   >
                     <RefreshCw className="w-3 h-3 text-amber-400" />
-                    <span>تبديل الملف</span>
+                    <span>من الجهاز</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openReplaceImageUrlModal(img)}
+                    className="flex-1 py-1.5 rounded-lg bg-blue-950/80 hover:bg-blue-900 border border-blue-500/40 text-blue-200 text-[11px] font-bold flex items-center justify-center gap-1 transition cursor-pointer"
+                    title="تبديل بواسطة رابط خارجي"
+                  >
+                    <Link2 className="w-3 h-3 text-cyan-300" />
+                    <span>برابط 🔗</span>
                   </button>
 
                   {img.type !== 'pdf' && (
@@ -1394,6 +1507,111 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                 حفظ تعديل السؤال
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* External Image/PDF URL Modal */}
+      {showImageUrlModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md font-['Cairo',_sans-serif] text-right" dir="rtl">
+          <div className="w-full max-w-lg p-6 rounded-3xl bg-[#0c0f20] border-2 border-emerald-500/60 shadow-2xl space-y-5 relative">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-emerald-300">
+                <Link2 className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-base font-black text-white font-['Tajawal']">
+                  {editingImageUrlId ? 'تبديل الصورة أو المستند عبر رابط خارجي' : 'إضافة صورة أو مستند جديد عبر رابط خارجي'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowImageUrlModal(false)}
+                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveImageUrl} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  نوع الملف (صورة أو مستند PDF):
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setImageTypeInput('image')}
+                    className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border cursor-pointer transition ${
+                      imageTypeInput === 'image'
+                        ? 'bg-emerald-600 text-slate-950 border-emerald-300 font-black shadow'
+                        : 'bg-slate-900 text-slate-300 border-slate-700'
+                    }`}
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    <span>صورة 🖼️</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageTypeInput('pdf')}
+                    className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border cursor-pointer transition ${
+                      imageTypeInput === 'pdf'
+                        ? 'bg-rose-600 text-white border-rose-300 font-black shadow'
+                        : 'bg-slate-900 text-slate-300 border-slate-700'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>مستند PDF 📄</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  عنوان أو تسمية الملف:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={imageTitleInput}
+                  onChange={(e) => setImageTitleInput(e.target.value)}
+                  placeholder="مثال: مخطط معمارية النظام أو دليل المستخدم PDF"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:border-emerald-400 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  رابط الملف الخارجي المباشر (URL):
+                </label>
+                <input
+                  type="url"
+                  required
+                  value={imageUrlInput}
+                  onChange={(e) => setImageUrlInput(e.target.value)}
+                  placeholder="مثال: https://domain.com/image.png أو رابط مستند PDF"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-emerald-300 text-xs font-mono focus:border-emerald-400 focus:outline-none"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  💡 يمكنك نسخ الرابط المباشر لأي صورة أو مستند من الإنترنت أو مركز التخزين ولصقه هنا.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowImageUrlModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs cursor-pointer shadow-md flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{editingImageUrlId ? 'حفظ واستبدال الملف' : 'حفظ وإدراج الملف'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
