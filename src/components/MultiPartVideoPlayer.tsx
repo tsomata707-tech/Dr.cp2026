@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { EducationalVideo } from '../types';
 import { normalizeVideoUrl } from '../utils/videoStorage';
+import { InlineBoxVideoPlayer } from './InlineBoxVideoPlayer';
 
 interface MultiPartVideoPlayerProps {
   videos: EducationalVideo[];
@@ -166,61 +167,11 @@ export const MultiPartVideoPlayer: React.FC<MultiPartVideoPlayerProps> = ({
             );
           }
 
-          const finalPlayUrl = (normalizeVideoUrl(rawUrl) || rawUrl).trim();
-          if (!finalPlayUrl) {
-            return (
-              <div className="flex flex-col items-center justify-center p-6 text-center text-slate-400 gap-2">
-                <Film className="w-8 h-8 text-amber-400/80" />
-                <span className="text-xs font-bold font-['Cairo']">لم يتم تعيين رابط أو ملف لهذا الفيديو بعد</span>
-              </div>
-            );
-          }
-          const isEmbed =
-            currentVideo.videoType === 'youtube' ||
-            finalPlayUrl.includes('youtube.com') ||
-            finalPlayUrl.includes('youtu.be') ||
-            finalPlayUrl.includes('drive.google.com') ||
-            finalPlayUrl.includes('player.vimeo.com');
-
-          if (isEmbed) {
-            const rawOriginal = currentVideo?.videoUrl?.trim() || '';
-            const openUrl = rawOriginal.startsWith('http') ? rawOriginal : `https://drive.google.com/file/d/${rawOriginal}/view`;
-
-            return (
-              <div className="relative w-full h-full flex flex-col items-center justify-center bg-slate-950">
-                <iframe
-                  key={currentVideo.id}
-                  src={finalPlayUrl}
-                  title={currentVideo.title}
-                  className="w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-                <div className="absolute bottom-3 left-3 z-20">
-                  <a
-                    href={openUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs shadow-lg flex items-center gap-1.5 cursor-pointer border border-blue-400 transition-transform hover:scale-105"
-                    title="فتح الفيديو في نافذة مستقلة في حال تعذر التشغيل المباشر"
-                  >
-                    <span>🔗 فتح ومشاهدة الفيديو في نافذة مستقلة</span>
-                  </a>
-                </div>
-              </div>
-            );
-          }
-
           return (
-            <video
+            <InlineBoxVideoPlayer
               key={currentVideo.id}
-              src={finalPlayUrl}
-              controls
-              preload="metadata"
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                console.warn('Video failed to load:', finalPlayUrl);
-              }}
+              url={rawUrl}
+              title={currentVideo.title}
               onEnded={() => {
                 if (selectedPartIndex === videos.length - 1) {
                   onVideoFinish?.();

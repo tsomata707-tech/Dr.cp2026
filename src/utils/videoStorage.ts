@@ -400,20 +400,12 @@ export function normalizeVideoUrl(url: string): string {
   if (!trimmed) return '';
 
   // 1. Google Drive video share link or raw file ID (Checked FIRST)
-  const driveMatch = trimmed.match(/drive\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)([a-zA-Z0-9_-]+)/);
-  if (driveMatch && driveMatch[1]) {
-    return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
-  }
-  const driveDirectMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (driveDirectMatch && driveDirectMatch[1]) {
-    return `https://drive.google.com/file/d/${driveDirectMatch[1]}/preview`;
-  }
-  // Raw Google Drive file ID detection (e.g. 1lOdEhbyvZnQs0dGz7PdnNcmLgsFnkn0M)
-  if (/^[a-zA-Z0-9_-]{15,}$/.test(trimmed) && !trimmed.includes('http') && !trimmed.includes('youtube')) {
-    return `https://drive.google.com/file/d/${trimmed}/preview`;
+  const driveId = extractGoogleDriveId(trimmed);
+  if (driveId) {
+    return `https://drive.google.com/file/d/${driveId}/preview`;
   }
 
-  // 2. YouTube watch URL: https://www.youtube.com/watch?v=XXXX or shorts or embed or youtu.be
+  // 2. YouTube watch URL...
   const watchMatch = trimmed.match(
     /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
   );
@@ -450,5 +442,51 @@ export function deduplicateEducationalVideos(inputList?: EducationalVideo[]): Ed
   }
   return unique;
 }
+
+/**
+ * Extracts Google Drive File ID from any share, preview, or uc URL
+ */
+export function extractGoogleDriveId(url?: string): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  const match1 = trimmed.match(
+    /drive\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)([a-zA-Z0-9_-]+)/
+  );
+  if (match1 && match1[1]) return match1[1];
+  const match2 = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match2 && match2[1]) return match2[1];
+  // Raw file ID (alphanumeric, underscores, hyphens, min length 20, no slash)
+  if (/^[a-zA-Z0-9_-]{20,50}$/.test(trimmed) && !trimmed.includes('http') && !trimmed.includes('youtube') && !trimmed.includes('/')) {
+    return trimmed;
+  }
+  return null;
+}
+
+/**
+ * Gets direct streamable video URL for Google Drive file
+ */
+export function getGoogleDriveDirectStreamUrl(idOrUrl: string): string {
+  const driveId = extractGoogleDriveId(idOrUrl) || idOrUrl.trim();
+  return `https://drive.google.com/uc?export=download&id=${driveId}`;
+}
+
+/**
+ * Checks if URL is a direct video stream (local file, direct mp4/webm, or Google Drive direct stream)
+ */
+export function isDirectVideoStream(url?: string): boolean {
+  if (!url) return false;
+  const trimmed = url.trim();
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:') || trimmed.endsWith('.mp4') || trimmed.endsWith('.webm') || trimmed.endsWith('.ogg')) {
+    return true;
+  }
+  if (trimmed.includes('dropbox.com') && (trimmed.includes('dl=0') || trimmed.includes('raw=1'))) {
+    return true;
+  }
+  if (extractGoogleDriveId(trimmed)) {
+    return true;
+  }
+  return false;
+}
+
 
 

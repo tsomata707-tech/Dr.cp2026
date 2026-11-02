@@ -53,6 +53,7 @@ import {
   subscribeToLevelActivityConfigs,
 } from '../utils/studentActivityStorage';
 import { isSafeExternalUrl } from '../utils/mediaSafety';
+import { InlineBoxVideoPlayer } from './InlineBoxVideoPlayer';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { DraggableLevelInstructions } from './DraggableLevelInstructions';
 import { LevelTransitionLoader5s } from './LevelTransitionLoader5s';
@@ -1214,19 +1215,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     </span>
                   </div>
                   <div className="aspect-video w-full relative bg-black flex items-center justify-center">
-                    {isLocal ? (
-                      <video controls className="w-full h-full object-contain bg-black" src={cleanUrl} preload="metadata" />
-                    ) : videoEmbedUrl && videoEmbedUrl.trim() ? (
-                      <iframe
-                        src={videoEmbedUrl.trim()}
-                        title={vid.partCustomTitle || vid.title || `Level Video ${idx + 1}`}
-                        className="w-full h-full border-0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    ) : (
-                      <div className="text-slate-400 text-xs font-bold">جاري تحميل الفيديو...</div>
-                    )}
+                    <InlineBoxVideoPlayer
+                      url={cleanUrl}
+                      title={vid.partCustomTitle || vid.title || `الجزء ${idx + 1}`}
+                    />
                   </div>
                 </div>
               );

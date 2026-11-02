@@ -30,6 +30,7 @@ import { LevelMediaItem, LevelQuestion } from '../types';
 import { normalizeVideoUrl } from '../utils/videoStorage';
 import { storeVideoBlob, getVideoBlobUrl } from '../utils/indexedDbVideo';
 import { formatRealFileSize } from '../utils/mediaSafety';
+import { InlineBoxVideoPlayer } from './InlineBoxVideoPlayer';
 
 export const AdminLevelInstructionsManager: React.FC = () => {
   const [levels, setLevels] = useState<GameLevelDef[]>(() => getCustomGameLevels());
@@ -694,18 +695,10 @@ export const AdminLevelInstructionsManager: React.FC = () => {
                     </div>
 
                     <div className="aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-slate-800">
-                      {cleanActiveUrl && isLocal ? (
-                        <video controls className="w-full h-full object-contain bg-black" src={cleanActiveUrl} preload="metadata" />
-                      ) : normalizedEmbed && normalizedEmbed.trim() ? (
-                        <iframe
-                          src={normalizedEmbed.trim()}
-                          title={vid.title}
-                          className="w-full h-full border-0"
-                          allowFullScreen
-                        />
-                      ) : (
-                        <div className="text-slate-500 text-xs">جاري تجهيز مشغل الفيديو...</div>
-                      )}
+                      <InlineBoxVideoPlayer
+                        url={cleanActiveUrl}
+                        title={vid.partCustomTitle || vid.title || `الجزء ${idx + 1}`}
+                      />
                     </div>
 
                     <div className="space-y-1 pt-1 text-right">
