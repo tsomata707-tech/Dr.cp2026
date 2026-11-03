@@ -27,7 +27,7 @@ import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { Gamepad2 } from 'lucide-react';
 import { isSafeExternalUrl } from '../utils/mediaSafety';
-import { getGroupByUsername } from '../data/studentAccounts';
+import { getGroupByUsername, getCollaborativeGroupByUsername } from '../data/studentAccounts';
 import { subscribeToGroupRoom } from '../utils/realtimeService';
 
 const StageIntroVideoPlayer: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
@@ -109,27 +109,29 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
     10: <Share2 className="w-5 h-5 text-cyan-400" />,
   };
 
-  const studentGroup = useMemo(() => {
-    // We already have getGroupByUsername imported
+  const collabSubGroup = useMemo(() => getCollaborativeGroupByUsername(username), [username]);
+  const effectiveRoomId = useMemo(() => {
     const userMeta = getGroupByUsername(username);
-    return userMeta?.code || 'G1';
-  }, [username]);
+    const groupCode = userMeta?.code || 'G1';
+    const isCollab = userMeta?.learningMode === 'تعاوني';
+    if (isCollab && collabSubGroup) {
+      return collabSubGroup;
+    }
+    return groupCode;
+  }, [username, collabSubGroup]);
 
   // Real-time group room state
   const [roomState, setRoomState] = useState<any>({ completedLevels: {} });
   
   useEffect(() => {
-    const userMeta = getGroupByUsername(username);
-    const groupCode = userMeta?.code || 'G1';
-    
-    const unsub = subscribeToGroupRoom(groupCode, (updatedRoom) => {
+    const unsub = subscribeToGroupRoom(effectiveRoomId, (updatedRoom) => {
       setRoomState(updatedRoom);
     });
     
     return () => {
        if (unsub) unsub();
     };
-  }, [username]);
+  }, [effectiveRoomId]);
 
   const handleStageClick = (lvl: GameLevelDef) => {
     const isPreTestDone = true; 

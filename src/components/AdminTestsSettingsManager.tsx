@@ -46,8 +46,8 @@ import {
   saveCustomGameLevels,
   resetGameLevelsToDefault,
 } from '../data/gameLevelsData';
-import { RESEARCH_GROUPS_META } from '../data/studentAccounts';
-import { resetGroupLevelRealtime } from '../utils/realtimeService';
+import { RESEARCH_GROUPS_META, COLLABORATIVE_GROUPS_DEF } from '../data/studentAccounts';
+import { resetGroupLevelRealtime, wipeAllCloudLevelsDataAndResetProgress } from '../utils/realtimeService';
 
 type ActiveTestTab = 'pretest' | 'posttest' | 'levels';
 
@@ -213,6 +213,23 @@ export const AdminTestsSettingsManager: React.FC = () => {
       );
     } finally {
       setIsResettingGroup(false);
+    }
+  };
+
+  const [isWipingCloud, setIsWipingCloud] = useState<boolean>(false);
+
+  const handleGlobalCloudWipe = async () => {
+    if (!window.confirm('⚠️ هل أنت متأكد من حذف بيانات السحابة وتصفير إجابات المستويات الـ 9 بالكامل لجميع الطلاب؟\n\n- سيعود جميع الطلاب الـ 60 إلى المستوى 1 بدون حلول.\n- ستبقى نتائج الاختبار القبلي مغلقة وناجحة بنسبة 100% دون أي تغيير.')) {
+      return;
+    }
+    setIsWipingCloud(true);
+    try {
+      await wipeAllCloudLevelsDataAndResetProgress();
+      showNotification('✓ تم حذف بيانات السحابة وتصفير إجابات المستويات لجميع الطلاب بنجاح، وجميع الطلاب في المستوى 1 والقبلي مغلق', 'success');
+    } catch (err: any) {
+      showNotification(`❌ حدث خطأ أثناء تصفير السحابة: ${err?.message || 'خطأ غير معروف'}`, 'error');
+    } finally {
+      setIsWipingCloud(false);
     }
   };
 
@@ -1698,16 +1715,16 @@ export const AdminTestsSettingsManager: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
               <div className="flex-1 w-full">
                 <label className="text-xs font-bold text-slate-300 block mb-1.5">
-                  اختر المجموعة المراد إعادة فتح المستوى لها:
+                  اختر المجموعة أو الفريق الثلاثي لإعادة فتح المستوى له:
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
                   {Object.values(RESEARCH_GROUPS_META).map((group) => (
                     <button
                       key={group.id}
                       type="button"
                       onClick={() => setResetSelectedGroupId(group.code)}
                       className={`px-3 py-2 rounded-xl border text-[11px] font-black transition-all ${
-                        resetSelectedGroupId === group.code
+                        resetSelectedGroupId.startsWith(group.code)
                           ? 'bg-rose-600 border-rose-400 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)]'
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-rose-500/50'
                       }`}
@@ -1716,6 +1733,45 @@ export const AdminTestsSettingsManager: React.FC = () => {
                     </button>
                   ))}
                 </div>
+
+                {/* Subgroup triads for G3 and G4 */}
+                {(resetSelectedGroupId.startsWith('G3') || resetSelectedGroupId.startsWith('G4')) && (
+                  <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5">
+                    <span className="text-[11px] text-cyan-300 font-bold block">
+                      تحديد فريق ثلاثي مخصص (3 طلاب) أو كامل المجموعة:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setResetSelectedGroupId(resetSelectedGroupId.substring(0, 2))}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition ${
+                          resetSelectedGroupId.length === 2
+                            ? 'bg-cyan-600 border-cyan-400 text-white'
+                            : 'bg-slate-900 border-slate-700 text-slate-300'
+                        }`}
+                      >
+                        كامل {resetSelectedGroupId.substring(0, 2)} (15 طالب)
+                      </button>
+                      {(resetSelectedGroupId.startsWith('G4')
+                        ? ['G4-A', 'G4-B', 'G4-C', 'G4-D', 'G4-E']
+                        : ['G3-A', 'G3-B', 'G3-C', 'G3-D', 'G3-E']
+                      ).map((sub) => (
+                        <button
+                          key={sub}
+                          type="button"
+                          onClick={() => setResetSelectedGroupId(sub)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition ${
+                            resetSelectedGroupId === sub
+                              ? 'bg-amber-600 border-amber-400 text-white'
+                              : 'bg-slate-900 border-slate-700 text-slate-300'
+                          }`}
+                        >
+                          {sub} (3 طلاب)
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="shrink-0 self-end">
@@ -1762,6 +1818,31 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   </button>
                 )}
               </div>
+            </div>
+
+            {/* Global Cloud Level Data Wipe Button */}
+            <div className="mt-4 pt-4 border-t border-rose-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-red-950/30 p-3.5 rounded-2xl border border-red-500/30">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Trash2 className="w-4 h-4 text-rose-400" />
+                  <span className="text-xs font-black text-rose-200 font-['Tajawal']">
+                    حذف بيانات السحابة وتصفير إجابات المستويات (مع إبقاء القبلي مغلقاً)
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  تصفير فوري لجميع إجابات المستويات السحابية لكافة الطلاب والبدء من المستوى 1، مع ثبات الاختبار القبلي مغلقاً وناجحاً.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={isWipingCloud}
+                onClick={handleGlobalCloudWipe}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-black text-xs flex items-center gap-2 shadow-lg transition cursor-pointer shrink-0 disabled:opacity-50"
+              >
+                {isWipingCloud ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                <span>تصفير إجابات المستويات السحابية</span>
+              </button>
             </div>
 
             {/* Last reset summary panel */}

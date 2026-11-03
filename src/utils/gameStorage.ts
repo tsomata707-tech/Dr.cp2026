@@ -2,7 +2,7 @@ import { StudentGameProgress, CompletedLevelResult, PreTestResult } from '../typ
 import { GAME_LEVELS_DATA, CARTOON_AVATARS } from '../data/gameLevelsData';
 import { getGroupByUsername, getCollaborativeGroupByUsername, COLLABORATIVE_GROUPS_DEF } from '../data/studentAccounts';
 import { addActivityLog } from './adminStorage';
-import { syncStudentProgressToFirestore } from './realtimeService';
+import { syncStudentProgressToFirestore, wipeAllCloudLevelsDataAndResetProgress } from './realtimeService';
 
 const GAME_STORAGE_KEY = 'cp_real_game_progress_v4';
 
@@ -116,15 +116,21 @@ export function saveAllStudentsProgress(all: Record<string, StudentGameProgress>
 }
 
 export function calculateStudentTotalScore(prog: StudentGameProgress): number {
-  const levelsScore = Object.values(prog.completedLevels || {}).reduce(
-    (acc, lvl) => acc + (lvl?.score || 0),
-    0
-  );
-  const activitiesScore = Object.values(prog.studentActivities || {}).reduce(
-    (acc, act) => acc + (act?.grade || 0),
-    0
-  );
-  return levelsScore + activitiesScore;
+  const completedLevels = prog.completedLevels || {};
+  let total = 0;
+  Object.values(completedLevels).forEach((lvl) => {
+    if (lvl && typeof lvl.score === 'number') {
+      total += lvl.score;
+    }
+  });
+  // Also count any activities submitted for levels that are not yet marked as completed
+  Object.entries(prog.studentActivities || {}).forEach(([lvlNum, act]) => {
+    const num = Number(lvlNum);
+    if (!completedLevels[num] && act && typeof act.grade === 'number') {
+      total += act.grade;
+    }
+  });
+  return total;
 }
 
 export function saveSingleStudentProgress(username: string, prog: StudentGameProgress): void {
@@ -247,13 +253,17 @@ export function submitLevelChallenge(
   const questionDetails: Record<string, any> = {};
   const completedAtStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
-  // Score Question 1 (or all questions if answered)
+  const totalSec1Score = levelDef.section1Score ?? 50;
+  const numQuestions = levelDef.questions.length || 1;
+  const defaultPerQuestion = numQuestions === 2 ? 25 : Math.round(totalSec1Score / numQuestions);
+
+  // Score Question 1 & Question 2 (25 XP each for 2 questions)
   levelDef.questions.forEach((q, idx) => {
-    const qPoints = idx === 0 ? (levelDef.section1Score ?? 100) : (q.points || 0);
+    const qPoints = q.points || defaultPerQuestion;
     const chosen = chosenAnswers[q.id];
     const isCorrect = chosen === q.correctIndex;
     if (isCorrect) {
-      const actualScore = (idx === 0 && s1ScoreOverride !== undefined) ? s1ScoreOverride : qPoints;
+      const actualScore = qPoints;
       scoreGained += actualScore;
       questionScores[q.id] = actualScore;
     } else {
@@ -280,8 +290,8 @@ export function submitLevelChallenge(
     };
   });
 
-  // Add applied activity score from Section 2
-  const actScore = Math.min(levelDef.section2Score ?? 0, Math.max(0, appliedActivityScore));
+  // Add applied activity score from Section 2 (50 XP max)
+  const actScore = Math.min(50, Math.max(0, appliedActivityScore !== undefined ? appliedActivityScore : 50));
   scoreGained += actScore;
   questionScores['section2_activity'] = actScore;
   questionDetails['section2_activity'] = {
@@ -603,9 +613,9 @@ export function resetAllLevelsProgressKeepingPreTest(): Record<string, StudentGa
   
   saveAllStudentsProgress(all);
   
-  // Sync to Firebase
-  Object.values(all).forEach((prog) => {
-    syncStudentProgressToFirestore(prog).catch(() => {});
+  // Wipe all cloud levels data & RTDB rooms asynchronously
+  wipeAllCloudLevelsDataAndResetProgress().catch((err) => {
+    console.warn('wipeAllCloudLevelsDataAndResetProgress error:', err);
   });
   
   try {

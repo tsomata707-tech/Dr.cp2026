@@ -27,6 +27,7 @@ import {
 import { PortalUser } from '../types';
 import { getPortalUsers, savePortalUsers, addActivityLog } from '../utils/adminStorage';
 import { resetStudentProgress, resetAllLevelsProgressKeepingPreTest } from '../utils/gameStorage';
+import { wipeAllCloudLevelsDataAndResetProgress } from '../utils/realtimeService';
 import { RESEARCH_GROUPS_META, getStudentPassword } from '../data/studentAccounts';
 import { getStudentFullName, saveStudentTripartiteName } from '../utils/studentNameStorage';
 
@@ -44,6 +45,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
   const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
   const [studentToReset, setStudentToReset] = useState<string>('all');
   const [confirmResetStudent, setConfirmResetStudent] = useState<string | null>(null);
+  const [isWipingCloud, setIsWipingCloud] = useState(false);
   const [userToDelete, setUserToDelete] = useState<PortalUser | null>(null);
 
   // Edit User Modal
@@ -973,29 +975,39 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({ onLoginAsS
             <div className="flex items-center gap-3">
               <button
                 type="button"
+                disabled={isWipingCloud}
                 onClick={() => setConfirmResetStudent(null)}
-                className="flex-1 px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs cursor-pointer transition-colors"
+                className="flex-1 px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs cursor-pointer transition-colors disabled:opacity-50"
               >
                 إلغاء التراجع
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  if (confirmResetStudent === 'all') {
-                    resetAllLevelsProgressKeepingPreTest();
-                    addActivityLog('قام المشرف بإعادة تهيئة مستويات الطلاب مع الإبقاء على الاختبار القبلي', 'admin', 'warning');
-                    showToast('✓ تم إعادة تهيئة مستويات جميع الطلاب بنجاح (مع الإبقاء على القبلي)', 'success');
-                  } else {
-                    resetStudentProgress(confirmResetStudent);
-                    addActivityLog(`قام المشرف بإعادة تهيئة مستويات الطالب: ${confirmResetStudent}`, 'admin', 'warning');
-                    showToast(`✓ تم إعادة تهيئة مستويات الطالب ${confirmResetStudent} بنجاح`, 'success');
+                disabled={isWipingCloud}
+                onClick={async () => {
+                  setIsWipingCloud(true);
+                  try {
+                    if (confirmResetStudent === 'all') {
+                      await wipeAllCloudLevelsDataAndResetProgress();
+                      addActivityLog('قام المشرف بتصفير وحذف جميع بيانات المستويات في السحابة مع الإبقاء على الاختبار القبلي', 'admin', 'warning');
+                      showToast('✓ تم تصفير وحذف بيانات السحابة بالكامل وإرجاع جميع الطلاب للمستوى 1 مع الإبقاء على القبلي', 'success');
+                    } else {
+                      resetStudentProgress(confirmResetStudent);
+                      addActivityLog(`قام المشرف بإعادة تهيئة مستويات الطالب: ${confirmResetStudent}`, 'admin', 'warning');
+                      showToast(`✓ تم إعادة تهيئة مستويات الطالب ${confirmResetStudent} بنجاح`, 'success');
+                    }
+                    setUsers(getPortalUsers());
+                  } catch (err: any) {
+                    console.error('Reset error:', err);
+                    showToast(`حدث خطأ أثناء التصفير: ${err?.message || 'تعذر الاتصال'}`, 'error');
+                  } finally {
+                    setIsWipingCloud(false);
+                    setConfirmResetStudent(null);
                   }
-                  setUsers(getPortalUsers());
-                  setConfirmResetStudent(null);
                 }}
-                className="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-black text-xs shadow-lg shadow-red-950/50 cursor-pointer transition-all transform hover:-translate-y-0.5"
+                className="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-black text-xs shadow-lg shadow-red-950/50 cursor-pointer transition-all transform hover:-translate-y-0.5 disabled:opacity-50"
               >
-                نعم، تصفير الآن
+                {isWipingCloud ? 'جاري تصفير السحابة... ⏳' : 'نعم، تصفير الآن 🔄'}
               </button>
             </div>
           </div>

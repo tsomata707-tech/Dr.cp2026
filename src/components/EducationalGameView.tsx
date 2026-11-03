@@ -216,10 +216,22 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const isImmediateGroup = userGroupMeta ? userGroupMeta.feedbackMode === 'فورية' : true;
   const studentInfo = useMemo(() => getStudentByUsername(username), [username]);
 
+  const collabSubGroup = useMemo(() => getCollaborativeGroupByUsername(username), [username]);
+  const [adminCollabSubGroup, setAdminCollabSubGroup] = useState<string>('G3-A');
+
+  const effectiveRoomId = useMemo(() => {
+    if (isCollaborative) {
+      if (isAdmin) {
+        return adminCollabSubGroup.startsWith(groupCode) ? adminCollabSubGroup : `${groupCode}-A`;
+      }
+      return collabSubGroup || groupCode;
+    }
+    return groupCode;
+  }, [isCollaborative, isAdmin, adminCollabSubGroup, groupCode, collabSubGroup]);
+
   useEffect(() => {
-    if (!studentGroup) return;
-    const subscriptionKey = `${groupCode}_${studentGroup}`;
-    const unsub = subscribeToGroupAnswers(subscriptionKey, (answers) => {
+    if (!effectiveRoomId) return;
+    const unsub = subscribeToGroupAnswers(effectiveRoomId, (answers) => {
       setGroupAnswers(prev => {
          const newKeys = Object.keys(answers);
          const oldKeys = Object.keys(prev);
@@ -248,9 +260,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       });
     });
     return () => unsub();
-  }, [studentGroup, groupCode, isCollaborative, isImmediateGroup, username]);
+  }, [effectiveRoomId, isCollaborative, isImmediateGroup, username]);
 
-  const collabSubGroup = getCollaborativeGroupByUsername(username);
   const [teammateAnswerInfo, setTeammateAnswerInfo] = useState<{ completedBy: string; score: number } | null>(null);
 
   useEffect(() => {
@@ -275,7 +286,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   }, [username, selectedLevelNum, isCollaborative, isImmediateGroup, collabSubGroup, progress]);
 
   // Real-time group room state from Firebase Firestore
-  const [roomState, setRoomState] = useState<GroupRoomState>(() => getDefaultRoomState(groupCode));
+  const [roomState, setRoomState] = useState<GroupRoomState>(() => getDefaultRoomState(effectiveRoomId));
   const [isConnectedToFirebase, setIsConnectedToFirebase] = useState<boolean>(true);
 
   // Always scroll to top when changing levels or mounting
@@ -327,14 +338,14 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const currentAvatar =
     CARTOON_AVATARS.find((a) => a.id === progress.avatarId) || CARTOON_AVATARS[0];
 
-  // Subscribe to Firebase Firestore real-time room
+  // Subscribe to Firebase RTDB real-time room for 3-student triad
   useEffect(() => {
-    const unsub = subscribeToGroupRoom(groupCode, (updatedRoom) => {
+    const unsub = subscribeToGroupRoom(effectiveRoomId, (updatedRoom) => {
       setRoomState(updatedRoom);
       setIsConnectedToFirebase(true);
     });
 
-    joinGroupRoom(groupCode, {
+    joinGroupRoom(effectiveRoomId, {
       username,
       fullName: studentInfo?.fullName || `طالب (${username})`,
       avatarEmoji: currentAvatar.emoji,
@@ -344,7 +355,46 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     return () => {
       unsub();
     };
-  }, [groupCode, username, studentInfo, currentAvatar]);
+  }, [effectiveRoomId, username, studentInfo, currentAvatar]);
+
+  // Synchronize triad completed level so level is locked for all 3 members and next level unlocked
+  useEffect(() => {
+    if (!roomState?.completedLevels) return;
+    const completedInRoom = roomState.completedLevels;
+    let hasChanged = false;
+    const currentProg = getStudentProgress(username);
+    if (!currentProg.completedLevels) currentProg.completedLevels = {};
+
+    Object.entries(completedInRoom).forEach(([lvlStr, res]: [string, any]) => {
+      const lvlNum = Number(lvlStr);
+      if (res && !currentProg.completedLevels[lvlNum]) {
+        currentProg.completedLevels[lvlNum] = {
+          levelNumber: lvlNum,
+          score: res.score ?? 100,
+          maxScore: res.maxScore ?? 100,
+          answers: res.answers ?? {},
+          questionScores: res.questionScores ?? { q1: 25, q2: 25, section2_activity: 50 },
+          questionDetails: {},
+          completedAt: res.completedAt || new Date().toISOString(),
+          timeSpentSeconds: 60,
+          feedbackRevealedToStudent: isImmediateGroup,
+        };
+        currentProg.currentLevel = Math.max(currentProg.currentLevel, Math.min(9, lvlNum + 1));
+        hasChanged = true;
+      }
+    });
+
+    if (hasChanged && !isAdmin) {
+      currentProg.totalScore = calculateStudentTotalScore(currentProg);
+      saveSingleStudentProgress(username, currentProg);
+      setProgress(currentProg);
+      try {
+        window.dispatchEvent(new CustomEvent('cp_student_profile_updated', { detail: { username } }));
+      } catch {
+        // ignore
+      }
+    }
+  }, [roomState, username, isAdmin, isImmediateGroup]);
 
   // Current level definition
   const currentLevelDef =
@@ -486,19 +536,17 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     }));
 
     if (!isAdmin) {
-      selectQuestionOptionRealtime(groupCode, selectedLevelNum, questionId, optIdx, {
+      selectQuestionOptionRealtime(effectiveRoomId, selectedLevelNum, questionId, optIdx, {
         username,
         fullName: studentInfo?.fullName || username,
         avatarEmoji: currentAvatar.emoji,
       });
 
-      if (studentGroup) {
-        syncGroupAnswer(`${groupCode}_${studentGroup}`, questionId, {
-          username,
-          optIdx,
-          isCorrect
-        });
-      }
+      syncGroupAnswer(effectiveRoomId, questionId, {
+        username,
+        optIdx,
+        isCorrect
+      });
     }
 
     setTimeout(() => {
@@ -506,7 +554,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         const answered = levelQuestions.filter(q => latest[q.id] !== undefined);
         const correctOnes = answered.filter(q => latest[q.id] === q.correctIndex);
         const totalPossibleSec1 = currentLevelDef.section1Score || 50;
-        const perQuestionPoints = levelQuestions.length > 0 ? totalPossibleSec1 / levelQuestions.length : 0;
+        const perQuestionPoints = levelQuestions.length === 2 ? 25 : (levelQuestions.length > 0 ? Math.round(totalPossibleSec1 / levelQuestions.length) : 25);
         let earnedScore = correctOnes.length * perQuestionPoints;
         
         if (hintUsedPerLevel[selectedLevelNum]) earnedScore = Math.max(0, earnedScore - 5);
@@ -726,8 +774,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
     const s1ScoreOverride = section1ScorePerLevel[selectedLevelNum];
 
-    // [FIX 1]: تمرير s2Score = 0 دائماً لمنع حساب الـ 50 درجة مرتين (لأن الدرجة موجودة في studentActivities وتُحسب في calculateStudentTotalScore)
-    const s2Score = 0;
+    // Activity Question in Section 2 is worth 50 XP
+    const s2Score = 50;
     const { progress: updatedProgress } = submitLevelChallenge(
       username,
       selectedLevelNum,
@@ -740,7 +788,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
     markTestCompletedInAudit(username, `level-${selectedLevelNum}`);
 
-    await submitGroupLevelRealtime(groupCode, selectedLevelNum, chosenAnswers, {
+    await submitGroupLevelRealtime(effectiveRoomId, selectedLevelNum, chosenAnswers, {
       username,
       fullName: studentInfo?.fullName || username,
       avatarEmoji: currentAvatar.emoji,
@@ -824,7 +872,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-900/90 p-2 rounded-xl border border-emerald-500/40">
+          <div className="flex items-center gap-2 bg-slate-900/90 p-2 rounded-xl border border-emerald-500/40 flex-wrap">
             <span className="text-xs text-emerald-300 font-bold whitespace-nowrap">تبديل المجموعة:</span>
             <select
               value={groupCode}
@@ -842,6 +890,21 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               <option value="G3">G3 - تعاوني وتغذية فورية</option>
               <option value="G4">G4 - تعاوني وتغذية مرجئة</option>
             </select>
+
+            {isCollaborative && (
+              <>
+                <span className="text-xs text-cyan-300 font-bold whitespace-nowrap mr-2">المجموعة الثلاثية:</span>
+                <select
+                  value={adminCollabSubGroup}
+                  onChange={(e) => setAdminCollabSubGroup(e.target.value)}
+                  className="bg-slate-950 border border-cyan-500/60 rounded-lg px-2.5 py-1 text-xs text-cyan-300 font-black cursor-pointer"
+                >
+                  {(groupCode === 'G4' ? ['G4-A', 'G4-B', 'G4-C', 'G4-D', 'G4-E'] : ['G3-A', 'G3-B', 'G3-C', 'G3-D', 'G3-E']).map((sub) => (
+                    <option key={sub} value={sub}>{sub} (3 طلاب)</option>
+                  ))}
+                </select>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1336,7 +1399,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               : chosenAnswers[q.id];
             const hasAnswered = chosen !== undefined;
             const isCorrect = chosen === q.correctIndex;
-            const qPoints = Math.round((currentLevelDef.section1Score || 50) / levelQuestions.length);
+            const qPoints = levelQuestions.length === 2 ? 25 : Math.round((currentLevelDef.section1Score || 50) / (levelQuestions.length || 1));
 
             return (
               <div key={q.id} className="p-6 rounded-3xl bg-slate-950/90 border-2 border-amber-400/80 shadow-[0_0_35px_rgba(251,191,36,0.25)] space-y-5 text-right">
@@ -1474,6 +1537,85 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                       );
                     })}
                   </div>
+
+                  {/* Immediate Question Result & Designated Correct Answer for Immediate Groups (G1, G3) & Admin */}
+                  {(isImmediateGroup || isAdmin) && hasAnswered && (
+                    <div className={`mt-4 p-4 sm:p-5 rounded-2xl border-2 shadow-lg transition-all text-right space-y-3.5 animate-fadeIn ${
+                      isCorrect
+                        ? 'bg-gradient-to-r from-emerald-950/90 via-[#0d2218] to-emerald-950/90 border-emerald-400/90 shadow-[0_0_25px_rgba(16,185,129,0.25)]'
+                        : 'bg-gradient-to-r from-rose-950/90 via-[#241014] to-rose-950/90 border-rose-500/90 shadow-[0_0_25px_rgba(244,63,94,0.25)]'
+                    }`}>
+                      {/* 1. Result Header with exact XP */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-lg shrink-0 shadow-md ${
+                            isCorrect ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500 text-white'
+                          }`}>
+                            {isCorrect ? '✓' : '✕'}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-black text-sm sm:text-base font-['Tajawal'] text-white">
+                                {isCorrect ? '✓ إجابة صحيحة ومتقنة!' : '✕ إجابة غير صحيحة!'}
+                              </span>
+                              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border ${
+                                isCorrect
+                                  ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
+                                  : 'bg-rose-500/30 border-rose-400 text-rose-200'
+                              }`}>
+                                {isCorrect ? `+${qPoints} XP` : `0 / ${qPoints} XP`}
+                              </span>
+                            </div>
+                            <span className="text-xs text-slate-300 block mt-0.5 font-['Cairo']">
+                              {isCorrect
+                                ? `أحسنت صنعاً! تم احتساب درجة السؤال كاملة (${qPoints} نقطة XP).`
+                                : `تم تسجيل محاولتك لهذا السؤال (${qPoints} نقطة XP). يمكنك مراجعة الحل المعتمد أدناه.`}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className="text-xs font-bold font-['Cairo'] text-amber-300 bg-slate-950/70 px-3 py-1.5 rounded-xl border border-amber-400/40 shrink-0">
+                          {isCollaborative ? '🤝 تغذية راجعة فورية للفريق' : '⚡ تغذية راجعة فورية'}
+                        </span>
+                      </div>
+
+                      {/* 2. Admin Designated Correct Answer Box */}
+                      <div className="p-3.5 sm:p-4 rounded-xl bg-slate-950/85 border border-amber-400/60 space-y-2.5 shadow-inner">
+                        <div className="flex items-center gap-2 text-xs font-black text-amber-300 font-['Cairo']">
+                          <Target className="w-4 h-4 text-amber-400" />
+                          <span>🎯 الإجابة الصحيحة المعينة من قِبل المشرف:</span>
+                        </div>
+
+                        <div className="flex items-start gap-2.5 pr-1">
+                          <span className="w-7 h-7 rounded-full bg-emerald-500 text-slate-950 text-xs font-black flex items-center justify-center shrink-0 mt-0.5 shadow">
+                            {['أ', 'ب', 'ج', 'د', 'هـ'][q.correctIndex] || q.correctIndex + 1}
+                          </span>
+                          <div className="text-sm font-black text-white font-['Cairo'] leading-relaxed">
+                            {q.options[q.correctIndex]}
+                          </div>
+                        </div>
+
+                        {/* Correct Option Image (if any) */}
+                        {q.optionImages?.[q.correctIndex] && q.optionImages[q.correctIndex]?.trim() && (
+                          <div className="mt-2 w-48 h-32 rounded-xl overflow-hidden border border-emerald-400/70 bg-black/70 p-1.5 shadow-md">
+                            <img
+                              src={q.optionImages[q.correctIndex]!.trim()}
+                              alt="صورة الإجابة الصحيحة"
+                              className="w-full h-full object-contain rounded-lg"
+                            />
+                          </div>
+                        )}
+
+                        {/* Scientific Explanation */}
+                        {q.explanation && q.explanation.trim() && (
+                          <div className="mt-2.5 pt-2.5 border-t border-slate-800 text-xs text-slate-300 font-['Cairo'] leading-relaxed flex items-start gap-2">
+                            <span className="text-amber-400 font-black shrink-0">💡 التفسير العلمي:</span>
+                            <span className="text-slate-200">{q.explanation}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -1506,15 +1648,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             </span>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                تحدي المعرفة ({currentLevelDef.section1Score || 50} درجة): <strong className="text-amber-400">{section1ScorePerLevel[selectedLevelNum] || 0} / {currentLevelDef.section1Score || 50} XP</strong>
+                تحدي المعرفة (50 درجة): <strong className="text-amber-400">{section1ScorePerLevel[selectedLevelNum] || 0} / 50 XP</strong>
               </span>
-              {selectedLevelNum !== 1 && (
-                <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                  النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{studentActivity ? (studentActivity.grade ?? 50) : 0} / 50 XP</strong>
-                </span>
-              )}
+              <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
+                النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{studentActivity ? (studentActivity.grade ?? 50) : 0} / 50 XP</strong>
+              </span>
               <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
-                المجموع المعتمد للمستوى: {(selectedLevelNum !== 1 ? (studentActivity ? (studentActivity.grade ?? 50) : 0) : 0) + (section1ScorePerLevel[selectedLevelNum] || 0)} / {currentLevelDef.totalMaxScore || 100} XP
+                المجموع المعتمد للمستوى: {isLevelCompleted && completedResult ? completedResult.score : ((studentActivity ? (studentActivity.grade ?? 50) : 0) + (section1ScorePerLevel[selectedLevelNum] || 0))} / 100 XP
               </span>
             </div>
           </div>
@@ -1745,7 +1885,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     </div>
                   </div>
                   <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-black text-xs shrink-0">
-                    0 / 0 XP (ممنوحة تلقائياً)
+                    50 / 50 XP (ممنوحة تلقائياً)
                   </span>
                 </div>
               )}
