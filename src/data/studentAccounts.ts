@@ -337,3 +337,37 @@ export function getStudentByUsername(username: string): PortalUser | null {
   const students = generateSixtyStudents();
   return students.find((s) => s.username.toUpperCase() === norm.toUpperCase()) || null;
 }
+
+/**
+ * Returns all students belonging to a specific group code (e.g. 'G1', 'G2', 'G3', 'G4')
+ * Uses the generated SIXTY_STUDENT_USERS array.
+ */
+export function getStudentsByGroupCode(
+  groupCode: string
+): Array<{ username: string; fullName: string; groupCode: string }> {
+  const normalized = groupCode.trim().toUpperCase();
+  return SIXTY_STUDENT_USERS
+    .filter((s) => (s.groupCode || '').toUpperCase() === normalized)
+    .map((s) => ({
+      username: s.username,
+      fullName: s.fullName || s.username,
+      groupCode: normalized,
+    }));
+}
+
+/**
+ * Returns all students belonging to a collaborative triad (e.g. 'G3-A', 'G4-B')
+ * Useful when you want to reset a single collaborative sub-group instead of a whole main group.
+ */
+export function getStudentsByCollaborativeGroup(
+  collabCode: string
+): Array<{ username: string; fullName: string; groupCode: string }> {
+  const normalized = collabCode.trim().toUpperCase();
+  const def = COLLABORATIVE_GROUPS_DEF[normalized];
+  if (!def) return [];
+  return def.members.map((u) => ({
+    username: u,
+    fullName: u,
+    groupCode: def.modeCode,
+  }));
+}
