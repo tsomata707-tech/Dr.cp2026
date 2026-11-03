@@ -1422,7 +1422,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 <>لقد تم اعتماد حلول هذا المستوى بنجاح للمجموعة المغلقة ({effectiveRoomId}) ولا يمكن العودة إليه إلا بطلب إعادة تهيئة من المشرف.</>
               )}
             </p>
-            {isImmediateGroup && completedResult && (
+            {(isImmediateGroup || Object.keys(progress.completedLevels || {}).length >= 9) && completedResult && (
               <div className="mt-2 flex items-center gap-3">
                 <span className="px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-[11px] font-bold">
                    النتيجة المعتمدة: {completedResult.score} / {completedResult.maxScore} XP
