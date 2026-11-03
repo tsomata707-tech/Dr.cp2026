@@ -128,12 +128,14 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       if (!res) return;
       const num = Number(lvlNum);
       const lvlDef = allLevels.find((l) => l.levelNumber === num) || GAME_LEVELS_DATA.find((l) => l.levelNumber === num);
-      const q1Id = lvlDef?.questions?.[0]?.id;
-      if (q1Id && res.questionScores && res.questionScores[q1Id] !== undefined) {
-        initScores[num] = res.questionScores[q1Id];
-      } else if (res.score) {
-        initScores[num] = Math.min(lvlDef?.section1Score ?? 25, Math.round(res.score * 0.25));
+      
+      let s1Total = 0;
+      if (res.questionScores) {
+        Object.entries(res.questionScores).forEach(([qId, score]) => {
+          if (qId !== 'section2_activity') s1Total += score;
+        });
       }
+      initScores[num] = s1Total || Math.min(lvlDef?.section1Score ?? 50, Math.round(res.score * 0.5));
     });
     return initScores;
   });
@@ -438,15 +440,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const completedResult = progress.completedLevels[selectedLevelNum];
   const isLevelUnlocked = selectedLevelNum <= progress.currentLevel;
 
-  const q1 = currentLevelDef?.questions?.[0];
-  const q1Points = currentLevelDef.section1Score ?? q1?.points ?? 25;
+  const levelQuestions = currentLevelDef?.questions || [];
+  const hasAnsweredAllQuestions = isLevelCompleted || (levelQuestions.length > 0 && levelQuestions.every(q => chosenAnswers[q.id] !== undefined));
+  const isSection1Done = hasAnsweredAllQuestions || (levelQuestions.length === 0);
 
   // [FIX 3]: القلوب الحالية تنزل إلى 1 افتراضياً
   const currentHearts = heartsPerLevel[selectedLevelNum] ?? 1;
-  const hasAnsweredQ1 = isLevelCompleted || (q1 ? chosenAnswers[q1.id] !== undefined : false);
-  const isSection1Done = hasAnsweredQ1;
 
-  // [FIX 8]: استخدام المساعدة (Hint) يستهلك القلب الوحيد ويستبعد خياراً خاطئاً عشوائياً مع خصم 5 درجات
   const [hintMessage, setHintMessage] = useState<string | null>(null);
   const handleUseHint = () => {
     if (isLevelCompleted || isSection1Done || hintUsedPerLevel[selectedLevelNum]) return;
@@ -456,53 +456,43 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     setHeartsPerLevel((prev) => ({ ...prev, [selectedLevelNum]: 0 }));
     setHintUsedPerLevel((prev) => ({ ...prev, [selectedLevelNum]: true }));
 
-    // [FIX 8]: اختيار خيار خاطئ عشوائياً واستبعاده
-    if (q1 && q1.options) {
-      const wrongIndices = q1.options
+    const firstUnanswered = levelQuestions.find(q => chosenAnswers[q.id] === undefined);
+    if (firstUnanswered && firstUnanswered.options) {
+      const wrongIndices = firstUnanswered.options
         .map((_, idx) => idx)
-        .filter((idx) => idx !== q1.correctIndex);
+        .filter((idx) => idx !== firstUnanswered.correctIndex);
       if (wrongIndices.length > 0) {
         const randomWrongIdx = wrongIndices[Math.floor(Math.random() * wrongIndices.length)];
         setHintEliminatedOption((prev) => ({ ...prev, [selectedLevelNum]: randomWrongIdx }));
       }
     }
 
-    // خصم 5 درجات من نتيجة القسم الأول عند استخدام الـ Hint
-    const existingScore = section1ScorePerLevel[selectedLevelNum] ?? q1Points;
-    const newScore = Math.max(0, existingScore - 5);
-    setSection1ScorePerLevel((prev) => ({
-      ...prev,
-      [selectedLevelNum]: newScore,
-    }));
-
-    setHintMessage('تم استخدام المساعدة (−5 درجات). تم تلميح وإستبعاد إجابة خاطئة!');
+    setHintMessage('تم استخدام المساعدة (−5 درجات). تم تلميح وإستبعاد إجابة خاطئة في السؤال الحالي!');
   };
 
-  // [FIX 2 & FIX 9]: عند الإجابة الصحيحة الحفاظ على خصم الـ Hint وتنظيف فروع hearts === 2
-  const handleSelectSection1Option = (optIdx: number) => {
-    if (isLevelCompleted || isSection1Done) return;
-    if (!q1) return;
-
-    // منع النقر على الخيار المستبعد بواسطة الـ Hint
+  const handleSelectSection1Option = (questionId: string, optIdx: number) => {
+    if (isLevelCompleted) return;
+    const targetQ = levelQuestions.find(q => q.id === questionId);
+    if (!targetQ) return;
+    if (chosenAnswers[questionId] !== undefined) return;
     if (hintEliminatedOption[selectedLevelNum] === optIdx) return;
 
-    const isCorrect = optIdx === q1.correctIndex;
+    const isCorrect = optIdx === targetQ.correctIndex;
 
     setChosenAnswers((prev) => ({
       ...prev,
-      [q1.id]: optIdx,
+      [questionId]: optIdx,
     }));
 
     if (!isAdmin) {
-      selectQuestionOptionRealtime(groupCode, selectedLevelNum, q1.id, optIdx, {
+      selectQuestionOptionRealtime(groupCode, selectedLevelNum, questionId, optIdx, {
         username,
         fullName: studentInfo?.fullName || username,
         avatarEmoji: currentAvatar.emoji,
       });
 
-      // Sync with group answers
       if (studentGroup) {
-        syncGroupAnswer(`${groupCode}_${studentGroup}`, q1.id, {
+        syncGroupAnswer(`${groupCode}_${studentGroup}`, questionId, {
           username,
           optIdx,
           isCorrect
@@ -510,25 +500,30 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       }
     }
 
-    if (isCorrect) {
-      // [FIX 2]: الحفاظ على خصم الـ 5 درجات للـ Hint عند الإجابة الصحيحة
-      const hadHintDeduction = !!hintUsedPerLevel[selectedLevelNum];
-      const finalScore = hadHintDeduction ? Math.max(0, q1Points - 5) : q1Points;
+    setTimeout(() => {
+      setChosenAnswers(latest => {
+        const answered = levelQuestions.filter(q => latest[q.id] !== undefined);
+        const correctOnes = answered.filter(q => latest[q.id] === q.correctIndex);
+        const totalPossibleSec1 = currentLevelDef.section1Score || 50;
+        const perQuestionPoints = levelQuestions.length > 0 ? totalPossibleSec1 / levelQuestions.length : 0;
+        let earnedScore = correctOnes.length * perQuestionPoints;
+        
+        if (hintUsedPerLevel[selectedLevelNum]) earnedScore = Math.max(0, earnedScore - 5);
 
-      setSection1ScorePerLevel((prev) => ({
-        ...prev,
-        [selectedLevelNum]: finalScore,
-      }));
-      setLastHeartWarning(null);
-    } else {
-      // الإجابة خاطئة: بما أن لكل مستوى قلب 1 فقط
-      setHeartsPerLevel((prev) => ({ ...prev, [selectedLevelNum]: 0 }));
-      setSection1ScorePerLevel((prev) => ({
-        ...prev,
-        [selectedLevelNum]: 0,
-      }));
-      setLastHeartWarning('إجابة غير صحيحة! استنفدت فرصة هذا المستوى.');
-    }
+        setSection1ScorePerLevel(prev => ({
+          ...prev,
+          [selectedLevelNum]: Math.round(earnedScore)
+        }));
+
+        if (!isCorrect) {
+          setHeartsPerLevel(prev => ({ ...prev, [selectedLevelNum]: 0 }));
+          setLastHeartWarning('إجابة غير صحيحة! استنفدت فرصة هذا السؤال.');
+        } else {
+          setLastHeartWarning(null);
+        }
+        return latest;
+      });
+    }, 0);
   };
 
   // Section 2: Applied activity completion handler
@@ -1218,7 +1213,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             {(Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[])
               .filter((p) => isAdmin || (studentGroup && getStudentGroup(p.username) === studentGroup) || p.username === 'admin')
               .map((participant) => {
-                const isResponder = q1 && groupAnswers[q1.id]?.username === participant.username;
+                const isResponder = Object.values(groupAnswers).some(ans => ans && ans.username === participant.username);
                 const isUserAdmin = participant.username === 'admin';
 
                 return (
@@ -1320,162 +1315,159 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       )}
 
       {/* SECTION 1: KNOWLEDGE CHALLENGE */}
-      {q1 && (
-        <div className="mt-6 p-6 rounded-3xl bg-slate-950/90 border-2 border-amber-400/80 shadow-[0_0_35px_rgba(251,191,36,0.25)] space-y-5 text-right">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border-2 border-amber-400 text-amber-300 flex items-center justify-center text-2xl shrink-0 shadow-md">
-                ❤️
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/60 text-amber-300 text-[10px] font-black">
-                    القسم الأول: تحدي المعرفة الرقمية
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 text-[10px] font-black">
-                    +{q1Points} درجة
-                  </span>
-                </div>
-                <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-0.5">
-                  سؤال التحدي وبطاقات الإجابات
-                </h3>
-              </div>
-            </div>
+      {levelQuestions.length > 0 && (
+        <div className="mt-6 space-y-6">
+          {levelQuestions.map((q, qIdx) => {
+            const chosen = isLevelCompleted && completedResult
+              ? completedResult.answers[q.id]
+              : chosenAnswers[q.id];
+            const hasAnswered = chosen !== undefined;
+            const isCorrect = chosen === q.correctIndex;
+            const qPoints = Math.round((currentLevelDef.section1Score || 50) / levelQuestions.length);
 
-            {/* [FIX 3]: عرض قلب 1 للمساعدة */}
-            <div className="flex items-center gap-3 self-end sm:self-auto bg-slate-900/90 px-4 py-2.5 rounded-2xl border border-rose-500/50 shadow-inner">
-              <span className="text-xs text-rose-200 font-bold">المساعدة (Hint):</span>
-              <div className="flex items-center gap-1.5 text-2xl">
-                {currentHearts >= 1 ? (
-                  <span className="text-rose-500 animate-pulse" title="قلب المساعدة المتاح">❤️</span>
-                ) : (
-                  <span className="text-slate-600 opacity-60" title="تم استهلاك قلب المساعدة">🖤</span>
-                )}
-              </div>
-
-              {!hintUsedPerLevel[selectedLevelNum] && !isLevelCompleted && !isSection1Done ? (
-                <button
-                  type="button"
-                  onClick={handleUseHint}
-                  className="px-3 py-1 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-black text-xs shadow-md transition-all cursor-pointer"
-                >
-                  استخدام المساعدة ❤️ (−5)
-                </button>
-              ) : (
-                <span className="text-[11px] text-slate-400 font-bold px-2 py-1 bg-slate-800 rounded-lg">
-                  {hintUsedPerLevel[selectedLevelNum] ? 'تم استخدام المساعدة (−5 درجات)' : 'مغلق'}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h4 className="text-base sm:text-lg font-bold text-white font-['Tajawal'] leading-relaxed">
-              {q1.question}
-            </h4>
-
-            {q1.imageUrl && q1.imageUrl.trim() && isSafeExternalUrl(q1.imageUrl) && (
-              <div className="my-3 flex justify-center items-center">
-                <div className="relative max-w-full rounded-2xl overflow-hidden border-2 border-amber-400/50 bg-[#070914] shadow-2xl p-1.5">
-                  <img
-                    src={q1.imageUrl.trim()}
-                    alt="توضيح السؤال"
-                    className="max-h-56 sm:max-h-80 w-auto max-w-full rounded-xl object-contain shadow-md mx-auto"
-                  />
-                </div>
-              </div>
-            )}
-
-            {lastHeartWarning && (
-              <div className="p-3 rounded-2xl bg-amber-950/70 border border-amber-500/60 text-amber-200 font-bold text-xs flex items-center gap-2">
-                <span>⚠️ {lastHeartWarning}</span>
-              </div>
-            )}
-
-            {/* Answer Cards Grid with [FIX 8]: visual elimination for wrong option when hint is used */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
-              {q1.options.map((opt, optIdx) => {
-                const chosen = isLevelCompleted && completedResult
-                  ? completedResult.answers[q1.id]
-                  : chosenAnswers[q1.id];
-                const isSelected = chosen === optIdx;
-                const isCorrect = optIdx === q1.correctIndex;
-                const isPassed = isLevelCompleted || (hasAnsweredQ1 && (section1ScorePerLevel[selectedLevelNum] ?? 0) > 0);
-
-                // [FIX 8]: تمييز واستبعاد الخيار عند استخدام الـ Hint
-                const isEliminatedByHint = hintEliminatedOption[selectedLevelNum] === optIdx;
-
-                let cardStyle = 'bg-slate-900/90 border-slate-700/80 text-slate-100 hover:border-amber-400/80 hover:bg-slate-800/90';
-                if (isEliminatedByHint) {
-                  cardStyle = 'bg-rose-950/30 border-rose-900/50 text-rose-400/50 opacity-40 cursor-not-allowed pointer-events-none line-through';
-                } else if (isPassed && isCorrect) {
-                  cardStyle = 'bg-emerald-950/80 border-2 border-emerald-400 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.3)] font-bold';
-                } else if (isPassed && isSelected && !isCorrect) {
-                  cardStyle = 'bg-red-950/60 border-red-500/80 text-red-300 line-through opacity-70';
-                } else if (isSelected) {
-                  cardStyle = 'bg-amber-950/80 border-2 border-amber-400 text-amber-200 font-bold shadow-[0_0_15px_rgba(251,191,36,0.3)]';
-                }
-
-                return (
-                  <button
-                    key={optIdx}
-                    type="button"
-                    disabled={isLevelCompleted || isPassed || isEliminatedByHint}
-                    onClick={() => handleSelectSection1Option(optIdx)}
-                    className={`p-4 rounded-2xl border-2 text-right transition-all flex flex-col justify-between gap-3 ${
-                      isLevelCompleted || isPassed || isEliminatedByHint ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01]'
-                    } ${cardStyle}`}
-                  >
-                    <div className="flex items-start justify-between gap-3 w-full">
-                      <span className="text-xs sm:text-sm font-medium leading-relaxed font-['Cairo']">
-                        {opt}
-                      </span>
-                      <span className="w-6 h-6 rounded-full border border-slate-600 bg-slate-950 flex items-center justify-center shrink-0 text-xs font-bold text-amber-400">
-                        {['أ', 'ب', 'ج', 'د', 'هـ'][optIdx] || optIdx + 1}
-                      </span>
+            return (
+              <div key={q.id} className="p-6 rounded-3xl bg-slate-950/90 border-2 border-amber-400/80 shadow-[0_0_35px_rgba(251,191,36,0.25)] space-y-5 text-right">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 flex items-center justify-center text-lg shrink-0 shadow-md">
+                      {qIdx + 1}
                     </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/60 text-amber-300 text-[10px] font-black">
+                          تحدي المعرفة الرقمية ({qIdx + 1} من {levelQuestions.length})
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 text-[10px] font-black">
+                          +{qPoints} XP
+                        </span>
+                      </div>
+                      <h3 className="text-base font-black text-white font-['Tajawal'] mt-0.5">
+                        سؤال التحدي وبطاقات الإجابات
+                      </h3>
+                    </div>
+                  </div>
 
-                    {/* Option Image Display */}
-                    {q1.optionImages?.[optIdx] && q1.optionImages[optIdx]?.trim() && (
-                      <div className="w-full h-32 sm:h-36 my-1 rounded-xl overflow-hidden border border-slate-700/80 bg-black/60 p-1.5 flex justify-center items-center shadow-inner">
+                  {qIdx === 0 && (
+                    <div className="flex items-center gap-3 self-end sm:self-auto bg-slate-900/90 px-4 py-2.5 rounded-2xl border border-rose-500/50 shadow-inner">
+                      <span className="text-xs text-rose-200 font-bold">المساعدة (Hint):</span>
+                      <div className="flex items-center gap-1.5 text-2xl">
+                        {currentHearts >= 1 ? (
+                          <span className="text-rose-500 animate-pulse" title="قلب المساعدة المتاح">❤️</span>
+                        ) : (
+                          <span className="text-slate-600 opacity-60" title="تم استهلاك قلب المساعدة">🖤</span>
+                        )}
+                      </div>
+
+                      {!hintUsedPerLevel[selectedLevelNum] && !isLevelCompleted && !isSection1Done ? (
+                        <button
+                          type="button"
+                          onClick={handleUseHint}
+                          className="px-3 py-1 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-black text-xs shadow-md transition-all cursor-pointer"
+                        >
+                          استخدام المساعدة ❤️ (−5)
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 font-bold px-2 py-1 bg-slate-800 rounded-lg">
+                          {hintUsedPerLevel[selectedLevelNum] ? 'تم استخدام المساعدة (−5 درجات)' : 'مغلق'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-base sm:text-lg font-bold text-white font-['Tajawal'] leading-relaxed">
+                    {q.question}
+                  </h4>
+
+                  {q.imageUrl && q.imageUrl.trim() && isSafeExternalUrl(q.imageUrl) && (
+                    <div className="my-3 flex justify-center items-center">
+                      <div className="relative max-w-full rounded-2xl overflow-hidden border-2 border-amber-400/50 bg-[#070914] shadow-2xl p-1.5">
                         <img
-                          src={q1.optionImages[optIdx]!.trim()}
-                          alt={`صورة الخيار ${['أ', 'ب', 'ج', 'د', 'هـ'][optIdx] || optIdx + 1}`}
-                          className="max-h-full max-w-full object-contain rounded-lg"
-                          loading="lazy"
+                          src={q.imageUrl.trim()}
+                          alt="توضيح السؤال"
+                          className="max-h-56 sm:max-h-80 w-auto max-w-full rounded-xl object-contain shadow-md mx-auto"
                         />
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {isEliminatedByHint && (
-                      <span className="text-[11px] text-rose-400 font-bold font-['Cairo'] block pt-1 border-t border-rose-900/40">
-                        ❌ خيار مُستبعد بواسطة المساعدة (−5 درجات)
-                      </span>
-                    )}
+                  {lastHeartWarning && !hasAnswered && (
+                    <div className="p-3 rounded-2xl bg-amber-950/70 border border-amber-500/60 text-amber-200 font-bold text-xs flex items-center gap-2">
+                      <span>⚠️ {lastHeartWarning}</span>
+                    </div>
+                  )}
 
-                    {isPassed && isCorrect && (
-                      <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-bold pt-1 border-t border-emerald-500/40">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        <span>إجابة صحيحة ومتقنة (+{section1ScorePerLevel[selectedLevelNum] ?? q1Points} درجة)</span>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                    {q.options.map((opt, optIdx) => {
+                      const isSelected = chosen === optIdx;
+                      const isOptionCorrect = optIdx === q.correctIndex;
+                      const isEliminatedByHint = hintEliminatedOption[selectedLevelNum] === optIdx && !hasAnswered;
 
-            {/* [FIX 10]: عرض 0 / 25 بدلاً من 25 / 25 قبل إجابة الطالب */}
-            <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-amber-500/50 flex items-center justify-between text-xs mt-3">
-              <span className="text-slate-300 font-bold">درجة سؤال التحدي (القسم الأول):</span>
-              <span className="px-3 py-1 rounded-xl bg-amber-950/80 border border-amber-400 text-amber-300 font-black font-['Outfit']">
-                {chosenAnswers[q1?.id ?? ''] !== undefined
-                  ? (section1ScorePerLevel[selectedLevelNum] ?? 0)
-                  : 0} / {q1Points} XP
-              </span>
-            </div>
-          </div>
+                      let cardStyle = 'bg-slate-900/90 border-slate-700/80 text-slate-100 hover:border-amber-400/80 hover:bg-slate-800/90';
+                      if (isEliminatedByHint) {
+                        cardStyle = 'bg-rose-950/30 border-rose-900/50 text-rose-400/50 opacity-40 cursor-not-allowed pointer-events-none line-through';
+                      } else if (hasAnswered && isOptionCorrect) {
+                        cardStyle = 'bg-emerald-950/80 border-2 border-emerald-400 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.3)] font-bold';
+                      } else if (hasAnswered && isSelected && !isOptionCorrect) {
+                        cardStyle = 'bg-red-950/60 border-red-500/80 text-red-300 line-through opacity-70';
+                      } else if (isSelected) {
+                        cardStyle = 'bg-amber-950/80 border-2 border-amber-400 text-amber-200 font-bold shadow-[0_0_15px_rgba(251,191,36,0.3)]';
+                      }
+
+                      return (
+                        <button
+                          key={optIdx}
+                          type="button"
+                          disabled={isLevelCompleted || hasAnswered || isEliminatedByHint}
+                          onClick={() => handleSelectSection1Option(q.id, optIdx)}
+                          className={`p-4 rounded-2xl border-2 text-right transition-all flex flex-col justify-between gap-3 ${
+                            isLevelCompleted || hasAnswered || isEliminatedByHint ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01]'
+                          } ${cardStyle}`}
+                        >
+                          <div className="flex items-start justify-between gap-3 w-full">
+                            <span className="text-xs sm:text-sm font-medium leading-relaxed font-['Cairo']">
+                              {opt}
+                            </span>
+                            <span className="w-6 h-6 rounded-full border border-slate-600 bg-slate-950 flex items-center justify-center shrink-0 text-xs font-bold text-amber-400">
+                              {['أ', 'ب', 'ج', 'د', 'هـ'][optIdx] || optIdx + 1}
+                            </span>
+                          </div>
+
+                          {q.optionImages?.[optIdx] && q.optionImages[optIdx]?.trim() && (
+                            <div className="w-full h-32 sm:h-36 my-1 rounded-xl overflow-hidden border border-slate-700/80 bg-black/60 p-1.5 flex justify-center items-center shadow-inner">
+                              <img
+                                src={q.optionImages[optIdx]!.trim()}
+                                alt={`صورة الخيار ${['أ', 'ب', 'ج', 'د', 'هـ'][optIdx] || optIdx + 1}`}
+                                className="max-h-full max-w-full object-contain rounded-lg"
+                                loading="lazy"
+                              />
+                            </div>
+                          )}
+                          
+                          {isEliminatedByHint && (
+                            <span className="text-[11px] text-rose-400 font-bold font-['Cairo'] block pt-1 border-t border-rose-900/40">
+                              ❌ خيار مُستبعد بواسطة المساعدة
+                            </span>
+                          )}
+
+                          {hasAnswered && isOptionCorrect && (
+                            <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-bold pt-1 border-t border-emerald-500/40">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                              <span>إجابة صحيحة ومتقنة</span>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
+
 
       {/* SECTION 2: APPLIED INTERACTIVE ACTIVITY */}
       {selectedLevelNum !== 1 && (
@@ -1501,7 +1493,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             </span>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                سؤال التحدي ({q1Points} درجة): <strong className="text-amber-400">{isLevelCompleted && completedResult?.questionScores?.[q1?.id ?? ''] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0)} / {q1Points} XP</strong>
+                تحدي المعرفة ({currentLevelDef.section1Score || 50} درجة): <strong className="text-amber-400">{section1ScorePerLevel[selectedLevelNum] || 0} / {currentLevelDef.section1Score || 50} XP</strong>
               </span>
               {selectedLevelNum !== 1 && (
                 <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
@@ -1509,7 +1501,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 </span>
               )}
               <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
-                المجموع المعتمد للمستوى: {(selectedLevelNum !== 1 ? (studentActivity ? (studentActivity.grade ?? 50) : 0) : 0) + (isLevelCompleted && q1 && completedResult?.questionScores?.[q1.id] !== undefined ? completedResult.questionScores[q1.id] : (chosenAnswers[q1?.id ?? ''] !== undefined ? (section1ScorePerLevel[selectedLevelNum] ?? 0) : 0))} / {currentLevelDef.totalMaxScore || 100} XP
+                المجموع المعتمد للمستوى: {(selectedLevelNum !== 1 ? (studentActivity ? (studentActivity.grade ?? 50) : 0) : 0) + (section1ScorePerLevel[selectedLevelNum] || 0)} / {currentLevelDef.totalMaxScore || 100} XP
               </span>
             </div>
           </div>

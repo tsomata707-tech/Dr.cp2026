@@ -77,602 +77,237 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
     title: 'المستوى 1: أساسيات الوسائط وتثبيت Adobe Captivate 2019',
     shortTitle: 'تثبيت البرنامج',
     storyMission: 'مهمتك الأولى يا بطل: تهيئة بيئة العمل الرقمية، التحقق من معمارية 64-Bit، وتشغيل معالج التثبيت القياسي للبرنامج بنجاح.',
-    instructions: '1. تأكد من توافر نظام 64-Bit لتشغيل Adobe Captivate 2019.\n2. افتح ملف التثبيت القياسي وقم بضبط دعم اللغة العربية من قائمة التفضيلات Preferences.\n3. تصفح الفيديوهات والصور التعليمية الخاصة بالمستوى.\n4. أجب عن أنشطة وأسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص بأسفل المستوى (فيديو أو صورة أو PDF) ثم اضغط على زر Finish Level 1 للانتقال للمستوى التالي.',
     totalMaxScore: 100,
-    section1Score: 100,
-    section2Score: 0,
+    section1Score: 50,
+    section2Score: 50,
     badgeName: 'وسام البداية الرقمية',
     badgeEmoji: '🛡️',
     videos: [],
     images: [],
-    questions: [
-      {
-        id: 'q1-1',
-        question: 'ما هي معمارية نظام التشغيل المطلوبة لتشغيل برنامج Adobe Captivate 2019 بكفاءة قياسية؟',
-        options: [
-          'معمارية 32-Bit فقط',
-          'معمارية 64-Bit حصرياً لدعم المعالجة المتقدمة',
-          'معمارية 16-Bit القديمة',
-          'لا يشترط معمارية محددة'
-        ],
-        correctIndex: 1,
-        explanation: 'يتطلب Adobe Captivate 2019 معمارية 64-Bit لتوفير استقرار معالجة الوسائط المتعددة والمحاكاة التفاعلية.',
-        points: 100,
-      },
-    ],
+    questions: [],
   },
   {
     levelNumber: 2,
-    moduleId: 'mod-2',
-    title: 'المستوى 2: جولة واجهة المستخدم وشاشات البداية',
-    shortTitle: 'واجهة المستخدم',
-    storyMission: 'استكشف لوحات التحكم ومناطق العمل، وتعرف على شريط الأدوات الرئيسي (Toolbar) ولوحة الخصائص (Properties Panel).',
-    instructions: '1. استكشف شريط الأدوات الرئيسي Toolbar ولوحة الخصائص Properties Panel.\n2. تعرف على متصفح الشرائح Filmstrip وطرق ترتيب الشرائح.\n3. شاهد الفيديوهات التوضيحية وتصفح الصور التعليمية.\n4. أجب عن أنشطة وأسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص بأسفل الصفحة ثم اضغط Finish Level 2.',
+    moduleId: 'mod-1',
+    title: 'المستوى 2: واجهة البرنامج وإدارة الشرائط الزمنية',
+    shortTitle: 'واجهة البرنامج',
+    storyMission: 'استكشف لوحة التحكم الرئيسية والـ Timeline لإدارة ظهور العناصر بدقة احترافية.',
     totalMaxScore: 100,
-    section1Score: 100,
-    section2Score: 0,
-    badgeName: 'وسام الملاح السيبراني',
-    badgeEmoji: '🧭',
+    section1Score: 50,
+    section2Score: 50,
+    badgeName: 'وسام مهندس الواجهة',
+    badgeEmoji: '⚙️',
     videos: [],
     images: [],
-    questions: [
-      {
-        id: 'q2-1',
-        question: 'ما هي اللوحة الأساسية التي تستخدم لتعديل أبعاد وموضع وتأثيرات أي كائن يتم تحديده على المسرح؟',
-        options: [
-          'لوحة الخصائص (Properties Panel)',
-          'لوحة الطباعة (Print Panel)',
-          'شريط المهام الخاص بنظام التشغيل',
-          'لوحة المتصفح الخارجية'
-        ],
-        correctIndex: 0,
-        explanation: 'لوحة الخصائص (Properties) تعرض الخيارات الديناميكية لكل كائن محدد مثل الحجم، التنسيق، التوقيت، وحالات الزر.',
-        points: 100,
-      },
-    ],
+    questions: [],
   },
   {
     levelNumber: 3,
-    moduleId: 'mod-3',
-    title: 'المستوى 3: إنشاء المشروعات التعليمية التفاعلية',
-    shortTitle: 'إنشاء المشروعات',
-    storyMission: 'اختر نوع المشروع المناسب للمتعلم: متجاوب (Responsive)، أو فارغ (Blank)، أو واقع افتراضي (VR Project).',
-    instructions: '1. تعرف على أنواع المشروعات: Responsive, Blank, VR Project.\n2. اضبط أبعاد المشروع بالبكسل المناسب وتعرف على تقنية Fluid Boxes.\n3. استعرض الوسائط والصور المرفقة بالمستوى.\n4. حل أسئلة التقويم التفاعلية للمستوى.\n5. ارفع نشاطك الخاص بأسفل المستوى ثم اضغط Finish Level 3.',
+    moduleId: 'mod-1',
+    title: 'المستوى 3: إدراج وتنسيق الوسائط المتعددة',
+    shortTitle: 'إدراج الوسائط',
+    storyMission: 'المهمة: دمج الصور والأصوات والفيديو داخل مشروعك التعليمي لجعله أكثر حيوية.',
     totalMaxScore: 100,
-    section1Score: 100,
-    section2Score: 0,
-    badgeName: 'وسام المعماري الرقمي',
-    badgeEmoji: '📐',
+    section1Score: 50,
+    section2Score: 50,
+    badgeName: 'وسام مدمج الوسائط',
+    badgeEmoji: '🎨',
     videos: [],
     images: [],
-    questions: [
-      {
-        id: 'q3-1',
-        question: 'ما الميزة الحصرية التي يوفرها نمط المشروع المتجاوب (Responsive Project) في Captivate 2019؟',
-        options: [
-          'ثبات أبعاد المحتوى وعدم تغيره نهائياً',
-          'إعادة تنظيم وترتيب العناصر تلقائياً لتناسب شاشات الهواتف والأجهزة اللوحية والكمبيوتر بتقنية Fluid Boxes',
-          'تحويل المشروع إلى ملف صوتي فقط',
-          'منع ظهور الفيديو'
-        ],
-        correctIndex: 1,
-        explanation: 'المشروع المتجاوب يعتمد على الصناديق المرنة (Fluid Boxes) لضبط المحتوى آلياً مع أحجام ومقاسات الشاشات المختلفة.',
-        points: 100,
-      },
-    ],
+    questions: [],
   },
   {
     levelNumber: 4,
-    moduleId: 'mod-4',
-    title: 'المستوى 4: إدارة الشرائح والتخطيطات الرئيسية',
-    shortTitle: 'إدارة الشرائح',
-    storyMission: 'أتقن تنظيم مسارات الشرائح، الشريحة الرئيسية (Master Slide)، وانتقالات العرض الزمني.',
-    instructions: '1. أتقن استخدام الشرائح الرئيسية Master Slides لتوحيد التصميم والهوية.\n2. تدرب على تغيير خلفيات الشرائح وتكرارها وحذفها.\n3. تصفح الفيديوهات والصور التوضيحية للمستوى.\n4. أجب عن الأنشطة التفاعلية.\n5. ارفع نشاطك الخاص بأسفل الصفحة واضغط Finish Level 4.',
+    moduleId: 'mod-2',
+    title: 'المستوى 4: التفاعل والبرمجة البسيطة للأزرار',
+    shortTitle: 'التفاعل الأساسي',
+    storyMission: 'حول المحتوى الثابت إلى تفاعلي عبر برمجة الأزرار ونقاط النقر (Click Boxes).',
     totalMaxScore: 100,
-    section1Score: 100,
-    section2Score: 0,
-    badgeName: 'وسام قائد الشرائح',
-    badgeEmoji: '🎞️',
+    section1Score: 50,
+    section2Score: 50,
+    badgeName: 'وسام المبرمج الصغير',
+    badgeEmoji: '🖱️',
     videos: [],
     images: [],
-    questions: [
-      {
-        id: 'q4-1',
-        question: 'ما الفائدة الكبرى لاستخدام "الشرائح الرئيسية" (Master Slides) في بناء الموديول التعليمي؟',
-        options: [
-          'زيادة حجم الملف فقط',
-          'توحيد التصميم والهوية والشعارات وأزرار التنقل عبر كافة شرائح المشروع مرة واحدة',
-          'منع إضافة نصوص في الشرائح',
-          'حذف الشرائح الفرعية'
-        ],
-        correctIndex: 1,
-        explanation: 'الشرائح الرئيسية تطبق عناصر التصميم الموحدة (خلفيات، أزرار، ترويسات) على كافة الشرائح التابعة لتوفير الوقت.',
-        points: 100,
-      },
-    ],
+    questions: [],
   },
   {
     levelNumber: 5,
-    moduleId: 'mod-5',
-    title: 'المستوى 5: إدراج الوسائط الرقمية (نصوص، أصوات، صور، فيديو)',
-    shortTitle: 'إدراج الوسائط',
-    storyMission: 'ادمج عناصر الوسائط المتعددة بانسجام: النصوص التوضيحية، المقاطع الصوتية، وتزامن الفيديو.',
-    instructions: '1. تعلم ضبط التوقيت بالخط الزمني Timeline لظهور الوسائط المتعددة بدقة.\n2. اختر صيغ الفيديو والصوت المتوافقة مثل MP4 و WAV/MP3.\n3. شاهد الفيديوهات والصور المرفقة واستفد من الشرح.\n4. أجب عن أسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص واضغط Finish Level 5.',
+    moduleId: 'mod-2',
+    title: 'المستوى 5: بناء الشرائح المتجاوبة (Fluid Boxes)',
+    shortTitle: 'التصميم المتجاوب',
+    storyMission: 'صمم مشروعك ليعمل على كافة الشاشات (موبايل، تابلت، كمبيوتر) باستخدام Fluid Boxes.',
     totalMaxScore: 100,
-    section1Score: 100,
-    section2Score: 0,
-    badgeName: 'وسام مهندس الوسائط المتعددة',
-    badgeEmoji: '🎬',
+    section1Score: 50,
+    section2Score: 50,
+    badgeName: 'وسام خبير التجاوب',
+    badgeEmoji: '📱',
     videos: [],
     images: [],
-    questions: [
-      {
-        id: 'q5-1',
-        question: 'ما اللوحة المسؤولة عن ضبط توقيت ظهور واختفاء عناصر الصوت والصورة على الشريحة بدقة الأجزاء من الثانية؟',
-        options: [
-          'لوحة الخط الزمني (Timeline)',
-          'لوحة الألوان (Swatches)',
-          'لوحة المساعدة (Help)',
-          'لوحة الخطوط (Fonts)'
-        ],
-        correctIndex: 0,
-        explanation: 'الخط الزمني (Timeline) يحدد موضع بداية ونهاية ظهور كل كائن ومدة بقائه وتزامنه مع الصوت.',
-        points: 100,
-      },
-    ],
+    questions: [],
   },
   {
     levelNumber: 6,
-    moduleId: 'mod-6',
-    title: 'المستوى 6: الكائنات التفاعلية والأزرار ومشغلات الأحداث',
-    shortTitle: 'الكائنات التفاعلية',
-    storyMission: 'ابنِ مسارات التعلم التفاعلية باستخدام الأزرار الذكية، صناديق النقر (Click Boxes)، ومناطق الإفلات.',
-    instructions: '1. تدرب على إضافة الكائنات التفاعلية وصناديق النقر Click Boxes.\n2. اضبط حالات الأزرار التفاعلية الثلاث (Normal, RollOver, Down).\n3. حدد إجراءات الانتقال Jump to Slide.\n4. أجب عن أسئلة المستوى.\n5. ارفع نشاطك الخاص واضغط Finish Level 6.',
+    moduleId: 'mod-2',
+    title: 'المستوى 6: مسارات التعلم والمشاهد التفاعلية',
+    shortTitle: 'مسارات التعلم',
+    storyMission: 'ابنِ مسارات تعليمية ذكية تعتمد على اختيارات المتعلم داخل اللعبة.',
     totalMaxScore: 100,
-    section1Score: 100,
-    section2Score: 0,
-    badgeName: 'وسام خبير التفاعل',
-    badgeEmoji: '⚡',
+    section1Score: 50,
+    section2Score: 50,
+    badgeName: 'وسام مخطط المسارات',
+    badgeEmoji: '🛤️',
     videos: [],
     images: [],
-    questions: [
-      {
-        id: 'q6-1',
-        question: 'ما هو الكائن غير المرئي المستخدم لتحويل أي منطقة معينة في الشريحة إلى منطقة حساسة للنقر؟',
-        options: [
-          'صندوق النقر (Click Box)',
-          'مربع النص الثابت',
-          'خط الترويسة',
-          'إطار الشريحة'
-        ],
-        correctIndex: 0,
-        explanation: 'صندوق النقر Click Box كائن شفاف يُوضع فوق أي عنصر ليصبح قابلاً للنقر ويطلق إجراءات التنقل.',
-        points: 100,
-      },
-    ],
+    questions: [],
   },
   {
     levelNumber: 7,
-    moduleId: 'mod-7',
-    title: 'المستوى 7: بنوك الأسئلة وبناء الاختبارات التفاعلية',
-    shortTitle: 'الاختبارات التفاعلية',
-    storyMission: 'صمم أدوات التقويم الإلكتروني: أسئلة الاختيار من متعدد، الصواب والخطأ، وبنوك الأسئلة العشوائية.',
-    instructions: '1. تعرف على بناء بنوك الأسئلة Question Pools وتوليد نماذج متكافئة.\n2. اضبط شريحة النتائج Quiz Results Slide ونسبة الاجتياز.\n3. تعرف على فرق التغذية الراجعة الفورية والمرجأة.\n4. أجب عن أسئلة المستوى التفاعلية.\n5. ارفع نشاطك الخاص واضغط Finish Level 7.',
+    moduleId: 'mod-3',
+    title: 'المستوى 7: بنوك الأسئلة والاختبارات التفاعلية',
+    shortTitle: 'بناء الاختبارات',
+    storyMission: 'أنشئ اختبارات تقويمية قوية لقياس مهارات زملائك في اللعبة.',
     totalMaxScore: 100,
-    section1Score: 100,
-    section2Score: 0,
-    badgeName: 'وسام خبير القياس والتقويم',
-    badgeEmoji: '🏆',
+    section1Score: 50,
+    section2Score: 50,
+    badgeName: 'وسام سيد الاختبارات',
+    badgeEmoji: '📝',
     videos: [],
     images: [],
-    questions: [
-      {
-        id: 'q7-1',
-        question: 'عند إنشاء اختبار تفاعلي، ما الغرض الأساسي من استخدام "بنوك الأسئلة" (Question Pools)؟',
-        options: [
-          'عرض نفس الترتيب دائماً دون تغيير',
-          'توليد أسئلة عشوائية لكل طالب لتقليل الغش وضمان عدالة وموثوقية التقييم',
-          'منع تصحيح الإجابات',
-          'إلغاء احتساب الدرجات'
-        ],
-        correctIndex: 1,
-        explanation: 'بنوك الأسئلة تسحب عدداً محدداً من الأسئلة عشوائياً لكل متعلم، مما يخلق نماذج اختبارية متكافئة ومتنوعة.',
-        points: 100,
-      },
-    ],
+    questions: [],
   },
   {
     levelNumber: 8,
-    moduleId: 'mod-8',
-    title: 'المستوى 8: تسجيل الشاشة والمحاكاة التفاعلية البرمجية',
-    shortTitle: 'المحاكاة التفاعلية',
-    storyMission: 'سجل تطبيقات الحاسب بالأنماط الثلاثة: العرض التوضيحي (Demo)، التدريب (Training)، والتقييم (Assessment).',
-    instructions: '1. تدرب على تسجيل الشاشة بالأنماط الثلاثة: Demo, Training, Assessment.\n2. أتقن نمط التدريب لتقديم التلميحات ونمط التقييم لاختبار المهارة.\n3. تصفح الفيديوهات والصور المرفقة بالمستوى.\n4. أجب عن أسئلة المستوى.\n5. ارفع نشاطك الخاص واضغط Finish Level 8.',
+    moduleId: 'mod-3',
+    title: 'المستوى 8: المتغيرات والإجراءات المتقدمة (Advanced Actions)',
+    shortTitle: 'الإجراءات المتقدمة',
+    storyMission: 'استخدم المتغيرات والشروط البرمجية (Variables) لعمل تفاعلات ذكية معقدة.',
     totalMaxScore: 100,
-    section1Score: 100,
-    section2Score: 0,
-    badgeName: 'وسام سيد المحاكاة',
-    badgeEmoji: '🖥️',
+    section1Score: 50,
+    section2Score: 50,
+    badgeName: 'وسام خبير المتغيرات',
+    badgeEmoji: '💎',
     videos: [],
     images: [],
-    questions: [
-      {
-        id: 'q8-1',
-        question: 'أي نمط محاكاة يوجه المتعلم خطوة بخطوة مع عرض تلميحات فورية وأدلة مساعدة عند ارتكاب خطأ؟',
-        options: [
-          'نمط التدريب (Training Mode)',
-          'نمط العرض التوضيحي السلبي (Demo Mode)',
-          'نمط إيقاف التشغيل',
-          'نمط مسح الشاشة'
-        ],
-        correctIndex: 0,
-        explanation: 'نمط التدريب Training يسمح للمتعلم بالتطبيق العملي مع ظهور رسائل توجيهية وتلميحات إذا تعثر في النقر.',
-        points: 100,
-      },
-    ],
+    questions: [],
   },
   {
     levelNumber: 9,
-    moduleId: 'mod-9',
-    title: 'المستوى 9: استيراد PowerPoint ونشر وتصدير المشروعات (HTML5 / SCORM)',
-    shortTitle: 'أنشطة وتطبيقات المستوى 9',
-    storyMission: 'حول العروض التقديمية الساكنة إلى تجارب تعلم نشطة تفاعلية، وانشر المشروع بصيغة HTML5 المتوافقة مع نظم LMS ومعايير SCORM.',
-    instructions: '1. استيراد ملفات العروض التقديمية PowerPoint وربطها ديناميكياً داخل Adobe Captivate.\n2. تحويل الشرائح الساكنة إلى عناصر تعليمية نشطة وتفاعلية.\n3. ضبط إعدادات التصدير ومعايير حزم التعلم الإلكتروني SCORM و xAPI لتتبع الدرجات في منصات LMS.\n4. نشر وتصدير المشروع النهائي بصيغة HTML5 المتوافقة مع كافة المتصفحات والأجهزة الذكية.\n5. تنفيذ ورفع النشاط التطبيقي العملي الخاص بالمستوى بنجاح.',
+    moduleId: 'mod-3',
+    title: 'المستوى 9: تصدير المشروع ونشره كصفحة ويب',
+    shortTitle: 'تصدير المشروع',
+    storyMission: 'المهمة الأخيرة: استخرج مشروعك النهائي كـ HTML5 وشاركه مع العالم!',
     totalMaxScore: 100,
-    section1Score: 100,
-    section2Score: 0,
-    badgeName: 'وسام تاج التميز الرقمي المطلق',
-    badgeEmoji: '👑',
+    section1Score: 50,
+    section2Score: 50,
+    badgeName: 'وسام المبدع النهائي',
+    badgeEmoji: '🚀',
     videos: [],
     images: [],
-    questions: [
-      {
-        id: 'q9-1',
-        question: 'عند قيامك باستيراد ملف عرض تقديمي (PowerPoint) إلى Adobe Captivate، ما هو الإجراء العملي الأفضل لضمان مزامنة أي تعديل يطرأ على ملف العرض الأصلي مستقبلاً؟',
-        options: [
-          'تفعيل خيار الربط الديناميكي (Link) لمزامنة التعديلات تلقائياً',
-          'طباعة الشرائح يدوياً على ورق وإعادة مسحها ضوئياً',
-          'حذف ملف البوربوينت الأصلي من جهاز الكمبيوتر',
-          'تغيير امتداد العرض إلى ملف مفكرة نصي TXT'
-        ],
-        correctIndex: 0,
-        explanation: 'خيار Link يتيح لك تعديل شرائح البوربوينت مستقبلاً وتحديثها تلقائياً داخل مشروع Captivate بضغطة زر.',
-        points: 100,
-      },
-    ],
+    questions: [],
   },
 ];
 
-export const DEFAULT_GAME_LEVELS_DATA: GameLevelDef[] = JSON.parse(JSON.stringify(GAME_LEVELS_DATA));
+export function saveCustomGameLevels(levels: GameLevelDef[], _isManualUpdate: boolean = false) {
+  if (!Array.isArray(levels)) {
+    console.error('saveCustomGameLevels: levels is not an array', levels);
+    return;
+  }
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('cp_game_levels_custom_v3', JSON.stringify(levels));
+  }
+  syncGlobalQuestionsAndLevels('levels', levels);
+  // Dispatch event for UI update
+  window.dispatchEvent(new CustomEvent('game-levels-updated', { detail: levels }));
+}
 
-export const GAME_LEVELS_STORAGE_KEY = 'cp_game_levels_custom_v3';
+export function resetGameLevelsToDefault() {
+  saveCustomGameLevels(GAME_LEVELS_DATA, true);
+  return GAME_LEVELS_DATA;
+}
 
 export function getCustomGameLevels(): GameLevelDef[] {
-  try {
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return GAME_LEVELS_DATA;
-    }
-    const raw = localStorage.getItem(GAME_LEVELS_STORAGE_KEY);
-    if (!raw) {
-      return GAME_LEVELS_DATA;
-    }
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      let needsSave = false;
-
-      // Check if real videos exist in cp_educational_videos_v2 for level-1
-      let realLvl1Videos: LevelMediaItem[] = [];
-      try {
-        const rawEdVids = localStorage.getItem('cp_educational_videos_v2');
-        if (rawEdVids) {
-          const parsedEdVids = JSON.parse(rawEdVids);
-          if (Array.isArray(parsedEdVids)) {
-            const lvl1 = parsedEdVids
-              .filter((v: any) => v.targetSlotId === 'level-1' && v.isActive && v.videoUrl)
-              .sort((a: any, b: any) => (a.partNumber || 1) - (b.partNumber || 1));
-            if (lvl1.length > 0) {
-              realLvl1Videos = lvl1.map((v: any) => ({
-                id: v.id,
-                title: v.title || v.partTitle || 'فيديو المستوى 1',
-                partCustomTitle: v.partCustomTitle || v.title,
-                url: v.videoUrl,
-                type: 'video' as const,
-                format: v.videoType === 'youtube' ? 'YouTube' : 'MP4/WebM',
-                size: 0,
-                addedAt: v.addedAt || new Date().toISOString(),
-              }));
-            }
-          }
-        }
-      } catch {
-        // Ignore JSON error
-      }
-
-      // Sync into memory array
-      parsed.forEach((customLvl: GameLevelDef) => {
-        customLvl.videos = Array.isArray(customLvl.videos) ? customLvl.videos : [];
-
-        const found = GAME_LEVELS_DATA.find((l) => l.levelNumber === customLvl.levelNumber);
-        if (found) {
-          found.title = customLvl.title || found.title;
-          found.shortTitle = customLvl.shortTitle || found.shortTitle;
-          found.storyMission = customLvl.storyMission || found.storyMission;
-          found.instructions = customLvl.instructions || found.instructions;
-          found.objectives = customLvl.objectives || found.objectives;
-          found.activityPrompt = customLvl.activityPrompt !== undefined ? customLvl.activityPrompt : found.activityPrompt;
-          found.totalMaxScore = customLvl.totalMaxScore !== undefined ? customLvl.totalMaxScore : found.totalMaxScore;
-          found.section1Score = customLvl.section1Score !== undefined ? customLvl.section1Score : found.section1Score;
-          found.section2Score = customLvl.section2Score !== undefined ? customLvl.section2Score : found.section2Score;
-          found.imagesSectionTitle = customLvl.imagesSectionTitle !== undefined ? customLvl.imagesSectionTitle : found.imagesSectionTitle;
-          found.imagesSectionDesc = customLvl.imagesSectionDesc !== undefined ? customLvl.imagesSectionDesc : found.imagesSectionDesc;
-          found.videos = customLvl.videos || [];
-          found.images = customLvl.images || [];
-          found.questions = customLvl.questions || found.questions;
-        }
-      });
-
-      if (needsSave) {
-        try {
-          localStorage.setItem(GAME_LEVELS_STORAGE_KEY, JSON.stringify(parsed));
-        } catch {
-          // Ignore
-        }
-      }
-
-      return GAME_LEVELS_DATA;
-    }
-    return GAME_LEVELS_DATA;
-  } catch {
-    return GAME_LEVELS_DATA;
-  }
-}
-
-export function saveCustomGameLevels(levels: GameLevelDef[], syncRemote: boolean = true): void {
-  // Sanitize levels: Strip any oversized base64 data URLs before saving to localStorage to prevent QuotaExceededError
-  const sanitizedLevels = levels.map((lvl) => ({
-    ...lvl,
-    videos: (lvl.videos || [])
-      .filter((v) => !v.url?.includes('dQw4w9WgXcQ'))
-      .map((v) => ({
-        ...v,
-        url: v.url && v.url.length > 50000 && v.blobId ? '' : v.url,
-      })),
-    images: (lvl.images || []).map((img) => ({
-      ...img,
-      url: img.url && img.url.length > 2500000 ? '' : img.url,
-    })),
-  }));
-
-  try {
-    localStorage.setItem(GAME_LEVELS_STORAGE_KEY, JSON.stringify(sanitizedLevels));
-  } catch (err: unknown) {
-    console.warn('Quota exceeded on custom game levels, saving lightweight metadata fallback:', err);
+  if (typeof localStorage === 'undefined') return GAME_LEVELS_DATA;
+  const raw = localStorage.getItem('cp_game_levels_custom_v3');
+  if (raw) {
     try {
-      const lightweight = sanitizedLevels.map((lvl) => ({
-        ...lvl,
-        videos: (lvl.videos || []).map((v) => ({ ...v, url: v.url.startsWith('http') ? v.url : '' })),
-        images: (lvl.images || []).map((img) => ({ ...img, url: img.url.startsWith('http') ? img.url : '' })),
-      }));
-      localStorage.setItem(GAME_LEVELS_STORAGE_KEY, JSON.stringify(lightweight));
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     } catch {
-      // Ignore
+      return GAME_LEVELS_DATA;
     }
   }
+  return GAME_LEVELS_DATA;
+}
 
-  try {
-    levels.forEach((customLvl: GameLevelDef) => {
-      const found = GAME_LEVELS_DATA.find((l) => l.levelNumber === customLvl.levelNumber);
-      if (found) {
-        found.title = customLvl.title || found.title;
-        found.shortTitle = customLvl.shortTitle || found.shortTitle;
-        found.storyMission = customLvl.storyMission || found.storyMission;
-        found.instructions = customLvl.instructions || found.instructions;
-        found.objectives = customLvl.objectives || found.objectives;
-        found.activityPrompt = customLvl.activityPrompt !== undefined ? customLvl.activityPrompt : found.activityPrompt;
-        found.totalMaxScore = customLvl.totalMaxScore !== undefined ? customLvl.totalMaxScore : found.totalMaxScore;
-        found.section1Score = customLvl.section1Score !== undefined ? customLvl.section1Score : found.section1Score;
-        found.section2Score = customLvl.section2Score !== undefined ? customLvl.section2Score : found.section2Score;
-        found.imagesSectionTitle = customLvl.imagesSectionTitle !== undefined ? customLvl.imagesSectionTitle : found.imagesSectionTitle;
-        found.imagesSectionDesc = customLvl.imagesSectionDesc !== undefined ? customLvl.imagesSectionDesc : found.imagesSectionDesc;
-        found.videos = customLvl.videos || [];
-        found.images = customLvl.images || [];
-        found.questions = customLvl.questions !== undefined ? customLvl.questions : found.questions;
+export function addMediaToLevel(levelNum: number, item: LevelMediaItem) {
+  const levels = getCustomGameLevels();
+  const idx = levels.findIndex((l) => l.levelNumber === levelNum);
+  if (idx !== -1) {
+    const type = item.type === 'video' ? 'video' : 'image';
+    if (type === 'video') {
+      levels[idx].videos = levels[idx].videos || [];
+      levels[idx].videos.push(item);
+    } else {
+      levels[idx].images = levels[idx].images || [];
+      levels[idx].images.push(item);
+    }
+    saveCustomGameLevels(levels);
+  }
+  return levels;
+}
+
+export function replaceMediaInLevel(levelNum: number, itemId: string, newItem: LevelMediaItem) {
+  const levels = getCustomGameLevels();
+  const idx = levels.findIndex((l) => l.levelNumber === levelNum);
+  if (idx !== -1) {
+    const type = newItem.type === 'video' ? 'video' : 'image';
+    if (type === 'video') {
+      const vIdx = (levels[idx].videos || []).findIndex(m => m.id === itemId);
+      if (vIdx !== -1) {
+        levels[idx].videos![vIdx] = newItem;
       }
-    });
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('game-levels-updated', { detail: levels }));
-    }
-    if (syncRemote) {
-      syncGlobalQuestionsAndLevels('levels', levels).catch(() => {});
-    }
-  } catch (err) {
-    console.error('Failed to sync game levels:', err);
-  }
-}
-
-export function updateGameLevelDetails(
-  levelNumber: number,
-  updates: Partial<GameLevelDef>
-): GameLevelDef[] {
-  const levels = getCustomGameLevels();
-  const target = levels.find((l) => l.levelNumber === levelNumber);
-  if (target) {
-    Object.assign(target, updates);
-    saveCustomGameLevels(levels, true);
-  }
-  return levels;
-}
-
-export function addMediaToLevel(
-  levelNumber: number,
-  media: LevelMediaItem
-): GameLevelDef[] {
-  const levels = getCustomGameLevels();
-  const target = levels.find((l) => l.levelNumber === levelNumber);
-  if (!target) return levels;
-
-  if (media.type === 'video') {
-    if (!target.videos) target.videos = [];
-    if (target.videos.length >= 7) {
-      throw new Error('الحد الأقصى للفيديوهات في كل مستوى هو 7 أجزاء');
-    }
-    target.videos.push(media);
-  } else {
-    // image or pdf
-    if (!target.images) target.images = [];
-    if (target.images.length >= 5) {
-      throw new Error('الحد الأقصى للصور والملفات في كل مستوى هو 5 ملفات');
-    }
-    target.images.push(media);
-  }
-
-  saveCustomGameLevels(levels, true);
-  return levels;
-}
-
-export function removeMediaFromLevel(
-  levelNumber: number,
-  mediaId: string
-): GameLevelDef[] {
-  const levels = getCustomGameLevels();
-  const target = levels.find((l) => l.levelNumber === levelNumber);
-  if (!target) return levels;
-
-  if (target.videos) {
-    target.videos = target.videos.filter((v) => v.id !== mediaId);
-  }
-  if (target.images) {
-    target.images = target.images.filter((img) => img.id !== mediaId);
-  }
-
-  saveCustomGameLevels(levels, true);
-  return levels;
-}
-
-export function replaceMediaInLevel(
-  levelNumber: number,
-  mediaId: string,
-  updated: LevelMediaItem
-): GameLevelDef[] {
-  const levels = getCustomGameLevels();
-  const target = levels.find((l) => l.levelNumber === levelNumber);
-  if (!target) return levels;
-
-  if (target.videos) {
-    const idx = target.videos.findIndex((v) => v.id === mediaId);
-    if (idx !== -1) {
-      target.videos[idx] = updated;
-    }
-  }
-  if (target.images) {
-    const idx = target.images.findIndex((img) => img.id === mediaId);
-    if (idx !== -1) {
-      target.images[idx] = updated;
-    }
-  }
-
-  saveCustomGameLevels(levels, true);
-  return levels;
-}
-
-export function updateQuestionInLevel(
-  levelNumber: number,
-  questionId: string,
-  updates: Partial<LevelQuestion>
-): GameLevelDef[] {
-  const levels = getCustomGameLevels();
-  const target = levels.find((l) => l.levelNumber === levelNumber);
-  if (!target) return levels;
-
-  const qIdx = target.questions.findIndex((q) => q.id === questionId);
-  if (qIdx !== -1) {
-    target.questions[qIdx] = { ...target.questions[qIdx], ...updates };
-    saveCustomGameLevels(levels, true);
-  }
-  return levels;
-}
-
-export function addQuestionToLevel(
-  levelNumber: number,
-  question: LevelQuestion
-): GameLevelDef[] {
-  const levels = getCustomGameLevels();
-  const target = levels.find((l) => l.levelNumber === levelNumber);
-  if (!target) return levels;
-
-  target.questions.push(question);
-  saveCustomGameLevels(levels, true);
-  return levels;
-}
-
-export function deleteQuestionFromLevel(
-  levelNumber: number,
-  questionId: string
-): GameLevelDef[] {
-  const levels = getCustomGameLevels();
-  const target = levels.find((l) => l.levelNumber === levelNumber);
-  if (!target) return levels;
-
-  target.questions = target.questions.filter((q) => q.id !== questionId);
-  saveCustomGameLevels(levels, true);
-  return levels;
-}
-
-export function updateMediaItemInLevel(
-  levelNumber: number,
-  mediaId: string,
-  partial: Partial<LevelMediaItem>
-): GameLevelDef[] {
-  const levels = getCustomGameLevels();
-  const target = levels.find((l) => l.levelNumber === levelNumber);
-  if (!target) return levels;
-
-  if (target.videos) {
-    const idx = target.videos.findIndex((v) => v.id === mediaId);
-    if (idx !== -1) {
-      target.videos[idx] = { ...target.videos[idx], ...partial };
-    }
-  }
-  if (target.images) {
-    const idx = target.images.findIndex((img) => img.id === mediaId);
-    if (idx !== -1) {
-      target.images[idx] = { ...target.images[idx], ...partial };
-    }
-  }
-
-  saveCustomGameLevels(levels, true);
-  return levels;
-}
-
-export function resetGameLevelsToDefault(): GameLevelDef[] {
-  try {
-    localStorage.removeItem(GAME_LEVELS_STORAGE_KEY);
-    DEFAULT_GAME_LEVELS_DATA.forEach((defLvl) => {
-      const found = GAME_LEVELS_DATA.find((l) => l.levelNumber === defLvl.levelNumber);
-      if (found) {
-        found.title = defLvl.title;
-        found.shortTitle = defLvl.shortTitle;
-        found.storyMission = defLvl.storyMission;
-        found.instructions = defLvl.instructions;
-        found.videos = [];
-        found.images = [];
-        found.questions = JSON.parse(JSON.stringify(defLvl.questions));
+    } else {
+      const iIdx = (levels[idx].images || []).findIndex(m => m.id === itemId);
+      if (iIdx !== -1) {
+        levels[idx].images![iIdx] = newItem;
       }
-    });
-    const defaultCopy = JSON.parse(JSON.stringify(DEFAULT_GAME_LEVELS_DATA));
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('game-levels-updated', { detail: defaultCopy }));
     }
-    syncGlobalQuestionsAndLevels('levels', defaultCopy).catch(() => {});
-    return defaultCopy;
-  } catch {
-    return GAME_LEVELS_DATA;
+    saveCustomGameLevels(levels);
   }
+  return levels;
 }
 
-// Initial auto-sync from localStorage if present
-if (typeof window !== 'undefined' && window.localStorage) {
-  try {
-    getCustomGameLevels();
-  } catch {}
+export function removeMediaFromLevel(levelNum: number, itemId: string) {
+  const levels = getCustomGameLevels();
+  const idx = levels.findIndex((l) => l.levelNumber === levelNum);
+  if (idx !== -1) {
+    levels[idx].videos = (levels[idx].videos || []).filter((m) => m.id !== itemId);
+    levels[idx].images = (levels[idx].images || []).filter((m) => m.id !== itemId);
+    saveCustomGameLevels(levels);
+  }
+  return levels;
+}
+
+export function updateMediaItemInLevel(levelNum: number, itemId: string, updates: Partial<LevelMediaItem>) {
+  const levels = getCustomGameLevels();
+  const idx = levels.findIndex((l) => l.levelNumber === levelNum);
+  if (idx !== -1) {
+    // Try both lists
+    let found = false;
+    const vIdx = (levels[idx].videos || []).findIndex(m => m.id === itemId);
+    if (vIdx !== -1) {
+      levels[idx].videos![vIdx] = { ...levels[idx].videos![vIdx], ...updates };
+      found = true;
+    }
+    const iIdx = (levels[idx].images || []).findIndex(m => m.id === itemId);
+    if (iIdx !== -1 && !found) {
+      levels[idx].images![iIdx] = { ...levels[idx].images![iIdx], ...updates };
+      found = true;
+    }
+    if (found) {
+      saveCustomGameLevels(levels);
+    }
+  }
+  return levels;
 }

@@ -217,7 +217,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
       if (e.detail) setPostTestQuestions(e.detail);
     };
     const handleLevelsUpdate = (e: any) => {
-      if (e.detail) setGameLevels(e.detail);
+      if (e.detail && Array.isArray(e.detail)) setGameLevels(e.detail);
     };
 
     window.addEventListener('pretest-questions-updated', handlePreUpdate);
@@ -1039,10 +1039,10 @@ export const AdminTestsSettingsManager: React.FC = () => {
 
   // Flattened or filtered levels questions
   const filteredLevelsQuestions: { level: GameLevelDef; question: LevelQuestion }[] = [];
-  gameLevels.forEach((lvl) => {
-    if (selectedLevelFilter === 'all' || selectedLevelFilter === lvl.levelNumber) {
-      lvl.questions.forEach((q) => {
-        if (filterQuestion(q)) {
+  (gameLevels || []).forEach((lvl) => {
+    if (lvl && (selectedLevelFilter === 'all' || selectedLevelFilter === lvl.levelNumber)) {
+      (lvl.questions || []).forEach((q) => {
+        if (q && filterQuestion(q)) {
           filteredLevelsQuestions.push({ level: lvl, question: q });
         }
       });
@@ -1050,13 +1050,15 @@ export const AdminTestsSettingsManager: React.FC = () => {
   });
 
   // Calculate statistics
-  const preWithImages = preTestQuestions.filter((q) => !!q.imageUrl || q.optionImages?.some(Boolean)).length;
-  const postWithImages = postTestQuestions.filter((q) => !!q.imageUrl || q.optionImages?.some(Boolean)).length;
+  const preWithImages = preTestQuestions.filter((q) => q && (!!q.imageUrl || (Array.isArray(q.optionImages) && q.optionImages.some(Boolean)))).length;
+  const postWithImages = postTestQuestions.filter((q) => q && (!!q.imageUrl || (Array.isArray(q.optionImages) && q.optionImages.some(Boolean)))).length;
   let totalLevelsQuestions = 0;
   let levelsWithImages = 0;
-  gameLevels.forEach((l) => {
-    totalLevelsQuestions += l.questions.length;
-    levelsWithImages += l.questions.filter((q) => !!q.imageUrl || q.optionImages?.some(Boolean)).length;
+  (gameLevels || []).forEach((l) => {
+    if (l && Array.isArray(l.questions)) {
+      totalLevelsQuestions += l.questions.length;
+      levelsWithImages += l.questions.filter((q) => q && (!!q.imageUrl || (Array.isArray(q.optionImages) && q.optionImages.some(Boolean)))).length;
+    }
   });
 
   return (

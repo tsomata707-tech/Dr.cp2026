@@ -456,13 +456,19 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   const [editingQuestion, setEditingQuestion] = useState<LevelQuestion | null>(null);
 
   const handleAddNewQuestion = () => {
+    const currentQCount = (levels.find(l => l.levelNumber === selectedLevelNum)?.questions || []).length;
+    if (currentQCount >= 4) {
+      showError('عذراً، الحد الأقصى هو 4 أسئلة لكل مستوى.');
+      return;
+    }
+
     const newQ: LevelQuestion = {
       id: `q${selectedLevelNum}-${Date.now()}`,
       question: 'نص السؤال الجديد للمستوى...',
       options: ['الخيار الأول', 'الخيار الثاني', 'الخيار الثالث', 'الخيار الرابع'],
       correctIndex: 0,
       explanation: 'شرح وتوضيح الإجابة الصحيحة والتغذية الراجعة للمتعلم.',
-      points: 33,
+      points: 12.5, // 50 / 4
       levelNumber: selectedLevelNum,
     };
 
@@ -821,10 +827,19 @@ export const AdminLevelInstructionsManager: React.FC = () => {
             <Sparkles className="w-5 h-5" />
             <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">أسئلة المستوى التفاعلية</h3>
           </div>
-          <button onClick={handleAddNewQuestion} className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-md">
-            <Plus className="w-4 h-4" />
-            <span>إضافة سؤال جديد</span>
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/40 text-amber-300">
+              {currentQuestions.length} من 4 أسئلة مضافة
+            </span>
+            <button 
+              onClick={handleAddNewQuestion} 
+              disabled={currentQuestions.length >= 4}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 disabled:border-slate-700 disabled:cursor-not-allowed text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>إضافة سؤال جديد</span>
+            </button>
+          </div>
         </div>
 
         {currentQuestions.length === 0 ? (
