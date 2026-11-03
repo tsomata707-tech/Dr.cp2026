@@ -58,7 +58,7 @@ import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { DraggableLevelInstructions } from './DraggableLevelInstructions';
 import { LevelTransitionLoader5s } from './LevelTransitionLoader5s';
 import { LevelInteractiveGames } from './LevelInteractiveGames';
-import { getGroupByUsername, getStudentByUsername, RESEARCH_GROUPS_META, getCollaborativeGroupByUsername } from '../data/studentAccounts';
+import { getGroupByUsername, getStudentByUsername, RESEARCH_GROUPS_META, getCollaborativeGroupByUsername, COLLABORATIVE_GROUPS_DEF } from '../data/studentAccounts';
 import {
   StudentGameProgress,
   CompletedLevelResult,
@@ -85,7 +85,7 @@ import {
   syncGroupAnswer,
   subscribeToGroupAnswers,
 } from '../utils/realtimeService';
-import { getStudentGroup } from '../data/studentGroups';
+import { getStudentGroup, getStudentFullGroupCode } from '../data/studentGroups';
 
 interface EducationalGameViewProps {
   username: string;
@@ -222,14 +222,31 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
          const newKeys = Object.keys(answers);
          const oldKeys = Object.keys(prev);
          if(newKeys.length > oldKeys.length) {
-            setGroupNotification("قام أحد أعضاء فريقك بالحل");
-            setTimeout(() => setGroupNotification(null), 3000);
+            // Find the new answer to notify
+            const lastKey = newKeys[newKeys.length - 1];
+            const lastAns = answers[lastKey];
+            if (lastAns && lastAns.username !== username) {
+               setGroupNotification(`${lastAns.username} قام بحل أحد الأسئلة`);
+               setTimeout(() => setGroupNotification(null), 4000);
+            }
          }
+
+         // Synchronize shared answers into local UI
+         if (isCollaborative && isImmediateGroup) {
+           const sharedChoices: Record<string, number> = {};
+           Object.entries(answers).forEach(([qId, data]: [string, any]) => {
+             if (data && typeof data.optIdx === 'number') {
+               sharedChoices[qId] = data.optIdx;
+             }
+           });
+           setChosenAnswers(prevLocal => ({ ...prevLocal, ...sharedChoices }));
+         }
+
          return answers;
       });
     });
     return () => unsub();
-  }, [studentGroup, groupCode]);
+  }, [studentGroup, groupCode, isCollaborative, isImmediateGroup, username]);
 
   const collabSubGroup = getCollaborativeGroupByUsername(username);
   const [teammateAnswerInfo, setTeammateAnswerInfo] = useState<{ completedBy: string; score: number } | null>(null);
@@ -909,7 +926,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   <span
                     className="px-3.5 py-1 rounded-full text-xs font-black font-['Cairo'] bg-slate-200 border border-slate-300 text-slate-900 shadow-sm"
                   >
-                    المجموعة {userGroupMeta.code}: {userGroupMeta.name} {studentGroup ? `(${studentGroup})` : ''}
+                    المجموعة {userGroupMeta.code}: {userGroupMeta.name} {(() => {
+                      const fullCode = getStudentFullGroupCode(username);
+                      return fullCode ? `(${fullCode})` : '';
+                    })()}
                   </span>
                 )}
               </div>
@@ -977,7 +997,12 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
           <div className="flex items-center gap-2">
             <Gamepad2 className="w-5 h-5 text-[#ffd700]" />
             <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">
-              مراحل بيئة الألعاب - {userGroupMeta ? `${userGroupMeta.name} ${studentGroup ? `(${studentGroup})` : ''}` : `المجموعة ${studentGroup ? `(${studentGroup})` : ''}`}
+              مراحل بيئة الألعاب - {(() => {
+                const fullCode = getStudentFullGroupCode(username);
+                const def = fullCode ? COLLABORATIVE_GROUPS_DEF[fullCode] : null;
+                if (def) return def.name;
+                return userGroupMeta ? `${userGroupMeta.name} (${fullCode || groupCode})` : `المجموعة (${fullCode || studentGroup})`;
+              })()}
             </h3>
           </div>
           <span className="text-xs text-amber-300 font-['Cairo']">
@@ -1140,58 +1165,84 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         </div>
       )}
 
-      {/* REAL-TIME COLLABORATIVE LIVE BAR */}
-      <div className="my-6 p-4 rounded-2xl bg-gradient-to-r from-purple-950/60 via-slate-900 to-indigo-950/60 border border-purple-500/40 shadow-lg space-y-3">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-emerald-300 font-['Tajawal'] flex items-center gap-1.5">
-                <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-                التزامن اللحظي المباشر للجلسة التفاعلية
+        {/* REAL-TIME COLLABORATIVE LIVE BAR */}
+        <div className="my-6 p-4 rounded-2xl bg-gradient-to-r from-purple-950/60 via-slate-900 to-indigo-950/60 border border-purple-500/40 shadow-lg space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 text-[10px] font-bold border border-purple-400/30">
-                {userGroupMeta ? `${userGroupMeta.name}${studentGroup ? ` - ${studentGroup}` : ''}` : `غرفة ${groupCode}`}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-emerald-300 font-['Tajawal'] flex items-center gap-1.5">
+                  <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+                  التزامن اللحظي المباشر للجلسة التفاعلية
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 text-[10px] font-bold border border-purple-400/30">
+                  {(() => {
+                    const fullCode = getStudentFullGroupCode(username);
+                    const def = fullCode ? COLLABORATIVE_GROUPS_DEF[fullCode] : null;
+                    if (def) return def.name;
+                    return userGroupMeta ? `${userGroupMeta.name} (${fullCode || groupCode})` : `غرفة ${groupCode}`;
+                  })()}
+                </span>
+              </div>
             </div>
+
+            {isCollaborative && studentGroup && (
+              <div className="flex items-center gap-2">
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 block font-['Cairo'] leading-tight">متصل الآن:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded-full bg-[#ffd700]/20 border border-[#ffd700] text-[#ffd700] text-[10px] font-black">
+                      {(() => {
+                        const participants = (Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[])
+                          .filter((p) => p.isOnline && (getStudentGroup(p.username) === studentGroup || p.username === 'admin'));
+                        const studentsCount = participants.filter(p => p.username !== 'admin').length;
+                        const hasAdmin = participants.some(p => p.username === 'admin');
+                        const names = participants.filter(p => p.username !== 'admin').map(p => p.username).join(', ');
+                        return `• ${studentsCount} طلاب (${names}) ${hasAdmin ? '+ المشرف' : ''}`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-300 font-['Cairo']">
-                أعضاء الفريق المتصلين الآن:
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#ffd700]/20 border border-[#ffd700] text-[#ffd700] text-xs font-black">
-                {(Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[]).filter((p) => isAdmin || (studentGroup && getStudentGroup(p.username) === studentGroup) || p.username === 'admin').length}
-              </span>
-            </div>
-        </div>
+          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-800/80">
+            <span className="text-[11px] text-slate-400 font-['Cairo'] flex items-center gap-1">
+              <Users className="w-3 h-3 text-amber-400" />
+              أعضاء المجموعة ({studentGroup}) المتفاعلون:
+            </span>
+            {(Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[])
+              .filter((p) => isAdmin || (studentGroup && getStudentGroup(p.username) === studentGroup) || p.username === 'admin')
+              .map((participant) => {
+                const isResponder = q1 && groupAnswers[q1.id]?.username === participant.username;
+                const isUserAdmin = participant.username === 'admin';
 
-        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-800/80">
-          <span className="text-[11px] text-slate-400 font-['Cairo'] flex items-center gap-1">
-            <Users className="w-3 h-3 text-amber-400" />
-            أعضاء المجموعة {studentGroup ? `(${studentGroup})` : ''} المتفاعلون:
-          </span>
-          {(Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[]).filter((p) => isAdmin || (studentGroup && getStudentGroup(p.username) === studentGroup) || p.username === 'admin').map((participant) => (
-            <div
-              key={participant.username}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs border transition-all ${
-                participant.username === username
-                  ? 'bg-amber-500/20 border-[#ffd700] text-amber-200 font-bold'
-                  : 'bg-slate-950/80 border-slate-700 text-slate-300'
-              }`}
-              title={participant.fullName}
-            >
-              <span className="text-sm">{participant.avatarEmoji}</span>
-              <span className="text-[11px] font-bold font-['Cairo']">
-                {participant.username} {participant.username === username ? '(أنت)' : ''}
-              </span>
-            </div>
-          ))}
+                return (
+                  <div
+                    key={participant.username}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs border transition-all ${
+                      participant.username === username
+                        ? 'bg-amber-500/20 border-[#ffd700] text-amber-200 font-bold'
+                        : isUserAdmin ? 'bg-emerald-500/20 border-emerald-500 text-emerald-200' : 'bg-slate-950/80 border-slate-700 text-slate-300'
+                    }`}
+                    title={participant.fullName}
+                  >
+                    <span className="text-sm">{isUserAdmin ? '👨‍🏫' : participant.avatarEmoji}</span>
+                    <span className="text-[11px] font-bold font-['Cairo']">
+                      {isUserAdmin ? 'المشرف' : participant.username} {participant.username === username ? '(أنت)' : ''}
+                    </span>
+                    {isResponder && (
+                      <span className="text-emerald-400 font-black animate-pulse ml-0.5" title="هذا العضو قام بالحل">☑</span>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
         </div>
-      </div>
 
       {/* LOCKED NOTICE IF LEVEL ALREADY COMPLETED */}
       {isLevelCompleted && (
