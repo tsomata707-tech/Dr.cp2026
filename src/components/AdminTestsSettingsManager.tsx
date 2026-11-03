@@ -1734,44 +1734,46 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Subgroup triads for G3 and G4 */}
-                {(resetSelectedGroupId.startsWith('G3') || resetSelectedGroupId.startsWith('G4')) && (
-                  <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5">
-                    <span className="text-[11px] text-cyan-300 font-bold block">
-                      تحديد فريق ثلاثي مخصص (3 طلاب) أو كامل المجموعة:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setResetSelectedGroupId(resetSelectedGroupId.substring(0, 2))}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition ${
-                          resetSelectedGroupId.length === 2
-                            ? 'bg-cyan-600 border-cyan-400 text-white'
-                            : 'bg-slate-900 border-slate-700 text-slate-300'
-                        }`}
-                      >
-                        كامل {resetSelectedGroupId.substring(0, 2)} (15 طالب)
-                      </button>
-                      {(resetSelectedGroupId.startsWith('G4')
-                        ? ['G4-A', 'G4-B', 'G4-C', 'G4-D', 'G4-E']
-                        : ['G3-A', 'G3-B', 'G3-C', 'G3-D', 'G3-E']
-                      ).map((sub) => (
+                {/* Subgroup triads for all groups G1..G4 */}
+                {(() => {
+                  const baseGroupCode = resetSelectedGroupId.substring(0, 2);
+                  const triads = ['A', 'B', 'C', 'D', 'E'].map((letter) => `${baseGroupCode}-${letter}`);
+
+                  return (
+                    <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5">
+                      <span className="text-[11px] text-cyan-300 font-bold block">
+                        تحديد غرفة ثلاثية مغلقة (3 طلاب) أو كامل المجموعة:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
                         <button
-                          key={sub}
                           type="button"
-                          onClick={() => setResetSelectedGroupId(sub)}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition ${
-                            resetSelectedGroupId === sub
-                              ? 'bg-amber-600 border-amber-400 text-white'
+                          onClick={() => setResetSelectedGroupId(baseGroupCode)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition cursor-pointer ${
+                            resetSelectedGroupId.length === 2
+                              ? 'bg-cyan-600 border-cyan-400 text-white'
                               : 'bg-slate-900 border-slate-700 text-slate-300'
                           }`}
                         >
-                          {sub} (3 طلاب)
+                          كامل {baseGroupCode} (15 طالب)
                         </button>
-                      ))}
+                        {triads.map((sub) => (
+                          <button
+                            key={sub}
+                            type="button"
+                            onClick={() => setResetSelectedGroupId(sub)}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition cursor-pointer ${
+                              resetSelectedGroupId === sub
+                                ? 'bg-amber-600 border-amber-400 text-white'
+                                : 'bg-slate-900 border-slate-700 text-slate-300'
+                            }`}
+                          >
+                            {sub} (3 طلاب)
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               <div className="shrink-0 self-end">

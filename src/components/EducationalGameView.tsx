@@ -217,17 +217,34 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const studentInfo = useMemo(() => getStudentByUsername(username), [username]);
 
   const collabSubGroup = useMemo(() => getCollaborativeGroupByUsername(username), [username]);
-  const [adminCollabSubGroup, setAdminCollabSubGroup] = useState<string>('G3-A');
+  const [adminCollabSubGroup, setAdminCollabSubGroup] = useState<string>(() => {
+    const codeMap: Record<string, string> = {
+      'grp-1': 'G1-A',
+      'grp-2': 'G2-A',
+      'grp-3': 'G3-A',
+      'grp-4': 'G4-A',
+    };
+    return (selectedGroupId && codeMap[selectedGroupId]) || 'G1-A';
+  });
+
+  useEffect(() => {
+    const handleSwitch = (e: any) => {
+      if (e.detail?.subGroup) {
+        setAdminCollabSubGroup(e.detail.subGroup);
+      } else if (e.detail?.groupCode) {
+        setAdminCollabSubGroup((prev) => `${e.detail.groupCode}-${prev.split('-')[1] || 'A'}`);
+      }
+    };
+    window.addEventListener('cp_admin_switch_group', handleSwitch);
+    return () => window.removeEventListener('cp_admin_switch_group', handleSwitch);
+  }, []);
 
   const effectiveRoomId = useMemo(() => {
-    if (isCollaborative) {
-      if (isAdmin) {
-        return adminCollabSubGroup.startsWith(groupCode) ? adminCollabSubGroup : `${groupCode}-A`;
-      }
-      return collabSubGroup || groupCode;
+    if (isAdmin) {
+      return adminCollabSubGroup.startsWith(groupCode) ? adminCollabSubGroup : `${groupCode}-A`;
     }
-    return groupCode;
-  }, [isCollaborative, isAdmin, adminCollabSubGroup, groupCode, collabSubGroup]);
+    return collabSubGroup || `${groupCode}-A`;
+  }, [isAdmin, adminCollabSubGroup, groupCode, collabSubGroup]);
 
   useEffect(() => {
     if (!effectiveRoomId) return;
@@ -873,38 +890,52 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2 bg-slate-900/90 p-2 rounded-xl border border-emerald-500/40 flex-wrap">
-            <span className="text-xs text-emerald-300 font-bold whitespace-nowrap">تبديل المجموعة:</span>
+            <span className="text-xs text-emerald-300 font-bold whitespace-nowrap">المجموعة التجريبية:</span>
             <select
               value={groupCode}
               onChange={(e) => {
                 const targetCode = e.target.value;
                 const groupObj = Object.values(RESEARCH_GROUPS_META).find((g) => g.code === targetCode);
                 if (groupObj) {
-                  window.dispatchEvent(new CustomEvent('cp_admin_switch_group', { detail: { groupId: groupObj.id, groupCode: targetCode } }));
+                  const currentSubLetter = adminCollabSubGroup.split('-')[1] || 'A';
+                  const nextSub = `${targetCode}-${currentSubLetter}`;
+                  setAdminCollabSubGroup(nextSub);
+                  window.dispatchEvent(new CustomEvent('cp_admin_switch_group', { detail: { groupId: groupObj.id, groupCode: targetCode, subGroup: nextSub } }));
                 }
               }}
               className="bg-slate-950 border border-emerald-500/60 rounded-lg px-2.5 py-1 text-xs text-amber-300 font-black cursor-pointer"
             >
-              <option value="G1">G1 - فردي وتغذية فورية</option>
-              <option value="G2">G2 - فردي وتغذية مرجئة</option>
-              <option value="G3">G3 - تعاوني وتغذية فورية</option>
-              <option value="G4">G4 - تعاوني وتغذية مرجئة</option>
+              <option value="G1">G1 - تنافسي فوري</option>
+              <option value="G2">G2 - تنافسي مرجأ</option>
+              <option value="G3">G3 - تعاوني فوري</option>
+              <option value="G4">G4 - تعاوني مرجأ</option>
             </select>
 
-            {isCollaborative && (
-              <>
-                <span className="text-xs text-cyan-300 font-bold whitespace-nowrap mr-2">المجموعة الثلاثية:</span>
-                <select
-                  value={adminCollabSubGroup}
-                  onChange={(e) => setAdminCollabSubGroup(e.target.value)}
-                  className="bg-slate-950 border border-cyan-500/60 rounded-lg px-2.5 py-1 text-xs text-cyan-300 font-black cursor-pointer"
-                >
-                  {(groupCode === 'G4' ? ['G4-A', 'G4-B', 'G4-C', 'G4-D', 'G4-E'] : ['G3-A', 'G3-B', 'G3-C', 'G3-D', 'G3-E']).map((sub) => (
-                    <option key={sub} value={sub}>{sub} (3 طلاب)</option>
-                  ))}
-                </select>
-              </>
-            )}
+            <span className="text-xs text-cyan-300 font-bold whitespace-nowrap mr-2">الغرفة المغلقة (3 طلاب + المشرف):</span>
+            <select
+              value={adminCollabSubGroup}
+              onChange={(e) => {
+                const nextSub = e.target.value;
+                setAdminCollabSubGroup(nextSub);
+                window.dispatchEvent(new CustomEvent('cp_admin_switch_group', { detail: { subGroup: nextSub } }));
+              }}
+              className="bg-slate-950 border border-cyan-500/60 rounded-lg px-2.5 py-1 text-xs text-cyan-300 font-black cursor-pointer"
+            >
+              {[
+                { letter: 'A', label: 'المجموعة 1 (أ) - الطلاب 01 إلى 03' },
+                { letter: 'B', label: 'المجموعة 2 (ب) - الطلاب 04 إلى 06' },
+                { letter: 'C', label: 'المجموعة 3 (ج) - الطلاب 07 إلى 09' },
+                { letter: 'D', label: 'المجموعة 4 (د) - الطلاب 10 إلى 12' },
+                { letter: 'E', label: 'المجموعة 5 (هـ) - الطلاب 13 إلى 15' },
+              ].map(({ letter, label }) => {
+                const subCode = `${groupCode}-${letter}`;
+                return (
+                  <option key={subCode} value={subCode}>
+                    {subCode}: {label}
+                  </option>
+                );
+              })}
+            </select>
           </div>
         </div>
       )}
@@ -1224,84 +1255,155 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         </div>
       )}
 
-        {/* REAL-TIME COLLABORATIVE LIVE BAR */}
-        <div className="my-6 p-4 rounded-2xl bg-gradient-to-r from-purple-950/60 via-slate-900 to-indigo-950/60 border border-purple-500/40 shadow-lg space-y-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-emerald-300 font-['Tajawal'] flex items-center gap-1.5">
-                  <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-                  التزامن اللحظي المباشر للجلسة التفاعلية
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 text-[10px] font-bold border border-purple-400/30">
-                  {(() => {
-                    const fullCode = getStudentFullGroupCode(username);
-                    const def = fullCode ? COLLABORATIVE_GROUPS_DEF[fullCode] : null;
-                    if (def) return def.name;
-                    return userGroupMeta ? `${userGroupMeta.name} (${fullCode || groupCode})` : `غرفة ${groupCode}`;
-                  })()}
-                </span>
-              </div>
-            </div>
+        {/* REAL-TIME CLOSED ROOM LIVE BAR (Strictly 3 Students + Admin) */}
+        {(() => {
+          const currentTriadDef = COLLABORATIVE_GROUPS_DEF[effectiveRoomId];
+          const roomStudentUsernames = (currentTriadDef?.members || []).filter((u) => u !== 'admin');
+          const isCurrentAdmin = isAdmin;
 
-            {isCollaborative && studentGroup && (
-              <div className="flex items-center gap-2">
-                <div className="text-right">
-                  <span className="text-[10px] text-slate-400 block font-['Cairo'] leading-tight">متصل الآن:</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded-full bg-[#ffd700]/20 border border-[#ffd700] text-[#ffd700] text-[10px] font-black">
-                      {(() => {
-                        const participants = (Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[])
-                          .filter((p) => p.isOnline && (getStudentGroup(p.username) === studentGroup || p.username === 'admin'));
-                        const studentsCount = participants.filter(p => p.username !== 'admin').length;
-                        const hasAdmin = participants.some(p => p.username === 'admin');
-                        const names = participants.filter(p => p.username !== 'admin').map(p => p.username).join(', ');
-                        return `• ${studentsCount} طلاب (${names}) ${hasAdmin ? '+ المشرف' : ''}`;
-                      })()}
+          return (
+            <div className="my-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-950/70 via-[#0d1226] to-indigo-950/70 border-2 border-purple-500/50 shadow-xl space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-purple-500/30">
+                <div className="flex items-center gap-3">
+                  <span className="relative flex h-3.5 w-3.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal'] flex items-center gap-1.5">
+                        <Wifi className="w-4 h-4 text-emerald-400" />
+                        الغرفة التفاعلية المغلقة (3 طلاب + المشرف) 🔒
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 text-[11px] font-black border border-purple-400/40 font-['Cairo']">
+                        {currentTriadDef?.name || `غرفة ${effectiveRoomId}`}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-amber-300 font-bold block mt-0.5">
+                      🔒 مجموعة مغلقة لا يراها ولا يتفاعل فيها إلا الطلاب الثلاثة والمشرف فقط
                     </span>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300 text-[11px] font-bold">
+                    رمز الغرفة: <strong className="text-amber-300 font-black">{effectiveRoomId}</strong>
+                  </span>
+                </div>
               </div>
-            )}
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-800/80">
-            <span className="text-[11px] text-slate-400 font-['Cairo'] flex items-center gap-1">
-              <Users className="w-3 h-3 text-amber-400" />
-              أعضاء المجموعة ({studentGroup}) المتفاعلون:
-            </span>
-            {(Object.values(roomState.activeStudents || {}) as RealtimeStudentParticipant[])
-              .filter((p) => isAdmin || (studentGroup && getStudentGroup(p.username) === studentGroup) || p.username === 'admin')
-              .map((participant) => {
-                const isResponder = Object.values(groupAnswers).some(ans => ans && ans.username === participant.username);
-                const isUserAdmin = participant.username === 'admin';
+              {/* Members Display: Exactly the 3 Students + Admin */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span className="font-['Cairo'] flex items-center gap-1.5 font-bold text-slate-300">
+                    <Users className="w-3.5 h-3.5 text-amber-400" />
+                    أعضاء الغرفة المغلقة المصرح لهم بالدخول والتفاعل:
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    (3 طلاب مخصصين + حساب المشرف)
+                  </span>
+                </div>
 
-                return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                  {/* The 3 Assigned Students */}
+                  {roomStudentUsernames.map((stdUser) => {
+                    const participant = roomState.activeStudents?.[stdUser];
+                    const stdAccount = getStudentByUsername(stdUser);
+                    const isSelf = stdUser.toLowerCase() === username.toLowerCase();
+                    const isOnline = isSelf || Boolean(participant?.isOnline);
+                    const hasAnswered =
+                      Object.values(groupAnswers).some((ans) => ans && ans.username === stdUser) ||
+                      (roomState.currentAnswers && Object.values(roomState.currentAnswers).some((a) => a?.selectedBy === stdUser));
+
+                    return (
+                      <div
+                        key={stdUser}
+                        className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 ${
+                          isSelf
+                            ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-md ring-1 ring-amber-400/50'
+                            : isOnline
+                            ? 'bg-slate-900/90 border-slate-700 text-slate-200'
+                            : 'bg-slate-950/70 border-slate-800/80 text-slate-400 opacity-80'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-lg shrink-0">
+                            {participant?.avatarEmoji || (isSelf ? currentAvatar.emoji : '🎓')}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-black truncate font-['Cairo'] text-white">
+                                {stdUser}
+                              </span>
+                              {isSelf && (
+                                <span className="text-[10px] text-amber-300 font-bold">(أنت)</span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-400 block truncate">
+                              {stdAccount?.fullName || participant?.fullName || stdUser}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span
+                            className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold ${
+                              isOnline
+                                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
+                                : 'bg-slate-800 text-slate-400'
+                            }`}
+                          >
+                            {isOnline ? '🟢 متصل' : '⚪ غير متصل'}
+                          </span>
+                          {hasAnswered && (
+                            <span className="text-emerald-400 text-[10px] font-black flex items-center gap-0.5" title="قام بالحل">
+                              <CheckCircle2 className="w-3 h-3" /> تم الحل
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* The Admin (المشرف) */}
                   <div
-                    key={participant.username}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs border transition-all ${
-                      participant.username === username
-                        ? 'bg-amber-500/20 border-[#ffd700] text-amber-200 font-bold'
-                        : isUserAdmin ? 'bg-emerald-500/20 border-emerald-500 text-emerald-200' : 'bg-slate-950/80 border-slate-700 text-slate-300'
+                    className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 ${
+                      isCurrentAdmin
+                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 shadow-md ring-1 ring-emerald-400/50'
+                        : 'bg-slate-900/90 border-emerald-700/50 text-emerald-300'
                     }`}
-                    title={participant.fullName}
                   >
-                    <span className="text-sm">{isUserAdmin ? '👨‍🏫' : participant.avatarEmoji}</span>
-                    <span className="text-[11px] font-bold font-['Cairo']">
-                      {isUserAdmin ? 'المشرف' : participant.username} {participant.username === username ? '(أنت)' : ''}
-                    </span>
-                    {isResponder && (
-                      <span className="text-emerald-400 font-black animate-pulse ml-0.5" title="هذا العضو قام بالحل">☑</span>
-                    )}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-lg shrink-0">👨‍🏫</span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-black truncate font-['Cairo'] text-white">
+                            المشرف (Admin)
+                          </span>
+                          {isCurrentAdmin && (
+                            <span className="text-[10px] text-emerald-300 font-bold">(أنت)</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-emerald-300/80 block truncate">
+                          متابعة وتوجيه وملاحظة 👁️
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-emerald-950/80 text-emerald-300 border border-emerald-500/50">
+                        🟢 متواجد
+                      </span>
+                      <span className="text-cyan-300 text-[10px] font-bold">
+                        صلاحية كاملة
+                      </span>
+                    </div>
                   </div>
-                );
-              })}
-          </div>
-        </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
       {/* LOCKED NOTICE IF LEVEL ALREADY COMPLETED BY GROUP OR STUDENT */}
       {isLevelCompleted && (
@@ -1311,13 +1413,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
           </div>
           <div className="flex-1">
             <h4 className="text-base sm:text-lg font-black text-red-200 font-['Tajawal']">
-               ⚠️ تم إنهاء هذا المستوى وإغلاقه على الجميع داخل المجموعة {groupCode}
+               ⚠️ تم إنهاء هذا المستوى وإغلاقه على الجميع داخل المجموعة المغلقة ({effectiveRoomId})
             </h4>
             <p className="text-xs sm:text-sm text-slate-300 font-['Cairo'] mt-1">
               {groupCompleter ? (
-                <>قام العضو <strong className="text-amber-400 underline">{groupCompleter.fullName}</strong> بإتمام التحدي واعتماد الإجابات للمجموعة.</>
+                <>قام العضو <strong className="text-amber-400 underline">{groupCompleter.fullName}</strong> بإتمام التحدي واعتماد الإجابات للمجموعة المغلقة المقتصرة على الطلاب الثلاثة والمشرف.</>
               ) : (
-                <>لقد تم اعتماد حلول هذا المستوى بنجاح ولا يمكن العودة إليه إلا بطلب إعادة تهيئة من المشرف.</>
+                <>لقد تم اعتماد حلول هذا المستوى بنجاح للمجموعة المغلقة ({effectiveRoomId}) ولا يمكن العودة إليه إلا بطلب إعادة تهيئة من المشرف.</>
               )}
             </p>
             {isImmediateGroup && completedResult && (

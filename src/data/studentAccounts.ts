@@ -45,18 +45,28 @@ export const RESEARCH_GROUPS_META: Record<string, GroupMeta> = {
 };
 
 export type CollaborativeGroupCode =
+  | 'G1-A' | 'G1-B' | 'G1-C' | 'G1-D' | 'G1-E'
+  | 'G2-A' | 'G2-B' | 'G2-C' | 'G2-D' | 'G2-E'
   | 'G3-A' | 'G3-B' | 'G3-C' | 'G3-D' | 'G3-E'
   | 'G4-A' | 'G4-B' | 'G4-C' | 'G4-D' | 'G4-E';
 
 export interface CollaborativeGroupDef {
   code: CollaborativeGroupCode;
   subCode: 'A' | 'B' | 'C' | 'D' | 'E';
-  modeCode: 'G3' | 'G4';
-  modeTitle: 'تعاوني فوري' | 'تعاوني مرجأ';
+  modeCode: 'G1' | 'G2' | 'G3' | 'G4';
+  modeTitle: string;
   name: string;
   members: string[]; // exactly 3 student usernames
   description: string;
 }
+
+export const G1_COLLAB_GROUPS: CollaborativeGroupCode[] = [
+  'G1-A', 'G1-B', 'G1-C', 'G1-D', 'G1-E'
+];
+
+export const G2_COLLAB_GROUPS: CollaborativeGroupCode[] = [
+  'G2-A', 'G2-B', 'G2-C', 'G2-D', 'G2-E'
+];
 
 export const G3_COLLAB_GROUPS: CollaborativeGroupCode[] = [
   'G3-A', 'G3-B', 'G3-C', 'G3-D', 'G3-E'
@@ -67,13 +77,109 @@ export const G4_COLLAB_GROUPS: CollaborativeGroupCode[] = [
 ];
 
 export const ALL_COLLAB_GROUPS: CollaborativeGroupCode[] = [
+  ...G1_COLLAB_GROUPS,
+  ...G2_COLLAB_GROUPS,
   ...G3_COLLAB_GROUPS,
   ...G4_COLLAB_GROUPS
 ];
 
-// Exact 15 G3 students + 15 G4 students mapped strictly to 5 triads each (3 students per triad + Admin)
+// All 60 students strictly mapped to 5 closed triads (3 students per triad + Admin) for each of the 4 groups
 export const COLLABORATIVE_GROUPS_DEF: Record<string, CollaborativeGroupDef> = {
-  // === نمط التعاون الفوري (G3) - 5 مجموعات ثلاثية ===
+  // === نمط التنافس الفوري (G1) - 5 مجموعات ثلاثية مغلقة ===
+  'G1-A': {
+    code: 'G1-A',
+    subCode: 'A',
+    modeCode: 'G1',
+    modeTitle: 'تنافس فوري',
+    name: 'المجموعة المغلقة الأولى (G1-A)',
+    members: ['G1_Cp_01', 'G1_Cp_02', 'G1_Cp_03'],
+    description: 'فريق المجموعة الأولى (G1_Cp_01, G1_Cp_02, G1_Cp_03) مع المشرف (Admin)',
+  },
+  'G1-B': {
+    code: 'G1-B',
+    subCode: 'B',
+    modeCode: 'G1',
+    modeTitle: 'تنافس فوري',
+    name: 'المجموعة المغلقة الثانية (G1-B)',
+    members: ['G1_Cp_04', 'G1_Cp_05', 'G1_Cp_06'],
+    description: 'فريق المجموعة الثانية (G1_Cp_04, G1_Cp_05, G1_Cp_06) مع المشرف (Admin)',
+  },
+  'G1-C': {
+    code: 'G1-C',
+    subCode: 'C',
+    modeCode: 'G1',
+    modeTitle: 'تنافس فوري',
+    name: 'المجموعة المغلقة الثالثة (G1-C)',
+    members: ['G1_Cp_07', 'G1_Cp_08', 'G1_Cp_09'],
+    description: 'فريق المجموعة الثالثة (G1_Cp_07, G1_Cp_08, G1_Cp_09) مع المشرف (Admin)',
+  },
+  'G1-D': {
+    code: 'G1-D',
+    subCode: 'D',
+    modeCode: 'G1',
+    modeTitle: 'تنافس فوري',
+    name: 'المجموعة المغلقة الرابعة (G1-D)',
+    members: ['G1_Cp_10', 'G1_Cp_11', 'G1_Cp_12'],
+    description: 'فريق المجموعة الرابعة (G1_Cp_10, G1_Cp_11, G1_Cp_12) مع المشرف (Admin)',
+  },
+  'G1-E': {
+    code: 'G1-E',
+    subCode: 'E',
+    modeCode: 'G1',
+    modeTitle: 'تنافس فوري',
+    name: 'المجموعة المغلقة الخامسة (G1-E)',
+    members: ['G1_Cp_13', 'G1_Cp_14', 'G1_Cp_15'],
+    description: 'فريق المجموعة الخامسة (G1_Cp_13, G1_Cp_14, G1_Cp_15) مع المشرف (Admin)',
+  },
+
+  // === نمط التنافس المرجأ (G2) - 5 مجموعات ثلاثية مغلقة ===
+  'G2-A': {
+    code: 'G2-A',
+    subCode: 'A',
+    modeCode: 'G2',
+    modeTitle: 'تنافس مرجأ',
+    name: 'المجموعة المغلقة الأولى (G2-A)',
+    members: ['G2_Cp_01', 'G2_Cp_02', 'G2_Cp_03'],
+    description: 'فريق المجموعة الأولى (G2_Cp_01, G2_Cp_02, G2_Cp_03) مع المشرف (Admin)',
+  },
+  'G2-B': {
+    code: 'G2-B',
+    subCode: 'B',
+    modeCode: 'G2',
+    modeTitle: 'تنافس مرجأ',
+    name: 'المجموعة المغلقة الثانية (G2-B)',
+    members: ['G2_Cp_04', 'G2_Cp_05', 'G2_Cp_06'],
+    description: 'فريق المجموعة الثانية (G2_Cp_04, G2_Cp_05, G2_Cp_06) مع المشرف (Admin)',
+  },
+  'G2-C': {
+    code: 'G2-C',
+    subCode: 'C',
+    modeCode: 'G2',
+    modeTitle: 'تنافس مرجأ',
+    name: 'المجموعة المغلقة الثالثة (G2-C)',
+    members: ['G2_Cp_07', 'G2_Cp_08', 'G2_Cp_09'],
+    description: 'فريق المجموعة الثالثة (G2_Cp_07, G2_Cp_08, G2_Cp_09) مع المشرف (Admin)',
+  },
+  'G2-D': {
+    code: 'G2-D',
+    subCode: 'D',
+    modeCode: 'G2',
+    modeTitle: 'تنافس مرجأ',
+    name: 'المجموعة المغلقة الرابعة (G2-D)',
+    members: ['G2_Cp_10', 'G2_Cp_11', 'G2_Cp_12'],
+    description: 'فريق المجموعة الرابعة (G2_Cp_10, G2_Cp_11, G2_Cp_12) مع المشرف (Admin)',
+  },
+  'G2-E': {
+    code: 'G2-E',
+    subCode: 'E',
+    modeCode: 'G2',
+    modeTitle: 'تنافس مرجأ',
+    name: 'المجموعة المغلقة الخامسة (G2-E)',
+    members: ['G2_Cp_13', 'G2_Cp_14', 'G2_Cp_15'],
+    description: 'فريق المجموعة الخامسة (G2_Cp_13, G2_Cp_14, G2_Cp_15) مع المشرف (Admin)',
+  },
+
+  // === نمط التعاون الفوري (G3) - 5 مجموعات ثلاثية مغلقة ===
   'G3-A': {
     code: 'G3-A',
     subCode: 'A',
@@ -120,7 +226,7 @@ export const COLLABORATIVE_GROUPS_DEF: Record<string, CollaborativeGroupDef> = {
     description: 'فريق التعاون الفوري الخامس (G3_Cp_13, G3_Cp_14, G3_Cp_15) مع المشرف (Admin)',
   },
 
-  // === نمط التعاون المرجأ (G4) - 5 مجموعات ثلاثية ===
+  // === نمط التعاون المرجأ (G4) - 5 مجموعات ثلاثية مغلقة ===
   'G4-A': {
     code: 'G4-A',
     subCode: 'A',
@@ -285,33 +391,21 @@ export function normalizeStudentUsername(input: string): string {
 }
 
 /**
- * Returns the exact collaborative triad code ('G3-A'..'G3-E' or 'G4-A'..'G4-E') for collaborative students, or null for competitive students
+ * Returns the exact 3-student closed triad code ('G1-A'..'G4-E') for all students across the five groups
  */
 export function getCollaborativeGroupByUsername(username: string): CollaborativeGroupCode | null {
   const norm = normalizeStudentUsername(username).toUpperCase();
-  if (norm.startsWith('G3_')) {
-    const numMatch = norm.match(/_(\d{2})$/);
-    if (numMatch) {
-      const n = parseInt(numMatch[1], 10);
-      if (n >= 1 && n <= 3) return 'G3-A';
-      if (n >= 4 && n <= 6) return 'G3-B';
-      if (n >= 7 && n <= 9) return 'G3-C';
-      if (n >= 10 && n <= 12) return 'G3-D';
-      if (n >= 13 && n <= 15) return 'G3-E';
-    }
-    return 'G3-A';
-  }
-  if (norm.startsWith('G4_')) {
-    const numMatch = norm.match(/_(\d{2})$/);
-    if (numMatch) {
-      const n = parseInt(numMatch[1], 10);
-      if (n >= 1 && n <= 3) return 'G4-A';
-      if (n >= 4 && n <= 6) return 'G4-B';
-      if (n >= 7 && n <= 9) return 'G4-C';
-      if (n >= 10 && n <= 12) return 'G4-D';
-      if (n >= 13 && n <= 15) return 'G4-E';
-    }
-    return 'G4-A';
+  const match = norm.match(/^G([1-4])_CP_(\d{2})$/);
+  if (match) {
+    const grp = `G${match[1]}` as 'G1' | 'G2' | 'G3' | 'G4';
+    const n = parseInt(match[2], 10);
+    let sub: 'A' | 'B' | 'C' | 'D' | 'E' = 'A';
+    if (n >= 1 && n <= 3) sub = 'A';
+    else if (n >= 4 && n <= 6) sub = 'B';
+    else if (n >= 7 && n <= 9) sub = 'C';
+    else if (n >= 10 && n <= 12) sub = 'D';
+    else if (n >= 13 && n <= 15) sub = 'E';
+    return `${grp}-${sub}` as CollaborativeGroupCode;
   }
   return null;
 }
