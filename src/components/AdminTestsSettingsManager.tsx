@@ -167,30 +167,46 @@ export const AdminTestsSettingsManager: React.FC = () => {
   // Group Reset state
   const [resetSelectedGroupId, setResetSelectedGroupId] = useState<string>('G1');
   const [isResettingGroup, setIsResettingGroup] = useState<boolean>(false);
+  const [pendingResetConfirm, setPendingResetConfirm] = useState<{
+    levelNum: number;
+    groupCode: string;
+  } | null>(null);
+  const [lastResetSummary, setLastResetSummary] = useState<{
+    studentsFound: number;
+    studentsReset: number;
+    studentsSkipped: number;
+    errors: string[];
+  } | null>(null);
 
   const handleResetGroupLevel = async (levelNum: number, groupCode: string) => {
-    if (
-      !window.confirm(
-        `هل أنت متأكد من إعادة تهيئة المستوى ${levelNum} للمجموعة ${groupCode}؟\n\n` +
-          `سيتم:\n` +
-          `✓ فتح المستوى مرة أخرى لجميع طلاب المجموعة\n` +
-          `✓ تصفير إجاباتهم لهذا المستوى\n` +
-          `✓ خصم درجة هذا المستوى من مجموع كل طالب\n` +
-          `✓ إزالة شارة هذا المستوى إن وُجدت\n\n` +
-          `لا يمكن التراجع عن هذه العملية.`
-      )
-    ) {
-      return;
-    }
-
     setIsResettingGroup(true);
+    setLastResetSummary(null);
     try {
-      await resetGroupLevelRealtime(groupCode, levelNum);
-      showNotification(
-        `✓ تم إعادة تهيئة المستوى ${levelNum} للمجموعة ${groupCode} بنجاح! تم تصفير تقدّم جميع الطلاب في هذا المستوى.`
-      );
+      console.log(`[ADMIN RESET] Starting reset: level=${levelNum}, group=${groupCode}`);
+      const result = await resetGroupLevelRealtime(groupCode, levelNum);
+
+      console.log('[ADMIN RESET] Result:', result);
+
+      setLastResetSummary({
+        studentsFound: result.studentsFound,
+        studentsReset: result.studentsReset,
+        studentsSkipped: result.studentsSkipped,
+        errors: result.errors,
+      });
+
+      let message = `✓ تم إعادة تهيئة المستوى ${levelNum} للمجموعة ${groupCode}.\n`;
+      message += `• عدد طلاب المجموعة: ${result.studentsFound}\n`;
+      message += `• تم تصفيرهم بنجاح: ${result.studentsReset}\n`;
+      message += `• تم تخطيهم (لم يكملوا المستوى): ${result.studentsSkipped}`;
+
+      if (result.errors.length > 0) {
+        message += `\n\n⚠️ أخطاء جزئية:\n${result.errors.join('\n')}`;
+        showNotification(message, 'error');
+      } else {
+        showNotification(message, 'success');
+      }
     } catch (err: any) {
-      console.error('Reset group level failed:', err);
+      console.error('[ADMIN RESET] Failed:', err);
       showNotification(
         `❌ فشل إعادة التهيئة: ${err?.message || 'خطأ غير معروف في الاتصال بـ Firebase'}`,
         'error'
@@ -339,7 +355,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
 
   const showNotification = (text: string, type: 'success' | 'error' = 'success') => {
     setFeedbackMsg({ text, type });
-    setTimeout(() => setFeedbackMsg(null), 4000);
+    setTimeout(() => setFeedbackMsg(null), 6000);
   };
 
   // Upload handler for Modal question image or video
@@ -1165,15 +1181,15 @@ export const AdminTestsSettingsManager: React.FC = () => {
       {/* Toast Feedback */}
       {feedbackMsg && (
         <div
-          className={`p-4 rounded-2xl border-2 flex items-center justify-between gap-3 animate-fadeIn ${
+          className={`p-4 rounded-2xl border-2 flex items-start justify-between gap-3 animate-fadeIn ${
             feedbackMsg.type === 'success'
               ? 'bg-emerald-950/90 border-emerald-500 text-emerald-200'
               : 'bg-red-950/90 border-red-500 text-red-200'
           }`}
         >
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-            <span className="text-sm font-bold">{feedbackMsg.text}</span>
+          <div className="flex items-start gap-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <span className="text-sm font-bold whitespace-pre-line leading-relaxed">{feedbackMsg.text}</span>
           </div>
           <button
             type="button"
@@ -1703,17 +1719,65 @@ export const AdminTestsSettingsManager: React.FC = () => {
               </div>
 
               <div className="shrink-0 self-end">
-                <button
-                  type="button"
-                  disabled={isResettingGroup}
-                  onClick={() => handleResetGroupLevel(editingLevelNum, resetSelectedGroupId)}
-                  className="px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-2 shadow-lg transition transform active:scale-95 disabled:opacity-50"
-                >
-                  {isResettingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                  <span>إعادة تهيئة المستوى {editingLevelNum} للمجموعة {resetSelectedGroupId}</span>
-                </button>
+                {pendingResetConfirm ? (
+                  <div className="w-full flex flex-col gap-2 p-3 rounded-xl bg-rose-950/60 border-2 border-rose-500 min-w-[280px]">
+                    <div className="text-xs font-bold text-rose-200 text-right whitespace-pre-line">
+                      {`⚠️ تأكيد: إعادة تهيئة المستوى ${pendingResetConfirm.levelNum} للمجموعة ${pendingResetConfirm.groupCode}؟\nسيتم تصفير إجابات جميع طلاب هذه المجموعة في هذا المستوى.`}
+                    </div>
+                    <div className="flex items-center gap-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setPendingResetConfirm(null)}
+                        className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs cursor-pointer"
+                      >
+                        إلغاء
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isResettingGroup}
+                        onClick={() => {
+                          const { levelNum, groupCode } = pendingResetConfirm;
+                          setPendingResetConfirm(null);
+                          handleResetGroupLevel(levelNum, groupCode);
+                        }}
+                        className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-2 shadow-lg transition disabled:opacity-50 cursor-pointer"
+                      >
+                        {isResettingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                        <span>نعم، نفّذ التصفير</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={isResettingGroup}
+                    onClick={() => {
+                      console.log(`[ADMIN RESET] Button clicked: level=${editingLevelNum}, group=${resetSelectedGroupId}`);
+                      setPendingResetConfirm({ levelNum: editingLevelNum, groupCode: resetSelectedGroupId });
+                    }}
+                    className="px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-2 shadow-lg transition transform active:scale-95 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isResettingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    <span>إعادة تهيئة المستوى {editingLevelNum} للمجموعة {resetSelectedGroupId}</span>
+                  </button>
+                )}
               </div>
             </div>
+
+            {/* Last reset summary panel */}
+            {lastResetSummary && (
+              <div className="mt-3 p-3 rounded-xl bg-slate-950 border border-rose-500/40 text-xs text-slate-200">
+                <div className="font-black text-rose-300 mb-1">📊 ملخص آخر عملية تصفير:</div>
+                <div>• عدد الطلاب في المجموعة: <span className="text-amber-300 font-bold">{lastResetSummary.studentsFound}</span></div>
+                <div>• تم تصفيرهم بنجاح: <span className="text-emerald-300 font-bold">{lastResetSummary.studentsReset}</span></div>
+                <div>• تم تخطيهم (لم يكملوا المستوى أو لا سجل لهم): <span className="text-slate-400 font-bold">{lastResetSummary.studentsSkipped}</span></div>
+                {lastResetSummary.errors.length > 0 && (
+                  <div className="mt-1 text-red-300">
+                    ⚠️ أخطاء: {lastResetSummary.errors.length}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Top Add Question Button in 10 Stages */}
