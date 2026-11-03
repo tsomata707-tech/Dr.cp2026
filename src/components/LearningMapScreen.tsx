@@ -27,6 +27,8 @@ import { MultiPartVideoPlayer } from './MultiPartVideoPlayer';
 import { GameLevelUnlockLoader } from './GameLevelUnlockLoader';
 import { Gamepad2 } from 'lucide-react';
 import { isSafeExternalUrl } from '../utils/mediaSafety';
+import { getGroupByUsername } from '../data/studentAccounts';
+import { subscribeToGroupRoom } from '../utils/realtimeService';
 
 const StageIntroVideoPlayer: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
   const slotVideos = useEducationalVideos(`level-${levelNumber}`);
@@ -107,14 +109,39 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
     10: <Share2 className="w-5 h-5 text-cyan-400" />,
   };
 
-  const handleStageClick = (lvl: GameLevelDef) => {
-    const isPreTestDone = true; // Pre-test is locked and passed for everyone
+  const studentGroup = useMemo(() => {
+    // We already have getGroupByUsername imported
+    const userMeta = getGroupByUsername(username);
+    return userMeta?.code || 'G1';
+  }, [username]);
 
-    const isCompleted = !!progress.completedLevels[lvl.levelNumber];
+  // Real-time group room state
+  const [roomState, setRoomState] = useState<any>({ completedLevels: {} });
+  
+  useEffect(() => {
+    const userMeta = getGroupByUsername(username);
+    const groupCode = userMeta?.code || 'G1';
+    
+    const unsub = subscribeToGroupRoom(groupCode, (updatedRoom) => {
+      setRoomState(updatedRoom);
+    });
+    
+    return () => {
+       if (unsub) unsub();
+    };
+  }, [username]);
+
+  const handleStageClick = (lvl: GameLevelDef) => {
+    const isPreTestDone = true; 
+
+    const isIndividualCompleted = !!progress.completedLevels[lvl.levelNumber];
+    const isGroupCompleted = !!roomState.completedLevels?.[lvl.levelNumber];
+    const isCompleted = isIndividualCompleted || isGroupCompleted;
+    
     const isCurrent = lvl.levelNumber === progress.currentLevel;
     const isUpcoming = lvl.levelNumber > progress.currentLevel;
 
-    // Block entry to completed levels
+    // Block entry to completed levels (individual or group)
     if (isCompleted) {
       setCompletedStageLockedAlert(lvl);
       return;
@@ -201,7 +228,10 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
           {/* Grid/Track of 10 Stages */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 relative z-10">
             {GAME_LEVELS_DATA.map((lvl) => {
-              const isCompleted = !!progress.completedLevels[lvl.levelNumber];
+              const isIndividualCompleted = !!progress.completedLevels[lvl.levelNumber];
+              const isGroupCompleted = !!roomState.completedLevels?.[lvl.levelNumber];
+              const isCompleted = isIndividualCompleted || isGroupCompleted;
+              
               const isCurrent = lvl.levelNumber === progress.currentLevel && !isCompleted;
               const isUpcoming = lvl.levelNumber > progress.currentLevel;
 

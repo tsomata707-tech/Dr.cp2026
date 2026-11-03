@@ -436,8 +436,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     return globalVids;
   }, [currentLevelDef, selectedLevelNum, videoStorageTick, rehydratedBlobUrls]);
 
-  const isLevelCompleted = !!progress.completedLevels[selectedLevelNum];
-  const completedResult = progress.completedLevels[selectedLevelNum];
+  const isLevelCompleted = !!progress.completedLevels[selectedLevelNum] || !!roomState.completedLevels?.[selectedLevelNum];
+  const completedResult = progress.completedLevels[selectedLevelNum] || roomState.completedLevels?.[selectedLevelNum];
+  const groupCompleter = roomState.completedLevels?.[selectedLevelNum] ? (roomState.completedLevels[selectedLevelNum] as any).submittedBy : null;
   const isLevelUnlocked = selectedLevelNum <= progress.currentLevel;
 
   const levelQuestions = currentLevelDef?.questions || [];
@@ -1239,20 +1240,32 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
           </div>
         </div>
 
-      {/* LOCKED NOTICE IF LEVEL ALREADY COMPLETED */}
+      {/* LOCKED NOTICE IF LEVEL ALREADY COMPLETED BY GROUP OR STUDENT */}
       {isLevelCompleted && (
-        <div className="my-6 p-4 rounded-2xl bg-amber-950/40 border-2 border-amber-500/60 flex items-center gap-4 text-right">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500 flex items-center justify-center shrink-0 text-amber-300">
-            <Lock className="w-6 h-6" />
+        <div className="my-6 p-5 rounded-3xl bg-gradient-to-r from-red-950/40 via-amber-950/40 to-red-950/40 border-2 border-red-500/60 shadow-[0_0_35px_rgba(239,68,68,0.2)] flex flex-col sm:flex-row items-center gap-5 text-right animate-pulse">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/20 border-2 border-red-500 flex items-center justify-center shrink-0 text-red-300">
+            <Lock className="w-8 h-8" />
           </div>
-          <div>
-            <h4 className="text-sm font-black text-amber-200 font-['Tajawal']">
-              المستوى {selectedLevelNum} معتمد
+          <div className="flex-1">
+            <h4 className="text-base sm:text-lg font-black text-red-200 font-['Tajawal']">
+               ⚠️ تم إنهاء هذا المستوى وإغلاقه على الجميع داخل المجموعة {groupCode}
             </h4>
+            <p className="text-xs sm:text-sm text-slate-300 font-['Cairo'] mt-1">
+              {groupCompleter ? (
+                <>قام العضو <strong className="text-amber-400 underline">{groupCompleter.fullName}</strong> بإتمام التحدي واعتماد الإجابات للمجموعة.</>
+              ) : (
+                <>لقد تم اعتماد حلول هذا المستوى بنجاح ولا يمكن العودة إليه إلا بطلب إعادة تهيئة من المشرف.</>
+              )}
+            </p>
             {isImmediateGroup && completedResult && (
-              <p className="text-xs text-slate-300 font-['Cairo'] mt-0.5">
-                النتيجة المعروضة: {completedResult.score} من {completedResult.maxScore} XP
-              </p>
+              <div className="mt-2 flex items-center gap-3">
+                <span className="px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-[11px] font-bold">
+                   النتيجة المعتمدة: {completedResult.score} / {completedResult.maxScore} XP
+                </span>
+                <span className="px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 text-[11px]">
+                   وقت الإنجاز: {completedResult.completedAt}
+                </span>
+              </div>
             )}
           </div>
         </div>

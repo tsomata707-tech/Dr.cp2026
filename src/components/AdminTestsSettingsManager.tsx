@@ -46,6 +46,8 @@ import {
   saveCustomGameLevels,
   resetGameLevelsToDefault,
 } from '../data/gameLevelsData';
+import { RESEARCH_GROUPS_META } from '../data/studentAccounts';
+import { resetGroupLevelRealtime } from '../utils/realtimeService';
 
 type ActiveTestTab = 'pretest' | 'posttest' | 'levels';
 
@@ -161,6 +163,26 @@ export const AdminTestsSettingsManager: React.FC = () => {
     return l9?.section2Score ?? 25;
   });
   const [isSavingLevelScores, setIsSavingLevelScores] = useState<boolean>(false);
+
+  // Group Reset state
+  const [resetSelectedGroupId, setResetSelectedGroupId] = useState<string>('G1');
+  const [isResettingGroup, setIsResettingGroup] = useState<boolean>(false);
+
+  const handleResetGroupLevel = async (levelNum: number, groupCode: string) => {
+    if (!window.confirm(`هل أنت متأكد من إعادة تهيئة المستوى ${levelNum} للمجموعة ${groupCode}؟ سيتمكن جميع طلاب المجموعة من حل المستوى مرة أخرى.`)) {
+      return;
+    }
+
+    setIsResettingGroup(true);
+    try {
+      await resetGroupLevelRealtime(groupCode, levelNum);
+      showNotification(`✓ تم إعادة تهيئة المستوى ${levelNum} للمجموعة ${groupCode} بنجاح! يمكن للطلاب الآن الدخول والحل مجدداً.`);
+    } catch (err) {
+      showNotification('حدث خطأ أثناء إعادة تهيئة المستوى للمجموعة', 'error');
+    } finally {
+      setIsResettingGroup(false);
+    }
+  };
 
   // Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -1620,6 +1642,61 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 {isSavingLevelScores ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 <span>💾 حفظ واعتماد الدرجة الكلية وتوزيعها في بطاقة الطلاب والشيت</span>
               </button>
+            </div>
+          </div>
+
+          {/* ================= GROUP LEVEL RESET / UNLOCK CARD ================= */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-2 border-rose-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] space-y-4 text-right">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-rose-500/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500 text-rose-300 flex items-center justify-center shrink-0">
+                  <RefreshCw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-0.5">
+                    إعادة تهيئة المستوى للمجموعة (Unlock Group)
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    إذا قام أحد الطلاب بإتمام المستوى وقفل على زملائه، يمكنك هنا إعادة فتحه للمجموعة بالكامل.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
+              <div className="flex-1 w-full">
+                <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                  اختر المجموعة المراد إعادة فتح المستوى لها:
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {Object.values(RESEARCH_GROUPS_META).map((group) => (
+                    <button
+                      key={group.id}
+                      type="button"
+                      onClick={() => setResetSelectedGroupId(group.code)}
+                      className={`px-3 py-2 rounded-xl border text-[11px] font-black transition-all ${
+                        resetSelectedGroupId === group.code
+                          ? 'bg-rose-600 border-rose-400 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)]'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-rose-500/50'
+                      }`}
+                    >
+                      {group.name} ({group.code})
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="shrink-0 self-end">
+                <button
+                  type="button"
+                  disabled={isResettingGroup}
+                  onClick={() => handleResetGroupLevel(editingLevelNum, resetSelectedGroupId)}
+                  className="px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-2 shadow-lg transition transform active:scale-95 disabled:opacity-50"
+                >
+                  {isResettingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                  <span>إعادة تهيئة المستوى {editingLevelNum} للمجموعة {resetSelectedGroupId}</span>
+                </button>
+              </div>
             </div>
           </div>
 

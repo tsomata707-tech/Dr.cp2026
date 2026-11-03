@@ -322,7 +322,10 @@ export const submitGroupLevelRealtime = async (
   try {
     const nextLevel = Math.min(10, levelNumber + 1);
 
-    await rtdbSet(ref(rtdb, `groupRooms/${groupId}/completedLevels/${levelNumber}`), levelResult);
+    await rtdbSet(ref(rtdb, `groupRooms/${groupId}/completedLevels/${levelNumber}`), {
+      ...levelResult,
+      submittedBy
+    });
     await rtdbSet(ref(rtdb, `groupRooms/${groupId}/activeLevel`), nextLevel);
     await rtdbSet(ref(rtdb, `groupRooms/${groupId}/currentAnswers`), {});
     await rtdbSet(ref(rtdb, `groupRooms/${groupId}/votes`), {});
@@ -371,6 +374,41 @@ export const submitGroupLevelRealtime = async (
   }
 
   return { levelResult, isImmediateFeedback };
+};
+
+/**
+ * Reset group level completion status (Admin only)
+ */
+export const resetGroupLevelRealtime = async (groupId: string, levelNumber: number) => {
+  try {
+    const levelRef = ref(rtdb, `groupRooms/${groupId}/completedLevels/${levelNumber}`);
+    await rtdbSet(levelRef, null);
+    
+    // Optionally also clear group answers for this level
+    const answersRef = ref(rtdb, `groupAnswers/${groupId}`);
+    const answersSnap = await rtdbGet(answersRef);
+    if (answersSnap.exists()) {
+       const answers = answersSnap.val();
+       // If answers are structured by questionId, we might need a way to filter by level.
+       // However, the current structure seems to be flat under groupId.
+       // We'll leave it for now or clear it if we find a way to group by level.
+    }
+
+    const newEvent: LiveRoomEvent = {
+      id: `reset-${Date.now()}`,
+      text: `🔄 تم إعادة تهيئة المستوى ${levelNumber} للمجموعة بواسطة المشرف`,
+      time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+      type: 'info',
+    };
+
+    const roomSnap = await rtdbGet(ref(rtdb, `groupRooms/${groupId}/liveEvents`));
+    const currentEvents: LiveRoomEvent[] = roomSnap.exists() ? roomSnap.val() || [] : [];
+    await rtdbSet(ref(rtdb, `groupRooms/${groupId}/liveEvents`), [newEvent, ...currentEvents].slice(0, 30));
+    await rtdbSet(ref(rtdb, `groupRooms/${groupId}/lastUpdatedAt`), new Date().toISOString());
+
+  } catch (error) {
+    console.error('Failed to reset group level in RTDB:', error);
+  }
 };
 
 export function sanitizeData(data: any): any {
