@@ -169,16 +169,32 @@ export const AdminTestsSettingsManager: React.FC = () => {
   const [isResettingGroup, setIsResettingGroup] = useState<boolean>(false);
 
   const handleResetGroupLevel = async (levelNum: number, groupCode: string) => {
-    if (!window.confirm(`هل أنت متأكد من إعادة تهيئة المستوى ${levelNum} للمجموعة ${groupCode}؟ سيتمكن جميع طلاب المجموعة من حل المستوى مرة أخرى.`)) {
+    if (
+      !window.confirm(
+        `هل أنت متأكد من إعادة تهيئة المستوى ${levelNum} للمجموعة ${groupCode}؟\n\n` +
+          `سيتم:\n` +
+          `✓ فتح المستوى مرة أخرى لجميع طلاب المجموعة\n` +
+          `✓ تصفير إجاباتهم لهذا المستوى\n` +
+          `✓ خصم درجة هذا المستوى من مجموع كل طالب\n` +
+          `✓ إزالة شارة هذا المستوى إن وُجدت\n\n` +
+          `لا يمكن التراجع عن هذه العملية.`
+      )
+    ) {
       return;
     }
 
     setIsResettingGroup(true);
     try {
       await resetGroupLevelRealtime(groupCode, levelNum);
-      showNotification(`✓ تم إعادة تهيئة المستوى ${levelNum} للمجموعة ${groupCode} بنجاح! يمكن للطلاب الآن الدخول والحل مجدداً.`);
-    } catch (err) {
-      showNotification('حدث خطأ أثناء إعادة تهيئة المستوى للمجموعة', 'error');
+      showNotification(
+        `✓ تم إعادة تهيئة المستوى ${levelNum} للمجموعة ${groupCode} بنجاح! تم تصفير تقدّم جميع الطلاب في هذا المستوى.`
+      );
+    } catch (err: any) {
+      console.error('Reset group level failed:', err);
+      showNotification(
+        `❌ فشل إعادة التهيئة: ${err?.message || 'خطأ غير معروف في الاتصال بـ Firebase'}`,
+        'error'
+      );
     } finally {
       setIsResettingGroup(false);
     }
