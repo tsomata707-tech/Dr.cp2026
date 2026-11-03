@@ -381,25 +381,43 @@ export const submitGroupLevelRealtime = async (
 };
 
 /**
+ * Result summary returned by resetGroupLevelRealtime.
+ */
+export interface ResetGroupLevelResult {
+  success: boolean;
+  groupId: string;
+  levelNumber: number;
+  studentsFound: number;
+  studentsReset: number;
+  studentsSkipped: number;
+  errors: string[];
+}
+
+/**
  * Reset a specific level for an entire group (Admin only).
  *
- * What it does:
- *  1. Clears the group's completedLevels[levelNumber]
- *  2. Clears currentAnswers & votes for the room
- *  3. Clears groupAnswers/{groupId}
- *  4. For every student in the group, removes this level from their
- *     studentsProgress: completedLevels, totalScore, badges, currentLevel
- *  5. Appends a live event
- *  6. THROWS on failure so the admin UI can surface a real error.
+ * Returns a detailed summary so the admin UI can show what actually happened.
+ * Never throws silently: collects per-student errors and returns them.
  */
 export const resetGroupLevelRealtime = async (
   groupId: string,
   levelNumber: number
-): Promise<void> => {
+): Promise<ResetGroupLevelResult> => {
+  const result: ResetGroupLevelResult = {
+    success: false,
+    groupId,
+    levelNumber,
+    studentsFound: 0,
+    studentsReset: 0,
+    studentsSkipped: 0,
+    errors: [],
+  };
+
   try {
     // ---------------------------------------------------------
     // 1. Clear the group's completion record for this level
     // ---------------------------------------------------------
+    console.log(`[RESET] Clearing groupRooms/${groupId}/completedLevels/${levelNumber}`);
     await rtdbSet(
       ref(rtdb, `groupRooms/${groupId}/completedLevels/${levelNumber}`),
       null
@@ -408,68 +426,91 @@ export const resetGroupLevelRealtime = async (
     // ---------------------------------------------------------
     // 2. Clear current answers & votes for the room
     // ---------------------------------------------------------
+    console.log(`[RESET] Clearing currentAnswers & votes for ${groupId}`);
     await rtdbSet(ref(rtdb, `groupRooms/${groupId}/currentAnswers`), {});
     await rtdbSet(ref(rtdb, `groupRooms/${groupId}/votes`), {});
 
     // ---------------------------------------------------------
     // 3. Clear group-level answers
     // ---------------------------------------------------------
+    console.log(`[RESET] Clearing groupAnswers/${groupId}`);
     await rtdbSet(ref(rtdb, `groupAnswers/${groupId}`), null);
 
     // ---------------------------------------------------------
     // 4. Reset individual student progress for all group members
     // ---------------------------------------------------------
     const groupStudents = getStudentsByGroupCode(groupId);
+    result.studentsFound = groupStudents.length;
+    console.log(`[RESET] Found ${groupStudents.length} students in ${groupId}:`, groupStudents.map(s => s.username));
 
     for (const student of groupStudents) {
-      const studentRef = ref(rtdb, `studentsProgress/${student.username}`);
-      const snap = await rtdbGet(studentRef);
+      try {
+        const studentRef = ref(rtdb, `studentsProgress/${student.username}`);
+        const snap = await rtdbGet(studentRef);
 
-      if (!snap.exists()) continue;
+        if (!snap.exists()) {
+          console.log(`[RESET] Student ${student.username} has no progress record — skipping`);
+          result.studentsSkipped++;
+          continue;
+        }
 
-      const prog = snap.val() as StudentGameProgress;
-      const updatedCompletedLevels: Record<number, CompletedLevelResult> = {
-        ...(prog.completedLevels || {}),
-      };
+        const prog = snap.val() as StudentGameProgress;
+        const updatedCompletedLevels: Record<number, CompletedLevelResult> = {
+          ...(prog.completedLevels || {}),
+        };
 
-      // Remove only the target level
-      delete updatedCompletedLevels[levelNumber];
+        // Check if this level was actually completed by this student
+        if (!updatedCompletedLevels[levelNumber]) {
+          console.log(`[RESET] Student ${student.username} did not complete level ${levelNumber} — skipping`);
+          result.studentsSkipped++;
+          continue;
+        }
 
-      // Recalculate total score from remaining levels
-      const newTotalScore = Object.values(updatedCompletedLevels).reduce(
-        (acc, lvl) => acc + (lvl?.score || 0),
-        0
-      );
+        // Remove only the target level
+        delete updatedCompletedLevels[levelNumber];
 
-      // Recalculate currentLevel = highest remaining completed + 1 (capped at 10)
-      const remainingNumbers = Object.keys(updatedCompletedLevels)
-        .map(Number)
-        .filter((n) => !Number.isNaN(n));
-      const highestCompleted = remainingNumbers.length
-        ? Math.max(...remainingNumbers)
-        : 0;
-      const newCurrentLevel = Math.min(10, Math.max(1, highestCompleted + 1));
+        // Recalculate total score from remaining levels
+        const newTotalScore = Object.values(updatedCompletedLevels).reduce(
+          (acc, lvl) => acc + (lvl?.score || 0),
+          0
+        );
 
-      // Rebuild badges from remaining levels only
-      const remainingBadges = new Set<string>();
-      remainingNumbers.forEach((lvlNum) => {
-        const def = GAME_LEVELS_DATA.find((l) => l.levelNumber === lvlNum);
-        if (def?.badgeName) remainingBadges.add(def.badgeName);
-      });
+        // Recalculate currentLevel = highest remaining completed + 1 (capped at 10)
+        const remainingNumbers = Object.keys(updatedCompletedLevels)
+          .map(Number)
+          .filter((n) => !Number.isNaN(n));
+        const highestCompleted = remainingNumbers.length
+          ? Math.max(...remainingNumbers)
+          : 0;
+        const newCurrentLevel = Math.min(10, Math.max(1, highestCompleted + 1));
 
-      const updatedProgress: StudentGameProgress = {
-        ...prog,
-        completedLevels: updatedCompletedLevels,
-        totalScore: newTotalScore,
-        currentLevel: newCurrentLevel,
-        badges: Array.from(remainingBadges),
-        lastActive: new Date().toLocaleTimeString('ar-EG', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-      };
+        // Rebuild badges from remaining levels only
+        const remainingBadges = new Set<string>();
+        remainingNumbers.forEach((lvlNum) => {
+          const def = GAME_LEVELS_DATA.find((l) => l.levelNumber === lvlNum);
+          if (def?.badgeName) remainingBadges.add(def.badgeName);
+        });
 
-      await rtdbSet(studentRef, sanitizeData(updatedProgress));
+        const updatedProgress: StudentGameProgress = {
+          ...prog,
+          completedLevels: updatedCompletedLevels,
+          totalScore: newTotalScore,
+          currentLevel: newCurrentLevel,
+          badges: Array.from(remainingBadges),
+          lastActive: new Date().toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        };
+
+        await rtdbSet(studentRef, sanitizeData(updatedProgress));
+        result.studentsReset++;
+        console.log(`[RESET] ✅ Reset student ${student.username}: score ${prog.totalScore} → ${newTotalScore}, level ${prog.currentLevel} → ${newCurrentLevel}`);
+      } catch (studentErr: any) {
+        const msg = `فشل تصفير الطالب ${student.username}: ${studentErr?.message || 'خطأ غير معروف'}`;
+        console.error(`[RESET] ❌ ${msg}`);
+        result.errors.push(msg);
+      }
     }
 
     // ---------------------------------------------------------
@@ -477,7 +518,7 @@ export const resetGroupLevelRealtime = async (
     // ---------------------------------------------------------
     const newEvent: LiveRoomEvent = {
       id: `reset-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      text: `🔄 تم إعادة تهيئة المستوى ${levelNumber} للمجموعة ${groupId} وتصفير تقدّم ${groupStudents.length} طالباً في هذا المستوى`,
+      text: `🔄 تم إعادة تهيئة المستوى ${levelNumber} للمجموعة ${groupId} — تصفير ${result.studentsReset} طالباً`,
       time: new Date().toLocaleTimeString('ar-EG', {
         hour: '2-digit',
         minute: '2-digit',
@@ -485,25 +526,34 @@ export const resetGroupLevelRealtime = async (
       type: 'info',
     };
 
-    const roomSnap = await rtdbGet(
-      ref(rtdb, `groupRooms/${groupId}/liveEvents`)
-    );
-    const currentEvents: LiveRoomEvent[] = roomSnap.exists()
-      ? roomSnap.val() || []
-      : [];
-    const updatedEvents = [newEvent, ...currentEvents].slice(0, 30);
+    try {
+      const roomSnap = await rtdbGet(
+        ref(rtdb, `groupRooms/${groupId}/liveEvents`)
+      );
+      const currentEvents: LiveRoomEvent[] = roomSnap.exists()
+        ? roomSnap.val() || []
+        : [];
+      const updatedEvents = [newEvent, ...currentEvents].slice(0, 30);
 
-    await rtdbSet(
-      ref(rtdb, `groupRooms/${groupId}/liveEvents`),
-      updatedEvents
-    );
-    await rtdbSet(
-      ref(rtdb, `groupRooms/${groupId}/lastUpdatedAt`),
-      new Date().toISOString()
-    );
-  } catch (error) {
-    console.error('Failed to reset group level in RTDB:', error);
-    // Re-throw so the admin UI shows a real error (no silent failures)
+      await rtdbSet(
+        ref(rtdb, `groupRooms/${groupId}/liveEvents`),
+        updatedEvents
+      );
+      await rtdbSet(
+        ref(rtdb, `groupRooms/${groupId}/lastUpdatedAt`),
+        new Date().toISOString()
+      );
+    } catch (eventErr: any) {
+      console.warn(`[RESET] Failed to append live event:`, eventErr);
+      // Non-critical — do not fail the whole operation
+    }
+
+    result.success = true;
+    console.log(`[RESET] ✅ Completed. Summary:`, result);
+    return result;
+  } catch (error: any) {
+    console.error(`[RESET] ❌ Fatal error:`, error);
+    result.errors.push(error?.message || 'خطأ فادح غير معروف');
     throw error;
   }
 };
