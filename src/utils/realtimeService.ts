@@ -24,7 +24,11 @@ import {
   CompletedLevelResult,
 } from '../types';
 import { GAME_LEVELS_DATA } from '../data/gameLevelsData';
-import { getGroupByUsername } from '../data/studentAccounts';
+import {
+  getGroupByUsername,
+  getStudentsByGroupCode,
+  RESEARCH_GROUPS_META,
+} from '../data/studentAccounts';
 
 // Default initial state for a group room
 export const getDefaultRoomState = (groupId: string): GroupRoomState => ({
@@ -377,37 +381,130 @@ export const submitGroupLevelRealtime = async (
 };
 
 /**
- * Reset group level completion status (Admin only)
+ * Reset a specific level for an entire group (Admin only).
+ *
+ * What it does:
+ *  1. Clears the group's completedLevels[levelNumber]
+ *  2. Clears currentAnswers & votes for the room
+ *  3. Clears groupAnswers/{groupId}
+ *  4. For every student in the group, removes this level from their
+ *     studentsProgress: completedLevels, totalScore, badges, currentLevel
+ *  5. Appends a live event
+ *  6. THROWS on failure so the admin UI can surface a real error.
  */
-export const resetGroupLevelRealtime = async (groupId: string, levelNumber: number) => {
+export const resetGroupLevelRealtime = async (
+  groupId: string,
+  levelNumber: number
+): Promise<void> => {
   try {
-    const levelRef = ref(rtdb, `groupRooms/${groupId}/completedLevels/${levelNumber}`);
-    await rtdbSet(levelRef, null);
-    
-    // Optionally also clear group answers for this level
-    const answersRef = ref(rtdb, `groupAnswers/${groupId}`);
-    const answersSnap = await rtdbGet(answersRef);
-    if (answersSnap.exists()) {
-       const answers = answersSnap.val();
-       // If answers are structured by questionId, we might need a way to filter by level.
-       // However, the current structure seems to be flat under groupId.
-       // We'll leave it for now or clear it if we find a way to group by level.
+    // ---------------------------------------------------------
+    // 1. Clear the group's completion record for this level
+    // ---------------------------------------------------------
+    await rtdbSet(
+      ref(rtdb, `groupRooms/${groupId}/completedLevels/${levelNumber}`),
+      null
+    );
+
+    // ---------------------------------------------------------
+    // 2. Clear current answers & votes for the room
+    // ---------------------------------------------------------
+    await rtdbSet(ref(rtdb, `groupRooms/${groupId}/currentAnswers`), {});
+    await rtdbSet(ref(rtdb, `groupRooms/${groupId}/votes`), {});
+
+    // ---------------------------------------------------------
+    // 3. Clear group-level answers
+    // ---------------------------------------------------------
+    await rtdbSet(ref(rtdb, `groupAnswers/${groupId}`), null);
+
+    // ---------------------------------------------------------
+    // 4. Reset individual student progress for all group members
+    // ---------------------------------------------------------
+    const groupStudents = getStudentsByGroupCode(groupId);
+
+    for (const student of groupStudents) {
+      const studentRef = ref(rtdb, `studentsProgress/${student.username}`);
+      const snap = await rtdbGet(studentRef);
+
+      if (!snap.exists()) continue;
+
+      const prog = snap.val() as StudentGameProgress;
+      const updatedCompletedLevels: Record<number, CompletedLevelResult> = {
+        ...(prog.completedLevels || {}),
+      };
+
+      // Remove only the target level
+      delete updatedCompletedLevels[levelNumber];
+
+      // Recalculate total score from remaining levels
+      const newTotalScore = Object.values(updatedCompletedLevels).reduce(
+        (acc, lvl) => acc + (lvl?.score || 0),
+        0
+      );
+
+      // Recalculate currentLevel = highest remaining completed + 1 (capped at 10)
+      const remainingNumbers = Object.keys(updatedCompletedLevels)
+        .map(Number)
+        .filter((n) => !Number.isNaN(n));
+      const highestCompleted = remainingNumbers.length
+        ? Math.max(...remainingNumbers)
+        : 0;
+      const newCurrentLevel = Math.min(10, Math.max(1, highestCompleted + 1));
+
+      // Rebuild badges from remaining levels only
+      const remainingBadges = new Set<string>();
+      remainingNumbers.forEach((lvlNum) => {
+        const def = GAME_LEVELS_DATA.find((l) => l.levelNumber === lvlNum);
+        if (def?.badgeName) remainingBadges.add(def.badgeName);
+      });
+
+      const updatedProgress: StudentGameProgress = {
+        ...prog,
+        completedLevels: updatedCompletedLevels,
+        totalScore: newTotalScore,
+        currentLevel: newCurrentLevel,
+        badges: Array.from(remainingBadges),
+        lastActive: new Date().toLocaleTimeString('ar-EG', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      };
+
+      await rtdbSet(studentRef, sanitizeData(updatedProgress));
     }
 
+    // ---------------------------------------------------------
+    // 5. Append a live event (newest first, capped at 30)
+    // ---------------------------------------------------------
     const newEvent: LiveRoomEvent = {
-      id: `reset-${Date.now()}`,
-      text: `🔄 تم إعادة تهيئة المستوى ${levelNumber} للمجموعة بواسطة المشرف`,
-      time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+      id: `reset-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      text: `🔄 تم إعادة تهيئة المستوى ${levelNumber} للمجموعة ${groupId} وتصفير تقدّم ${groupStudents.length} طالباً في هذا المستوى`,
+      time: new Date().toLocaleTimeString('ar-EG', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
       type: 'info',
     };
 
-    const roomSnap = await rtdbGet(ref(rtdb, `groupRooms/${groupId}/liveEvents`));
-    const currentEvents: LiveRoomEvent[] = roomSnap.exists() ? roomSnap.val() || [] : [];
-    await rtdbSet(ref(rtdb, `groupRooms/${groupId}/liveEvents`), [newEvent, ...currentEvents].slice(0, 30));
-    await rtdbSet(ref(rtdb, `groupRooms/${groupId}/lastUpdatedAt`), new Date().toISOString());
+    const roomSnap = await rtdbGet(
+      ref(rtdb, `groupRooms/${groupId}/liveEvents`)
+    );
+    const currentEvents: LiveRoomEvent[] = roomSnap.exists()
+      ? roomSnap.val() || []
+      : [];
+    const updatedEvents = [newEvent, ...currentEvents].slice(0, 30);
 
+    await rtdbSet(
+      ref(rtdb, `groupRooms/${groupId}/liveEvents`),
+      updatedEvents
+    );
+    await rtdbSet(
+      ref(rtdb, `groupRooms/${groupId}/lastUpdatedAt`),
+      new Date().toISOString()
+    );
   } catch (error) {
     console.error('Failed to reset group level in RTDB:', error);
+    // Re-throw so the admin UI shows a real error (no silent failures)
+    throw error;
   }
 };
 
