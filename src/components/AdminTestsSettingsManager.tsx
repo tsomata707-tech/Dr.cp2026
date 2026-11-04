@@ -134,11 +134,11 @@ export const AdminTestsSettingsManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTestTab>('pretest');
 
   // Pre-Test & Post-Test state
-  const [preTestQuestions, setPreTestQuestions] = useState<PreTestQuestion[]>(() => getPreTestQuestions());
-  const [postTestQuestions, setPostTestQuestions] = useState<PreTestQuestion[]>(() => getPostTestQuestions());
+  const [preTestQuestions, setPreTestQuestions] = useState<PreTestQuestion[]>(() => getPreTestQuestions() || []);
+  const [postTestQuestions, setPostTestQuestions] = useState<PreTestQuestion[]>(() => getPostTestQuestions() || []);
 
   // 10 Stages state
-  const [gameLevels, setGameLevels] = useState<GameLevelDef[]>(() => getCustomGameLevels());
+  const [gameLevels, setGameLevels] = useState<GameLevelDef[]>(() => getCustomGameLevels() || []);
   const [selectedLevelFilter, setSelectedLevelFilter] = useState<number | 'all'>('all');
 
   // Level Objectives state (Editable Objectives for Level 9 and all levels)
@@ -1105,8 +1105,8 @@ export const AdminTestsSettingsManager: React.FC = () => {
     );
   };
 
-  const filteredPreTest = preTestQuestions.filter(filterQuestion);
-  const filteredPostTest = postTestQuestions.filter(filterQuestion);
+  const filteredPreTest = (preTestQuestions || []).filter(filterQuestion);
+  const filteredPostTest = (postTestQuestions || []).filter(filterQuestion);
 
   // Flattened or filtered levels questions
   const filteredLevelsQuestions: { level: GameLevelDef; question: LevelQuestion }[] = [];
@@ -1121,8 +1121,8 @@ export const AdminTestsSettingsManager: React.FC = () => {
   });
 
   // Calculate statistics
-  const preWithImages = preTestQuestions.filter((q) => q && (!!q.imageUrl || (Array.isArray(q.optionImages) && q.optionImages.some(Boolean)))).length;
-  const postWithImages = postTestQuestions.filter((q) => q && (!!q.imageUrl || (Array.isArray(q.optionImages) && q.optionImages.some(Boolean)))).length;
+  const preWithImages = (preTestQuestions || []).filter((q) => q && (!!q.imageUrl || (Array.isArray(q.optionImages) && q.optionImages.some(Boolean)))).length;
+  const postWithImages = (postTestQuestions || []).filter((q) => q && (!!q.imageUrl || (Array.isArray(q.optionImages) && q.optionImages.some(Boolean)))).length;
   let totalLevelsQuestions = 0;
   let levelsWithImages = 0;
   (gameLevels || []).forEach((l) => {
@@ -3062,7 +3062,7 @@ const QuestionAdminCard: React.FC<QuestionAdminCardProps> = ({
 
           {/* Options Grid with Option Images */}
           <div className={isStackedLayout ? "grid grid-cols-1 gap-2.5 pt-1" : "grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1"}>
-            {question.options.map((opt, optIdx) => {
+            {(question.options || []).map((opt, optIdx) => {
               const isCorrect = optIdx === question.correctIndex;
               const optImg = question.optionImages?.[optIdx];
 
