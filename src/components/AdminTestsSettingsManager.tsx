@@ -38,6 +38,7 @@ import {
   savePostTestQuestions,
   resetPostTestQuestionsToDefault,
   copyPreTestQuestionsToPostTest,
+  DEFAULT_PRETEST_QUESTIONS,
 } from '../data/preTestData';
 import {
   GAME_LEVELS_DATA,
@@ -130,15 +131,48 @@ export const compressImage = (
   reader.readAsDataURL(file);
 };
 
+const sanitizeQuestion = (q: any): PreTestQuestion => {
+  if (!q) return { id: `q-${Math.random()}`, question: '', options: ['', ''], correctIndex: 0, points: 50, explanation: '' };
+  return {
+    ...q,
+    explanation: q.explanation || '',
+    options: Array.isArray(q.options) && q.options.length > 0 ? q.options : ['', ''],
+    optionImages: Array.isArray(q.optionImages) ? q.optionImages : [],
+    matchingPairs: Array.isArray(q.matchingPairs) ? q.matchingPairs : [],
+  };
+};
+
+const sanitizeLevels = (levels: any[]): GameLevelDef[] => {
+  if (!Array.isArray(levels)) return GAME_LEVELS_DATA;
+  return levels.map((lvl) => ({
+    ...lvl,
+    questions: Array.isArray(lvl?.questions) ? lvl.questions.map(sanitizeQuestion) : [],
+    videos: Array.isArray(lvl?.videos) ? lvl.videos : [],
+    images: Array.isArray(lvl?.images) ? lvl.images : [],
+  }));
+};
+
 export const AdminTestsSettingsManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTestTab>('pretest');
 
   // Pre-Test & Post-Test state
-  const [preTestQuestions, setPreTestQuestions] = useState<PreTestQuestion[]>(() => getPreTestQuestions() || []);
-  const [postTestQuestions, setPostTestQuestions] = useState<PreTestQuestion[]>(() => getPostTestQuestions() || []);
+  const [preTestQuestions, setPreTestQuestions] = useState<PreTestQuestion[]>(() => {
+    const res = getPreTestQuestions();
+    const arr = Array.isArray(res) && res.length > 0 ? res : DEFAULT_PRETEST_QUESTIONS;
+    return arr.map(sanitizeQuestion);
+  });
+  const [postTestQuestions, setPostTestQuestions] = useState<PreTestQuestion[]>(() => {
+    const res = getPostTestQuestions();
+    const arr = Array.isArray(res) && res.length > 0 ? res : DEFAULT_PRETEST_QUESTIONS;
+    return arr.map(sanitizeQuestion);
+  });
 
   // 10 Stages state
-  const [gameLevels, setGameLevels] = useState<GameLevelDef[]>(() => getCustomGameLevels() || []);
+  const [gameLevels, setGameLevels] = useState<GameLevelDef[]>(() => {
+    const res = getCustomGameLevels();
+    const arr = Array.isArray(res) && res.length > 0 ? res : GAME_LEVELS_DATA;
+    return sanitizeLevels(arr);
+  });
   const [selectedLevelFilter, setSelectedLevelFilter] = useState<number | 'all'>('all');
 
   // Level Objectives state (Editable Objectives for Level 9 and all levels)
@@ -294,13 +328,19 @@ export const AdminTestsSettingsManager: React.FC = () => {
   // Synchronize state when custom events are triggered (from Firebase real-time sync)
   useEffect(() => {
     const handlePreUpdate = (e: any) => {
-      if (e.detail) setPreTestQuestions(e.detail);
+      if (e && Array.isArray(e.detail) && e.detail.length > 0) {
+        setPreTestQuestions(e.detail.map(sanitizeQuestion));
+      }
     };
     const handlePostUpdate = (e: any) => {
-      if (e.detail) setPostTestQuestions(e.detail);
+      if (e && Array.isArray(e.detail) && e.detail.length > 0) {
+        setPostTestQuestions(e.detail.map(sanitizeQuestion));
+      }
     };
     const handleLevelsUpdate = (e: any) => {
-      if (e.detail && Array.isArray(e.detail)) setGameLevels(e.detail);
+      if (e && Array.isArray(e.detail) && e.detail.length > 0) {
+        setGameLevels(sanitizeLevels(e.detail));
+      }
     };
 
     window.addEventListener('pretest-questions-updated', handlePreUpdate);
@@ -1403,7 +1443,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
           {/* Top Add Question Button in Pre-Test */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-amber-950/30 border border-amber-500/40">
             <span className="text-xs font-bold text-amber-200">
-              عرض {filteredPreTest.length} من إجمالي {preTestQuestions.length} سؤال في الاختبار القبلي
+              عرض {(filteredPreTest || []).length} من إجمالي {(preTestQuestions || []).length} سؤال في الاختبار القبلي
             </span>
             <button
               type="button"
@@ -1436,7 +1476,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 onAddBelow={() => handleOpenAddModalForIndex('pretest', idx)}
               />
             ))}
-            {filteredPreTest.length === 0 && (
+            {(filteredPreTest || []).length === 0 && (
               <div className="p-8 text-center rounded-2xl bg-slate-950/50 border border-slate-800 text-slate-400 text-sm">
                 لم يتم العثور على أي أسئلة مطابقة للبحث
               </div>
@@ -1463,7 +1503,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
           {/* Top Add Question Button in Post-Test */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-purple-950/30 border border-purple-500/40">
             <span className="text-xs font-bold text-purple-200">
-              عرض {filteredPostTest.length} من إجمالي {postTestQuestions.length} سؤال في الاختبار البعدي
+              عرض {(filteredPostTest || []).length} من إجمالي {(postTestQuestions || []).length} سؤال في الاختبار البعدي
             </span>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -1507,7 +1547,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 onAddBelow={() => handleOpenAddModalForIndex('posttest', idx)}
               />
             ))}
-            {filteredPostTest.length === 0 && (
+            {(filteredPostTest || []).length === 0 && (
               <div className="p-8 text-center rounded-2xl bg-slate-950/50 border border-slate-800 text-slate-400 text-sm">
                 لم يتم العثور على أي أسئلة مطابقة للبحث
               </div>
