@@ -214,6 +214,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   const groupCode = userGroupMeta?.code || 'G1';
   const isCollaborative = userGroupMeta?.learningMode === 'تعاوني';
+  const isCompetitiveImmediate = groupCode === 'G1';
   const isImmediateGroup = userGroupMeta ? userGroupMeta.feedbackMode === 'فورية' : true;
   const studentInfo = useMemo(() => getStudentByUsername(username), [username]);
 
@@ -241,11 +242,15 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   }, []);
 
   const effectiveRoomId = useMemo(() => {
+    if (isCompetitiveImmediate) {
+      // G1 تنافسي فوري: فردي مستقل تماماً، كل شخص وحده دون الارتباط بمجموعة ثلاثية
+      return `G1-INDIVIDUAL-${username}`;
+    }
     if (isAdmin) {
       return adminCollabSubGroup.startsWith(groupCode) ? adminCollabSubGroup : `${groupCode}-A`;
     }
     return collabSubGroup || `${groupCode}-A`;
-  }, [isAdmin, adminCollabSubGroup, groupCode, collabSubGroup]);
+  }, [isAdmin, adminCollabSubGroup, groupCode, collabSubGroup, isCompetitiveImmediate, username]);
 
   useEffect(() => {
     if (!effectiveRoomId) return;
@@ -504,9 +509,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     return globalVids;
   }, [currentLevelDef, selectedLevelNum, videoStorageTick, rehydratedBlobUrls]);
 
-  const isLevelCompleted = !!progress.completedLevels[selectedLevelNum] || !!roomState.completedLevels?.[selectedLevelNum];
-  const completedResult = progress.completedLevels[selectedLevelNum] || roomState.completedLevels?.[selectedLevelNum];
-  const groupCompleter = roomState.completedLevels?.[selectedLevelNum] ? (roomState.completedLevels[selectedLevelNum] as any).submittedBy : null;
+  const isLevelCompleted = !!progress.completedLevels[selectedLevelNum] || (isCollaborative && !!roomState.completedLevels?.[selectedLevelNum]);
+  const completedResult = progress.completedLevels[selectedLevelNum] || (isCollaborative ? roomState.completedLevels?.[selectedLevelNum] : undefined);
+  const groupCompleter = isCollaborative && roomState.completedLevels?.[selectedLevelNum] ? (roomState.completedLevels[selectedLevelNum] as any).submittedBy : null;
   const isLevelUnlocked = selectedLevelNum <= progress.currentLevel;
 
   const levelQuestions = currentLevelDef?.questions || [];
@@ -699,7 +704,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       const fileUrl = reader.result as string;
       const cfg = getLevelActivityConfig(selectedLevelNum);
 
-      // [FIX 12]: إرسال status بـ auto_granted_pending_review بدلاً من pending لمنع التعارض مع درجة 50 الممنوحة تلقائياً
+      // For G1 (تنافسي فوري): automatically approved immediately without requiring admin review
+      const isG1 = groupCode === 'G1';
       const submission: StudentActivitySubmission = {
         fileUrl,
         fileName: file.name,
@@ -712,8 +718,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         levelNumber: selectedLevelNum,
         activityTitle: cfg.activityTitle,
         maxPoints: 50,
-        status: 'auto_granted_pending_review',
-        grade: 50, // منح تلقائي فوري مطلوب
+        status: isG1 ? 'graded' : 'auto_granted_pending_review',
+        grade: 50,
+        feedback: isG1 ? 'معتمد فورياً وتلقائياً (تنافسي فوري)' : '',
+        gradedBy: isG1 ? 'نظام التنافس الفوري' : undefined,
+        gradedAt: isG1 ? new Date().toISOString() : undefined,
       };
 
       const saved = await submitStudentActivity(submission);
@@ -1268,8 +1277,39 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         </div>
       )}
 
-        {/* REAL-TIME CLOSED ROOM LIVE BAR (Strictly 3 Students + Admin) */}
-        {(() => {
+        {/* INDIVIDUAL COMPETITIVE BANNER FOR G1 (تنافسي فوري مستقل) */}
+        {isCompetitiveImmediate && (
+          <div className="my-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/70 via-[#161226] to-amber-950/70 border-2 border-amber-400/80 shadow-[0_0_25px_rgba(251,191,36,0.2)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-right animate-fadeIn">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border-2 border-amber-400 text-amber-300 flex items-center justify-center text-2xl shrink-0 shadow-md">
+                ⚡
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-black text-amber-300 font-['Tajawal']">
+                    نمط التنافس الفوري الفردي (مستقل)
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black border border-emerald-400/40">
+                    تنافس فردي حر • كل طالب وحده
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 font-['Cairo'] mt-1">
+                  تخوض التحديات بشكل فردي مستقل، وتظهر نتيجتك فور الإجابة لك وللمشرف وتُسجل في الشيت مباشرة دون الحاجة لاعتماد الأدمن.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="px-3 py-1.5 rounded-xl bg-slate-950/90 border border-amber-400/50 text-amber-300 text-xs font-bold font-['Cairo'] flex items-center gap-1.5">
+                <span>👤 المتسابق:</span>
+                <strong className="text-white">{username}</strong>
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* REAL-TIME CLOSED ROOM LIVE BAR (Strictly 3 Students + Admin) ONLY FOR COLLABORATIVE GROUPS (G3, G4) */}
+        {isCollaborative && (() => {
           const currentTriadDef = COLLABORATIVE_GROUPS_DEF[effectiveRoomId];
           const roomStudentUsernames = (currentTriadDef?.members || []).filter((u) => u !== 'admin');
           const isCurrentAdmin = isAdmin;
@@ -1426,13 +1466,19 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
           </div>
           <div className="flex-1">
             <h4 className="text-base sm:text-lg font-black text-red-200 font-['Tajawal']">
-               ⚠️ تم إنهاء هذا المستوى وإغلاقه على الجميع داخل المجموعة المغلقة ({effectiveRoomId})
+               {isCollaborative
+                 ? `⚠️ تم إنهاء هذا المستوى وإغلاقه على الجميع داخل المجموعة المغلقة (${effectiveRoomId})`
+                 : `✅ تم إكمال وتأكيد هذا المستوى التعليمي بنجاح`}
             </h4>
             <p className="text-xs sm:text-sm text-slate-300 font-['Cairo'] mt-1">
-              {groupCompleter ? (
-                <>قام العضو <strong className="text-amber-400 underline">{groupCompleter.fullName}</strong> بإتمام التحدي واعتماد الإجابات للمجموعة المغلقة المقتصرة على الطلاب الثلاثة والمشرف.</>
+              {isCollaborative ? (
+                groupCompleter ? (
+                  <>قام العضو <strong className="text-amber-400 underline">{groupCompleter.fullName}</strong> بإتمام التحدي واعتماد الإجابات للمجموعة المغلقة المقتصرة على الطلاب الثلاثة والمشرف.</>
+                ) : (
+                  <>لقد تم اعتماد حلول هذا المستوى بنجاح للمجموعة المغلقة ({effectiveRoomId}) ولا يمكن العودة إليه إلا بطلب إعادة تهيئة من المشرف.</>
+                )
               ) : (
-                <>لقد تم اعتماد حلول هذا المستوى بنجاح للمجموعة المغلقة ({effectiveRoomId}) ولا يمكن العودة إليه إلا بطلب إعادة تهيئة من المشرف.</>
+                <>تم إنهاء هذا المستوى وتسجيل نتيجتك فورياً في السجل الأكاديمي وشيت النتائج.</>
               )}
             </p>
             {(isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) && completedResult ? (
@@ -2029,11 +2075,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                       </div>
                       <div>
                         <div className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal']">
-                          تم تقييم النشاط ورصد الدرجة بنجاح من المشرف
+                          {isCompetitiveImmediate
+                            ? '✅ تم تسليم النشاط واحتساب الدرجة فورياً (معتمد تلقائياً)'
+                            : 'تم تقييم النشاط ورصد الدرجة بنجاح من المشرف'}
                         </div>
                         {studentActivity.feedback && (
                           <div className="text-xs text-slate-200 mt-0.5">
-                            ملاحظة المشرف: <span className="font-bold text-white">{studentActivity.feedback}</span>
+                            {isCompetitiveImmediate ? 'الحالة:' : 'ملاحظة المشرف:'} <span className="font-bold text-white">{studentActivity.feedback}</span>
                           </div>
                         )}
                       </div>

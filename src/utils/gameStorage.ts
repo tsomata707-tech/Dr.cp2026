@@ -335,6 +335,16 @@ export function submitLevelChallenge(
 
   // Record this level permanently
   prog.completedLevels[levelNumber] = levelResult;
+
+  // For G1 (تنافسي فوري): automatically approve activity immediately without admin review
+  if (groupMeta?.code === 'G1' && prog.studentActivities && prog.studentActivities[levelNumber]) {
+    prog.studentActivities[levelNumber].status = 'graded';
+    prog.studentActivities[levelNumber].grade = 50;
+    prog.studentActivities[levelNumber].feedback = 'معتمد فورياً وتلقائياً (تنافسي فوري)';
+    prog.studentActivities[levelNumber].gradedBy = 'نظام التنافس الفوري';
+    prog.studentActivities[levelNumber].gradedAt = new Date().toISOString();
+  }
+
   prog.totalScore = calculateStudentTotalScore(prog);
   prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
@@ -429,7 +439,20 @@ export function saveStudentLevelActivity(
     prog.studentActivities = {};
   }
   prog.studentActivities[levelNumber] = submission;
-  // Recalculate totalScore: only includes grades if admin has graded it (act.grade > 0)
+
+  // Sync into completedLevels if level already finished
+  if (prog.completedLevels && prog.completedLevels[levelNumber] && (submission.status === 'graded' || typeof submission.grade === 'number')) {
+    const qScores = prog.completedLevels[levelNumber].questionScores || {};
+    const s1Score = typeof qScores.section1 === 'number'
+      ? qScores.section1
+      : Math.max(0, prog.completedLevels[levelNumber].score - 50);
+    qScores.section1 = s1Score;
+    qScores['section2_activity'] = submission.grade ?? 50;
+    prog.completedLevels[levelNumber].questionScores = qScores;
+    prog.completedLevels[levelNumber].score = s1Score + (submission.grade ?? 50);
+  }
+
+  // Recalculate totalScore: cleanly includes grades if admin has graded it or if auto-graded
   prog.totalScore = calculateStudentTotalScore(prog);
   prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
   all[username] = prog;

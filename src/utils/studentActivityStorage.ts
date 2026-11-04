@@ -11,6 +11,7 @@ import {
 import { syncStudentProgressToFirestore } from './realtimeService';
 import { addActivityLog } from './adminStorage';
 import { GAME_LEVELS_DATA, getCustomGameLevels, saveCustomGameLevels } from '../data/gameLevelsData';
+import { getGroupByUsername } from '../data/studentAccounts';
 
 const CONFIGS_STORAGE_KEY = 'cp_level_activity_configs_v2';
 const SUBMISSIONS_STORAGE_KEY = 'cp_student_activities_submissions_v2';
@@ -249,6 +250,9 @@ export async function submitStudentActivity(
   const config = getLevelActivityConfig(levelNum);
 
   const subId = submission.id || `sub_${username}_lvl${levelNum}_${Date.now()}`;
+  const studentGroup = submission.groupCode || getGroupByUsername(username)?.code;
+  const isG1Immediate = studentGroup === 'G1';
+
   const completeSubmission: StudentActivitySubmission = {
     ...submission,
     id: subId,
@@ -256,10 +260,13 @@ export async function submitStudentActivity(
     levelNumber: levelNum,
     activityTitle: submission.activityTitle || config.activityTitle,
     maxPoints: submission.maxPoints || config.maxPoints || 50,
-    // [FIX 12]: تعيين الحالة التلقائية عند رفع النشاط إلى auto_granted_pending_review لحل تناقض الدرجة الـ 50 مع pending
-    status: submission.status || 'auto_granted_pending_review',
-    grade: submission.grade ?? 50,
-    feedback: submission.feedback || '',
+    status: isG1Immediate ? 'graded' : (submission.status || 'auto_granted_pending_review'),
+    grade: isG1Immediate ? 50 : (submission.grade ?? 50),
+    feedback: isG1Immediate
+      ? 'تم احتساب درجة النشاط فورياً واعتمادها تلقائياً (تنافسي فوري)'
+      : (submission.feedback || ''),
+    gradedBy: isG1Immediate ? 'نظام التنافس الفوري' : submission.gradedBy,
+    gradedAt: isG1Immediate ? new Date().toISOString() : submission.gradedAt,
     uploadedAt: submission.uploadedAt || new Date().toISOString(),
   };
 
