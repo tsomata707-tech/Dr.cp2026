@@ -34,6 +34,7 @@ import {
   Target,
   HardDrive,
   Video,
+  Check,
 } from 'lucide-react';
 import { normalizeVideoUrl, getEducationalVideos } from '../utils/videoStorage';
 import { getVideoBlobUrl } from '../utils/indexedDbVideo';
@@ -582,8 +583,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         }));
 
         if (!isCorrect) {
-          setHeartsPerLevel(prev => ({ ...prev, [selectedLevelNum]: 0 }));
-          setLastHeartWarning('إجابة غير صحيحة! استنفدت فرصة هذا السؤال.');
+          if (isImmediateGroup || isAdmin) {
+            setHeartsPerLevel(prev => ({ ...prev, [selectedLevelNum]: 0 }));
+            setLastHeartWarning('إجابة غير صحيحة! استنفدت فرصة هذا السؤال.');
+          }
         } else {
           setLastHeartWarning(null);
         }
@@ -1041,7 +1044,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 <span>النقاط الذهبية</span>
               </div>
               <span className="text-xl font-black text-white font-['Outfit']">
-                {progress.totalScore} <span className="text-xs text-[#ffd700]">XP</span>
+                {(isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) ? (
+                  <>{progress.totalScore} <span className="text-xs text-[#ffd700]">XP</span></>
+                ) : (
+                  <span className="text-xs font-bold text-purple-300">⏳ مرجأة للنهاية</span>
+                )}
               </span>
             </div>
 
@@ -1585,12 +1592,19 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                       let cardStyle = 'bg-slate-900/90 border-slate-700/80 text-slate-100 hover:border-amber-400/80 hover:bg-slate-800/90';
                       if (isEliminatedByHint) {
                         cardStyle = 'bg-rose-950/30 border-rose-900/50 text-rose-400/50 opacity-40 cursor-not-allowed pointer-events-none line-through';
-                      } else if (hasAnswered && isOptionCorrect) {
-                        cardStyle = 'bg-emerald-950/80 border-2 border-emerald-400 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.3)] font-bold';
-                      } else if (hasAnswered && isSelected && !isOptionCorrect) {
-                        cardStyle = 'bg-red-950/60 border-red-500/80 text-red-300 line-through opacity-70';
-                      } else if (isSelected) {
-                        cardStyle = 'bg-amber-950/80 border-2 border-amber-400 text-amber-200 font-bold shadow-[0_0_15px_rgba(251,191,36,0.3)]';
+                      } else if (isImmediateGroup || isAdmin) {
+                        if (hasAnswered && isOptionCorrect) {
+                          cardStyle = 'bg-emerald-950/80 border-2 border-emerald-400 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.3)] font-bold';
+                        } else if (hasAnswered && isSelected && !isOptionCorrect) {
+                          cardStyle = 'bg-red-950/60 border-red-500/80 text-red-300 line-through opacity-70';
+                        } else if (isSelected) {
+                          cardStyle = 'bg-amber-950/80 border-2 border-amber-400 text-amber-200 font-bold shadow-[0_0_15px_rgba(251,191,36,0.3)]';
+                        }
+                      } else {
+                        // Deferred feedback for students: do NOT reveal right or wrong, and do NOT reveal correct option
+                        if (isSelected) {
+                          cardStyle = 'bg-amber-950/80 border-2 border-amber-400 text-amber-200 font-bold shadow-[0_0_15px_rgba(251,191,36,0.3)]';
+                        }
                       }
 
                       return (
@@ -1629,10 +1643,17 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                             </span>
                           )}
 
-                          {hasAnswered && isOptionCorrect && (
+                          {(isImmediateGroup || isAdmin) && hasAnswered && isOptionCorrect && (
                             <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-bold pt-1 border-t border-emerald-500/40">
                               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                               <span>إجابة صحيحة ومتقنة</span>
+                            </div>
+                          )}
+
+                          {!isImmediateGroup && !isAdmin && hasAnswered && isSelected && (
+                            <div className="flex items-center gap-1.5 text-xs text-amber-300 font-bold pt-1 border-t border-amber-500/40">
+                              <Check className="w-4 h-4 text-amber-400" />
+                              <span>تم اختيار هذا الجواب وتثبيته</span>
                             </div>
                           )}
                         </button>
@@ -1640,7 +1661,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     })}
                   </div>
 
-                  {/* Immediate Question Result & Designated Correct Answer for Immediate Groups (G1, G3) & Admin */}
+                  {/* Immediate Question Result & Designated Correct Answer ONLY for Immediate Groups (G1, G3) OR Admin */}
                   {(isImmediateGroup || isAdmin) && hasAnswered && (
                     <div className={`mt-4 p-4 sm:p-5 rounded-2xl border-2 shadow-lg transition-all text-right space-y-3.5 animate-fadeIn ${
                       isCorrect
@@ -1718,6 +1739,30 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                       </div>
                     </div>
                   )}
+
+                  {/* Deferred Feedback Box for Student (G2 & G4) - No score, No right/wrong, No answer reveal */}
+                  {!isImmediateGroup && !isAdmin && hasAnswered && (
+                    <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-slate-950/90 via-[#101429] to-slate-950/90 border-2 border-slate-700/80 shadow-md text-right space-y-2 animate-fadeIn">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-400 flex items-center justify-center text-purple-300 font-bold shrink-0">
+                          ⏳
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm font-black text-white font-['Tajawal']">
+                              تم تسجيل وتثبيت إجابتك بنجاح
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 border border-purple-400/40 text-purple-200">
+                              تغذية راجعة مرجأة
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 font-['Cairo'] mt-0.5">
+                            وفقاً لضوابط مجموعة التغذية المرجأة، تُحسب درجاتك وتُسجل في السجل الأكاديمي، وسيتم عرض التقرير والدرجة النهائية مجمعة بعد إتمام كافة المستويات الـ 9 كاملة.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -1749,15 +1794,23 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               <span>درجة المستوى {selectedLevelNum} الإجمالية:</span>
             </span>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                تحدي المعرفة (50 درجة): <strong className="text-amber-400">{section1ScorePerLevel[selectedLevelNum] || 0} / 50 XP</strong>
-              </span>
-              <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{studentActivity ? (studentActivity.grade ?? 50) : 0} / 50 XP</strong>
-              </span>
-              <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
-                المجموع المعتمد للمستوى: {isLevelCompleted && completedResult ? completedResult.score : ((studentActivity ? (studentActivity.grade ?? 50) : 0) + (section1ScorePerLevel[selectedLevelNum] || 0))} / 100 XP
-              </span>
+              {(isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) ? (
+                <>
+                  <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
+                    تحدي المعرفة (50 درجة): <strong className="text-amber-400">{section1ScorePerLevel[selectedLevelNum] || 0} / 50 XP</strong>
+                  </span>
+                  <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
+                    النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{studentActivity ? (studentActivity.grade ?? 50) : 0} / 50 XP</strong>
+                  </span>
+                  <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
+                    المجموع المعتمد للمستوى: {isLevelCompleted && completedResult ? completedResult.score : ((studentActivity ? (studentActivity.grade ?? 50) : 0) + (section1ScorePerLevel[selectedLevelNum] || 0))} / 100 XP
+                  </span>
+                </>
+              ) : (
+                <span className="px-3.5 py-1.5 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-xs font-bold">
+                  ⏳ نمط التغذية المرجأة: الدرجات تسجل تلقائياً في السجل الأكاديمي، وسيتم إعلان الدرجة والتقرير المجمّع بعد انتهاء المستويات الـ 9.
+                </span>
+              )}
             </div>
           </div>
 

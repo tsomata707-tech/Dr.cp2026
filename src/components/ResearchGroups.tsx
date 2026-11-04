@@ -304,58 +304,7 @@ export const ResearchGroups: React.FC<ResearchGroupsProps> = ({
                   </div>
                 </div>
 
-                {/* Admin Quick Direct Access to the 5 Closed Triads (3 Students + Admin) */}
-                {isAdmin && (
-                  <div className="my-3 pt-3 border-t border-slate-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-black text-slate-800 font-['Cairo'] flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5 text-cyan-600" />
-                        <span>الغرف المغلقة الخمس (3 طلاب + المشرف):</span>
-                      </span>
-                      <span className="text-[10px] text-cyan-800 font-bold bg-cyan-100 px-2 py-0.5 rounded-md border border-cyan-300">
-                        غرف مغلقة 🔒
-                      </span>
-                    </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                      {[
-                        { letter: 'A', label: 'غرفة 1 (أ)', students: '01 - 03' },
-                        { letter: 'B', label: 'غرفة 2 (ب)', students: '04 - 06' },
-                        { letter: 'C', label: 'غرفة 3 (ج)', students: '07 - 09' },
-                        { letter: 'D', label: 'غرفة 4 (د)', students: '10 - 12' },
-                        { letter: 'E', label: 'غرفة 5 (هـ)', students: '13 - 15' },
-                      ].map(({ letter, label, students }) => {
-                        const subCode = `${group.code}-${letter}`;
-                        return (
-                          <button
-                            key={subCode}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onSelectGroup(group.id);
-                              window.dispatchEvent(
-                                new CustomEvent('cp_admin_switch_group', {
-                                  detail: { groupId: group.id, groupCode: group.code, subGroup: subCode },
-                                })
-                              );
-                              if (onEnterGroup) onEnterGroup();
-                            }}
-                            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-400 text-right transition cursor-pointer group"
-                            title={`الدخول المباشر إلى الغرفة المغلقة ${subCode} (الطلاب ${students} + المشرف)`}
-                          >
-                            <div className="flex items-center justify-between text-[11px] font-black text-amber-300">
-                              <span>{label}</span>
-                              <span className="text-[10px] text-slate-400 group-hover:text-cyan-300 font-mono">[{subCode}]</span>
-                            </div>
-                            <div className="text-[9px] text-slate-400 mt-0.5">
-                              الطلاب: {students}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
 
                 {/* Group Stats & Action Footer */}
                 <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
