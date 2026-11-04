@@ -842,7 +842,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
   const handleExportLevelsSheet = () => {
     const customLevels = getCustomGameLevels();
     const levelHeaders = customLevels.map(
-      (lvl) => `المستوى ${lvl.levelNumber}: ${lvl.title} (درجة / ${lvl.totalMaxScore || 50})`
+      (lvl) => `المستوى ${lvl.levelNumber}: ${lvl.title} (درجة / ${lvl.totalMaxScore || 100})`
     );
 
     const headers = [
@@ -863,13 +863,20 @@ export const AdminStudentsAuditManager: React.FC = () => {
       'تاريخ آخر مستوى منجز',
     ];
 
-    const totalPossibleMax = customLevels.reduce((sum, lvl) => sum + (lvl.totalMaxScore || 50), 0);
+    const totalPossibleMax = customLevels.reduce((sum, lvl) => sum + (lvl.totalMaxScore || 100), 0);
 
     const rows = enrichedStudents.map((s, idx) => {
       const levelScores = customLevels.map((lvl) => {
         const lvlResult = s.raw?.completedLevels?.[lvl.levelNumber];
-        if (!lvlResult) return '-';
-        return `${lvlResult.score} / ${lvlResult.maxScore || lvl.totalMaxScore || 50}`;
+        const actResult = s.raw?.studentActivities?.[lvl.levelNumber];
+        if (!lvlResult) {
+          if (actResult) {
+            return `نشاط مرفوع (${actResult.status === 'graded' ? `${actResult.grade}/50 معتمد` : 'بانتظار الاعتماد'})`;
+          }
+          return '-';
+        }
+        const actText = actResult ? (actResult.status === 'graded' ? ` [نشاط معتمد: ${actResult.grade}/50]` : ' [نشاط مرفوع]') : '';
+        return `${lvlResult.score} / ${lvlResult.maxScore || lvl.totalMaxScore || 100}${actText}`;
       });
 
       const totalEarnedScore = customLevels.reduce((sum, lvl) => {
@@ -2713,12 +2720,13 @@ export const AdminStudentsAuditManager: React.FC = () => {
               <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-2 pt-1">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvlNum) => {
                   const lvlDetail = inspectStudent.levelsDetails[lvlNum];
+                  const actDetail = inspectStudent.raw?.studentActivities?.[lvlNum];
                   const isDone = !!lvlDetail;
 
                   return (
                     <div
                       key={lvlNum}
-                      className={`p-2.5 rounded-xl border text-center text-xs space-y-0.5 ${
+                      className={`p-2.5 rounded-xl border text-center text-xs space-y-1 ${
                         isDone
                           ? 'bg-blue-950/80 border-blue-500/60 text-blue-200'
                           : 'bg-slate-950 border-slate-800 text-slate-500'
@@ -2728,7 +2736,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
                       {isDone ? (
                         <>
                           <span className="block font-bold text-emerald-300 text-[11px]">
-                            {lvlDetail.score} / {lvlDetail.maxScore || 50} XP
+                            {lvlDetail.score} / {lvlDetail.maxScore || 100} XP
                           </span>
                           <span className="block text-[9px] text-slate-400 opacity-80">
                             {lvlDetail.completedAt ? lvlDetail.completedAt.split(' ')[0] : 'مكتمل'}
@@ -2736,6 +2744,18 @@ export const AdminStudentsAuditManager: React.FC = () => {
                         </>
                       ) : (
                         <span className="block text-[10px] text-slate-500">غير مكتمل</span>
+                      )}
+
+                      {/* تفاصيل النشاط المرفوع للأدمن */}
+                      {actDetail && (
+                        <div className="mt-1 pt-1 border-t border-slate-700/60 text-[9px] text-right space-y-0.5">
+                          <span className="text-amber-300 font-bold block truncate" title={actDetail.fileName || actDetail.activityTitle}>
+                            📎 {actDetail.fileName || 'نشاط مرفوع'}
+                          </span>
+                          <span className={actDetail.status === 'graded' ? 'text-emerald-400 font-bold block' : 'text-amber-400 block'}>
+                            {actDetail.status === 'graded' ? `معتمد: ${actDetail.grade}/50 XP` : 'بانتظار الاعتماد (50 XP)'}
+                          </span>
+                        </div>
                       )}
                     </div>
                   );

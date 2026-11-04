@@ -794,8 +794,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
     const s1ScoreOverride = section1ScorePerLevel[selectedLevelNum];
 
-    // Activity Question in Section 2 is worth 50 XP
-    const s2Score = 50;
+    // Activity Question in Section 2 is worth 50 XP (or approved grade if graded by admin)
+    const s2Score = (studentActivity?.grade !== undefined && studentActivity?.grade !== null) ? studentActivity.grade : 50;
     const { progress: updatedProgress } = submitLevelChallenge(
       username,
       selectedLevelNum,
@@ -1161,12 +1161,18 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
                 <div className="mt-1 pt-1 border-t border-slate-700/60 w-full flex items-center justify-center">
                   {isCompleted ? (
-                    <span className="text-[10px] font-black text-emerald-300 font-['Outfit']">
-                      ⭐ {progress.completedLevels[lvl.levelNumber]?.score ?? 100} / {progress.completedLevels[lvl.levelNumber]?.maxScore ?? 100}
-                    </span>
+                    (isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) ? (
+                      <span className="text-[10px] font-black text-emerald-300 font-['Outfit']">
+                        ⭐ {progress.completedLevels[lvl.levelNumber]?.score ?? 100} / {progress.completedLevels[lvl.levelNumber]?.maxScore ?? 100}
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-bold text-purple-300 font-['Cairo']">
+                        الدرجة القصوى: {progress.completedLevels[lvl.levelNumber]?.maxScore ?? 100} XP
+                      </span>
+                    )
                   ) : (
                     <span className="text-[9px] font-bold text-amber-300 font-['Outfit']">
-                      100 XP
+                      الدرجة القصوى: 100 XP
                     </span>
                   )}
                 </div>
@@ -1429,13 +1435,19 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 <>لقد تم اعتماد حلول هذا المستوى بنجاح للمجموعة المغلقة ({effectiveRoomId}) ولا يمكن العودة إليه إلا بطلب إعادة تهيئة من المشرف.</>
               )}
             </p>
-            {(isImmediateGroup || Object.keys(progress.completedLevels || {}).length >= 9) && completedResult && (
+            {(isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) && completedResult ? (
               <div className="mt-2 flex items-center gap-3">
                 <span className="px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-[11px] font-bold">
                    النتيجة المعتمدة: {completedResult.score} / {completedResult.maxScore} XP
                 </span>
                 <span className="px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 text-[11px]">
                    وقت الإنجاز: {completedResult.completedAt}
+                </span>
+              </div>
+            ) : (
+              <div className="mt-2 flex items-center gap-3">
+                <span className="px-3 py-1 rounded-lg bg-purple-950/80 border border-purple-500/50 text-purple-200 text-[11px] font-bold">
+                   الدرجة القصوى: 100 XP (تغذية مرجأة — تظهر نتيجتك المعتمدة بعد إتمام المراحل التسع)
                 </span>
               </div>
             )}
@@ -1661,8 +1673,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     })}
                   </div>
 
-                  {/* Immediate Question Result & Designated Correct Answer ONLY for Immediate Groups (G1, G3) OR Admin */}
-                  {(isImmediateGroup || isAdmin) && hasAnswered && (
+                  {/* Immediate Question Result & Designated Correct Answer ONLY for Immediate Groups (G1, G3) OR Admin OR after 9 levels done */}
+                  {(isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) && hasAnswered && (
                     <div className={`mt-4 p-4 sm:p-5 rounded-2xl border-2 shadow-lg transition-all text-right space-y-3.5 animate-fadeIn ${
                       isCorrect
                         ? 'bg-gradient-to-r from-emerald-950/90 via-[#0d2218] to-emerald-950/90 border-emerald-400/90 shadow-[0_0_25px_rgba(16,185,129,0.25)]'
@@ -1741,7 +1753,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   )}
 
                   {/* Deferred Feedback Box for Student (G2 & G4) - No score, No right/wrong, No answer reveal */}
-                  {!isImmediateGroup && !isAdmin && hasAnswered && (
+                  {!isImmediateGroup && !isAdmin && Object.keys(progress.completedLevels || {}).length < 9 && hasAnswered && (
                     <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-slate-950/90 via-[#101429] to-slate-950/90 border-2 border-slate-700/80 shadow-md text-right space-y-2 animate-fadeIn">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-400 flex items-center justify-center text-purple-300 font-bold shrink-0">
@@ -1807,9 +1819,14 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   </span>
                 </>
               ) : (
-                <span className="px-3.5 py-1.5 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-xs font-bold">
-                  ⏳ نمط التغذية المرجأة: الدرجات تسجل تلقائياً في السجل الأكاديمي، وسيتم إعلان الدرجة والتقرير المجمّع بعد انتهاء المستويات الـ 9.
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-3.5 py-1.5 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-xs font-bold">
+                    ⏳ نمط التغذية المرجأة: تسجل الدرجات في سجل المشرف، وتظهر نتيجتك المعتمدة فقط بعد إنهاء المراحل التسع كاملة واعتماد المشرف.
+                  </span>
+                  <span className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-amber-400/50 text-xs text-amber-300 font-bold font-['Cairo']">
+                    الدرجة القصوى للمستوى: 100 XP
+                  </span>
+                </div>
               )}
             </div>
           </div>
@@ -2002,28 +2019,49 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 )}
               </div>
 
-              {/* [FIX 12]: عرض حالة المنح التلقائي للـ 50 درجة مع توضيح انتظار مراجعة الأدمن */}
+              {/* عرض حالة النشاط والدرجة القصوى أسفل البطاقة */}
               {studentActivity.status === 'graded' ? (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-teal-950/80 to-emerald-950/90 border-2 border-emerald-400 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 flex items-center justify-center text-xl shrink-0">
-                      ⭐
-                    </div>
-                    <div>
-                      <div className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal']">
-                        تم تقييم النشاط ورصد الدرجة بنجاح من المشرف
+                (isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) ? (
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-teal-950/80 to-emerald-950/90 border-2 border-emerald-400 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 flex items-center justify-center text-xl shrink-0">
+                        ⭐
                       </div>
-                      {studentActivity.feedback && (
-                        <div className="text-xs text-slate-200 mt-0.5">
-                          ملاحظة المشرف: <span className="font-bold text-white">{studentActivity.feedback}</span>
+                      <div>
+                        <div className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal']">
+                          تم تقييم النشاط ورصد الدرجة بنجاح من المشرف
                         </div>
-                      )}
+                        {studentActivity.feedback && (
+                          <div className="text-xs text-slate-200 mt-0.5">
+                            ملاحظة المشرف: <span className="font-bold text-white">{studentActivity.feedback}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="px-4 py-2 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 font-black text-base font-['Outfit'] shrink-0 shadow-md">
+                      {studentActivity.grade} / {studentActivity.maxPoints || 50} XP ⭐
                     </div>
                   </div>
-                  <div className="px-4 py-2 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 font-black text-base font-['Outfit'] shrink-0 shadow-md">
-                    {studentActivity.grade} / {studentActivity.maxPoints || 0} XP ⭐
+                ) : (
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-purple-950/80 border-2 border-purple-400/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400 text-purple-300 flex items-center justify-center text-xl shrink-0">
+                        ⏳
+                      </div>
+                      <div>
+                        <div className="text-xs sm:text-sm font-black text-purple-200 font-['Tajawal']">
+                          تم استلام وتقييم النشاط من قِبل المشرف
+                        </div>
+                        <div className="text-[11px] text-slate-300 mt-0.5">
+                          تغذية راجعة مرجأة: تظهر الدرجة المعتمدة في التقرير النهائي بعد إنهاء المراحل الـ 9.
+                        </div>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1.5 rounded-xl bg-purple-500/20 border border-purple-400 text-purple-200 font-black text-xs shrink-0 font-['Cairo']">
+                      الدرجة القصوى: 50 XP
+                    </span>
                   </div>
-                </div>
+                )
               ) : (
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-amber-950/60 to-emerald-950/80 border-2 border-emerald-400/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-3">
@@ -2032,15 +2070,15 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     </div>
                     <div>
                       <div className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal']">
-                        ✅ تم إكمال النشاط — بانتظار مراجعة الأدمن
+                        ✅ تم رفع وتوثيق النشاط — بانتظار مراجعة واعتماد المشرف
                       </div>
                       <div className="text-[11px] text-slate-300 mt-0.5">
-                        تم توثيق النشاط فور رفع الملف، وهو بانتظار الاعتماد والمراجعة النهائية من المشرف.
+                        تم توثيق النشاط فور رفع الملف، وهو متاح حالياً للمشرف في لوحة التحكم للتقييم والاعتماد.
                       </div>
                     </div>
                   </div>
-                  <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-black text-xs shrink-0">
-                    50 / 50 XP (ممنوحة تلقائياً)
+                  <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-black text-xs shrink-0 font-['Cairo']">
+                    الدرجة القصوى: 50 XP
                   </span>
                 </div>
               )}

@@ -345,6 +345,18 @@ export async function gradeStudentActivity(
       gradedBy: adminUsername,
     };
 
+    // Update completed level score if level has already been completed with real approved grade
+    if (prog.completedLevels && prog.completedLevels[lvlNum]) {
+      const qScores = prog.completedLevels[lvlNum].questionScores || {};
+      const s1Score = typeof qScores.section1 === 'number'
+        ? qScores.section1
+        : Math.max(0, prog.completedLevels[lvlNum].score - 50);
+      qScores.section1 = s1Score;
+      qScores['section2_activity'] = validGrade;
+      prog.completedLevels[lvlNum].questionScores = qScores;
+      prog.completedLevels[lvlNum].score = s1Score + validGrade;
+    }
+
     // Calculate totalScore cleanly including the newly assigned activity grade
     prog.totalScore = calculateStudentTotalScore(prog);
     prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
