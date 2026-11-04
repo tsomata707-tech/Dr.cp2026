@@ -232,7 +232,17 @@ export function getCustomGameLevels(): GameLevelDef[] {
   if (raw) {
     try {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const levels = [...parsed];
+        for (let i = 1; i <= 9; i++) {
+          if (!levels.some((l) => l && l.levelNumber === i)) {
+            const def = GAME_LEVELS_DATA.find((d) => d.levelNumber === i);
+            if (def) levels.push(def);
+          }
+        }
+        levels.sort((a, b) => (a?.levelNumber || 0) - (b?.levelNumber || 0));
+        return levels;
+      }
     } catch {
       return GAME_LEVELS_DATA;
     }

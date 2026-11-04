@@ -164,6 +164,18 @@ export const AdminTestsSettingsManager: React.FC = () => {
   });
   const [isSavingLevelScores, setIsSavingLevelScores] = useState<boolean>(false);
 
+  // Synchronize level objectives and scores whenever editingLevelNum or gameLevels changes
+  useEffect(() => {
+    const levels = gameLevels || [];
+    const targetLvl = levels.find((l) => l && l.levelNumber === editingLevelNum) || levels[0];
+    if (targetLvl) {
+      setLevelObjectivesText(targetLvl.objectives || targetLvl.instructions || '');
+      setLevelTotalScoreInput(targetLvl.totalMaxScore ?? 100);
+      setLevelSection1ScoreInput(targetLvl.section1Score ?? 50);
+      setLevelSection2ScoreInput(targetLvl.section2Score ?? 50);
+    }
+  }, [editingLevelNum, gameLevels]);
+
   // Group Reset state
   const [resetSelectedGroupId, setResetSelectedGroupId] = useState<string>('G1');
   const [isResettingGroup, setIsResettingGroup] = useState<boolean>(false);
