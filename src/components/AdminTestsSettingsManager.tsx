@@ -1919,8 +1919,8 @@ export const AdminTestsSettingsManager: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-blue-950/30 border border-blue-500/40">
             <span className="text-xs font-bold text-blue-200">
               {selectedLevelFilter === 9
-                ? `عرض ${filteredLevelsQuestions.length} نشاط في المستوى 9 (أنشطة تطبيقية يقوم بها الطالب)`
-                : `عرض ${filteredLevelsQuestions.length} سؤال في المراحل التعليمية العشر ${typeof selectedLevelFilter === 'number' ? `(المستوى ${selectedLevelFilter})` : ''}`}
+                ? `عرض ${(filteredLevelsQuestions || []).length} نشاط في المستوى 9 (أنشطة تطبيقية يقوم بها الطالب)`
+                : `عرض ${(filteredLevelsQuestions || []).length} سؤال في المراحل التعليمية التسع ${typeof selectedLevelFilter === 'number' ? `(المستوى ${selectedLevelFilter})` : ''}`}
             </span>
             <button
               type="button"
@@ -1931,7 +1931,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               <span>
                 {selectedLevelFilter === 9
                   ? '➕ إضافة نشاط جديد في أعلى المستوى 9 (البداية)'
-                  : '➕ إضافة سؤال جديد في أعلى المراحل العشر (البداية)'}
+                  : '➕ إضافة سؤال جديد في أعلى المراحل التسع (البداية)'}
               </span>
             </button>
           </div>
@@ -1980,7 +1980,7 @@ export const AdminTestsSettingsManager: React.FC = () => {
               <span>
                 {selectedLevelFilter === 9
                   ? '➕ إضافة نشاط جديد في نهاية المستوى 9 (نشاط يقوم به الطالب)'
-                  : '➕ إضافة سؤال جديد في نهاية المراحل العشر'}
+                  : '➕ إضافة سؤال جديد في نهاية المراحل التسع'}
               </span>
             </button>
           </div>
