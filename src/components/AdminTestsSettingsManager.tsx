@@ -1786,9 +1786,10 @@ export const AdminTestsSettingsManager: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Subgroup triads for all groups G1..G4 */}
+                {/* Subgroup triads for collaborative groups G3 & G4 */}
                 {(() => {
                   const baseGroupCode = resetSelectedGroupId.substring(0, 2);
+                  if (baseGroupCode !== 'G3' && baseGroupCode !== 'G4') return null;
                   const triads = ['A', 'B', 'C', 'D', 'E'].map((letter) => `${baseGroupCode}-${letter}`);
 
                   return (

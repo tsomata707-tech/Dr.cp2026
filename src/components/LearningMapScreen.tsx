@@ -111,12 +111,13 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
 
   const collabSubGroup = useMemo(() => getCollaborativeGroupByUsername(username), [username]);
   const effectiveRoomId = useMemo(() => {
-    if (collabSubGroup) {
-      return collabSubGroup;
-    }
     const userMeta = getGroupByUsername(username);
     const groupCode = userMeta?.code || 'G1';
-    return `${groupCode}-A`;
+    const isCollab = userMeta?.learningMode === 'تعاوني';
+    if (isCollab && collabSubGroup) {
+      return collabSubGroup;
+    }
+    return groupCode;
   }, [username, collabSubGroup]);
 
   // Real-time group room state

@@ -214,7 +214,6 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
   const groupCode = userGroupMeta?.code || 'G1';
   const isCollaborative = userGroupMeta?.learningMode === 'تعاوني';
-  const isCompetitiveImmediate = groupCode === 'G1';
   const isImmediateGroup = userGroupMeta ? userGroupMeta.feedbackMode === 'فورية' : true;
   const studentInfo = useMemo(() => getStudentByUsername(username), [username]);
 
@@ -242,15 +241,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   }, []);
 
   const effectiveRoomId = useMemo(() => {
-    if (isCompetitiveImmediate) {
-      // G1 تنافسي فوري: فردي مستقل تماماً، كل شخص وحده دون الارتباط بمجموعة ثلاثية
-      return `G1-INDIVIDUAL-${username}`;
-    }
     if (isAdmin) {
       return adminCollabSubGroup.startsWith(groupCode) ? adminCollabSubGroup : `${groupCode}-A`;
     }
     return collabSubGroup || `${groupCode}-A`;
-  }, [isAdmin, adminCollabSubGroup, groupCode, collabSubGroup, isCompetitiveImmediate, username]);
+  }, [isAdmin, adminCollabSubGroup, groupCode, collabSubGroup]);
 
   useEffect(() => {
     if (!effectiveRoomId) return;
@@ -509,9 +504,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     return globalVids;
   }, [currentLevelDef, selectedLevelNum, videoStorageTick, rehydratedBlobUrls]);
 
-  const isLevelCompleted = !!progress.completedLevels[selectedLevelNum] || (isCollaborative && !!roomState.completedLevels?.[selectedLevelNum]);
-  const completedResult = progress.completedLevels[selectedLevelNum] || (isCollaborative ? roomState.completedLevels?.[selectedLevelNum] : undefined);
-  const groupCompleter = isCollaborative && roomState.completedLevels?.[selectedLevelNum] ? (roomState.completedLevels[selectedLevelNum] as any).submittedBy : null;
+  const isLevelCompleted = !!progress.completedLevels[selectedLevelNum] || !!roomState.completedLevels?.[selectedLevelNum];
+  const completedResult = progress.completedLevels[selectedLevelNum] || roomState.completedLevels?.[selectedLevelNum];
+  const groupCompleter = roomState.completedLevels?.[selectedLevelNum] ? (roomState.completedLevels[selectedLevelNum] as any).submittedBy : null;
   const isLevelUnlocked = selectedLevelNum <= progress.currentLevel;
 
   const levelQuestions = currentLevelDef?.questions || [];
@@ -704,8 +699,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       const fileUrl = reader.result as string;
       const cfg = getLevelActivityConfig(selectedLevelNum);
 
-      // For G1 (تنافسي فوري): automatically approved immediately without requiring admin review
-      const isG1 = groupCode === 'G1';
+      // [FIX 12]: إرسال status بـ auto_granted_pending_review بدلاً من pending لمنع التعارض مع درجة 50 الممنوحة تلقائياً
       const submission: StudentActivitySubmission = {
         fileUrl,
         fileName: file.name,
@@ -718,11 +712,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         levelNumber: selectedLevelNum,
         activityTitle: cfg.activityTitle,
         maxPoints: 50,
-        status: isG1 ? 'graded' : 'auto_granted_pending_review',
-        grade: 50,
-        feedback: isG1 ? 'معتمد فورياً وتلقائياً (تنافسي فوري)' : '',
-        gradedBy: isG1 ? 'نظام التنافس الفوري' : undefined,
-        gradedAt: isG1 ? new Date().toISOString() : undefined,
+        status: 'auto_granted_pending_review',
+        grade: 50, // منح تلقائي فوري مطلوب
       };
 
       const saved = await submitStudentActivity(submission);
@@ -803,8 +794,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
     const s1ScoreOverride = section1ScorePerLevel[selectedLevelNum];
 
-    // Activity Question in Section 2 is worth 50 XP (or approved grade if graded by admin)
-    const s2Score = (studentActivity?.grade !== undefined && studentActivity?.grade !== null) ? studentActivity.grade : 50;
+    // Activity Question in Section 2 is worth 50 XP
+    const s2Score = 50;
     const { progress: updatedProgress } = submitLevelChallenge(
       username,
       selectedLevelNum,
@@ -923,31 +914,39 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               <option value="G4">G4 - تعاوني مرجأ</option>
             </select>
 
-            <span className="text-xs text-cyan-300 font-bold whitespace-nowrap mr-2">الغرفة المغلقة (3 طلاب + المشرف):</span>
-            <select
-              value={adminCollabSubGroup}
-              onChange={(e) => {
-                const nextSub = e.target.value;
-                setAdminCollabSubGroup(nextSub);
-                window.dispatchEvent(new CustomEvent('cp_admin_switch_group', { detail: { subGroup: nextSub } }));
-              }}
-              className="bg-slate-950 border border-cyan-500/60 rounded-lg px-2.5 py-1 text-xs text-cyan-300 font-black cursor-pointer"
-            >
-              {[
-                { letter: 'A', label: 'المجموعة 1 (أ) - الطلاب 01 إلى 03' },
-                { letter: 'B', label: 'المجموعة 2 (ب) - الطلاب 04 إلى 06' },
-                { letter: 'C', label: 'المجموعة 3 (ج) - الطلاب 07 إلى 09' },
-                { letter: 'D', label: 'المجموعة 4 (د) - الطلاب 10 إلى 12' },
-                { letter: 'E', label: 'المجموعة 5 (هـ) - الطلاب 13 إلى 15' },
-              ].map(({ letter, label }) => {
-                const subCode = `${groupCode}-${letter}`;
-                return (
-                  <option key={subCode} value={subCode}>
-                    {subCode}: {label}
-                  </option>
-                );
-              })}
-            </select>
+            {isCollaborative ? (
+              <>
+                <span className="text-xs text-cyan-300 font-bold whitespace-nowrap mr-2">الغرفة المغلقة (3 طلاب + المشرف):</span>
+                <select
+                  value={adminCollabSubGroup}
+                  onChange={(e) => {
+                    const nextSub = e.target.value;
+                    setAdminCollabSubGroup(nextSub);
+                    window.dispatchEvent(new CustomEvent('cp_admin_switch_group', { detail: { subGroup: nextSub } }));
+                  }}
+                  className="bg-slate-950 border border-cyan-500/60 rounded-lg px-2.5 py-1 text-xs text-cyan-300 font-black cursor-pointer"
+                >
+                  {[
+                    { letter: 'A', label: 'المجموعة 1 (أ) - الطلاب 01 إلى 03' },
+                    { letter: 'B', label: 'المجموعة 2 (ب) - الطلاب 04 إلى 06' },
+                    { letter: 'C', label: 'المجموعة 3 (ج) - الطلاب 07 إلى 09' },
+                    { letter: 'D', label: 'المجموعة 4 (د) - الطلاب 10 إلى 12' },
+                    { letter: 'E', label: 'المجموعة 5 (هـ) - الطلاب 13 إلى 15' },
+                  ].map(({ letter, label }) => {
+                    const subCode = `${groupCode}-${letter}`;
+                    return (
+                      <option key={subCode} value={subCode}>
+                        {subCode}: {label}
+                      </option>
+                    );
+                  })}
+                </select>
+              </>
+            ) : (
+              <span className="text-xs text-amber-300 font-bold bg-amber-950/60 px-2.5 py-1 rounded-lg border border-amber-500/40 mr-2">
+                🎯 نمط إنجاز فردي (15 طالباً)
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -1170,18 +1169,12 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
                 <div className="mt-1 pt-1 border-t border-slate-700/60 w-full flex items-center justify-center">
                   {isCompleted ? (
-                    (isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) ? (
-                      <span className="text-[10px] font-black text-emerald-300 font-['Outfit']">
-                        ⭐ {progress.completedLevels[lvl.levelNumber]?.score ?? 100} / {progress.completedLevels[lvl.levelNumber]?.maxScore ?? 100}
-                      </span>
-                    ) : (
-                      <span className="text-[9px] font-bold text-purple-300 font-['Cairo']">
-                        الدرجة القصوى: {progress.completedLevels[lvl.levelNumber]?.maxScore ?? 100} XP
-                      </span>
-                    )
+                    <span className="text-[10px] font-black text-emerald-300 font-['Outfit']">
+                      ⭐ {progress.completedLevels[lvl.levelNumber]?.score ?? 100} / {progress.completedLevels[lvl.levelNumber]?.maxScore ?? 100}
+                    </span>
                   ) : (
                     <span className="text-[9px] font-bold text-amber-300 font-['Outfit']">
-                      الدرجة القصوى: 100 XP
+                      100 XP
                     </span>
                   )}
                 </div>
@@ -1277,38 +1270,36 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         </div>
       )}
 
-        {/* INDIVIDUAL COMPETITIVE BANNER FOR G1 (تنافسي فوري مستقل) */}
-        {isCompetitiveImmediate && (
-          <div className="my-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/70 via-[#161226] to-amber-950/70 border-2 border-amber-400/80 shadow-[0_0_25px_rgba(251,191,36,0.2)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-right animate-fadeIn">
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border-2 border-amber-400 text-amber-300 flex items-center justify-center text-2xl shrink-0 shadow-md">
-                ⚡
+        {/* INDIVIDUAL COMPETITIVE BANNER FOR G1 & G2 */}
+        {!isCollaborative && (
+          <div className="my-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/40 via-[#0d1226] to-amber-950/40 border-2 border-amber-500/40 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-right">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 font-bold shrink-0 text-lg">
+                🎯
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm sm:text-base font-black text-amber-300 font-['Tajawal']">
-                    نمط التنافس الفوري الفردي (مستقل)
-                  </h3>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black border border-emerald-400/40">
-                    تنافس فردي حر • كل طالب وحده
+                  <span className="text-xs sm:text-sm font-black text-amber-300 font-['Tajawal']">
+                    {groupCode === 'G1' ? 'نمط التنافس الفوري (إنجاز فردي لكل طالب 🎯)' : 'نمط التنافس المرجأ (إنجاز فردي لكل طالب 🎯)'}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-200 text-[11px] font-black border border-amber-400/40 font-['Cairo']">
+                    المجموعة {groupCode}
                   </span>
                 </div>
-                <p className="text-xs text-slate-300 font-['Cairo'] mt-1">
-                  تخوض التحديات بشكل فردي مستقل، وتظهر نتيجتك فور الإجابة لك وللمشرف وتُسجل في الشيت مباشرة دون الحاجة لاعتماد الأدمن.
-                </p>
+                <span className="text-[11px] text-slate-300 font-['Cairo'] block mt-0.5">
+                  {groupCode === 'G1'
+                    ? 'يخوض الطالب التحدي بشكل فردي مستقل، وتظهر التغذية الراجعة والنتيجة بعد كل سؤال مباشرة'
+                    : 'يخوض الطالب التحدي بشكل فردي مستقل، وتُحسب الدرجات سرياً وتظهر نتائجها النهائية بعد إتمام كافة المستويات الـ 9'}
+                </span>
               </div>
             </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="px-3 py-1.5 rounded-xl bg-slate-950/90 border border-amber-400/50 text-amber-300 text-xs font-bold font-['Cairo'] flex items-center gap-1.5">
-                <span>👤 المتسابق:</span>
-                <strong className="text-white">{username}</strong>
-              </span>
-            </div>
+            <span className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-amber-300 text-xs font-bold shrink-0">
+              إنجاز فردي مستمر
+            </span>
           </div>
         )}
 
-        {/* REAL-TIME CLOSED ROOM LIVE BAR (Strictly 3 Students + Admin) ONLY FOR COLLABORATIVE GROUPS (G3, G4) */}
+        {/* REAL-TIME CLOSED ROOM LIVE BAR FOR COLLABORATIVE GROUPS (G3 & G4 ONLY) */}
         {isCollaborative && (() => {
           const currentTriadDef = COLLABORATIVE_GROUPS_DEF[effectiveRoomId];
           const roomStudentUsernames = (currentTriadDef?.members || []).filter((u) => u !== 'admin');
@@ -1466,34 +1457,22 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
           </div>
           <div className="flex-1">
             <h4 className="text-base sm:text-lg font-black text-red-200 font-['Tajawal']">
-               {isCollaborative
-                 ? `⚠️ تم إنهاء هذا المستوى وإغلاقه على الجميع داخل المجموعة المغلقة (${effectiveRoomId})`
-                 : `✅ تم إكمال وتأكيد هذا المستوى التعليمي بنجاح`}
+               ⚠️ تم إنهاء هذا المستوى وإغلاقه على الجميع داخل المجموعة المغلقة ({effectiveRoomId})
             </h4>
             <p className="text-xs sm:text-sm text-slate-300 font-['Cairo'] mt-1">
-              {isCollaborative ? (
-                groupCompleter ? (
-                  <>قام العضو <strong className="text-amber-400 underline">{groupCompleter.fullName}</strong> بإتمام التحدي واعتماد الإجابات للمجموعة المغلقة المقتصرة على الطلاب الثلاثة والمشرف.</>
-                ) : (
-                  <>لقد تم اعتماد حلول هذا المستوى بنجاح للمجموعة المغلقة ({effectiveRoomId}) ولا يمكن العودة إليه إلا بطلب إعادة تهيئة من المشرف.</>
-                )
+              {groupCompleter ? (
+                <>قام العضو <strong className="text-amber-400 underline">{groupCompleter.fullName}</strong> بإتمام التحدي واعتماد الإجابات للمجموعة المغلقة المقتصرة على الطلاب الثلاثة والمشرف.</>
               ) : (
-                <>تم إنهاء هذا المستوى وتسجيل نتيجتك فورياً في السجل الأكاديمي وشيت النتائج.</>
+                <>لقد تم اعتماد حلول هذا المستوى بنجاح للمجموعة المغلقة ({effectiveRoomId}) ولا يمكن العودة إليه إلا بطلب إعادة تهيئة من المشرف.</>
               )}
             </p>
-            {(isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) && completedResult ? (
+            {(isImmediateGroup || Object.keys(progress.completedLevels || {}).length >= 9) && completedResult && (
               <div className="mt-2 flex items-center gap-3">
                 <span className="px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-[11px] font-bold">
                    النتيجة المعتمدة: {completedResult.score} / {completedResult.maxScore} XP
                 </span>
                 <span className="px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 text-[11px]">
                    وقت الإنجاز: {completedResult.completedAt}
-                </span>
-              </div>
-            ) : (
-              <div className="mt-2 flex items-center gap-3">
-                <span className="px-3 py-1 rounded-lg bg-purple-950/80 border border-purple-500/50 text-purple-200 text-[11px] font-bold">
-                   الدرجة القصوى: 100 XP (تغذية مرجأة — تظهر نتيجتك المعتمدة بعد إتمام المراحل التسع)
                 </span>
               </div>
             )}
@@ -1719,8 +1698,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     })}
                   </div>
 
-                  {/* Immediate Question Result & Designated Correct Answer ONLY for Immediate Groups (G1, G3) OR Admin OR after 9 levels done */}
-                  {(isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) && hasAnswered && (
+                  {/* Immediate Question Result & Designated Correct Answer ONLY for Immediate Groups (G1, G3) OR Admin */}
+                  {(isImmediateGroup || isAdmin) && hasAnswered && (
                     <div className={`mt-4 p-4 sm:p-5 rounded-2xl border-2 shadow-lg transition-all text-right space-y-3.5 animate-fadeIn ${
                       isCorrect
                         ? 'bg-gradient-to-r from-emerald-950/90 via-[#0d2218] to-emerald-950/90 border-emerald-400/90 shadow-[0_0_25px_rgba(16,185,129,0.25)]'
@@ -1799,7 +1778,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   )}
 
                   {/* Deferred Feedback Box for Student (G2 & G4) - No score, No right/wrong, No answer reveal */}
-                  {!isImmediateGroup && !isAdmin && Object.keys(progress.completedLevels || {}).length < 9 && hasAnswered && (
+                  {!isImmediateGroup && !isAdmin && hasAnswered && (
                     <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-slate-950/90 via-[#101429] to-slate-950/90 border-2 border-slate-700/80 shadow-md text-right space-y-2 animate-fadeIn">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-400 flex items-center justify-center text-purple-300 font-bold shrink-0">
@@ -1865,14 +1844,9 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                   </span>
                 </>
               ) : (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-3.5 py-1.5 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-xs font-bold">
-                    ⏳ نمط التغذية المرجأة: تسجل الدرجات في سجل المشرف، وتظهر نتيجتك المعتمدة فقط بعد إنهاء المراحل التسع كاملة واعتماد المشرف.
-                  </span>
-                  <span className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-amber-400/50 text-xs text-amber-300 font-bold font-['Cairo']">
-                    الدرجة القصوى للمستوى: 100 XP
-                  </span>
-                </div>
+                <span className="px-3.5 py-1.5 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-xs font-bold">
+                  ⏳ نمط التغذية المرجأة: الدرجات تسجل تلقائياً في السجل الأكاديمي، وسيتم إعلان الدرجة والتقرير المجمّع بعد انتهاء المستويات الـ 9.
+                </span>
               )}
             </div>
           </div>
@@ -2065,51 +2039,28 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 )}
               </div>
 
-              {/* عرض حالة النشاط والدرجة القصوى أسفل البطاقة */}
+              {/* [FIX 12]: عرض حالة المنح التلقائي للـ 50 درجة مع توضيح انتظار مراجعة الأدمن */}
               {studentActivity.status === 'graded' ? (
-                (isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) ? (
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-teal-950/80 to-emerald-950/90 border-2 border-emerald-400 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 flex items-center justify-center text-xl shrink-0">
-                        ⭐
-                      </div>
-                      <div>
-                        <div className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal']">
-                          {isCompetitiveImmediate
-                            ? '✅ تم تسليم النشاط واحتساب الدرجة فورياً (معتمد تلقائياً)'
-                            : 'تم تقييم النشاط ورصد الدرجة بنجاح من المشرف'}
-                        </div>
-                        {studentActivity.feedback && (
-                          <div className="text-xs text-slate-200 mt-0.5">
-                            {isCompetitiveImmediate ? 'الحالة:' : 'ملاحظة المشرف:'} <span className="font-bold text-white">{studentActivity.feedback}</span>
-                          </div>
-                        )}
-                      </div>
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-teal-950/80 to-emerald-950/90 border-2 border-emerald-400 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 flex items-center justify-center text-xl shrink-0">
+                      ⭐
                     </div>
-                    <div className="px-4 py-2 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 font-black text-base font-['Outfit'] shrink-0 shadow-md">
-                      {studentActivity.grade} / {studentActivity.maxPoints || 50} XP ⭐
+                    <div>
+                      <div className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal']">
+                        تم تقييم النشاط ورصد الدرجة بنجاح من المشرف
+                      </div>
+                      {studentActivity.feedback && (
+                        <div className="text-xs text-slate-200 mt-0.5">
+                          ملاحظة المشرف: <span className="font-bold text-white">{studentActivity.feedback}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                ) : (
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-purple-950/80 border-2 border-purple-400/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400 text-purple-300 flex items-center justify-center text-xl shrink-0">
-                        ⏳
-                      </div>
-                      <div>
-                        <div className="text-xs sm:text-sm font-black text-purple-200 font-['Tajawal']">
-                          تم استلام وتقييم النشاط من قِبل المشرف
-                        </div>
-                        <div className="text-[11px] text-slate-300 mt-0.5">
-                          تغذية راجعة مرجأة: تظهر الدرجة المعتمدة في التقرير النهائي بعد إنهاء المراحل الـ 9.
-                        </div>
-                      </div>
-                    </div>
-                    <span className="px-3 py-1.5 rounded-xl bg-purple-500/20 border border-purple-400 text-purple-200 font-black text-xs shrink-0 font-['Cairo']">
-                      الدرجة القصوى: 50 XP
-                    </span>
+                  <div className="px-4 py-2 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 font-black text-base font-['Outfit'] shrink-0 shadow-md">
+                    {studentActivity.grade} / {studentActivity.maxPoints || 0} XP ⭐
                   </div>
-                )
+                </div>
               ) : (
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-amber-950/60 to-emerald-950/80 border-2 border-emerald-400/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-3">
@@ -2118,15 +2069,15 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                     </div>
                     <div>
                       <div className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal']">
-                        ✅ تم رفع وتوثيق النشاط — بانتظار مراجعة واعتماد المشرف
+                        ✅ تم إكمال النشاط — بانتظار مراجعة الأدمن
                       </div>
                       <div className="text-[11px] text-slate-300 mt-0.5">
-                        تم توثيق النشاط فور رفع الملف، وهو متاح حالياً للمشرف في لوحة التحكم للتقييم والاعتماد.
+                        تم توثيق النشاط فور رفع الملف، وهو بانتظار الاعتماد والمراجعة النهائية من المشرف.
                       </div>
                     </div>
                   </div>
-                  <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-black text-xs shrink-0 font-['Cairo']">
-                    الدرجة القصوى: 50 XP
+                  <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-black text-xs shrink-0">
+                    50 / 50 XP (ممنوحة تلقائياً)
                   </span>
                 </div>
               )}
