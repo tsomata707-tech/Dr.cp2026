@@ -124,10 +124,19 @@ export function calculateStudentTotalScore(prog: StudentGameProgress): number {
     }
   });
   // Also count any activities submitted for levels that are not yet marked as completed
-  Object.entries(prog.studentActivities || {}).forEach(([lvlNum, act]) => {
-    const num = Number(lvlNum);
-    if (!completedLevels[num] && act && typeof act.grade === 'number') {
-      total += act.grade;
+  const studentActivities = prog.studentActivities || {};
+  Object.entries(studentActivities).forEach(([key, act]) => {
+    if (key.includes('_')) {
+      const lvlNum = Number(key.split('_')[0]);
+      if (!completedLevels[lvlNum] && act && typeof act.grade === 'number') {
+        total += act.grade;
+      }
+    } else {
+      const lvlNum = Number(key);
+      const hasIndexedKey = Boolean(studentActivities[`${lvlNum}_1`]);
+      if (!hasIndexedKey && !completedLevels[lvlNum] && act && typeof act.grade === 'number') {
+        total += act.grade;
+      }
     }
   });
   return total;
@@ -438,18 +447,24 @@ export function saveStudentLevelActivity(
   if (!prog.studentActivities) {
     prog.studentActivities = {};
   }
-  prog.studentActivities[levelNumber] = submission;
+
+  const actIdx = submission.activityIndex || 1;
+  const actKey = `${levelNumber}_${actIdx}`;
+  prog.studentActivities[actKey] = submission;
+
+  if (actIdx === 1) {
+    prog.studentActivities[levelNumber] = submission;
+  }
 
   // Sync into completedLevels if level already finished
   if (prog.completedLevels && prog.completedLevels[levelNumber] && (submission.status === 'graded' || typeof submission.grade === 'number')) {
     const qScores = prog.completedLevels[levelNumber].questionScores || {};
-    const s1Score = typeof qScores.section1 === 'number'
-      ? qScores.section1
-      : Math.max(0, prog.completedLevels[levelNumber].score - 50);
-    qScores.section1 = s1Score;
-    qScores['section2_activity'] = submission.grade ?? 50;
+    const act1Grade = prog.studentActivities[`${levelNumber}_1`]?.grade ?? 50;
+    const act2Grade = prog.studentActivities[`${levelNumber}_2`]?.grade ?? 50;
+    qScores['section1_act1'] = act1Grade;
+    qScores['section2_activity'] = act2Grade;
     prog.completedLevels[levelNumber].questionScores = qScores;
-    prog.completedLevels[levelNumber].score = s1Score + (submission.grade ?? 50);
+    prog.completedLevels[levelNumber].score = (typeof act1Grade === 'number' ? act1Grade : 50) + (typeof act2Grade === 'number' ? act2Grade : 50);
   }
 
   // Recalculate totalScore: cleanly includes grades if admin has graded it or if auto-graded

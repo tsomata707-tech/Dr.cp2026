@@ -173,12 +173,17 @@ export interface StudentActivitySubmission {
   status?: 'pending' | 'graded' | 'auto_granted_pending_review';
   gradedAt?: string;
   gradedBy?: string;
+  activityIndex?: 1 | 2;
 }
 
 export interface LevelActivityConfig {
   levelNumber: number;
   activityTitle: string;
   instructions: string;
+  act1Title?: string;
+  act1Instructions?: string;
+  act2Title?: string;
+  act2Instructions?: string;
   maxPoints: number;
   updatedAt?: string;
 }
@@ -189,7 +194,7 @@ export interface StudentGameProgress {
   customPhotoUrl?: string; // Student custom uploaded photo from their device
   currentLevel: number; // 1 to 9
   completedLevels: Record<number, CompletedLevelResult>;
-  studentActivities?: Record<number, StudentActivitySubmission>; // Level 1..9 activities uploaded by student
+  studentActivities?: Record<string, StudentActivitySubmission>; // Level 1..9 activities (e.g. '1_1', '1_2', or '1')
   preTestResult?: PreTestResult;
   postTestResult?: PreTestResult;
   totalScore: number;

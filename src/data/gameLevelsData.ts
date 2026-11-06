@@ -240,6 +240,14 @@ export function getCustomGameLevels(): GameLevelDef[] {
             if (def) levels.push(def);
           }
         }
+        levels.forEach((l) => {
+          if (l && l.levelNumber >= 1 && l.levelNumber <= 9) {
+            l.questions = []; // Force empty questions array for levels 1-9
+            l.totalMaxScore = 100;
+            l.section1Score = 50;
+            l.section2Score = 50;
+          }
+        });
         levels.sort((a, b) => (a?.levelNumber || 0) - (b?.levelNumber || 0));
         return levels;
       }

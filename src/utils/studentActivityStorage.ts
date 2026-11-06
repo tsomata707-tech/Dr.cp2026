@@ -19,57 +19,93 @@ const SUBMISSIONS_STORAGE_KEY = 'cp_student_activities_submissions_v2';
 export const DEFAULT_LEVEL_ACTIVITY_CONFIGS: Record<number, LevelActivityConfig> = {
   1: {
     levelNumber: 1,
-    activityTitle: 'نشاط المستوى 1: تثبيت وإعداد Adobe Captivate 2019',
-    instructions: 'قم بتثبيت برنامج Adobe Captivate 2019 (64-bit) وتفعيل دعم نصوص اللغة العربية من قائمة التفضيلات، ثم ارفع لقطة شاشة أو مقطع فيديو يثبت تشغيل البرنامج.',
-    maxPoints: 0,
+    activityTitle: 'النشاط الأول: تثبيت وإعداد Adobe Captivate 2019 (50 XP)',
+    instructions: 'قم بتثبيت برنامج Adobe Captivate 2019 (64-bit) وتفعيل دعم نصوص اللغة العربية، وارفع لقطة شاشة تثبت تفعيل البرنامج.',
+    act1Title: 'النشاط الأول: تثبيت وإعداد Adobe Captivate 2019 (50 XP)',
+    act1Instructions: 'قم بتثبيت برنامج Adobe Captivate 2019 (64-bit) وتفعيل دعم نصوص اللغة العربية، وارفع لقطة شاشة تثبت تفعيل البرنامج.',
+    act2Title: 'النشاط الثاني: إعداد التفضيلات الأولية للمشروع (50 XP)',
+    act2Instructions: 'ضبط التفضيلات الأولية ودعم الخطوط العربية وارفع لقطة شاشة أو مقطع فيديو يثبت إعداد البيئة.',
+    maxPoints: 50,
   },
   2: {
     levelNumber: 2,
-    activityTitle: 'نشاط المستوى 2: استكشاف واجهة المستخدم وشاشات البداية',
-    instructions: 'أنشئ مشروعاً تعليمياً جديداً وتعرف على شريط الأدوات الرئيسي ولوحة الخصائص، ثم ارفع لقطة شاشة لواجهة مشروعك أو مقطع فيديو قصير.',
-    maxPoints: 0,
+    activityTitle: 'النشاط الأول: إنشاء مشروع جديد وتحديد الأبعاد (50 XP)',
+    instructions: 'أنشئ مشروعاً تعليمياً جديداً وتعرف على شريط الأدوات الرئيسي، وارفع لقطة شاشة لواجهة مشروعك.',
+    act1Title: 'النشاط الأول: إنشاء مشروع جديد وتحديد الأبعاد (50 XP)',
+    act1Instructions: 'أنشئ مشروعاً تعليمياً جديداً وتعرف على شريط الأدوات الرئيسي، وارفع لقطة شاشة لواجهة مشروعك.',
+    act2Title: 'النشاط الثاني: ضبط الخط الزمني وقواعد الظهور (50 XP)',
+    act2Instructions: 'ضبط Timeline وترتيب ظهور العناصر وارفع لقطة شاشة أو مقطع للخط الزمني.',
+    maxPoints: 50,
   },
   3: {
     levelNumber: 3,
-    activityTitle: 'نشاط المستوى 3: إدارة الشرائح والمشاهد وتنسيقها',
-    instructions: 'قم بإضافة 3 شرائح تفاعلية مع ضبط عناوينها وتنسيق ألوانها ومدة ظهورها في الخط الزمني (Timeline)، ثم ارفع ملف التطبيق أو صورة للمشروع.',
-    maxPoints: 0,
+    activityTitle: 'النشاط الأول: إدراج وتنسيق الصور والأشكال الذكية (50 XP)',
+    instructions: 'أدرج صوراً وأشكالاً ذكية مع تنسيق محاذاتها، وارفع لقطة شاشة للمشروع.',
+    act1Title: 'النشاط الأول: إدراج وتنسيق الصور والأشكال الذكية (50 XP)',
+    act1Instructions: 'أدرج صوراً وأشكالاً ذكية مع تنسيق محاذاتها، وارفع لقطة شاشة للمشروع.',
+    act2Title: 'النشاط الثاني: دمج وتوزيع التعليق الصوتي (50 XP)',
+    act2Instructions: 'دمج تعليق صوتي داخل الشرائح ومزامنته مع العناصر وارفع ملف التطبيق أو مقطعاً صوتياً.',
+    maxPoints: 50,
   },
   4: {
     levelNumber: 4,
-    activityTitle: 'نشاط المستوى 4: إدراج وتنسيق النصوص والأشكال التفاعلية',
-    instructions: 'أدرج نصوصاً باللغة العربية مع أشكال ذكية (Smart Shapes) تفاعلية واستخدمها كأزرار قابلة للنقر، ثم ارفع ملف المشروع (.cptx) أو لقطة شاشة للشريحة.',
-    maxPoints: 0,
+    activityTitle: 'النشاط الأول: بناء ونشر الأزرار التفاعلية (50 XP)',
+    instructions: 'تصميم أزرار تفاعلية ونقاط النقر (Click Boxes)، وارفع لقطة شاشة للأزرار.',
+    act1Title: 'النشاط الأول: بناء ونشر الأزرار التفاعلية (50 XP)',
+    act1Instructions: 'تصميم أزرار تفاعلية ونقاط النقر (Click Boxes)، وارفع لقطة شاشة للأزرار.',
+    act2Title: 'النشاط الثاني: برمجة إظهار وإخفاء الكائنات (50 XP)',
+    act2Instructions: 'برمجة الإجراءات البسيطة لإظهار وإخفاء الكائنات، وارفع لقطة شاشة أو ملف العمل.',
+    maxPoints: 50,
   },
   5: {
     levelNumber: 5,
-    activityTitle: 'نشاط المستوى 5: دمج الصوت والمؤثرات الصوتية والموسيقى',
-    instructions: 'سجل صوتاً تعليقياً أو أدرج مقطعاً صوتياً توضيحياً داخل الشريحة وتحقق من مزامنة الصوت مع ظهور العناصر، ثم ارفع الملف أو لقطة للشريحة.',
-    maxPoints: 0,
+    activityTitle: 'النشاط الأول: إنشاء وتنسيق الـ Fluid Boxes (50 XP)',
+    instructions: 'أنشئ أوعية مرنة متجاوبة وارفع لقطة شاشة للتنسيق.',
+    act1Title: 'النشاط الأول: إنشاء وتنسيق الـ Fluid Boxes (50 XP)',
+    act1Instructions: 'أنشئ أوعية مرنة متجاوبة وارفع لقطة شاشة للتنسيق.',
+    act2Title: 'النشاط الثاني: معاينة التجاوب على مختلف الأجهزة (50 XP)',
+    act2Instructions: 'معاينة التصميم المتجاوب على شاشات الأجهزة اللوحية والموبايل وارفع لقطة المعاينة.',
+    maxPoints: 50,
   },
   6: {
     levelNumber: 6,
-    activityTitle: 'نشاط المستوى 6: إدراج ومعالجة الفيديو التفاعلي',
-    instructions: 'أدرج مقطع فيديو تعليمي داخل الشريحة واضبط خيارات المشغل ونقاط التوقف والتفاعل (Interactive Video Bookmarks)، ثم ارفع ملف العمل أو لقطة توضيحية.',
-    maxPoints: 0,
+    activityTitle: 'النشاط الأول: إدراج وضبط الفيديو التعليمي (50 XP)',
+    instructions: 'إدراج مقطع فيديو تعليمي داخل الشريحة وارفع لقطة شاشة لمشغل الفيديو.',
+    act1Title: 'النشاط الأول: إدراج وضبط الفيديو التعليمي (50 XP)',
+    act1Instructions: 'إدراج مقطع فيديو تعليمي داخل الشريحة وارفع لقطة شاشة لمشغل الفيديو.',
+    act2Title: 'النشاط الثاني: إدراج العلامات التفاعلية على الفيديو (50 XP)',
+    act2Instructions: 'إضافة Interactive Bookmarks وتوقفات تفاعلية على الفيديو وارفع صورة أو مقطع للتوقفات.',
+    maxPoints: 50,
   },
   7: {
     levelNumber: 7,
-    activityTitle: 'نشاط المستوى 7: برمجة أزرار التنقل والتحكم التفاعلي',
-    instructions: 'أنشئ أزرار تنقل تفاعلية (التالي، السابق، إعادة، انتقال لشريحة محددة) وبرمج إجراءاتها (Actions)، ثم ارفع ملف التطبيق أو لقطة شاشة للبرمجة.',
-    maxPoints: 0,
+    activityTitle: 'النشاط الأول: تصميم أزرار التحكم المتقدمة (50 XP)',
+    instructions: 'تصميم مشغلات أزرار التنقل والتحكم المتقدم، وارفع لقطة للبرمجة.',
+    act1Title: 'النشاط الأول: تصميم أزرار التحكم المتقدمة (50 XP)',
+    act1Instructions: 'تصميم مشغلات أزرار التنقل والتحكم المتقدم، وارفع لقطة للبرمجة.',
+    act2Title: 'النشاط الثاني: ربط المتغيرات والإجراءات المشروطة (50 XP)',
+    act2Instructions: 'ربط المتغيرات التفاعلية (Variables & Conditional Actions) وارفع ملف التطبيق.',
+    maxPoints: 50,
   },
   8: {
     levelNumber: 8,
-    activityTitle: 'نشاط المستوى 8: بناء بنك الأسئلة والاختبارات التفاعلية',
-    instructions: 'صمم شريحة اختبار من نوع الاختيار من متعدد أو المطابقة مع تحديد الدرجات ورسائل التغذية الراجعة، ثم ارفع ملف الاختبار أو صورة للشريحة.',
-    maxPoints: 0,
+    activityTitle: 'النشاط الأول: تصميم أسئلة الاختبار التفاعلي (50 XP)',
+    instructions: 'تصميم شرائح الاختبار التفاعلي (اختيار من متعدد ومطابقة)، وارفع صورة لشريحة الأسئلة.',
+    act1Title: 'النشاط الأول: تصميم أسئلة الاختبار التفاعلي (50 XP)',
+    act1Instructions: 'تصميم شرائح الاختبار التفاعلي (اختيار من متعدد ومطابقة)، وارفع صورة لشريحة الأسئلة.',
+    act2Title: 'النشاط الثاني: إعداد شريحة النتيجة والتغذية الراجعة (50 XP)',
+    act2Instructions: 'إعداد شريحة نتيجة الاختبار وحساب الدرجات وارفع صورة لشريحة النتيجة.',
+    maxPoints: 50,
   },
   9: {
     levelNumber: 9,
-    activityTitle: 'نشاط المستوى 9: نشر وتصدير المشروع النهائي بصيغة HTML5',
-    instructions: 'قم بنشر وتصدير مشروعك النهائي بصيغة HTML5 المتجاوبة للويب، وارفع ملف التصدير المضغوط (.zip) أو ملف المشروع (.cptx) أو لقطة تثبت نجاح التصدير.',
-    maxPoints: 0,
+    activityTitle: 'النشاط الأول: معايرة إعدادات التصدير النهائي (50 XP)',
+    instructions: 'ضبط خيارات التصدير المتوافق مع HTML5 وارفع صورة لإعدادات التصدير.',
+    act1Title: 'النشاط الأول: معايرة إعدادات التصدير النهائي (50 XP)',
+    act1Instructions: 'ضبط خيارات التصدير المتوافق مع HTML5 وارفع صورة لإعدادات التصدير.',
+    act2Title: 'النشاط الثاني: تصدير ورسومات المشروع النهائي (.zip/.cptx) (50 XP)',
+    act2Instructions: 'تصدير المشروع النهائي المكتمل بصيغة HTML5 المضغوطة (.zip أو .cptx) وارفع الملف النهائي.',
+    maxPoints: 50,
   },
 };
 
@@ -89,7 +125,15 @@ export function getLevelActivityConfigs(): Record<number, LevelActivityConfig> {
     const merged: Record<number, LevelActivityConfig> = { ...DEFAULT_LEVEL_ACTIVITY_CONFIGS };
     for (let i = 1; i <= 9; i++) {
       if (parsed[i]) {
-        merged[i] = { ...merged[i], ...parsed[i] };
+        const def = DEFAULT_LEVEL_ACTIVITY_CONFIGS[i];
+        merged[i] = {
+          ...def,
+          ...parsed[i],
+          act1Title: parsed[i].act1Title || parsed[i].activityTitle || def.act1Title,
+          act1Instructions: parsed[i].act1Instructions || parsed[i].instructions || def.act1Instructions,
+          act2Title: parsed[i].act2Title || def.act2Title,
+          act2Instructions: parsed[i].act2Instructions || def.act2Instructions,
+        };
       }
     }
     return merged;
@@ -100,10 +144,18 @@ export function getLevelActivityConfigs(): Record<number, LevelActivityConfig> {
 
 export function getLevelActivityConfig(levelNumber: number): LevelActivityConfig {
   const configs = getLevelActivityConfigs();
-  return configs[levelNumber] || DEFAULT_LEVEL_ACTIVITY_CONFIGS[levelNumber] || {
+  const def = DEFAULT_LEVEL_ACTIVITY_CONFIGS[levelNumber] || DEFAULT_LEVEL_ACTIVITY_CONFIGS[1];
+  const cfg = configs[levelNumber] || def;
+
+  return {
+    ...cfg,
     levelNumber,
-    activityTitle: `نشاط المستوى ${levelNumber}`,
-    instructions: 'قم برفع ملف تطبيقك العملي لهذا المستوى.',
+    activityTitle: cfg.act1Title || cfg.activityTitle || def.act1Title || `النشاط الأول للمستوى ${levelNumber}`,
+    instructions: cfg.act1Instructions || cfg.instructions || def.act1Instructions || 'قم برفع ملف التطبيق العملي للنشاط الأول.',
+    act1Title: cfg.act1Title || cfg.activityTitle || def.act1Title || `النشاط الأول للمستوى ${levelNumber}`,
+    act1Instructions: cfg.act1Instructions || cfg.instructions || def.act1Instructions || 'قم برفع ملف التطبيق العملي للنشاط الأول.',
+    act2Title: cfg.act2Title || def.act2Title || `النشاط الثاني للمستوى ${levelNumber}`,
+    act2Instructions: cfg.act2Instructions || def.act2Instructions || 'قم برفع ملف التطبيق العملي للنشاط الثاني.',
     maxPoints: 50,
   };
 }
@@ -122,14 +174,14 @@ export function saveAllLevelActivityConfigs(
       Object.values(configs).forEach((cfg) => {
         const found = customLevels.find((l) => l.levelNumber === cfg.levelNumber);
         if (found) {
-          found.activityPrompt = cfg.instructions;
-          (found as any).activityTitle = cfg.activityTitle;
+          found.activityPrompt = cfg.act1Instructions || cfg.instructions;
+          (found as any).activityTitle = cfg.act1Title || cfg.activityTitle;
           changed = true;
         }
         const memoryFound = GAME_LEVELS_DATA.find((l) => l.levelNumber === cfg.levelNumber);
         if (memoryFound) {
-          memoryFound.activityPrompt = cfg.instructions;
-          (memoryFound as any).activityTitle = cfg.activityTitle;
+          memoryFound.activityPrompt = cfg.act1Instructions || cfg.instructions;
+          (memoryFound as any).activityTitle = cfg.act1Title || cfg.activityTitle;
         }
       });
       if (changed) {
@@ -159,7 +211,7 @@ export function updateLevelActivityConfig(
   updates: Partial<LevelActivityConfig>
 ): Record<number, LevelActivityConfig> {
   const all = getLevelActivityConfigs();
-  const current = all[levelNumber] || DEFAULT_LEVEL_ACTIVITY_CONFIGS[levelNumber];
+  const current = getLevelActivityConfig(levelNumber);
   all[levelNumber] = {
     ...current,
     ...updates,
@@ -247,9 +299,14 @@ export async function submitStudentActivity(
 ): Promise<StudentActivitySubmission> {
   const username = submission.studentUsername?.trim() || 'unknown';
   const levelNum = submission.levelNumber || 1;
+  const actIdx = submission.activityIndex || 1;
   const config = getLevelActivityConfig(levelNum);
 
-  const subId = submission.id || `sub_${username}_lvl${levelNum}_${Date.now()}`;
+  const actTitle = actIdx === 2
+    ? (config.act2Title || `النشاط الثاني للمستوى ${levelNum}`)
+    : (config.act1Title || config.activityTitle || `النشاط الأول للمستوى ${levelNum}`);
+
+  const subId = submission.id || `sub_${username}_lvl${levelNum}_act${actIdx}_${Date.now()}`;
   const studentGroup = submission.groupCode || getGroupByUsername(username)?.code;
   const isG1Immediate = studentGroup === 'G1';
 
@@ -258,8 +315,9 @@ export async function submitStudentActivity(
     id: subId,
     studentUsername: username,
     levelNumber: levelNum,
-    activityTitle: submission.activityTitle || config.activityTitle,
-    maxPoints: submission.maxPoints || config.maxPoints || 50,
+    activityIndex: actIdx,
+    activityTitle: submission.activityTitle || actTitle,
+    maxPoints: submission.maxPoints || 50,
     status: isG1Immediate ? 'graded' : (submission.status || 'auto_granted_pending_review'),
     grade: isG1Immediate ? 50 : (submission.grade ?? 50),
     feedback: isG1Immediate
@@ -273,7 +331,7 @@ export async function submitStudentActivity(
   // 1. Save in local submissions list
   const currentList = getAllActivitySubmissions();
   const existingIdx = currentList.findIndex(
-    (s) => s.id === subId || (s.studentUsername === username && s.levelNumber === levelNum)
+    (s) => s.id === subId || (s.studentUsername === username && s.levelNumber === levelNum && (s.activityIndex || 1) === actIdx)
   );
   if (existingIdx !== -1) {
     currentList[existingIdx] = completeSubmission;
@@ -282,12 +340,11 @@ export async function submitStudentActivity(
   }
   saveAllActivitySubmissions(currentList);
 
-  // 2. Save into student's personal game progress (points are 0 until graded)
+  // 2. Save into student's personal game progress
   saveStudentLevelActivity(username, levelNum, completeSubmission);
 
   // 3. Sync to Firebase RTDB
   try {
-    // For RTDB storage, store metadata + file payload
     const rtdbSubRef = ref(rtdb, `student_activities/${subId}`);
     await rtdbSet(rtdbSubRef, completeSubmission);
   } catch (err) {
@@ -295,7 +352,7 @@ export async function submitStudentActivity(
   }
 
   addActivityLog(
-    `رفع نشاط جديد: الطالب ${username} رفع نشاط ${completeSubmission.activityTitle} (${completeSubmission.fileName})`,
+    `رفع نشاط جديد: الطالب ${username} رفع ${completeSubmission.activityTitle} (${completeSubmission.fileName})`,
     username,
     'success'
   );
@@ -415,11 +472,13 @@ export async function deleteStudentActivity(submissionId: string): Promise<void>
   if (targetSub && targetSub.studentUsername && targetSub.levelNumber) {
     const username = targetSub.studentUsername;
     const lvlNum = targetSub.levelNumber;
+    const actIdx = targetSub.activityIndex || 1;
     const allProgress = getAllStudentsProgress();
     const prog = getStudentProgress(username);
 
-    if (prog.studentActivities && prog.studentActivities[lvlNum]) {
-      delete prog.studentActivities[lvlNum];
+    if (prog.studentActivities) {
+      delete prog.studentActivities[`${lvlNum}_${actIdx}`];
+      if (actIdx === 1) delete prog.studentActivities[lvlNum];
       prog.totalScore = calculateStudentTotalScore(prog);
       prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
       allProgress[username] = prog;

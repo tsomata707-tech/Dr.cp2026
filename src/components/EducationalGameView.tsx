@@ -182,11 +182,17 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   const [isTransitioning5s, setIsTransitioning5s] = useState<boolean>(false);
   const [transitionTargetLevel, setTransitionTargetLevel] = useState<number>(2);
 
-  // Student level activity upload state
-  const activityFileInputRef = useRef<HTMLInputElement | null>(null);
-  const [studentActivity, setStudentActivity] = useState<StudentActivitySubmission | null>(
-    () => progress.studentActivities?.[selectedLevelNum] || null
+  // Student level activity upload state (Activity 1 & Activity 2)
+  const activityFileInput1Ref = useRef<HTMLInputElement | null>(null);
+  const activityFileInput2Ref = useRef<HTMLInputElement | null>(null);
+
+  const [studentActivity1, setStudentActivity1] = useState<StudentActivitySubmission | null>(
+    () => progress.studentActivities?.[`${selectedLevelNum}_1`] || progress.studentActivities?.[selectedLevelNum] || null
   );
+  const [studentActivity2, setStudentActivity2] = useState<StudentActivitySubmission | null>(
+    () => progress.studentActivities?.[`${selectedLevelNum}_2`] || null
+  );
+
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadStatusText, setUploadStatusText] = useState<string>('جاري قراءة الملف...');
@@ -603,9 +609,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     }));
   };
 
-  // Sync student activity when level changes
+  // Sync student activities when level changes
   useEffect(() => {
-    setStudentActivity(progress.studentActivities?.[selectedLevelNum] || null);
+    setStudentActivity1(progress.studentActivities?.[`${selectedLevelNum}_1`] || progress.studentActivities?.[selectedLevelNum] || null);
+    setStudentActivity2(progress.studentActivities?.[`${selectedLevelNum}_2`] || null);
   }, [selectedLevelNum, progress]);
 
   // Dynamic Level Activity Config
@@ -630,7 +637,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         const updated = getStudentProgress(username);
         setProgress(updated);
         if (e.detail.levelNumber === selectedLevelNum) {
-          setStudentActivity(e.detail.submission || updated.studentActivities?.[selectedLevelNum] || null);
+          setStudentActivity1(updated.studentActivities?.[`${selectedLevelNum}_1`] || updated.studentActivities?.[selectedLevelNum] || null);
+          setStudentActivity2(updated.studentActivities?.[`${selectedLevelNum}_2`] || null);
         }
       }
     };
@@ -638,23 +646,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     return () => window.removeEventListener('cp_student_activity_graded', handleGraded);
   }, [username, selectedLevelNum]);
 
-  const handleTriggerUpload = () => {
-    const questionsList = currentLevelDef?.questions || [];
-    const minRequired = Math.min(3, questionsList.length);
-    const answeredCount = questionsList.filter((q) => chosenAnswers[q.id] !== undefined).length;
-
-    if (!isAdmin && answeredCount < minRequired) {
-      setUploadError(`يجب الإجابة على 3 أسئلة على الأقل قبل رفع النشاط (تمت الإجابة على ${answeredCount} من ${minRequired})`);
-      setTimeout(() => setUploadError(null), 6000);
-      return;
-    }
-
-    setUploadError(null);
-    activityFileInputRef.current?.click();
-  };
-
-  // [FIX 11]: شريط تقدم صادق مقسّم على مرحلتين (قراءة الملف المحلي ثم الرفع السحابي مع تحديث النص)
-  const handleUploadActivity = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadActivity = (actIndex: 1 | 2, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -672,11 +664,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
     setIsUploading(true);
     setUploadProgress(0);
-    setUploadStatusText('جاري قراءة الملف المحتوي...');
+    setUploadStatusText(`جاري قراءة ملف ${actIndex === 1 ? 'النشاط الأول' : 'النشاط الثاني'}...`);
 
     const reader = new FileReader();
 
-    // المرحله الأولى: 0% -> 60%
     reader.onprogress = (evt) => {
       if (evt.lengthComputable) {
         const pct = Math.round((evt.loaded / evt.total) * 60);
@@ -685,9 +676,8 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     };
 
     reader.onload = async () => {
-      // المرحلة الثانية: 60% -> 95% أثناء المعالجة والرفع
       setUploadProgress(65);
-      setUploadStatusText('جاري الرفع المباشر إلى السحابة وتوثيق النشاط...');
+      setUploadStatusText(`جاري الرفع المباشر وتوثيق ${actIndex === 1 ? 'النشاط الأول' : 'النشاط الثاني'}...`);
 
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
@@ -698,8 +688,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
       const fileUrl = reader.result as string;
       const cfg = getLevelActivityConfig(selectedLevelNum);
+      const actTitle = actIndex === 2
+        ? (cfg.act2Title || `النشاط الثاني للمستوى ${selectedLevelNum}`)
+        : (cfg.act1Title || cfg.activityTitle || `النشاط الأول للمستوى ${selectedLevelNum}`);
 
-      // [FIX 12]: إرسال status بـ auto_granted_pending_review بدلاً من pending لمنع التعارض مع درجة 50 الممنوحة تلقائياً
       const submission: StudentActivitySubmission = {
         fileUrl,
         fileName: file.name,
@@ -710,26 +702,23 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         studentFullName: studentInfo?.fullName || username,
         groupCode,
         levelNumber: selectedLevelNum,
-        activityTitle: cfg.activityTitle,
+        activityIndex: actIndex,
+        activityTitle: actTitle,
         maxPoints: 50,
         status: 'auto_granted_pending_review',
-        grade: 50, // منح تلقائي فوري مطلوب
+        grade: 50,
       };
 
       const saved = await submitStudentActivity(submission);
 
       clearInterval(progressInterval);
       setUploadProgress(100);
-      setUploadStatusText('تم الرفع واكتمال النشاط بنجاح! 🟢');
-
-      setActivityScorePerLevel((prev) => ({
-        ...prev,
-        [selectedLevelNum]: 50,
-      }));
+      setUploadStatusText(`تم رفع ${actIndex === 1 ? 'النشاط الأول' : 'النشاط الثاني'} بنجاح! 🟢`);
 
       const updatedProg = getStudentProgress(username);
       setProgress(updatedProg);
-      setStudentActivity(saved);
+      if (actIndex === 1) setStudentActivity1(saved);
+      else setStudentActivity2(saved);
 
       setTimeout(() => {
         setIsUploading(false);
@@ -746,42 +735,21 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     e.target.value = '';
   };
 
-  // [FIX 4]: عند حذف النشاط، خصم الـ 50 وإعادة حساب totalScore وإعادة حفظ تقدم الطالب
-  const handleRemoveActivity = async () => {
-    if (studentActivity?.id) {
-      await deleteStudentActivity(studentActivity.id);
+  const handleRemoveActivity = async (actIndex: 1 | 2) => {
+    const targetAct = actIndex === 1 ? studentActivity1 : studentActivity2;
+    if (targetAct?.id) {
+      await deleteStudentActivity(targetAct.id);
     }
     const updatedProg = getStudentProgress(username);
-
-    // إذا كان المستوى مكتملاً وبداخل questionScores نشاط القسم الثاني، فصفّر قيمته
-    if (updatedProg.completedLevels && updatedProg.completedLevels[selectedLevelNum]) {
-      const completedLvl = updatedProg.completedLevels[selectedLevelNum];
-      if (completedLvl.questionScores && completedLvl.questionScores['section2_activity'] !== undefined) {
-        completedLvl.questionScores['section2_activity'] = 0;
-        completedLvl.score = Object.values(completedLvl.questionScores).reduce((a, b) => a + b, 0);
-      }
-    }
-
-    updatedProg.totalScore = calculateStudentTotalScore(updatedProg);
     saveSingleStudentProgress(username, updatedProg);
     setProgress(updatedProg);
-    setStudentActivity(null);
-    setActivityScorePerLevel((prev) => ({
-      ...prev,
-      [selectedLevelNum]: 0,
-    }));
+    if (actIndex === 1) setStudentActivity1(null);
+    else setStudentActivity2(null);
   };
 
-  // [FIX 1]: عند إنهاء المستوى تمرير s2Score = 0 دائماً لأن درجة الـ 50 موجودة أصلاً في studentActivities
   const handleFinishLevelClick = async () => {
-    if (!isAdmin && !studentActivity) {
-      alert('يرجى رفع نشاطك الخاص لهذا المستوى أولاً (فيديو أو صورة أو PDF) لإكمال المستوى');
-      return;
-    }
-
-    const firstQ = currentLevelDef?.questions?.[0];
-    if (!isAdmin && firstQ && chosenAnswers[firstQ.id] === undefined && !isLevelCompleted) {
-      alert('يرجى الإجابة على سؤال تحدي المعرفة (القسم الأول) قبل إنهاء المستوى');
+    if (!isAdmin && (!studentActivity1 || !studentActivity2)) {
+      alert('يرجى رفع ملف النشاط الأول والنشاط الثاني لهذا المستوى أولاً لإكمال المستوى');
       return;
     }
 
@@ -792,23 +760,19 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       return;
     }
 
-    const s1ScoreOverride = section1ScorePerLevel[selectedLevelNum];
-
-    // Activity Question in Section 2 is worth 50 XP
-    const s2Score = 50;
     const { progress: updatedProgress } = submitLevelChallenge(
       username,
       selectedLevelNum,
-      chosenAnswers,
+      {},
       60,
-      s2Score,
-      s1ScoreOverride,
+      50,
+      50,
       0
     );
 
     markTestCompletedInAudit(username, `level-${selectedLevelNum}`);
 
-    await submitGroupLevelRealtime(effectiveRoomId, selectedLevelNum, chosenAnswers, {
+    await submitGroupLevelRealtime(effectiveRoomId, selectedLevelNum, {}, {
       username,
       fullName: studentInfo?.fullName || username,
       avatarEmoji: currentAvatar.emoji,
@@ -1834,13 +1798,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               {(isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) ? (
                 <>
                   <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                    تحدي المعرفة (50 درجة): <strong className="text-amber-400">{section1ScorePerLevel[selectedLevelNum] || 0} / 50 XP</strong>
+                    النشاط الأول (50 درجة): <strong className="text-amber-400">{studentActivity1 ? (studentActivity1.grade ?? 50) : 0} / 50 XP</strong>
                   </span>
                   <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
-                    النشاط التطبيقي (50 درجة): <strong className="text-cyan-400">{studentActivity ? (studentActivity.grade ?? 50) : 0} / 50 XP</strong>
+                    النشاط الثاني (50 درجة): <strong className="text-cyan-400">{studentActivity2 ? (studentActivity2.grade ?? 50) : 0} / 50 XP</strong>
                   </span>
                   <span className="px-3.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-black shadow-sm">
-                    المجموع المعتمد للمستوى: {isLevelCompleted && completedResult ? completedResult.score : ((studentActivity ? (studentActivity.grade ?? 50) : 0) + (section1ScorePerLevel[selectedLevelNum] || 0))} / 100 XP
+                    المجموع المعتمد للمستوى: {isLevelCompleted && completedResult ? completedResult.score : ((studentActivity1 ? (studentActivity1.grade ?? 50) : 0) + (studentActivity2 ? (studentActivity2.grade ?? 50) : 0))} / 100 XP
                   </span>
                 </>
               ) : (
@@ -1866,290 +1830,253 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
         </div>
       </div>
 
-      {/* 4. SECTION: نشاطك الخاص */}
+      {/* 4. SECTION: أنشطة المستوى (النشاط الأول + النشاط الثاني) */}
       <div className="mt-8 pt-8 border-t-2 border-amber-500/40 space-y-6" id="student-activity-section">
-        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#120e26] via-[#1a1438] to-[#120e26] border-2 border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.25)] text-right relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border-2 border-amber-400 text-amber-300 flex items-center justify-center text-2xl shrink-0 shadow-md">
-                🎯
+        {uploadError && (
+          <div className="p-3.5 rounded-2xl bg-rose-950/90 border-2 border-rose-500 text-rose-200 text-xs font-bold flex items-center gap-2 animate-shake">
+            <span>⚠️ {uploadError}</span>
+          </div>
+        )}
+
+        {isUploading && (
+          <div className="p-4 rounded-2xl bg-slate-900/90 border border-sky-500/50 space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-sky-300">
+              <span>{uploadStatusText}</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-sky-500/40">
+              <div
+                className="h-full bg-gradient-to-r from-sky-500 to-cyan-400 rounded-full transition-all duration-150 shadow-[0_0_10px_rgba(56,189,248,0.5)]"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* CARD 1: ACTIVITY 1 */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#120e26] via-[#1a1438] to-[#120e26] border-2 border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.2)] text-right flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 flex items-center justify-center text-xl shrink-0 font-bold">
+                    1️⃣
+                  </div>
+                  <div>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-[11px] font-black">
+                      النشاط التطبيقي الأول (50 XP)
+                    </span>
+                    <h4 className="text-base font-black text-white font-['Tajawal'] mt-1">
+                      {levelActivityConfig?.act1Title || `النشاط الأول للمستوى ${selectedLevelNum}`}
+                    </h4>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-emerald-300">
+                  {studentActivity1 ? '✅ تم الرفع' : '⏳ مطلوب'}
+                </span>
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-[11px] font-black">
-                    متطلب إنهاء المستوى {selectedLevelNum}
-                  </span>
-                  <span className="text-xs text-emerald-400 font-bold">
-                    {studentActivity ? '✅ تم رفع النشاط' : '⏳ مطلوب رفع النشاط أولاً'}
+
+              <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3 rounded-2xl border border-slate-800 font-['Cairo']">
+                {levelActivityConfig?.act1Instructions || 'قم برفع ملف التطبيق العملي للنشاط الأول.'}
+              </p>
+
+              <input
+                ref={activityFileInput1Ref}
+                type="file"
+                accept="image/*,.pdf,video/*,.cptx,.zip"
+                onChange={(e) => handleUploadActivity(1, e)}
+                className="hidden"
+                id={`activity-1-upload-input-${selectedLevelNum}`}
+              />
+
+              {!studentActivity1 ? (
+                <div
+                  onClick={() => activityFileInput1Ref.current?.click()}
+                  className="p-6 rounded-2xl border-2 border-dashed border-amber-400/60 hover:border-amber-400 bg-slate-950/60 hover:bg-slate-900/60 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-2 group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-400/40 group-hover:scale-110 text-amber-300 flex items-center justify-center text-2xl">
+                    📁
+                  </div>
+                  <h5 className="text-xs font-black text-white font-['Tajawal']">
+                    رفع ملف النشاط الأول (50 XP)
+                  </h5>
+                  <span className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-xs shadow flex items-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    <span>اختيار ملف النشاط الأول</span>
                   </span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-black text-white font-['Tajawal'] mt-1">
-                  {levelActivityConfig?.activityTitle || `نشاط المستوى ${selectedLevelNum}`}
-                </h3>
-                <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
-                  {levelActivityConfig?.instructions || currentLevelDef.activityPrompt || 'قم برفع ملف تطبيقك العملي أو مخرج التدريب لهذا المستوى.'}
-                </p>
-              </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-slate-950/90 border border-emerald-500/50 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-2xl shrink-0">
+                        {studentActivity1.fileType === 'video' ? '🎬' : studentActivity1.fileType === 'pdf' ? '📄' : '🖼️'}
+                      </span>
+                      <div className="min-w-0">
+                        <h5 className="text-xs font-bold text-white truncate">
+                          {studentActivity1.fileName}
+                        </h5>
+                        <span className="text-[10px] text-emerald-300 font-bold block">
+                          50 XP (تم الرفع وتوثيق النشاط الأول)
+                        </span>
+                      </div>
+                    </div>
+                    {!isLevelCompleted && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveActivity(1)}
+                        className="p-1.5 rounded-lg bg-red-950/50 hover:bg-red-900/60 border border-red-500/50 text-red-300 text-xs font-bold shrink-0 cursor-pointer"
+                        title="حذف النشاط الأول"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-
-            <input
-              ref={activityFileInputRef}
-              type="file"
-              accept="image/*,.pdf,video/*,.cptx,.zip"
-              onChange={handleUploadActivity}
-              className="hidden"
-              id={`activity-upload-input-${selectedLevelNum}`}
-            />
           </div>
 
-          {uploadError && (
-            <div className="mb-4 p-3.5 rounded-2xl bg-rose-950/90 border-2 border-rose-500 text-rose-200 text-xs font-bold flex items-center gap-2 animate-shake">
-              <span>⚠️ {uploadError}</span>
-            </div>
-          )}
-
-          {/* [FIX 11]: شريط تقدم صادق متعدد المراحل مع نص متغير */}
-          {isUploading && (
-            <div className="mb-4 p-4 rounded-2xl bg-slate-900/90 border border-sky-500/50 space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-sky-300">
-                <span>{uploadStatusText}</span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-sky-500/40">
-                <div
-                  className="h-full bg-gradient-to-r from-sky-500 to-cyan-400 rounded-full transition-all duration-150 shadow-[0_0_10px_rgba(56,189,248,0.5)]"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          {!studentActivity ? (
-            <div
-              onClick={handleTriggerUpload}
-              className="mt-5 p-8 rounded-2xl border-2 border-dashed border-amber-400/60 hover:border-amber-400 bg-slate-950/60 hover:bg-slate-900/60 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-3 group"
-            >
-              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-400/40 group-hover:scale-110 group-hover:bg-amber-500/20 text-amber-300 flex items-center justify-center transition-all text-3xl">
-                📁
-              </div>
-              <div>
-                <h4 className="text-sm sm:text-base font-black text-white font-['Tajawal']">
-                  اضغط هنا لرفع {levelActivityConfig?.activityTitle || 'نشاطك الخاص'}
-                </h4>
-                <p className="text-xs text-slate-400 mt-1 font-['Cairo']">
-                  يقبل جميع امتدادات الفيديو، الصور، مستندات الـ PDF ومشاريع Captivate (.cptx, .zip)
-                </p>
-              </div>
-              <button
-                type="button"
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-xs shadow-lg flex items-center gap-2 pointer-events-none"
-              >
-                <Upload className="w-4 h-4" />
-                <span>اختيار ملف النشاط من جهازك</span>
-              </button>
-            </div>
-          ) : (
-            <div className="mt-5 p-5 rounded-2xl bg-slate-950/80 border border-emerald-500/50 space-y-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          {/* CARD 2: ACTIVITY 2 */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#0e1626] via-[#142038] to-[#0e1626] border-2 border-cyan-400 shadow-[0_0_30px_rgba(6,182,212,0.2)] text-right flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-800">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">
-                    {studentActivity.fileType === 'video' ? '🎬' : studentActivity.fileType === 'pdf' ? '📄' : '🖼️'}
-                  </span>
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 text-cyan-300 flex items-center justify-center text-xl shrink-0 font-bold">
+                    2️⃣
+                  </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white truncate max-w-xs sm:max-w-md">
-                      {studentActivity.fileName}
+                    <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-300 text-[11px] font-black">
+                      النشاط التطبيقي الثاني (50 XP)
+                    </span>
+                    <h4 className="text-base font-black text-white font-['Tajawal'] mt-1">
+                      {levelActivityConfig?.act2Title || `النشاط الثاني للمستوى ${selectedLevelNum}`}
                     </h4>
-                    <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
-                      <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-emerald-300 font-bold uppercase">
-                        {studentActivity.fileType}
-                      </span>
-                      {studentActivity.fileSize && (
-                        <span>{(studentActivity.fileSize / (1024 * 1024)).toFixed(2)} MB</span>
-                      )}
-                      <span>• تم الرفع بنجاح</span>
-                    </div>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
-                  <a
-                    href={studentActivity.fileUrl}
-                    download={studentActivity.fileName}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/50 text-emerald-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>تحميل الملف</span>
-                  </a>
-
-                  <button
-                    type="button"
-                    onClick={handleTriggerUpload}
-                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>تبديل الملف</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleRemoveActivity}
-                    className="px-3 py-1.5 rounded-lg bg-red-950/50 hover:bg-red-900/60 border border-red-500/50 text-red-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>حذف</span>
-                  </button>
-                </div>
+                <span className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-emerald-300">
+                  {studentActivity2 ? '✅ تم الرفع' : '⏳ مطلوب'}
+                </span>
               </div>
 
-              <div className="rounded-xl overflow-hidden border border-slate-800 bg-black/60 p-2 flex justify-center items-center">
-                {!studentActivity.fileUrl || !studentActivity.fileUrl.trim() ? (
-                  <div className="p-10 text-center space-y-3">
-                    <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto text-blue-400">
-                      <HardDrive className="w-8 h-8" />
-                    </div>
-                    <p className="text-sm font-bold text-slate-300">الملف محفوظ بأمان في السحابة</p>
-                  </div>
-                ) : studentActivity.fileType === 'video' ? (
-                  <video
-                    controls
-                    src={studentActivity.fileUrl.trim()}
-                    className="max-h-72 w-auto max-w-full rounded-lg shadow-lg"
-                  />
-                ) : studentActivity.fileType === 'image' ? (
-                  <img
-                    src={studentActivity.fileUrl.trim()}
-                    alt="معاينة نشاطك الخاص"
-                    className="max-h-72 w-auto max-w-full rounded-lg object-contain shadow-lg"
-                  />
-                ) : (
-                  <div className="p-6 text-center space-y-2">
-                    <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/50 text-rose-300 flex items-center justify-center mx-auto text-2xl font-bold">
-                      PDF
-                    </div>
-                    <p className="text-xs text-slate-300 font-bold">{studentActivity.fileName}</p>
-                    <a
-                      href={studentActivity.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold border border-slate-700 cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>فتح ومعاينة ملف PDF</span>
-                    </a>
-                  </div>
-                )}
-              </div>
+              <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3 rounded-2xl border border-slate-800 font-['Cairo']">
+                {levelActivityConfig?.act2Instructions || 'قم برفع ملف التطبيق العملي للنشاط الثاني.'}
+              </p>
 
-              {/* [FIX 12]: عرض حالة المنح التلقائي للـ 50 درجة مع توضيح انتظار مراجعة الأدمن */}
-              {studentActivity.status === 'graded' ? (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-teal-950/80 to-emerald-950/90 border-2 border-emerald-400 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 flex items-center justify-center text-xl shrink-0">
-                      ⭐
-                    </div>
-                    <div>
-                      <div className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal']">
-                        تم تقييم النشاط ورصد الدرجة بنجاح من المشرف
-                      </div>
-                      {studentActivity.feedback && (
-                        <div className="text-xs text-slate-200 mt-0.5">
-                          ملاحظة المشرف: <span className="font-bold text-white">{studentActivity.feedback}</span>
-                        </div>
-                      )}
-                    </div>
+              <input
+                ref={activityFileInput2Ref}
+                type="file"
+                accept="image/*,.pdf,video/*,.cptx,.zip"
+                onChange={(e) => handleUploadActivity(2, e)}
+                className="hidden"
+                id={`activity-2-upload-input-${selectedLevelNum}`}
+              />
+
+              {!studentActivity2 ? (
+                <div
+                  onClick={() => activityFileInput2Ref.current?.click()}
+                  className="p-6 rounded-2xl border-2 border-dashed border-cyan-400/60 hover:border-cyan-400 bg-slate-950/60 hover:bg-slate-900/60 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-2 group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-400/40 group-hover:scale-110 text-cyan-300 flex items-center justify-center text-2xl">
+                    📁
                   </div>
-                  <div className="px-4 py-2 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 font-black text-base font-['Outfit'] shrink-0 shadow-md">
-                    {studentActivity.grade} / {studentActivity.maxPoints || 0} XP ⭐
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-amber-950/60 to-emerald-950/80 border-2 border-emerald-400/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 flex items-center justify-center text-xl shrink-0">
-                      ✅
-                    </div>
-                    <div>
-                      <div className="text-xs sm:text-sm font-black text-emerald-300 font-['Tajawal']">
-                        ✅ تم إكمال النشاط — بانتظار مراجعة الأدمن
-                      </div>
-                      <div className="text-[11px] text-slate-300 mt-0.5">
-                        تم توثيق النشاط فور رفع الملف، وهو بانتظار الاعتماد والمراجعة النهائية من المشرف.
-                      </div>
-                    </div>
-                  </div>
-                  <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-black text-xs shrink-0">
-                    50 / 50 XP (ممنوحة تلقائياً)
+                  <h5 className="text-xs font-black text-white font-['Tajawal']">
+                    رفع ملف النشاط الثاني (50 XP)
+                  </h5>
+                  <span className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-slate-950 font-black text-xs shadow flex items-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    <span>اختيار ملف النشاط الثاني</span>
                   </span>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Finish Level Action Button */}
-          <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800/80">
-            <div className="text-xs text-slate-400 font-['Cairo']">
-              {isAdmin ? (
-                <span className="text-emerald-400 font-bold flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  وضع المشرف (قراءة فقط 👁️): يمكنك الانتقال وتصفح أي مستوى بحرية.
-                </span>
-              ) : !studentActivity ? (
-                <span className="text-amber-300 font-bold flex items-center gap-1.5">
-                  <AlertCircle className="w-4 h-4 text-amber-400" />
-                  يجب رفع نشاطك الخاص لتفعيل زر إنهاء المستوى
-                </span>
               ) : (
-                <span className="text-emerald-400 font-bold flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4" />
-                  النشاط مكتمل وجاهز للتسليم والإنهاء
-                </span>
+                <div className="p-4 rounded-2xl bg-slate-950/90 border border-emerald-500/50 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-2xl shrink-0">
+                        {studentActivity2.fileType === 'video' ? '🎬' : studentActivity2.fileType === 'pdf' ? '📄' : '🖼️'}
+                      </span>
+                      <div className="min-w-0">
+                        <h5 className="text-xs font-bold text-white truncate">
+                          {studentActivity2.fileName}
+                        </h5>
+                        <span className="text-[10px] text-emerald-300 font-bold block">
+                          50 XP (تم الرفع وتوثيق النشاط الثاني)
+                        </span>
+                      </div>
+                    </div>
+                    {!isLevelCompleted && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveActivity(2)}
+                        className="p-1.5 rounded-lg bg-red-950/50 hover:bg-red-900/60 border border-red-500/50 text-red-300 text-xs font-bold shrink-0 cursor-pointer"
+                        title="حذف النشاط الثاني"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
+          </div>
+        </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+        {/* Finish Level Action Button */}
+        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800/80">
+          <div className="text-xs text-slate-400 font-['Cairo']">
+            {isAdmin ? (
+              <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                وضع المشرف (قراءة فقط 👁️): يمكنك الانتقال وتصفح أي مستوى بحرية.
+              </span>
+            ) : (!studentActivity1 || !studentActivity2) ? (
+              <span className="text-amber-300 font-bold flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 text-amber-400" />
+                يجب رفع النشاط الأول والنشاط الثاني لتفعيل زر إنهاء المستوى (100 XP)
+              </span>
+            ) : (
+              <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4" />
+                النشاطان مكتملان وجاهزان للتسليم والإنهاء (100 XP)
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <button
+              type="button"
+              id={`btn-finish-level-${selectedLevelNum}`}
+              onClick={() => {
+                if (isLevelCompleted && !isAdmin) {
+                  alert('هذا المستوى مكتمل ومقفل تماماً. لا يمكنك العودة إليه إلا بطلب إعادة تهيئة من المشرف.');
+                  return;
+                }
+                if (!isAdmin && (!studentActivity1 || !studentActivity2)) {
+                  alert('يرجى رفع ملف النشاط الأول والنشاط الثاني لهذا المستوى أولاً لإكمال المستوى');
+                  return;
+                }
+                handleFinishLevelClick();
+              }}
+              className={`w-full sm:w-auto min-w-[260px] px-8 py-3.5 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-3 transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg ${
+                (studentActivity1 && studentActivity2) || isAdmin
+                  ? 'bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-[0_0_25px_rgba(255,215,0,0.45)] border-2 border-amber-300'
+                  : 'bg-slate-800/80 text-slate-400 border border-slate-700/60 hover:border-amber-400/50'
+              }`}
+            >
+              <span>{isLevelCompleted ? 'تم إكمال المستوى بنجاح 🏆' : `إنهاء وتسليم النشاطين للمستوى ${selectedLevelNum} (100 XP) 🚀`}</span>
+              <ArrowLeft className="w-5 h-5 shrink-0" />
+            </button>
+
+            {(isLevelCompleted || isAdmin) && selectedLevelNum < 9 && (
               <button
                 type="button"
-                id={`btn-finish-level-${selectedLevelNum}`}
-                onClick={() => {
-                  if (isLevelCompleted && !isAdmin) {
-                    alert('هذا المستوى مكتمل ومقفل تماماً. لا يمكنك العودة إليه إلا بطلب إعادة تهيئة من المشرف.');
-                    return;
-                  }
-                  if (!isAdmin) {
-                    const unanswered = (currentLevelDef?.questions || []).some(
-                      (q) => chosenAnswers[q.id] === undefined
-                    );
-                    if (unanswered) {
-                      alert('يرجى الإجابة على جميع أسئلة المستوى أولاً');
-                      return;
-                    }
-                    if (!studentActivity) {
-                      alert('يرجى رفع نشاطك الخاص أولاً (فيديو أو صورة أو PDF) لإكمال المستوى');
-                      return;
-                    }
-                  }
-                  handleFinishLevelClick();
-                }}
-                className={`w-full sm:w-auto min-w-[240px] px-8 py-3.5 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-3 transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg ${
-                  studentActivity || isAdmin
-                    ? 'bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-[0_0_25px_rgba(255,215,0,0.45)] border-2 border-amber-300'
-                    : 'bg-slate-800/80 text-slate-400 border border-slate-700/60 hover:border-amber-400/50'
-                }`}
+                onClick={() => setSelectedLevelNum(selectedLevelNum + 1)}
+                className="px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-lg"
               >
-                <span>{isLevelCompleted ? 'تم إكمال المستوى بنجاح 🏆' : `إنهاء واعتماد المستوى ${selectedLevelNum} 🚀`}</span>
-                <ArrowLeft className="w-5 h-5 shrink-0" />
+                <span>المستوى {selectedLevelNum + 1}</span>
+                <ArrowLeft className="w-4 h-4" />
               </button>
-
-              {(isLevelCompleted || isAdmin) && selectedLevelNum < 9 && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedLevelNum(selectedLevelNum + 1)}
-                  className="px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-lg"
-                >
-                  <span>المستوى {selectedLevelNum + 1}</span>
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>

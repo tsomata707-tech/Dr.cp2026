@@ -49,6 +49,7 @@ import {
 } from '../data/gameLevelsData';
 import { RESEARCH_GROUPS_META, COLLABORATIVE_GROUPS_DEF } from '../data/studentAccounts';
 import { resetGroupLevelRealtime, wipeAllCloudLevelsDataAndResetProgress } from '../utils/realtimeService';
+import { getLevelActivityConfig, updateLevelActivityConfig } from '../utils/studentActivityStorage';
 
 type ActiveTestTab = 'pretest' | 'posttest' | 'levels';
 
@@ -198,7 +199,25 @@ export const AdminTestsSettingsManager: React.FC = () => {
   });
   const [isSavingLevelScores, setIsSavingLevelScores] = useState<boolean>(false);
 
-  // Synchronize level objectives and scores whenever editingLevelNum or gameLevels changes
+  // Level Dual Activity Titles & Instructions state
+  const [act1Title, setAct1Title] = useState<string>(() => {
+    const cfg = getLevelActivityConfig(editingLevelNum);
+    return cfg.act1Title || cfg.activityTitle || `النشاط الأول للمستوى ${editingLevelNum}`;
+  });
+  const [act1Instructions, setAct1Instructions] = useState<string>(() => {
+    const cfg = getLevelActivityConfig(editingLevelNum);
+    return cfg.act1Instructions || cfg.instructions || 'قم برفع ملف التطبيق العملي للنشاط الأول.';
+  });
+  const [act2Title, setAct2Title] = useState<string>(() => {
+    const cfg = getLevelActivityConfig(editingLevelNum);
+    return cfg.act2Title || `النشاط الثاني للمستوى ${editingLevelNum}`;
+  });
+  const [act2Instructions, setAct2Instructions] = useState<string>(() => {
+    const cfg = getLevelActivityConfig(editingLevelNum);
+    return cfg.act2Instructions || 'قم برفع ملف التطبيق العملي للنشاط الثاني.';
+  });
+
+  // Synchronize level objectives, scores, and activity titles whenever editingLevelNum changes
   useEffect(() => {
     const levels = gameLevels || [];
     const targetLvl = levels.find((l) => l && l.levelNumber === editingLevelNum) || levels[0];
@@ -208,7 +227,31 @@ export const AdminTestsSettingsManager: React.FC = () => {
       setLevelSection1ScoreInput(targetLvl.section1Score ?? 50);
       setLevelSection2ScoreInput(targetLvl.section2Score ?? 50);
     }
+    const cfg = getLevelActivityConfig(editingLevelNum);
+    setAct1Title(cfg.act1Title || cfg.activityTitle || `النشاط الأول للمستوى ${editingLevelNum}`);
+    setAct1Instructions(cfg.act1Instructions || cfg.instructions || 'قم برفع ملف التطبيق العملي للنشاط الأول.');
+    setAct2Title(cfg.act2Title || `النشاط الثاني للمستوى ${editingLevelNum}`);
+    setAct2Instructions(cfg.act2Instructions || 'قم برفع ملف التطبيق العملي للنشاط الثاني.');
   }, [editingLevelNum, gameLevels]);
+
+  const handleSaveDualActivityConfig = async (levelNum: number) => {
+    setIsSavingObjectives(true);
+    try {
+      updateLevelActivityConfig(levelNum, {
+        act1Title,
+        act1Instructions,
+        act2Title,
+        act2Instructions,
+        activityTitle: act1Title,
+        instructions: act1Instructions,
+      });
+      showNotification(`✓ تم حفظ وتحديث عناوين وتعليمات النشاط الأول والنشاط الثاني للمستوى ${levelNum} بنجاح ومزامنتها للطلاب!`);
+    } catch {
+      showNotification('حدث خطأ أثناء حفظ أنشطة المستوى', 'error');
+    } finally {
+      setTimeout(() => setIsSavingObjectives(false), 250);
+    }
+  };
 
   // Group Reset state
   const [resetSelectedGroupId, setResetSelectedGroupId] = useState<string>('G1');
@@ -1568,34 +1611,34 @@ export const AdminTestsSettingsManager: React.FC = () => {
         </div>
       )}
 
-      {/* ======================= SECTION 3: THE 10 STAGES QUESTIONS ======================= */}
+      {/* ======================= SECTION 3: THE 9 LEVELS DUAL ACTIVITIES CONFIG ======================= */}
       {activeTab === 'levels' && (
         <div className="space-y-5">
-          {/* ================= LEVEL OBJECTIVES / INSTRUCTIONS EDITOR CARD ================= */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#0d1433] via-[#121c45] to-[#0d1433] border-2 border-cyan-500/60 shadow-[0_0_30px_rgba(6,182,212,0.2)] space-y-4 text-right">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-cyan-500/30">
+          {/* ================= DUAL ACTIVITIES & OBJECTIVES EDITOR CARD ================= */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#0d1433] via-[#121c45] to-[#0d1433] border-2 border-amber-400/80 shadow-[0_0_30px_rgba(251,191,36,0.25)] space-y-5 text-right">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-amber-400/30">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 text-cyan-300 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 flex items-center justify-center shrink-0">
                   <Target className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-black border border-cyan-400/40">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-black border border-amber-400/40">
                       {`المستوى ${editingLevelNum}`}
                     </span>
-                    <span className="text-[11px] text-amber-300 font-bold">
-                      أهداف المستوى
+                    <span className="text-[11px] text-cyan-300 font-bold">
+                      إعداد وتعديل الأنشطة التطبيقية (النشاط الأول والنشاط الثاني)
                     </span>
                   </div>
                   <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-0.5">
-                    {`أهداف المستوى ${editingLevelNum}`}
+                    {`إدارة عناوين وتعليمات أنشطة المستوى ${editingLevelNum}`}
                   </h3>
                 </div>
               </div>
 
-              {/* Level Selector for Objectives */}
+              {/* Level Selector */}
               <div className="flex items-center gap-2 self-end sm:self-auto">
-                <span className="text-xs text-slate-300 font-bold">تحديد المستوى لتعديل أهدافه ودرجته:</span>
+                <span className="text-xs text-slate-300 font-bold">تحديد المستوى:</span>
                 <select
                   value={editingLevelNum}
                   onChange={(e) => {
@@ -1603,11 +1646,8 @@ export const AdminTestsSettingsManager: React.FC = () => {
                     setEditingLevelNum(num);
                     const targetLvl = gameLevels.find((l) => l.levelNumber === num);
                     setLevelObjectivesText(targetLvl?.objectives || targetLvl?.instructions || '');
-                    setLevelTotalScoreInput(targetLvl?.totalMaxScore ?? 50);
-                    setLevelSection1ScoreInput(targetLvl?.section1Score ?? 25);
-                    setLevelSection2ScoreInput(targetLvl?.section2Score ?? 25);
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-slate-950 border border-cyan-500/50 text-cyan-200 text-xs font-bold outline-none cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-950 border border-amber-400/60 text-amber-300 text-xs font-bold outline-none cursor-pointer"
                 >
                   {gameLevels.map((lvl) => (
                     <option key={lvl.levelNumber} value={lvl.levelNumber}>
@@ -1618,130 +1658,78 @@ export const AdminTestsSettingsManager: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-300 block">
-                نص أهداف المستوى:
-              </label>
-              <textarea
-                value={levelObjectivesText}
-                onChange={(e) => setLevelObjectivesText(e.target.value)}
-                rows={4}
-                placeholder="اكتب أهداف المستوى هنا..."
-                className="w-full p-3.5 rounded-2xl bg-slate-950/90 border border-slate-700 focus:border-cyan-400 text-white text-xs leading-relaxed outline-none transition font-['IBM_Plex_Sans_Arabic']"
-              />
+            {/* DUAL ACTIVITIES EDITORS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* ACTIVITY 1 EDITOR */}
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-amber-500/50 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-black text-amber-300">
+                  <span>1️⃣</span>
+                  <span>النشاط الأول (50 XP):</span>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-300 block">عنوان النشاط الأول:</label>
+                  <input
+                    type="text"
+                    value={act1Title}
+                    onChange={(e) => setAct1Title(e.target.value)}
+                    placeholder="مثال: النشاط الأول: تثبيت وإعداد البرنامج..."
+                    className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs font-bold outline-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-300 block">تعليمات وإرشادات النشاط الأول:</label>
+                  <textarea
+                    value={act1Instructions}
+                    onChange={(e) => setAct1Instructions(e.target.value)}
+                    rows={3}
+                    placeholder="اكتب تعليمات النشاط الأول هنا..."
+                    className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs leading-relaxed outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* ACTIVITY 2 EDITOR */}
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-cyan-500/50 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-black text-cyan-300">
+                  <span>2️⃣</span>
+                  <span>النشاط الثاني (50 XP):</span>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-300 block">عنوان النشاط الثاني:</label>
+                  <input
+                    type="text"
+                    value={act2Title}
+                    onChange={(e) => setAct2Title(e.target.value)}
+                    placeholder="مثال: النشاط الثاني: إعداد التفضيلات الأولية..."
+                    className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-cyan-400 text-white text-xs font-bold outline-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-300 block">تعليمات وإرشادات النشاط الثاني:</label>
+                  <textarea
+                    value={act2Instructions}
+                    onChange={(e) => setAct2Instructions(e.target.value)}
+                    rows={3}
+                    placeholder="اكتب تعليمات النشاط الثاني هنا..."
+                    className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-cyan-400 text-white text-xs leading-relaxed outline-none"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+            {/* SAVE DUAL ACTIVITIES BUTTON */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
               <span className="text-[11px] text-slate-400">
-                ✨ تنعكس تعديلات الأهداف لحظياً للطلاب
+                ✨ تنعكس تعديلات عناوين وتعليمات النشاطين فورياً لدى جميع الطلاب
               </span>
               <button
                 type="button"
                 disabled={isSavingObjectives}
-                onClick={() => handleSaveLevelObjectives(editingLevelNum, levelObjectivesText)}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg transition cursor-pointer"
-              >
-                {isSavingObjectives ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>💾 حفظ وتحديث أهداف المستوى ومزامنتها فوراً</span>
-              </button>
-            </div>
-          </div>
-
-          {/* ================= LEVEL TOTAL SCORE & DISTRIBUTION EDITOR CARD ================= */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#170e2b] via-[#22133d] to-[#170e2b] border-2 border-amber-400/80 shadow-[0_0_30px_rgba(251,191,36,0.25)] space-y-4 text-right">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-amber-400/30">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 flex items-center justify-center shrink-0 text-xl">
-                  🏆
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-black border border-amber-400/40">
-                      {`المستوى ${editingLevelNum}`}
-                    </span>
-                    <span className="text-[11px] text-emerald-300 font-bold">
-                      الدرجة الكلية وتوزيع درجات التحدي والنشاط
-                    </span>
-                  </div>
-                  <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal'] mt-0.5">
-                    {`الدرجة الكلية للمستوى ${editingLevelNum} (تُعتمد في بطاقة الطلاب وشيت المستويات الـ 9)`}
-                  </h3>
-                </div>
-              </div>
-
-              <span className="text-xs text-amber-300/90 font-bold bg-amber-950/60 px-3 py-1 rounded-xl border border-amber-500/40">
-                المجموع الحالي: {levelTotalScoreInput} درجة
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-700/80 space-y-1.5">
-                <label className="text-xs font-bold text-amber-300 block">
-                  ⭐ الدرجة الكلية للمستوى:
-                </label>
-                <input
-                  type="number"
-                  min="10"
-                  max="500"
-                  value={levelTotalScoreInput}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setLevelTotalScoreInput(val);
-                  }}
-                  className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-sm font-black outline-none"
-                />
-                <span className="text-[10px] text-slate-400 block">الدرجة العظمى الإجمالية المعتمدة للمستوى</span>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-700/80 space-y-1.5">
-                <label className="text-xs font-bold text-rose-300 block">
-                  ❤️ درجة القسم 1 (سؤال القلوب):
-                </label>
-                <input
-                  type="number"
-                  min="5"
-                  max="250"
-                  value={levelSection1ScoreInput}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setLevelSection1ScoreInput(val);
-                  }}
-                  className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-rose-400 text-white text-sm font-black outline-none"
-                />
-                <span className="text-[10px] text-slate-400 block">درجة سؤال التحدي المعرفي بلعبة القلوب</span>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-700/80 space-y-1.5">
-                <label className="text-xs font-bold text-cyan-300 block">
-                  🎮 درجة القسم 2 (النشاط التطبيقي):
-                </label>
-                <input
-                  type="number"
-                  min="5"
-                  max="250"
-                  value={levelSection2ScoreInput}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setLevelSection2ScoreInput(val);
-                  }}
-                  className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-cyan-400 text-white text-sm font-black outline-none"
-                />
-                <span className="text-[10px] text-slate-400 block">درجة النشاط التطبيقي واللعبة التفاعلية</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
-              <span className="text-[11px] text-slate-300">
-                ⚡ عند الحفظ، تُعتمد الدرجة تلقائياً وتنعكس فوراً في بطاقات المستويات وشيت المستويات الـ 9 للطلاب
-              </span>
-              <button
-                type="button"
-                disabled={isSavingLevelScores}
-                onClick={() => handleSaveLevelScores(editingLevelNum, levelTotalScoreInput, levelSection1ScoreInput, levelSection2ScoreInput)}
+                onClick={() => handleSaveDualActivityConfig(editingLevelNum)}
                 className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg transition cursor-pointer"
               >
-                {isSavingLevelScores ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>💾 حفظ واعتماد الدرجة الكلية وتوزيعها في بطاقة الطلاب والشيت</span>
+                {isSavingObjectives ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                <span>💾 حفظ وتحديث عناوين وتعليمات النشاطين للمستوى {editingLevelNum}</span>
               </button>
             </div>
           </div>
@@ -1914,76 +1902,6 @@ export const AdminTestsSettingsManager: React.FC = () => {
                 )}
               </div>
             )}
-          </div>
-
-          {/* Top Add Question Button in 10 Stages */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-blue-950/30 border border-blue-500/40">
-            <span className="text-xs font-bold text-blue-200">
-              {selectedLevelFilter === 9
-                ? `عرض ${(filteredLevelsQuestions || []).length} نشاط في المستوى 9 (أنشطة تطبيقية يقوم بها الطالب)`
-                : `عرض ${(filteredLevelsQuestions || []).length} سؤال في المراحل التعليمية التسع ${typeof selectedLevelFilter === 'number' ? `(المستوى ${selectedLevelFilter})` : ''}`}
-            </span>
-            <button
-              type="button"
-              onClick={() => handleOpenAddModal('levels', 'top')}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>
-                {selectedLevelFilter === 9
-                  ? '➕ إضافة نشاط جديد في أعلى المستوى 9 (البداية)'
-                  : '➕ إضافة سؤال جديد في أعلى المراحل التسع (البداية)'}
-              </span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4">
-            {filteredLevelsQuestions.map(({ level, question }, idx) => (
-              <QuestionAdminCard
-                key={question.id}
-                index={idx + 1}
-                levelBadge={
-                  level.levelNumber === 9
-                    ? `المستوى 9: أنشطة ومهام يقوم بها الطالب`
-                    : `المستوى ${level.levelNumber}: ${level.shortTitle}`
-                }
-                question={question}
-                isInlineEditing={inlineEditingCardId === question.id}
-                isSavingThisCard={savingCardId === question.id}
-                onToggleInlineEdit={() => setInlineEditingCardId(inlineEditingCardId === question.id ? null : question.id)}
-                onSaveInline={(updated) => handleInlineSaveQuestion('levels', question.id, updated, level.levelNumber)}
-                onOpenModalEdit={() => handleOpenEditLevelModal(level.levelNumber, question)}
-                onDelete={() => handleDeleteQuestion('levels', question.id, level.levelNumber)}
-                onZoomImage={(url) => setZoomedImageUrl(url)}
-                onTriggerFileUpload={() => handleTriggerDirectUpload('levels', question.id, level.levelNumber)}
-                onSetImageUrl={(url) => handleDirectSetImageUrl('levels', question.id, url, level.levelNumber)}
-                onRemoveImage={() => handleDirectRemoveImage('levels', question.id, level.levelNumber)}
-                onSetOptionImage={(optIdx, dataUrl) => handleDirectSetOptionImage('levels', question.id, optIdx, dataUrl, level.levelNumber)}
-                onRemoveOptionImage={(optIdx) => handleDirectRemoveOptionImage('levels', question.id, optIdx, level.levelNumber)}
-                onAddBelow={() => handleOpenAddModalForIndex('levels', idx, level.levelNumber)}
-              />
-            ))}
-            {filteredLevelsQuestions.length === 0 && (
-              <div className="p-8 text-center rounded-2xl bg-slate-950/50 border border-slate-800 text-slate-400 text-sm">
-                لم يتم العثور على أي أسئلة مطابقة للبحث
-              </div>
-            )}
-          </div>
-
-          {/* Bottom Add Question Button in 10 Stages */}
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => handleOpenAddModal('levels', 'bottom')}
-              className="w-full py-3.5 px-6 rounded-2xl border-2 border-dashed border-blue-500/50 hover:border-blue-400 bg-blue-950/20 hover:bg-blue-950/40 text-blue-300 hover:text-white font-black text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg"
-            >
-              <Plus className="w-5 h-5" />
-              <span>
-                {selectedLevelFilter === 9
-                  ? '➕ إضافة نشاط جديد في نهاية المستوى 9 (نشاط يقوم به الطالب)'
-                  : '➕ إضافة سؤال جديد في نهاية المراحل التسع'}
-              </span>
-            </button>
           </div>
         </div>
       )}
