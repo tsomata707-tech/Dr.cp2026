@@ -55,9 +55,10 @@ export const AdminStudentActivitiesManager: React.FC = () => {
 
   // Active Level for Editing Level Activities Titles Section
   const [editingConfigLevel, setEditingConfigLevel] = useState<number>(1);
-  const [configTitleDraft, setConfigTitleDraft] = useState<string>('');
-  const [configInstructionsDraft, setConfigInstructionsDraft] = useState<string>('');
-  const [configMaxPointsDraft, setConfigMaxPointsDraft] = useState<number>(50);
+  const [configAct1TitleDraft, setConfigAct1TitleDraft] = useState<string>('');
+  const [configAct1InstructionsDraft, setConfigAct1InstructionsDraft] = useState<string>('');
+  const [configAct2TitleDraft, setConfigAct2TitleDraft] = useState<string>('');
+  const [configAct2InstructionsDraft, setConfigAct2InstructionsDraft] = useState<string>('');
 
   // Grading form state per submission: { [submissionId]: { grade: number; feedback: string; isSaving?: boolean } }
   const [gradingDrafts, setGradingDrafts] = useState<
@@ -79,9 +80,10 @@ export const AdminStudentActivitiesManager: React.FC = () => {
   useEffect(() => {
     const cur = configs[editingConfigLevel];
     if (cur) {
-      setConfigTitleDraft(cur.activityTitle || `نشاط المستوى ${editingConfigLevel}`);
-      setConfigInstructionsDraft(cur.instructions || '');
-      setConfigMaxPointsDraft(cur.maxPoints || 50);
+      setConfigAct1TitleDraft(cur.act1Title || cur.activityTitle || `النشاط الأول للمستوى ${editingConfigLevel}`);
+      setConfigAct1InstructionsDraft(cur.act1Instructions || cur.instructions || '');
+      setConfigAct2TitleDraft(cur.act2Title || `النشاط الثاني للمستوى ${editingConfigLevel}`);
+      setConfigAct2InstructionsDraft(cur.act2Instructions || '');
     }
   }, [editingConfigLevel, configs]);
 
@@ -99,20 +101,24 @@ export const AdminStudentActivitiesManager: React.FC = () => {
     };
   }, []);
 
-  // Save Config for the selected level
+  // Save Config for the selected level (Both Activity 1 and Activity 2)
   const handleSaveLevelConfig = () => {
-    if (!configTitleDraft.trim()) {
-      alert('يرجى كتابة عنوان النشاط المطلوب');
+    if (!configAct1TitleDraft.trim() || !configAct2TitleDraft.trim()) {
+      alert('يرجى كتابة عنوان النشاط الأول والنشاط الثاني للمستوى');
       return;
     }
 
     const updated = updateLevelActivityConfig(editingConfigLevel, {
-      activityTitle: configTitleDraft.trim(),
-      instructions: configInstructionsDraft.trim(),
-      maxPoints: Number(configMaxPointsDraft) || 50,
+      act1Title: configAct1TitleDraft.trim(),
+      act1Instructions: configAct1InstructionsDraft.trim(),
+      activityTitle: configAct1TitleDraft.trim(),
+      instructions: configAct1InstructionsDraft.trim(),
+      act2Title: configAct2TitleDraft.trim(),
+      act2Instructions: configAct2InstructionsDraft.trim(),
+      maxPoints: 50,
     });
     setConfigs(updated);
-    showToast(`تم حفظ وتعميم اسم وتعليمات نشاط المستوى ${editingConfigLevel} بنجاح! ⭐`);
+    showToast(`تم حفظ وتثبيت وتعميم عنواين ونصوص النشاطين للمستوى ${editingConfigLevel} سحابياً على جميع الطلاب بنجاح! ⭐`);
   };
 
   // Filtered submissions list
@@ -332,41 +338,63 @@ export const AdminStudentActivitiesManager: React.FC = () => {
               </label>
               <input
                 type="text"
-                value={configTitleDraft}
-                onChange={(e) => setConfigTitleDraft(e.target.value)}
-                placeholder={`مثال: نشاط المستوى ${editingConfigLevel}: تثبيت البرنامج وضبط اللغة`}
+                value={configAct1TitleDraft}
+                onChange={(e) => setConfigAct1TitleDraft(e.target.value)}
+                placeholder={`مثال: النشاط الأول: تثبيت وإعداد Adobe Captivate 2019 (50 XP)`}
                 className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs sm:text-sm focus:border-amber-400 outline-none font-bold"
               />
             </div>
 
-            {/* Max Points Input */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-200 block">
-                الدرجة القصوى للنشاط (XP):
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={200}
-                value={configMaxPointsDraft}
-                onChange={(e) => setConfigMaxPointsDraft(Number(e.target.value) || 50)}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs sm:text-sm focus:border-amber-400 outline-none font-black font-['Outfit'] text-center"
-              />
-            </div>
+
           </div>
 
           {/* Instructions Input */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-200 block">
-              نص تعليمات ومطلوب النشاط من الطالب:
+              نص تعليمات ومطلوب النشاط الأول من الطالب:
             </label>
             <textarea
-              rows={3}
-              value={configInstructionsDraft}
-              onChange={(e) => setConfigInstructionsDraft(e.target.value)}
+              rows={2}
+              value={configAct1InstructionsDraft}
+              onChange={(e) => setConfigAct1InstructionsDraft(e.target.value)}
               placeholder="اكتب التوجيهات والخطوات الدقيقة المطلوب من الطالب تنفيذها قبل رفع الملف..."
               className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs sm:text-sm focus:border-amber-400 outline-none leading-relaxed"
             />
+          </div>
+
+          {/* Activity 2 Editor Block */}
+          <div className="p-4 rounded-xl bg-slate-900/80 border border-cyan-500/40 space-y-3 mt-4">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-300 text-xs font-black">
+                2️⃣ النشاط التطبيقي الثاني (50 XP)
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-200 block">
+                عنوان النشاط الثاني للمستوى {editingConfigLevel}:
+              </label>
+              <input
+                type="text"
+                value={configAct2TitleDraft}
+                onChange={(e) => setConfigAct2TitleDraft(e.target.value)}
+                placeholder={`مثال: النشاط الثاني: إعداد التفضيلات الأولية للمشروع (50 XP)`}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs sm:text-sm focus:border-cyan-400 outline-none font-bold"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-200 block">
+                تعليمات ومطاليب النشاط الثاني:
+              </label>
+              <textarea
+                rows={2}
+                value={configAct2InstructionsDraft}
+                onChange={(e) => setConfigAct2InstructionsDraft(e.target.value)}
+                placeholder="اكتب التوجيهات والمطاليب للنشاط الثاني..."
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-xs sm:text-sm focus:border-cyan-400 outline-none leading-relaxed"
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-end pt-2">
@@ -376,7 +404,7 @@ export const AdminStudentActivitiesManager: React.FC = () => {
               className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-[#ffd700] to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg flex items-center gap-2 cursor-pointer transition-all transform hover:-translate-y-0.5"
             >
               <Save className="w-4 h-4 text-slate-950" />
-              <span>حفظ وتعميم اسم نشاط المستوى {editingConfigLevel} ⭐</span>
+              <span>حفظ وتثبيت وتعميم النشاطين للمستوى {editingConfigLevel} سحابياً ⭐</span>
             </button>
           </div>
         </div>
