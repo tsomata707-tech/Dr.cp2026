@@ -624,16 +624,35 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         </div>
 
         <div className="p-6 rounded-3xl bg-[#090d20] border border-slate-800 shadow-xl space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-800 text-cyan-400 font-bold">
-            <HelpCircle className="w-5 h-5" />
-            <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">أهداف المستوى</h3>
+          <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-800">
+            <div className="flex items-center gap-2 text-cyan-400 font-bold">
+              <HelpCircle className="w-5 h-5 text-cyan-400" />
+              <h3 className="text-base sm:text-lg font-black text-white font-['Tajawal']">أهداف المستوى {selectedLevelNum}</h3>
+            </div>
+            <span className="text-[11px] text-slate-400 font-['Cairo']">
+              عدّل الأهداف أدناه ثم اضغط على زر النشر
+            </span>
           </div>
           <textarea
             rows={8}
             value={instructionsDraft}
             onChange={(e) => setInstructionsDraft(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none"
+            placeholder="اكتب أهداف المستوى التعليمية هنا..."
+            className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-700 text-white text-xs sm:text-sm focus:outline-none focus:border-cyan-400 leading-relaxed font-['Cairo']"
           />
+          <div className="flex items-center justify-end pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                handleSaveLevelDetails();
+                showToast(`🚀 تم نشر أهداف المستوى ${selectedLevelNum} وتحديثها لجميع الطلاب بنجاح!`);
+              }}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-black text-xs sm:text-sm shadow-lg shadow-cyan-950/50 flex items-center gap-2 cursor-pointer transition-all transform hover:-translate-y-0.5"
+            >
+              <Sparkles className="w-4 h-4 text-cyan-200" />
+              <span>نشر أهداف المستوى {selectedLevelNum} 🚀</span>
+            </button>
+          </div>
         </div>
       </div>
 
