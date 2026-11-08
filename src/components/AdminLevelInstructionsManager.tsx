@@ -421,6 +421,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     target.shortTitle = shortTitleDraft.trim() || target.shortTitle;
     target.storyMission = storyDraft.trim() || target.storyMission;
     target.instructions = instructionsDraft.trim() || target.instructions;
+    target.objectives = instructionsDraft.trim() || target.objectives || target.instructions;
     target.activityPrompt = activityPromptDraft.trim() || target.activityPrompt;
     target.imagesSectionTitle = imagesTitleDraft.trim() || target.imagesSectionTitle;
     target.imagesSectionDesc = imagesDescDraft.trim() || target.imagesSectionDesc;
