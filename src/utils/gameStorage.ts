@@ -346,12 +346,16 @@ export function submitLevelChallenge(
   prog.completedLevels[levelNumber] = levelResult;
 
   // For G1 (تنافسي فوري): automatically approve activity immediately without admin review
-  if (groupMeta?.code === 'G1' && prog.studentActivities && prog.studentActivities[levelNumber]) {
-    prog.studentActivities[levelNumber].status = 'graded';
-    prog.studentActivities[levelNumber].grade = 50;
-    prog.studentActivities[levelNumber].feedback = 'معتمد فورياً وتلقائياً (تنافسي فوري)';
-    prog.studentActivities[levelNumber].gradedBy = 'نظام التنافس الفوري';
-    prog.studentActivities[levelNumber].gradedAt = new Date().toISOString();
+  if (groupMeta?.code === 'G1' && prog.studentActivities) {
+    [`${levelNumber}_1`, `${levelNumber}_2`, levelNumber].forEach((key) => {
+      if (prog.studentActivities[key]) {
+        prog.studentActivities[key].status = 'graded';
+        prog.studentActivities[key].grade = 50;
+        prog.studentActivities[key].feedback = 'معتمد فورياً وتلقائياً (تنافسي فوري)';
+        prog.studentActivities[key].gradedBy = 'نظام التنافس الفوري';
+        prog.studentActivities[key].gradedAt = new Date().toISOString();
+      }
+    });
   }
 
   prog.totalScore = calculateStudentTotalScore(prog);

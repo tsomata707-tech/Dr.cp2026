@@ -548,6 +548,14 @@ export const AdminStudentActivitiesManager: React.FC = () => {
                             المستوى {sub.levelNumber}
                           </span>
                           <span>•</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                            sub.activityIndex === 2
+                              ? 'bg-cyan-950/80 border-cyan-400 text-cyan-300'
+                              : 'bg-amber-950/80 border-amber-400 text-amber-300'
+                          }`}>
+                            {sub.activityIndex === 2 ? '2️⃣ النشاط الثاني' : '1️⃣ النشاط الأول'}
+                          </span>
+                          <span>•</span>
                           <span className="truncate max-w-xs">{sub.activityTitle || `نشاط المستوى ${sub.levelNumber}`}</span>
                           <span>•</span>
                           <span className=" text-[11px]">

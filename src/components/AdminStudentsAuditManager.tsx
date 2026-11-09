@@ -868,14 +868,18 @@ export const AdminStudentsAuditManager: React.FC = () => {
     const rows = enrichedStudents.map((s, idx) => {
       const levelScores = customLevels.map((lvl) => {
         const lvlResult = s.raw?.completedLevels?.[lvl.levelNumber];
-        const actResult = s.raw?.studentActivities?.[lvl.levelNumber];
+        const act1 = s.raw?.studentActivities?.[`${lvl.levelNumber}_1`] || s.raw?.studentActivities?.[lvl.levelNumber];
+        const act2 = s.raw?.studentActivities?.[`${lvl.levelNumber}_2`];
+        const actsCount = (act1 ? 1 : 0) + (act2 ? 1 : 0);
+        const actsGraded = (act1?.status === 'graded' ? 1 : 0) + (act2?.status === 'graded' ? 1 : 0);
+
         if (!lvlResult) {
-          if (actResult) {
-            return `نشاط مرفوع (${actResult.status === 'graded' ? `${actResult.grade}/50 معتمد` : 'بانتظار الاعتماد'})`;
+          if (actsCount > 0) {
+            return `أنشطة مرفوعة (${actsCount}/2)${actsGraded > 0 ? ` [معتمد: ${actsGraded}/2]` : ' [بانتظار الاعتماد]'}`;
           }
           return '-';
         }
-        const actText = actResult ? (actResult.status === 'graded' ? ` [نشاط معتمد: ${actResult.grade}/50]` : ' [نشاط مرفوع]') : '';
+        const actText = actsCount > 0 ? ` [أنشطة: ${actsCount}/2${actsGraded > 0 ? ` - معتمد: ${actsGraded}/2` : ''}]` : '';
         return `${lvlResult.score} / ${lvlResult.maxScore || lvl.totalMaxScore || 100}${actText}`;
       });
 
@@ -2720,7 +2724,8 @@ export const AdminStudentsAuditManager: React.FC = () => {
               <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-2 pt-1">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvlNum) => {
                   const lvlDetail = inspectStudent.levelsDetails[lvlNum];
-                  const actDetail = inspectStudent.raw?.studentActivities?.[lvlNum];
+                  const act1 = inspectStudent.raw?.studentActivities?.[`${lvlNum}_1`] || inspectStudent.raw?.studentActivities?.[lvlNum];
+                  const act2 = inspectStudent.raw?.studentActivities?.[`${lvlNum}_2`];
                   const isDone = !!lvlDetail;
 
                   return (
@@ -2746,17 +2751,34 @@ export const AdminStudentsAuditManager: React.FC = () => {
                         <span className="block text-[10px] text-slate-500">غير مكتمل</span>
                       )}
 
-                      {/* تفاصيل النشاط المرفوع للأدمن */}
-                      {actDetail && (
-                        <div className="mt-1 pt-1 border-t border-slate-700/60 text-[9px] text-right space-y-0.5">
-                          <span className="text-amber-300 font-bold block truncate" title={actDetail.fileName || actDetail.activityTitle}>
-                            📎 {actDetail.fileName || 'نشاط مرفوع'}
-                          </span>
-                          <span className={actDetail.status === 'graded' ? 'text-emerald-400 font-bold block' : 'text-amber-400 block'}>
-                            {actDetail.status === 'graded' ? `معتمد: ${actDetail.grade}/50 XP` : 'بانتظار الاعتماد (50 XP)'}
-                          </span>
-                        </div>
-                      )}
+                      {/* تفاصيل النشاطين المرفوعين للأدمن */}
+                      <div className="mt-1 pt-1 border-t border-slate-700/60 text-[9px] text-right space-y-1">
+                        {act1 ? (
+                          <div className="space-y-0.5">
+                            <span className="text-amber-300 font-bold block truncate" title={act1.fileName || act1.activityTitle}>
+                              1️⃣ {act1.fileName || 'النشاط الأول'}
+                            </span>
+                            <span className={act1.status === 'graded' ? 'text-emerald-400 font-bold block' : 'text-amber-300/90 block'}>
+                              {act1.status === 'graded' ? `معتمد: ${act1.grade ?? 50}/50 XP` : 'بانتظار الاعتماد (50 XP)'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-500 block">1️⃣ النشاط 1: لم يُرفع</span>
+                        )}
+
+                        {act2 ? (
+                          <div className="space-y-0.5 pt-1 border-t border-slate-800/80">
+                            <span className="text-cyan-300 font-bold block truncate" title={act2.fileName || act2.activityTitle}>
+                              2️⃣ {act2.fileName || 'النشاط الثاني'}
+                            </span>
+                            <span className={act2.status === 'graded' ? 'text-emerald-400 font-bold block' : 'text-cyan-300/90 block'}>
+                              {act2.status === 'graded' ? `معتمد: ${act2.grade ?? 50}/50 XP` : 'بانتظار الاعتماد (50 XP)'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-500 block">2️⃣ النشاط 2: لم يُرفع</span>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

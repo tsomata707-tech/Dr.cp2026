@@ -241,14 +241,27 @@ export function getAllActivitySubmissions(): StudentActivitySubmission[] {
     Object.values(allProgress).forEach((prog) => {
       if (prog.studentActivities) {
         Object.entries(prog.studentActivities).forEach(([lvlStr, act]) => {
-          const lvlNum = parseInt(lvlStr, 10);
-          const autoId = act.id || `sub_${prog.username}_lvl${lvlNum}`;
+          let lvlNum = 1;
+          let actIndex: 1 | 2 = act.activityIndex || 1;
+          if (lvlStr.includes('_')) {
+            const parts = lvlStr.split('_');
+            lvlNum = parseInt(parts[0], 10) || 1;
+            actIndex = (parseInt(parts[1], 10) as 1 | 2) || 1;
+          } else {
+            lvlNum = parseInt(lvlStr, 10) || 1;
+            // Skip un-indexed key if indexed key already exists to prevent duplication
+            if (prog.studentActivities?.[`${lvlNum}_1`]) {
+              return;
+            }
+          }
+          const autoId = act.id || `sub_${prog.username}_lvl${lvlNum}_act${actIndex}`;
           if (!mapById[autoId]) {
             const reconstructed: StudentActivitySubmission = {
               ...act,
               id: autoId,
               studentUsername: prog.username,
               levelNumber: lvlNum,
+              activityIndex: actIndex,
               status: act.status || (act.grade !== undefined && act.grade !== null ? 'graded' : 'pending'),
               grade: act.grade ?? null,
               maxPoints: act.maxPoints || 50,
@@ -399,9 +412,13 @@ export async function gradeStudentActivity(
     }
 
     const lvlNum = targetSub.levelNumber || 1;
-    prog.studentActivities[lvlNum] = {
-      ...prog.studentActivities[lvlNum],
+    const actIdx = targetSub.activityIndex || 1;
+
+    // Update the specific dual-activity slot
+    prog.studentActivities[`${lvlNum}_${actIdx}`] = {
+      ...(prog.studentActivities[`${lvlNum}_${actIdx}`] || {}),
       ...targetSub,
+      activityIndex: actIdx,
       grade: validGrade,
       status: 'graded',
       feedback: targetSub.feedback,
@@ -409,16 +426,19 @@ export async function gradeStudentActivity(
       gradedBy: adminUsername,
     };
 
+    if (actIdx === 1) {
+      prog.studentActivities[lvlNum] = prog.studentActivities[`${lvlNum}_1`];
+    }
+
     // Update completed level score if level has already been completed with real approved grade
     if (prog.completedLevels && prog.completedLevels[lvlNum]) {
       const qScores = prog.completedLevels[lvlNum].questionScores || {};
-      const s1Score = typeof qScores.section1 === 'number'
-        ? qScores.section1
-        : Math.max(0, prog.completedLevels[lvlNum].score - 50);
-      qScores.section1 = s1Score;
-      qScores['section2_activity'] = validGrade;
+      const act1Grade = prog.studentActivities[`${lvlNum}_1`]?.grade ?? 50;
+      const act2Grade = prog.studentActivities[`${lvlNum}_2`]?.grade ?? 50;
+      qScores['section1_act1'] = act1Grade;
+      qScores['section2_activity'] = act2Grade;
       prog.completedLevels[lvlNum].questionScores = qScores;
-      prog.completedLevels[lvlNum].score = s1Score + validGrade;
+      prog.completedLevels[lvlNum].score = (typeof act1Grade === 'number' ? act1Grade : 50) + (typeof act2Grade === 'number' ? act2Grade : 50);
     }
 
     // Calculate totalScore cleanly including the newly assigned activity grade
