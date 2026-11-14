@@ -15,6 +15,7 @@ import {
 import { getVideoBySlot, normalizeVideoUrl } from '../utils/videoStorage';
 import { getLevelActivityConfig, submitStudentActivity } from '../utils/studentActivityStorage';
 import { getStudentByUsername, getGroupByUsername } from '../data/studentAccounts';
+import { isLevelLockedForGroup } from '../data/gameLevelsData';
 
 interface ApplicationTaskModalProps {
   levelNumber: number;
@@ -68,6 +69,11 @@ export const ApplicationTaskModal: React.FC<ApplicationTaskModalProps> = ({
   };
 
   const handleSubmit = async () => {
+    const groupCode = getGroupByUsername(username)?.code;
+    if (isLevelLockedForGroup(levelNumber, groupCode)) {
+      alert(`🔒 المستوى ${levelNumber} مغلق حالياً لجميع المجموعات. تبدأ المستويات المتاحة من المستوى الرابع (4 إلى 9).`);
+      return;
+    }
     if (!allChecked) {
       alert('يرجى التحقق من تنفيذ جميع خطوات المهمة التطبيقية المحددة في القائمة أولاً.');
       return;

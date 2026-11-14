@@ -2,6 +2,8 @@ import { PreTestQuestion, PreTestResult, StudentGameProgress } from '../types';
 import { getAllStudentsProgress, saveAllStudentsProgress } from '../utils/gameStorage';
 import { addActivityLog } from '../utils/adminStorage';
 import { syncGlobalQuestionsAndLevels, syncStudentProgressToFirestore } from '../utils/realtimeService';
+import { getGroupByUsername } from './studentAccounts';
+import { getStartingLevelForGroup } from './gameLevelsData';
 import { MATCHING_ASSETS_Q4, MATCHING_ASSETS_Q8 } from './matchingQuestionAssets';
 
 const PRETEST_QUESTIONS_KEY = 'cp_pretest_questions_bank_v2';
@@ -846,10 +848,11 @@ export async function submitPreTestResult(
   result: PreTestResult;
 }> {
   const all = getAllStudentsProgress();
+  const startLvl = getStartingLevelForGroup(getGroupByUsername(username)?.code);
   const prog = all[username] || {
     username,
     avatarId: 'avatar-cpbot',
-    currentLevel: 1,
+    currentLevel: startLvl,
     completedLevels: {},
     totalScore: 0,
     hearts: 3,
@@ -929,8 +932,8 @@ export async function submitPreTestResult(
   }
 
   prog.preTestResult = result;
-  if (!prog.currentLevel || prog.currentLevel < 1) {
-    prog.currentLevel = 1;
+  if (!prog.currentLevel || prog.currentLevel < startLvl) {
+    prog.currentLevel = startLvl;
   }
   const badgeName = 'وسام المستكشف التمهيدي (الاختبار القبلي)';
   if (!Array.isArray(prog.badges)) {
@@ -1011,7 +1014,7 @@ export async function submitPostTestResult(
   const prog = all[username] || {
     username,
     avatarId: 'avatar-cpbot',
-    currentLevel: 1,
+    currentLevel: getStartingLevelForGroup(getGroupByUsername(username)?.code),
     completedLevels: {},
     totalScore: 0,
     hearts: 3,

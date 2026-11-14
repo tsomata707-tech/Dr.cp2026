@@ -25,7 +25,7 @@ import { getStudentFullName } from '../utils/studentNameStorage';
 import { getStudentProgress, getAllStudentsProgress, saveAllStudentsProgress, saveSingleStudentProgress } from '../utils/gameStorage';
 import { subscribeToStudentProgress } from '../utils/realtimeService';
 import { StudentGameProgress } from '../types';
-import { GAME_LEVELS_DATA } from '../data/gameLevelsData';
+import { GAME_LEVELS_DATA, hasCompletedAllOpenLevels, getCompletedOpenLevelsCount } from '../data/gameLevelsData';
 import {
   GraduationCap,
   Trophy,
@@ -127,11 +127,12 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       const isAdminUser = username.trim().toLowerCase() === 'admin';
       const currentProg = getStudentProgress(username);
       const preDone = Boolean(currentProg.preTestResult?.completed);
-      const completedLevelsCount = Object.keys(currentProg.completedLevels || {}).length;
-      const levelsDone = completedLevelsCount >= 9;
+      const levelsDone = hasCompletedAllOpenLevels(currentProg.completedLevels);
 
       if (!isAdminUser && (!preDone || !levelsDone)) {
-        alert('⚠️ عذراً، الاختبار البعدي مغلق! لا يمكن الدخول للاختبار البعدي إلا بعد اجتياز الاختبار القبلي وإتمام جميع المستويات التعليمية التسعة بنجاح.');
+        alert(
+          '⚠️ عذراً، الاختبار البعدي مغلق! لا يمكن الدخول للاختبار البعدي إلا بعد اجتياز الاختبار القبلي وإتمام المستويات المتاحة (4 إلى 9) بنجاح.'
+        );
         if (!preDone) {
           setActiveMainSection('pretest');
         } else {
@@ -191,9 +192,11 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       const isAdmin = username.trim().toLowerCase() === 'admin';
       const prog = getStudentProgress(username);
       const preDone = Boolean(prog.preTestResult?.completed);
-      const levelsDone = Object.keys(prog.completedLevels || {}).length >= 9;
+      const levelsDone = hasCompletedAllOpenLevels(prog.completedLevels);
       if (!isAdmin && (!preDone || !levelsDone)) {
-        alert('⚠️ عذراً، لا يمكن الدخول إلى الاختبار البعدي إلا بعد إتمام الاختبار القبلي وجميع المستويات التعليمية التسعة بنجاح!');
+        alert(
+          '⚠️ عذراً، لا يمكن الدخول إلى الاختبار البعدي إلا بعد إتمام الاختبار القبلي والمستويات المتاحة (4 إلى 9) بنجاح!'
+        );
         return;
       }
       setActiveMainSection('posttest');
@@ -298,15 +301,15 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
 
   // Smart test & learning continuation tracker: يتابع من مكان ما توقف في الاختبارات وحسب ما يراه النظام
   const getSmartResumeAction = () => {
-    const completedLevelsCount = Object.keys(studentGame.completedLevels || {}).length;
+    const completedOpenLevelsCount = getCompletedOpenLevelsCount(studentGame.completedLevels);
 
-    // 1. If all 9 levels are completed, but Post-Test is not completed yet
-    if (studentGame.currentLevel > 9 || completedLevelsCount >= 9) {
+    // 1. If all required levels (4..9) are completed, but Post-Test is not completed yet
+    if (studentGame.currentLevel > 9 || hasCompletedAllOpenLevels(studentGame.completedLevels)) {
       if (!studentGame.postTestResult?.completed) {
         return {
           stepLabel: 'المحطة 3: الاختبار البعدي الختامي',
           title: 'متابعة من حيث توقفت: لعبة الاختبار البعدي (المحطة الختامية)',
-          description: 'أتممت كافة المراحل التعليمية الـ 9 بنجاح! استأنف الآن لعبة الاختبار البعدي الختامي.',
+          description: 'أتممت كافة المستويات المتاحة (4 إلى 9) بنجاح! استأنف الآن لعبة الاختبار البعدي الختامي.',
           badge: 'المحطة الختامية 🏁',
           buttonText: 'بدء الاختبار البعدي الآن 🏆',
           action: () => {
@@ -322,7 +325,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       return {
         stepLabel: 'المسار التعليمي مكتمل بالكامل بنجاح 100%',
         title: 'أتممت كافة الاختبارات والمراحل بنجاح باهر! 🎉',
-        description: 'لقد اجتزت الاختبار القبلي وجميع المستويات التسعة والاختبار البعدي. استعرض رتبتك في لوحة الشرف.',
+        description: 'لقد اجتزت الاختبار القبلي والمستويات المتاحة (4 إلى 9) والاختبار البعدي. استعرض رتبتك في لوحة الشرف.',
         badge: 'مكتمل بنسبة 100% 👑',
         buttonText: 'استعراض لوحة الشرف والإنجازات 🏆',
         action: () => {
@@ -334,13 +337,13 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
       };
     }
 
-    // 2. Default: Educational levels (L1 .. L9) - Pre-test is already passed & locked for everyone
+    // 2. Default: Educational levels (L4 .. L9) - Pre-test is already passed & locked for everyone
     return {
-      stepLabel: `المحطة: المراحل التعليمية (${completedLevelsCount}/9 مكتملة)`,
+      stepLabel: `المحطة: المراحل التعليمية (${completedOpenLevelsCount}/6 مكتملة)`,
       title: `متابعة من حيث توقفت: المرحلة ${studentGame.currentLevel}`,
-      description: completedLevelsCount === 0
+      description: completedOpenLevelsCount === 0
         ? `تم اعتماد اجتياز الاختبار القبلي بنجاح. ابدأ الآن تحديات وأسئلة المستوى ${studentGame.currentLevel} لكسب النقاط.`
-        : `أنجزت ${completedLevelsCount} من 9 مستويات بنجاح. استأنف الآن تحديات وأسئلة المستوى ${studentGame.currentLevel} لكسب النقاط.`,
+        : `أنجزت ${completedOpenLevelsCount} من 6 مستويات متاحة (4 إلى 9) بنجاح. استأنف الآن تحديات وأسئلة المستوى ${studentGame.currentLevel} لكسب النقاط.`,
       badge: `المرحلة الحالية: L${studentGame.currentLevel} 🎮`,
       buttonText: `متابعة المرحلة ${studentGame.currentLevel} الآن 🚀`,
       action: () => {
@@ -465,7 +468,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
               id="tab-pretest"
               onClick={() => {
                 if (!isAdmin) {
-                  alert('🔒 الاختبار القبلي مغلق؛ تم اجتياز الاختبار بنجاح واعتماد درجات الجميع. يمكنك متابعة وخوض المستويات التعليمية التسعة مباشرة 🚀');
+                  alert('🔒 الاختبار القبلي مغلق؛ تم اجتياز الاختبار بنجاح واعتماد درجات الجميع. يمكنك متابعة وخوض المستويات المتاحة (4 إلى 9) مباشرة 🚀');
                   setActiveMainSection('game');
                   return;
                 }
@@ -485,9 +488,11 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
               onClick={() => {
                 const isAdmin = username.trim().toLowerCase() === 'admin';
                 const preDone = Boolean(studentGame.preTestResult?.completed);
-                const levelsDone = Object.keys(studentGame.completedLevels || {}).length >= 9;
+                const levelsDone = hasCompletedAllOpenLevels(studentGame.completedLevels);
                 if (!isAdmin && (!preDone || !levelsDone)) {
-                  alert('⚠️ عذراً، لا يمكن الدخول إلى الاختبار البعدي إلا بعد إتمام الاختبار القبلي وجميع المستويات التعليمية التسعة بنجاح!');
+                  alert(
+                    '⚠️ عذراً، لا يمكن الدخول إلى الاختبار البعدي إلا بعد إتمام الاختبار القبلي والمستويات المتاحة (4 إلى 9) بنجاح!'
+                  );
                   return;
                 }
                 setActiveMainSection('posttest');

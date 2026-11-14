@@ -1,5 +1,5 @@
 import { StudentGameProgress, CompletedLevelResult, PreTestResult } from '../types';
-import { GAME_LEVELS_DATA, CARTOON_AVATARS } from '../data/gameLevelsData';
+import { GAME_LEVELS_DATA, CARTOON_AVATARS, getStartingLevelForGroup, isLevelLockedForGroup } from '../data/gameLevelsData';
 import { getGroupByUsername, getCollaborativeGroupByUsername, COLLABORATIVE_GROUPS_DEF } from '../data/studentAccounts';
 import { addActivityLog } from './adminStorage';
 import { syncStudentProgressToFirestore, wipeAllCloudLevelsDataAndResetProgress } from './realtimeService';
@@ -36,11 +36,17 @@ export function sanitizeStudentProgress(prog: Partial<StudentGameProgress>, user
     badges.push('وسام المستكشف التمهيدي (الاختبار القبلي)');
   }
 
+  const userGroupCode = getGroupByUsername(cleanUsername)?.code;
+  const minLevel = cleanUsername.toLowerCase() === 'admin' ? 1 : getStartingLevelForGroup(userGroupCode);
+
   const sanitized: StudentGameProgress = {
     username: cleanUsername,
     avatarId: prog.avatarId || CARTOON_AVATARS[avatarIndex].id,
     customPhotoUrl: prog.customPhotoUrl,
-    currentLevel: typeof prog.currentLevel === 'number' && prog.currentLevel >= 1 ? prog.currentLevel : 1,
+    currentLevel:
+      cleanUsername.toLowerCase() === 'admin'
+        ? (typeof prog.currentLevel === 'number' && prog.currentLevel >= 1 ? prog.currentLevel : 9)
+        : Math.max(minLevel, typeof prog.currentLevel === 'number' ? prog.currentLevel : minLevel),
     completedLevels: prog.completedLevels && typeof prog.completedLevels === 'object' ? prog.completedLevels : {},
     totalScore: typeof prog.totalScore === 'number' ? prog.totalScore : 0,
     hearts: typeof prog.hearts === 'number' ? prog.hearts : 3,
@@ -168,10 +174,11 @@ export function getStudentProgress(username: string): StudentGameProgress {
     Math.abs(cleanUsername.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0)) %
     CARTOON_AVATARS.length;
 
+  const userGroupCode = getGroupByUsername(cleanUsername)?.code;
   const newProg: StudentGameProgress = {
     username: cleanUsername,
     avatarId: CARTOON_AVATARS[avatarIndex].id,
-    currentLevel: 1,
+    currentLevel: getStartingLevelForGroup(userGroupCode),
     completedLevels: {},
     totalScore: 0,
     hearts: 3,
@@ -308,7 +315,7 @@ export function submitLevelChallenge(
     feedbackRevealedToStudent: isImmediate,
   };
 
-  if (username.trim().toLowerCase() === 'admin') {
+  if (username.trim().toLowerCase() === 'admin' || isLevelLockedForGroup(levelNumber, groupMeta?.code)) {
     return {
       progress: prog,
       levelResult,
@@ -471,7 +478,7 @@ export function resetStudentProgress(username: string): StudentGameProgress {
   const resetProg: StudentGameProgress = {
     username: cleanUsername,
     avatarId: currentAvatar,
-    currentLevel: 1,
+    currentLevel: getStartingLevelForGroup(getGroupByUsername(cleanUsername)?.code),
     completedLevels: {},
     studentActivities: {},
     totalScore: 0,
@@ -592,7 +599,7 @@ export function resetAllLevelsProgressKeepingPreTest(): Record<string, StudentGa
     all[username] = {
       username: prog.username,
       avatarId: prog.avatarId,
-      currentLevel: 1,
+      currentLevel: getStartingLevelForGroup(getGroupByUsername(username)?.code),
       completedLevels: {},
       studentActivities: {},
       totalScore: 0,
@@ -630,7 +637,7 @@ function generateCleanRealStudents(): Record<string, StudentGameProgress> {
       clean[uname] = {
         username: uname,
         avatarId: avatar.id,
-        currentLevel: 1,
+        currentLevel: getStartingLevelForGroup(grp),
         completedLevels: {},
         totalScore: 0,
         hearts: 3,

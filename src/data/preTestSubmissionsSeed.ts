@@ -194,7 +194,7 @@ export function seedPreTestSubmissions(force: boolean = false): {
     const prog: StudentGameProgress = existing || {
       username: stud.username,
       avatarId: 'cp-bot',
-      currentLevel: 1,
+      currentLevel: 4,
       completedLevels: {},
       totalScore: 0,
       hearts: 3,

@@ -38,7 +38,7 @@ import {
 } from 'lucide-react';
 import { normalizeVideoUrl, getEducationalVideos } from '../utils/videoStorage';
 import { getVideoBlobUrl } from '../utils/indexedDbVideo';
-import { CARTOON_AVATARS, GAME_LEVELS_DATA, GameLevelDef } from '../data/gameLevelsData';
+import { CARTOON_AVATARS, GAME_LEVELS_DATA, GameLevelDef, getStartingLevelForGroup, isLevelLockedForGroup, hasCompletedAllOpenLevels } from '../data/gameLevelsData';
 import {
   getStudentProgress,
   submitLevelChallenge,
@@ -103,7 +103,13 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 }) => {
   const isAdmin = username.trim().toLowerCase() === 'admin';
   const [progress, setProgress] = useState<StudentGameProgress>(() => getStudentProgress(username));
-  const [selectedLevelNum, setSelectedLevelNum] = useState<number>(() => Math.min(9, progress.currentLevel));
+  const initialGroupCode = isAdmin
+    ? (selectedGroupId === 'grp-2' ? 'G2' : 'G1')
+    : getGroupByUsername(username)?.code;
+  const [selectedLevelNum, setSelectedLevelNum] = useState<number>(() => {
+    const startLvl = getStartingLevelForGroup(initialGroupCode);
+    return Math.max(startLvl, Math.min(9, isAdmin ? startLvl : progress.currentLevel));
+  });
   const [allLevels, setAllLevels] = useState<GameLevelDef[]>(() => {
     const custom = import.meta.env.SSR ? [] : JSON.parse(localStorage.getItem('cp_game_levels_custom_v3') || '[]');
     if (custom && custom.length > 0) return custom;
@@ -334,14 +340,23 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
     };
   }, [selectedLevelNum, username]);
 
+  // Enforce lock on levels 1, 2, 3 for all groups (starting from level 4 to 9)
+  useEffect(() => {
+    if (isLevelLockedForGroup(selectedLevelNum, groupCode)) {
+      const startLvl = getStartingLevelForGroup(groupCode);
+      setSelectedLevelNum(Math.max(startLvl, Math.min(9, isAdmin ? startLvl : progress.currentLevel)));
+    }
+  }, [selectedLevelNum, groupCode, isAdmin, progress.currentLevel]);
+
   // Sync progress from local storage and handle external resets
   useEffect(() => {
     const syncProgress = () => {
       const current = getStudentProgress(username);
       setProgress(current);
-      setSelectedLevelNum(current.currentLevel);
+      const startLvl = getStartingLevelForGroup(groupCode);
+      setSelectedLevelNum(Math.max(startLvl, Math.min(9, isAdmin ? startLvl : current.currentLevel)));
       // If we are resetting, clear local state
-      if (current.currentLevel === 1 && Object.keys(current.completedLevels).length === 0) {
+      if (current.currentLevel <= startLvl && Object.keys(current.completedLevels).length === 0) {
         setChosenAnswers({});
       }
     };
@@ -647,6 +662,11 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   }, [username, selectedLevelNum]);
 
   const handleUploadActivity = (actIndex: 1 | 2, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isLevelLockedForGroup(selectedLevelNum, groupCode)) {
+      alert(`🔒 المستوى ${selectedLevelNum} مغلق حالياً لجميع المجموعات ولا يمكن رفع أنشطة فيه.`);
+      e.target.value = '';
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -736,6 +756,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   };
 
   const handleRemoveActivity = async (actIndex: 1 | 2) => {
+    if (isLevelLockedForGroup(selectedLevelNum, groupCode)) return;
     const targetAct = actIndex === 1 ? studentActivity1 : studentActivity2;
     if (targetAct?.id) {
       await deleteStudentActivity(targetAct.id);
@@ -748,6 +769,10 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
   };
 
   const handleFinishLevelClick = async () => {
+    if (isLevelLockedForGroup(selectedLevelNum, groupCode)) {
+      alert(`🔒 المستوى ${selectedLevelNum} مغلق حالياً لجميع المجموعات.`);
+      return;
+    }
     if (!isAdmin && (!studentActivity1 || !studentActivity2)) {
       alert('يرجى رفع ملف النشاط الأول والنشاط الثاني لهذا المستوى أولاً لإكمال المستوى');
       return;
@@ -1016,7 +1041,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 <span>النقاط الذهبية</span>
               </div>
               <span className="text-xl font-black text-white font-['Outfit']">
-                {(isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) ? (
+                {(isImmediateGroup || isAdmin || hasCompletedAllOpenLevels(progress.completedLevels)) ? (
                   <>{progress.totalScore} <span className="text-xs text-[#ffd700]">XP</span></>
                 ) : (
                   <span className="text-xs font-bold text-purple-300">⏳ مرجأة للنهاية</span>
@@ -1081,34 +1106,45 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
 
         <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2.5">
           {allLevels.map((lvl) => {
+            const isGroupLocked = isLevelLockedForGroup(lvl.levelNumber, groupCode);
             const isCompleted = !!progress.completedLevels[lvl.levelNumber];
-            const isCurrent = lvl.levelNumber === progress.currentLevel && !isCompleted;
-            const isUpcoming = !isAdmin && lvl.levelNumber > progress.currentLevel;
-            const isSelected = lvl.levelNumber === selectedLevelNum;
+            const isCurrent = !isGroupLocked && lvl.levelNumber === progress.currentLevel && !isCompleted;
+            const isUpcoming = !isGroupLocked && !isAdmin && lvl.levelNumber > progress.currentLevel;
+            const isSelected = !isGroupLocked && lvl.levelNumber === selectedLevelNum;
 
             return (
               <button
                 key={lvl.levelNumber}
                 type="button"
                 onClick={() => {
+                  if (isGroupLocked) {
+                    alert(`🔒 المستوى ${lvl.levelNumber} مغلق حالياً لجميع المجموعات. التحديات المتاحة تبدأ من المستوى الرابع إلى التاسع (4 إلى 9).`);
+                    return;
+                  }
                   if (isUpcoming) return;
                   // [STRICT RULE]: Students cannot return to completed levels unless they are admins!
                   if (isCompleted && !isAdmin) {
                     alert('هذا المستوى مكتمل ومقفل تماماً. لا يمكنك العودة إليه إلا بطلب إعادة تهيئة من المشرف.');
                     return;
                   }
-                  if (lvl.levelNumber === 1 || lvl.levelNumber !== selectedLevelNum) {
+                  if (lvl.levelNumber !== selectedLevelNum) {
                     setLoadingLevelForGame(lvl);
                   } else {
                     setSelectedLevelNum(lvl.levelNumber);
                   }
                 }}
-                className={`p-3 rounded-2xl border-2 flex flex-col items-center justify-center text-center transition-all cursor-pointer relative overflow-hidden ${
-                  isSelected
-                    ? 'ring-2 ring-[#ffd700] scale-105'
-                    : (isCompleted && !isAdmin) ? 'opacity-70 grayscale cursor-not-allowed' : 'hover:scale-102'
+                className={`p-3 rounded-2xl border-2 flex flex-col items-center justify-center text-center transition-all relative overflow-hidden ${
+                  isGroupLocked
+                    ? 'bg-slate-950/90 border-rose-500/40 text-slate-400 opacity-75 cursor-not-allowed'
+                    : isSelected
+                    ? 'ring-2 ring-[#ffd700] scale-105 cursor-pointer'
+                    : (isCompleted && !isAdmin)
+                    ? 'opacity-70 grayscale cursor-not-allowed'
+                    : 'hover:scale-102 cursor-pointer'
                 } ${
-                  isCompleted
+                  isGroupLocked
+                    ? ''
+                    : isCompleted
                     ? 'bg-emerald-950/40 border-emerald-500/70 text-emerald-300'
                     : isCurrent
                     ? 'bg-amber-950/60 border-[#ffd700] text-[#ffd700] shadow-[0_0_15px_rgba(255,215,0,0.3)] animate-pulse'
@@ -1116,7 +1152,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 }`}
               >
                 <div className="text-xl mb-1">
-                  {isCompleted ? '🔒' : isCurrent ? '⚡' : '⏳'}
+                  {isGroupLocked ? '🔒' : isCompleted ? '🔒' : isCurrent ? '⚡' : '⏳'}
                 </div>
 
                 <span className="text-xs font-black font-['Outfit']">
@@ -1128,11 +1164,15 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 </span>
 
                 <span className="text-[9px] mt-1 font-bold">
-                  {isCompleted ? 'مكتمل ومتقن' : isCurrent ? 'نشط الآن' : 'قيد الانتظار'}
+                  {isGroupLocked ? 'مغلق 🔒' : isCompleted ? 'مكتمل ومتقن' : isCurrent ? 'نشط الآن' : 'قيد الانتظار'}
                 </span>
 
                 <div className="mt-1 pt-1 border-t border-slate-700/60 w-full flex items-center justify-center">
-                  {isCompleted ? (
+                  {isGroupLocked ? (
+                    <span className="text-[9px] font-black text-rose-300 font-['Cairo']">
+                      يبدأ من L4
+                    </span>
+                  ) : isCompleted ? (
                     <span className="text-[10px] font-black text-emerald-300 font-['Outfit']">
                       ⭐ {progress.completedLevels[lvl.levelNumber]?.score ?? 100} / {progress.completedLevels[lvl.levelNumber]?.maxScore ?? 100}
                     </span>
@@ -1149,6 +1189,30 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
       </div>
 
       {/* 3. ACTIVE LEVEL MISSION & CHALLENGE ARENA */}
+      {isLevelLockedForGroup(selectedLevelNum, groupCode) ? (
+        <div className="rounded-3xl bg-[#0f0c1f] border-2 border-rose-500/70 p-8 text-center space-y-4 shadow-[0_0_35px_rgba(244,63,94,0.2)]">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/20 border-2 border-rose-500 text-rose-400 flex items-center justify-center mx-auto text-3xl">
+            🔒
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-white font-['Tajawal']">
+            المستوى {selectedLevelNum} مغلق حالياً
+          </h2>
+          <p className="text-sm text-slate-300 font-['Cairo'] max-w-lg mx-auto">
+            تم إغلاق المستويات الأول والثاني والثالث لجميع المجموعات البحثية، وتبدأ التحديات والأنشطة المتاحة من المستوى الرابع إلى التاسع (4 إلى 9).
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              const startLvl = getStartingLevelForGroup(groupCode);
+              setSelectedLevelNum(Math.max(startLvl, Math.min(9, isAdmin ? startLvl : progress.currentLevel)));
+            }}
+            className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#ffd700] to-amber-500 text-slate-950 font-black text-sm shadow-lg cursor-pointer"
+          >
+            الانتقال إلى المستوى {Math.max(getStartingLevelForGroup(groupCode), Math.min(9, isAdmin ? getStartingLevelForGroup(groupCode) : progress.currentLevel))} 🚀
+          </button>
+        </div>
+      ) : (
+      <>
       <div className="rounded-3xl bg-[#0f0c1f] border-2 border-[#d4af37] p-6 sm:p-8 shadow-[0_0_35px_rgba(212,175,55,0.2)] text-right">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
           <div>
@@ -1430,7 +1494,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 <>لقد تم اعتماد حلول هذا المستوى بنجاح للمجموعة المغلقة ({effectiveRoomId}) ولا يمكن العودة إليه إلا بطلب إعادة تهيئة من المشرف.</>
               )}
             </p>
-            {(isImmediateGroup || Object.keys(progress.completedLevels || {}).length >= 9) && completedResult && (
+            {(isImmediateGroup || hasCompletedAllOpenLevels(progress.completedLevels)) && completedResult && (
               <div className="mt-2 flex items-center gap-3">
                 <span className="px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-[11px] font-bold">
                    النتيجة المعتمدة: {completedResult.score} / {completedResult.maxScore} XP
@@ -1511,7 +1575,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
               <span>درجة المستوى {selectedLevelNum} الإجمالية:</span>
             </span>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              {(isImmediateGroup || isAdmin || Object.keys(progress.completedLevels || {}).length >= 9) ? (
+              {(isImmediateGroup || isAdmin || hasCompletedAllOpenLevels(progress.completedLevels)) ? (
                 <>
                   <span className="px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200">
                     النشاط الأول (50 درجة): <strong className="text-amber-400">{studentActivity1 ? (studentActivity1.grade ?? 50) : 0} / 50 XP</strong>
@@ -1525,7 +1589,7 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
                 </>
               ) : (
                 <span className="px-3.5 py-1.5 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-xs font-bold">
-                  ⏳ نمط التغذية المرجأة: الدرجات تسجل تلقائياً في السجل الأكاديمي، وسيتم إعلان الدرجة والتقرير المجمّع بعد انتهاء المستويات الـ 9.
+                  ⏳ نمط التغذية المرجأة: الدرجات تسجل تلقائياً في السجل الأكاديمي، وسيتم إعلان الدرجة والتقرير المجمّع بعد انتهاء المستويات المتاحة (4 إلى 9).
                 </span>
               )}
             </div>
@@ -1786,16 +1850,18 @@ export const EducationalGameView: React.FC<EducationalGameViewProps> = ({
             {(isLevelCompleted || isAdmin) && selectedLevelNum < 9 && (
               <button
                 type="button"
-                onClick={() => setSelectedLevelNum(selectedLevelNum + 1)}
+                onClick={() => setSelectedLevelNum(Math.max(getStartingLevelForGroup(groupCode), selectedLevelNum + 1))}
                 className="px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-lg"
               >
-                <span>المستوى {selectedLevelNum + 1}</span>
+                <span>المستوى {Math.max(getStartingLevelForGroup(groupCode), selectedLevelNum + 1)}</span>
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
           </div>
         </div>
       </div>
+      </>
+      )}
 
       {/* AVATAR SELECTION MODAL */}
       {showAvatarModal && (

@@ -23,7 +23,7 @@ import {
   StudentGameProgress,
   CompletedLevelResult,
 } from '../types';
-import { GAME_LEVELS_DATA } from '../data/gameLevelsData';
+import { GAME_LEVELS_DATA, getStartingLevelForGroup, isLevelLockedForGroup } from '../data/gameLevelsData';
 import {
   getGroupByUsername,
   getStudentsByGroupCode,
@@ -36,7 +36,7 @@ import {
 // Default initial state for a group room
 export const getDefaultRoomState = (groupId: string): GroupRoomState => ({
   groupId,
-  activeLevel: 1,
+  activeLevel: 4,
   currentAnswers: {},
   votes: {},
   activeStudents: {},
@@ -153,6 +153,7 @@ export const subscribeToGroupRoom = (
           onUpdate({
             ...getDefaultRoomState(groupId),
             ...data,
+            activeLevel: Math.max(4, typeof data.activeLevel === 'number' ? data.activeLevel : 4),
             groupId,
           });
         } else {
@@ -321,8 +322,8 @@ export const submitGroupLevelRealtime = async (
     feedbackRevealedToStudent: isImmediateFeedback,
   };
 
-  // Read-only admin check: never submit or overwrite group state in RTDB
-  if (submittedBy.username.toLowerCase() === 'admin') {
+  // Read-only admin check or locked levels (1, 2, 3) for all groups: never submit or overwrite group state in RTDB
+  if (submittedBy.username.toLowerCase() === 'admin' || isLevelLockedForGroup(levelNumber, userGroupMeta?.code)) {
     return { levelResult, isImmediateFeedback };
   }
 
@@ -487,7 +488,8 @@ export const resetGroupLevelRealtime = async (
         const highestCompleted = remainingNumbers.length
           ? Math.max(...remainingNumbers)
           : 0;
-        const newCurrentLevel = Math.min(10, Math.max(1, highestCompleted + 1));
+        const minLvl = getStartingLevelForGroup(getGroupByUsername(student.username)?.code);
+        const newCurrentLevel = Math.min(10, Math.max(minLvl, highestCompleted + 1));
 
         // Rebuild badges from remaining levels only
         const remainingBadges = new Set<string>();
@@ -609,10 +611,11 @@ export async function wipeAllCloudLevelsDataAndResetProgress(): Promise<{
         }
       }
 
+      const startLvl = getStartingLevelForGroup(getGroupByUsername(uname)?.code);
       const cleanProg = {
         username: uname,
         avatarId: 'avatar-cpbot',
-        currentLevel: 1,
+        currentLevel: startLvl,
         completedLevels: {},
         studentActivities: {},
         totalScore: 0,
@@ -639,9 +642,10 @@ export async function wipeAllCloudLevelsDataAndResetProgress(): Promise<{
   let roomsCount = 0;
   for (const rKey of roomKeys) {
     try {
+      const roomStartLvl = 4;
       await rtdbSet(ref(rtdb, `groupRooms/${rKey}`), {
         groupId: rKey,
-        activeLevel: 1,
+        activeLevel: roomStartLvl,
         completedLevels: {},
         currentAnswers: {},
         votes: {},
@@ -649,7 +653,7 @@ export async function wipeAllCloudLevelsDataAndResetProgress(): Promise<{
         liveEvents: [
           {
             id: `init-${Date.now()}`,
-            text: `🔄 تم تصفير كافة المستويات للبدء من جديد من المستوى 1`,
+            text: `🔄 تم تصفير كافة المستويات للبدء من المستوى ${roomStartLvl}`,
             time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
             type: 'info',
           },
@@ -678,7 +682,7 @@ export async function wipeAllCloudLevelsDataAndResetProgress(): Promise<{
         cleanLocal[s.username] = {
           username: s.username,
           avatarId: 'avatar-cpbot',
-          currentLevel: 1,
+          currentLevel: getStartingLevelForGroup(getGroupByUsername(s.username)?.code),
           completedLevels: {},
           studentActivities: {},
           totalScore: 0,

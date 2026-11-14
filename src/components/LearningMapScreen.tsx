@@ -19,7 +19,7 @@ import {
   Volume2,
   AlertCircle,
 } from 'lucide-react';
-import { GameLevelDef, GAME_LEVELS_DATA } from '../data/gameLevelsData';
+import { GameLevelDef, GAME_LEVELS_DATA, getStartingLevelForGroup, isLevelLockedForGroup } from '../data/gameLevelsData';
 import { getStudentProgress } from '../utils/gameStorage';
 import { useEducationalVideos, isPlaceholderVideo } from '../utils/videoStorage';
 import { EducationalVideo } from '../types';
@@ -93,6 +93,7 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
   const [selectedIntroLevel, setSelectedIntroLevel] = useState<GameLevelDef | null>(null);
   const [lockedStageAlert, setLockedStageAlert] = useState<GameLevelDef | null>(null);
   const [completedStageLockedAlert, setCompletedStageLockedAlert] = useState<GameLevelDef | null>(null);
+  const [globallyLockedAlert, setGloballyLockedAlert] = useState<GameLevelDef | null>(null);
   const [preTestRequiredAlert, setPreTestRequiredAlert] = useState(false);
 
   // Skill icons for each of the 10 stages
@@ -133,15 +134,21 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
     };
   }, [effectiveRoomId]);
 
+  const userGroupCode = useMemo(() => getGroupByUsername(username)?.code, [username]);
+  const startLevelForUser = getStartingLevelForGroup(userGroupCode);
+
   const handleStageClick = (lvl: GameLevelDef) => {
-    const isPreTestDone = true; 
+    if (isLevelLockedForGroup(lvl.levelNumber, userGroupCode)) {
+      setGloballyLockedAlert(lvl);
+      return;
+    }
 
     const isIndividualCompleted = !!progress.completedLevels[lvl.levelNumber];
     const isGroupCompleted = !!roomState.completedLevels?.[lvl.levelNumber];
     const isCompleted = isIndividualCompleted || isGroupCompleted;
-    
-    const isCurrent = lvl.levelNumber === progress.currentLevel;
-    const isUpcoming = lvl.levelNumber > progress.currentLevel;
+
+    const effectiveCurrent = Math.max(startLevelForUser, progress.currentLevel);
+    const isUpcoming = lvl.levelNumber > effectiveCurrent;
 
     // Block entry to completed levels (individual or group)
     if (isCompleted) {
@@ -159,8 +166,9 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
     setLoadingLevelForGame(lvl);
   };
 
+  const effectiveCurrentLevel = Math.max(startLevelForUser, progress.currentLevel);
   const currentLevelDef =
-    GAME_LEVELS_DATA.find((l) => l.levelNumber === progress.currentLevel) || GAME_LEVELS_DATA[0];
+    GAME_LEVELS_DATA.find((l) => l.levelNumber === effectiveCurrentLevel) || GAME_LEVELS_DATA[0];
 
   return (
     <div className="relative w-full max-w-5xl mx-auto z-10 font-['Cairo',_sans-serif] text-right py-4 animate-fadeIn">
@@ -189,7 +197,7 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
           <div className="p-3 rounded-2xl bg-[#070914] border border-slate-800 text-center">
             <span className="text-xs text-slate-400 block font-bold">المرحلة الحالية المتاحة</span>
             <span className="text-xl font-black text-[#ffd700] font-['Outfit']">
-              المرحلة {progress.currentLevel} <span className="text-xs text-slate-400">/ 10</span>
+              المرحلة {effectiveCurrentLevel} <span className="text-xs text-slate-400">/ 9</span>
             </span>
           </div>
         </div>
@@ -211,7 +219,7 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
                   </span>
                 </div>
                 <h4 className="text-sm font-black text-white font-['Tajawal']">
-                  تم اجتياز الاختبار القبلي بنجاح لكافة الطلاب والبدء مباشرة في المستويات التعليمية الـ 9 🏅
+                  تم اجتياز الاختبار القبلي بنجاح لكافة الطلاب والبدء مباشرة في المستويات المتاحة (4 إلى 9) 🏅
                 </h4>
               </div>
             </div>
@@ -230,37 +238,41 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
           {/* Grid/Track of 10 Stages */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 relative z-10">
             {GAME_LEVELS_DATA.map((lvl) => {
+              const isGloballyLocked = isLevelLockedForGroup(lvl.levelNumber, userGroupCode);
               const isIndividualCompleted = !!progress.completedLevels[lvl.levelNumber];
               const isGroupCompleted = !!roomState.completedLevels?.[lvl.levelNumber];
               const isCompleted = isIndividualCompleted || isGroupCompleted;
               
-              const isCurrent = lvl.levelNumber === progress.currentLevel && !isCompleted;
-              const isUpcoming = lvl.levelNumber > progress.currentLevel;
+              const isCurrent = !isGloballyLocked && lvl.levelNumber === effectiveCurrentLevel && !isCompleted;
 
               return (
                 <div
                   key={lvl.levelNumber}
                   onClick={() => handleStageClick(lvl)}
-                  className={`relative p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between group ${
-                    isCurrent
-                      ? 'bg-gradient-to-br from-blue-950/90 via-slate-900 to-sky-950 border-sky-400 shadow-[0_0_25px_rgba(56,189,248,0.35)] scale-105 z-20'
+                  className={`relative p-5 rounded-2xl border-2 transition-all duration-300 flex flex-col justify-between group ${
+                    isGloballyLocked
+                      ? 'bg-slate-950/90 border-rose-500/40 opacity-75 cursor-not-allowed'
+                      : isCurrent
+                      ? 'bg-gradient-to-br from-blue-950/90 via-slate-900 to-sky-950 border-sky-400 shadow-[0_0_25px_rgba(56,189,248,0.35)] scale-105 z-20 cursor-pointer'
                       : isCompleted
-                      ? 'bg-gradient-to-br from-emerald-950/40 to-[#09151c] border-emerald-500/70 hover:border-emerald-400 hover:scale-102'
-                      : 'bg-[#080b18]/70 border-slate-800/80 opacity-55 hover:opacity-75'
+                      ? 'bg-gradient-to-br from-emerald-950/40 to-[#09151c] border-emerald-500/70 hover:border-emerald-400 hover:scale-102 cursor-pointer'
+                      : 'bg-[#080b18]/70 border-slate-800/80 opacity-55 hover:opacity-75 cursor-pointer'
                   }`}
                 >
                   {/* Top Badge & Number */}
                   <div className="flex items-center justify-between mb-3">
                     <div
                       className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm border shadow-sm ${
-                        isCurrent
+                        isGloballyLocked
+                          ? 'bg-rose-950/80 text-rose-300 border-rose-500/50'
+                          : isCurrent
                           ? 'bg-[#ffd700] text-slate-950 border-amber-300 shadow-[0_0_15px_rgba(255,215,0,0.5)]'
                           : isCompleted
                           ? 'bg-emerald-600 text-white border-emerald-400'
                           : 'bg-slate-900 text-slate-500 border-slate-800'
                       }`}
                     >
-                      {lvl.levelNumber}
+                      {isGloballyLocked ? '🔒' : lvl.levelNumber}
                     </div>
 
                     <div className="p-2 rounded-lg bg-slate-950/90 border border-slate-800">
@@ -271,7 +283,7 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
                   {/* Stage Title */}
                   <h3
                     className={`text-sm font-black font-['Tajawal'] mb-1 line-clamp-1 ${
-                      isCurrent ? 'text-white' : isCompleted ? 'text-emerald-200' : 'text-slate-400'
+                      isGloballyLocked ? 'text-slate-400' : isCurrent ? 'text-white' : isCompleted ? 'text-emerald-200' : 'text-slate-400'
                     }`}
                   >
                     {lvl.shortTitle}
@@ -283,7 +295,12 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
 
                   {/* Status Indicator */}
                   <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-bold">
-                    {isCompleted ? (
+                    {isGloballyLocked ? (
+                      <span className="text-rose-300 flex items-center gap-1">
+                        <Lock className="w-3 h-3 text-rose-400" />
+                        مغلق 🔒
+                      </span>
+                    ) : isCompleted ? (
                       <span className="text-emerald-400 flex items-center gap-1 ">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         مكتملة ومتقنة
@@ -533,6 +550,55 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
                 className="w-1/2 py-2.5 rounded-xl bg-gradient-to-r from-[#ffd700] to-[#d4af37] text-slate-950 font-black text-xs shadow-md cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <span>الانتقال للمرحلة {progress.currentLevel}</span>
+                <ArrowLeft className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {globallyLockedAlert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl bg-[#0e0c1c] border-2 border-rose-500/80 p-6 sm:p-8 text-right shadow-[0_0_40px_rgba(244,63,94,0.3)] space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border-2 border-rose-500 text-rose-400 flex items-center justify-center mx-auto text-2xl">
+              🔒
+            </div>
+
+            <div className="text-center">
+              <span className="px-3 py-0.5 rounded-full bg-rose-900/90 border border-rose-400 text-rose-200 text-xs font-black font-['Cairo',_sans-serif]">
+                المرحلة {globallyLockedAlert.levelNumber}
+              </span>
+              <h3 className="text-xl font-black text-white font-['Cairo',_sans-serif] mt-2">
+                المستوى مغلق لجميع المجموعات 🔒
+              </h3>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[#070914] border border-slate-800 text-xs text-slate-300 leading-relaxed text-center font-bold space-y-2">
+              <p className="text-rose-300">
+                المستويات الأول والثاني والثالث مغلقة لجميع المجموعات البحثية، وتبدأ التحديات من المستوى الرابع إلى التاسع (4 إلى 9).
+              </p>
+              <p className="text-emerald-300">
+                🎯 المرحلة المتاحة لك الآن هي: المرحلة {effectiveCurrentLevel} ({currentLevelDef.shortTitle}).
+              </p>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setGloballyLockedAlert(null)}
+                className="w-1/2 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs cursor-pointer"
+              >
+                إغلاق
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setGloballyLockedAlert(null);
+                  handleStageClick(currentLevelDef);
+                }}
+                className="w-1/2 py-2.5 rounded-xl bg-gradient-to-r from-[#ffd700] to-[#d4af37] text-slate-950 font-black text-xs shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>الانتقال للمرحلة {effectiveCurrentLevel}</span>
                 <ArrowLeft className="w-3.5 h-3.5" />
               </button>
             </div>

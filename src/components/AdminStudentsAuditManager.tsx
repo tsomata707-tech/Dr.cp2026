@@ -31,7 +31,7 @@ import { generateSixtyStudents, RESEARCH_GROUPS_META, getGroupByUsername, getCol
 import { getAllTripartiteNames, getStudentTripartiteName } from '../utils/studentNameStorage';
 import { StudentGameProgress, PreTestResult, CompletedLevelResult, StudentTestAccessSummary, TestAccessSession, PreTestQuestion } from '../types';
 import { getPostTestQuestions, getPreTestQuestions } from '../data/preTestData';
-import { GAME_LEVELS_DATA, getCustomGameLevels } from '../data/gameLevelsData';
+import { GAME_LEVELS_DATA, getCustomGameLevels, hasCompletedAllOpenLevels } from '../data/gameLevelsData';
 import {
   getStudentLoginsAuditMap,
   saveAllStudentLoginsAudit,
@@ -370,7 +370,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       const prog = progressMap[username] || {
         username,
         avatarId: 'cp-bot',
-        currentLevel: 1,
+        currentLevel: 4,
         completedLevels: {},
         totalScore: 0,
         hearts: 3,
@@ -464,7 +464,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
       if (statusFilter === 'logged_in' && !s.hasLoggedIn) return false;
       if (statusFilter === 'pre_done' && !s.preTestCompleted) return false;
       if (statusFilter === 'post_done' && !s.postTestCompleted) return false;
-      if (statusFilter === 'levels_done' && s.completedLevelsCount < 9) return false;
+      if (statusFilter === 'levels_done' && !hasCompletedAllOpenLevels(s.levelsDetails)) return false;
 
       // Search query
       if (searchQuery.trim()) {
@@ -483,7 +483,7 @@ export const AdminStudentsAuditManager: React.FC = () => {
   const activeLoginsCount = enrichedStudents.filter((s) => s.hasLoggedIn).length;
   const preTestDoneCount = enrichedStudents.filter((s) => s.preTestCompleted).length;
   const postTestDoneCount = enrichedStudents.filter((s) => s.postTestCompleted).length;
-  const allLevelsDoneCount = enrichedStudents.filter((s) => s.completedLevelsCount >= 9).length;
+  const allLevelsDoneCount = enrichedStudents.filter((s) => hasCompletedAllOpenLevels(s.levelsDetails)).length;
 
   // Format seconds to mm:ss
   const formatDuration = (sec: number) => {

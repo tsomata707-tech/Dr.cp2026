@@ -10,7 +10,7 @@ import {
   Play,
   Award,
 } from 'lucide-react';
-import { GAME_LEVELS_DATA } from '../data/gameLevelsData';
+import { GAME_LEVELS_DATA, isLevelLockedForGroup, getCompletedOpenLevelsCount } from '../data/gameLevelsData';
 import { getStudentProgress } from '../utils/gameStorage';
 import { getGroupByUsername } from '../data/studentAccounts';
 
@@ -28,8 +28,8 @@ export const ProgressBoardView: React.FC<ProgressBoardViewProps> = ({ username, 
   const groupMeta = getGroupByUsername(username);
   const isCollaborative = groupMeta?.learningMode === 'تعاوني';
 
-  const completedCount = Object.keys(progress.completedLevels).length;
-  const overallPercentage = Math.round((completedCount / 10) * 100);
+  const completedCount = getCompletedOpenLevelsCount(progress.completedLevels);
+  const overallPercentage = Math.round((completedCount / 6) * 100);
 
   const teamName = groupMeta?.code === 'G3' ? 'فريق المبدعين' : 'فريق الرواد';
 
@@ -74,7 +74,7 @@ export const ProgressBoardView: React.FC<ProgressBoardViewProps> = ({ username, 
             />
           </div>
           <span className="text-[10px] text-slate-400  block mt-1">
-            {completedCount} من 10 مراحل مكتملة
+            {completedCount} من 6 مراحل متاحة (4 إلى 9)
           </span>
         </div>
       </div>
@@ -82,20 +82,22 @@ export const ProgressBoardView: React.FC<ProgressBoardViewProps> = ({ username, 
       {/* The 10 Cards Grid (One Per Stage) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {GAME_LEVELS_DATA.map((lvl) => {
+          const isGloballyLocked = isLevelLockedForGroup(lvl.levelNumber, groupMeta?.code);
           const isCompleted = !!progress.completedLevels[lvl.levelNumber];
-          const isCurrent = lvl.levelNumber === progress.currentLevel && !isCompleted;
-          const isLocked = lvl.levelNumber > progress.currentLevel;
+          const isCurrent = !isGloballyLocked && lvl.levelNumber === progress.currentLevel && !isCompleted;
+          const isLocked = isGloballyLocked || lvl.levelNumber > progress.currentLevel;
 
           const levelResult = progress.completedLevels[lvl.levelNumber];
           const levelScore = levelResult ? levelResult.score : 0;
-          const maxScore = levelResult ? levelResult.maxScore : 100;
           const levelPercent = isCompleted ? 100 : isCurrent ? 50 : 0;
 
           return (
             <div
               key={lvl.levelNumber}
               className={`p-5 rounded-2xl border-2 flex flex-col justify-between transition-all duration-300 ${
-                isCompleted
+                isGloballyLocked
+                  ? 'bg-slate-950/90 border-rose-500/40 opacity-75'
+                  : isCompleted
                   ? 'bg-gradient-to-b from-emerald-950/30 to-[#09151c] border-emerald-500/70 shadow-sm'
                   : isCurrent
                   ? 'bg-gradient-to-b from-amber-950/50 to-[#151126] border-[#ffd700] shadow-[0_0_20px_rgba(255,215,0,0.3)] ring-1 ring-[#ffd700] scale-[1.02]'
@@ -107,7 +109,9 @@ export const ProgressBoardView: React.FC<ProgressBoardViewProps> = ({ username, 
                 <div className="flex items-center justify-between mb-3">
                   <span
                     className={`w-8 h-8 rounded-xl  text-xs font-black flex items-center justify-center border ${
-                      isCompleted
+                      isGloballyLocked
+                        ? 'bg-rose-950/80 text-rose-300 border-rose-500/50'
+                        : isCompleted
                         ? 'bg-emerald-600 text-white border-emerald-400'
                         : isCurrent
                         ? 'bg-[#ffd700] text-slate-950 border-amber-300'
@@ -118,7 +122,7 @@ export const ProgressBoardView: React.FC<ProgressBoardViewProps> = ({ username, 
                   </span>
 
                   <span className="text-xl">
-                    {isCompleted ? '✔️' : isCurrent ? '⚙️' : '🔒'}
+                    {isGloballyLocked ? '🔒' : isCompleted ? '✔️' : isCurrent ? '⚙️' : '🔒'}
                   </span>
                 </div>
 
@@ -131,7 +135,12 @@ export const ProgressBoardView: React.FC<ProgressBoardViewProps> = ({ username, 
 
                 {/* Status description */}
                 <div className="text-[11px] font-bold mb-2">
-                  {isCompleted ? (
+                  {isGloballyLocked ? (
+                    <span className="text-rose-300 flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      🔒 مغلق لجميع المجموعات (يبدأ من 4)
+                    </span>
+                  ) : isCompleted ? (
                     <span className="text-emerald-400  flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3" />
                       ✔️ مكتملة بنجاح (+{levelScore} XP)
@@ -153,7 +162,7 @@ export const ProgressBoardView: React.FC<ProgressBoardViewProps> = ({ username, 
                 <div className="w-full h-1.5 rounded-full bg-slate-900 border border-slate-800 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${
-                      isCompleted ? 'bg-emerald-500 w-full' : isCurrent ? 'bg-amber-400 w-1/2' : 'w-0'
+                      isGloballyLocked ? 'w-0' : isCompleted ? 'bg-emerald-500 w-full' : isCurrent ? 'bg-amber-400 w-1/2' : 'w-0'
                     }`}
                   />
                 </div>
@@ -161,7 +170,11 @@ export const ProgressBoardView: React.FC<ProgressBoardViewProps> = ({ username, 
 
               {/* Action Button */}
               <div className="pt-4 mt-3 border-t border-slate-800/80">
-                {isLocked ? (
+                {isGloballyLocked ? (
+                  <div className="py-2 text-center text-[10px] text-rose-300 font-bold bg-rose-950/30 rounded-xl border border-rose-500/30">
+                    مغلق (يبدأ من L4) 🔒
+                  </div>
+                ) : isLocked ? (
                   <div className="py-2 text-center text-[10px] text-slate-500 font-bold bg-slate-950/60 rounded-xl border border-slate-800">
                     مغلق بالتوالي 🔒
                   </div>

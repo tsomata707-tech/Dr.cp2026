@@ -72,6 +72,28 @@ export interface GameLevelDef {
   questions: LevelQuestion[];
 }
 
+export const LOCKED_LEVELS_FOR_ALL: readonly number[] = [1, 2, 3];
+export const OPEN_LEVEL_NUMBERS: readonly number[] = [4, 5, 6, 7, 8, 9];
+export const FIRST_OPEN_LEVEL = 4;
+
+export function isLevelLockedForGroup(levelNumber: number, _groupCode?: string | null): boolean {
+  return LOCKED_LEVELS_FOR_ALL.includes(levelNumber);
+}
+
+export function getStartingLevelForGroup(_groupCode?: string | null): number {
+  return FIRST_OPEN_LEVEL;
+}
+
+export function hasCompletedAllOpenLevels(completedLevels?: Record<number, any> | null): boolean {
+  if (!completedLevels) return false;
+  return OPEN_LEVEL_NUMBERS.every((lvl) => Boolean(completedLevels[lvl]));
+}
+
+export function getCompletedOpenLevelsCount(completedLevels?: Record<number, any> | null): number {
+  if (!completedLevels) return 0;
+  return OPEN_LEVEL_NUMBERS.filter((lvl) => Boolean(completedLevels[lvl])).length;
+}
+
 export const GAME_LEVELS_DATA: GameLevelDef[] = [
   { levelNumber: 1, moduleId: 'mod-1', title: 'المستوى 1: أساسيات الوسائط وتثبيت Adobe Captivate 2019', shortTitle: 'تثبيت البرنامج', storyMission: 'مهمتك الأولى يا بطل: تهيئة بيئة العمل الرقمية، التحقق من معمارية 64-Bit، وتشغيل معالج التثبيت القياسي للبرنامج بنجاح.', totalMaxScore: 100, section1Score: 50, section2Score: 50, badgeName: 'وسام البداية الرقمية', badgeEmoji: '🛡️', videos: [], images: [], questions: [] },
   { levelNumber: 2, moduleId: 'mod-1', title: 'المستوى 2: واجهة البرنامج وإدارة الشرائط الزمنية', shortTitle: 'واجهة البرنامج', storyMission: 'استكشف لوحة التحكم الرئيسية والـ Timeline لإدارة ظهور العناصر بدقة احترافية.', totalMaxScore: 100, section1Score: 50, section2Score: 50, badgeName: 'وسام مهندس الواجهة', badgeEmoji: '⚙️', videos: [], images: [], questions: [] },
