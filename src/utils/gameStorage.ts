@@ -27,7 +27,6 @@ export function sanitizeStudentProgress(prog: Partial<StudentGameProgress>, user
     Math.abs(cleanUsername.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0)) %
     CARTOON_AVATARS.length;
 
-  // Guarantee every student has completed and passed the Pre-Test as per system rules
   const preResult = (prog.preTestResult && prog.preTestResult.completed)
     ? prog.preTestResult
     : getPassingPreTestResultForStudent(cleanUsername);
@@ -98,14 +97,7 @@ export function saveAllStudentsProgress(all: Record<string, StudentGameProgress>
           }
         });
       }
-      if (s.studentActivities) {
-        Object.keys(s.studentActivities).forEach((lvlNum) => {
-          if (s.studentActivities[lvlNum]) {
-            // Strip huge base64 strings for localStorage
-            delete s.studentActivities[lvlNum].fileUrl;
-          }
-        });
-      }
+      // تم إزالة كود مسح الروابط (delete fileUrl) من هنا ليتم حفظ الفيديوهات في السحابة
     }
   });
   try {
@@ -123,7 +115,6 @@ export function calculateStudentTotalScore(prog: StudentGameProgress): number {
       total += lvl.score;
     }
   });
-  // Also count any activities submitted for levels that are not yet marked as completed
   const studentActivities = prog.studentActivities || {};
   Object.entries(studentActivities).forEach(([key, act]) => {
     if (key.includes('_')) {
@@ -151,7 +142,6 @@ export function saveSingleStudentProgress(username: string, prog: StudentGamePro
 export function getStudentProgress(username: string): StudentGameProgress {
   const cleanUsername = username.trim();
 
-  // Special Read-Only Administrator Profile: full read access to all 9 levels, no saving/mutations
   if (cleanUsername.toLowerCase() === 'admin') {
     return {
       username: 'admin',
@@ -174,7 +164,6 @@ export function getStudentProgress(username: string): StudentGameProgress {
     return existing;
   }
 
-  // Assign a default cartoon avatar based on username hash
   const avatarIndex =
     Math.abs(cleanUsername.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0)) %
     CARTOON_AVATARS.length;
@@ -204,9 +193,7 @@ export function updateStudentAvatar(username: string, avatarId: string): Student
   saveAllStudentsProgress(all);
   try {
     window.dispatchEvent(new CustomEvent('cp_student_profile_updated', { detail: { username } }));
-  } catch {
-    // Ignore
-  }
+  } catch {}
   return prog;
 }
 
@@ -226,16 +213,14 @@ export function updateStudentCustomPhoto(
   saveAllStudentsProgress(all);
   try {
     window.dispatchEvent(new CustomEvent('cp_student_profile_updated', { detail: { username } }));
-  } catch {
-    // Ignore
-  }
+  } catch {}
   return prog;
 }
 
 export function submitLevelChallenge(
   username: string,
   levelNumber: number,
-  chosenAnswers: Record<string, number>, // questionId -> chosen option index
+  chosenAnswers: Record<string, number>,
   timeSpentSeconds: number,
   appliedActivityScore: number = 0,
   s1ScoreOverride?: number,
@@ -250,11 +235,8 @@ export function submitLevelChallenge(
   const prog = getStudentProgress(username);
 
   const levelDef = GAME_LEVELS_DATA.find((l) => l.levelNumber === levelNumber);
-  if (!levelDef) {
-    throw new Error('Level not found');
-  }
+  if (!levelDef) throw new Error('Level not found');
 
-  // Calculate real score based on actual student answers
   let scoreGained = 0;
   let q1MaxScore = levelDef.section1Score ?? 100;
   let totalLevelMax = levelDef.totalMaxScore ?? 100;
@@ -266,15 +248,13 @@ export function submitLevelChallenge(
   const numQuestions = levelDef.questions.length || 1;
   const defaultPerQuestion = numQuestions === 2 ? 25 : Math.round(totalSec1Score / numQuestions);
 
-  // Score Question 1 & Question 2 (25 XP each for 2 questions)
   levelDef.questions.forEach((q, idx) => {
     const qPoints = q.points || defaultPerQuestion;
     const chosen = chosenAnswers[q.id];
     const isCorrect = chosen === q.correctIndex;
     if (isCorrect) {
-      const actualScore = qPoints;
-      scoreGained += actualScore;
-      questionScores[q.id] = actualScore;
+      scoreGained += qPoints;
+      questionScores[q.id] = qPoints;
     } else {
       questionScores[q.id] = 0;
     }
@@ -299,7 +279,6 @@ export function submitLevelChallenge(
     };
   });
 
-  // Add applied activity score from Section 2 (50 XP max)
   const actScore = Math.min(50, Math.max(0, appliedActivityScore !== undefined ? appliedActivityScore : 50));
   scoreGained += actScore;
   questionScores['section2_activity'] = actScore;
@@ -314,9 +293,6 @@ export function submitLevelChallenge(
     domain: `المستوى ${levelNumber}: ${levelDef.title}`,
   };
 
-  // Determine feedback mode from group:
-  // G1 (فوري) & G3 (فوري) -> immediate feedback to student
-  // G2 (مرجأ) & G4 (مرجأ) -> deferred feedback
   const groupMeta = getGroupByUsername(username);
   const isImmediate = groupMeta ? groupMeta.feedbackMode === 'فورية' : true;
 
@@ -332,7 +308,6 @@ export function submitLevelChallenge(
     feedbackRevealedToStudent: isImmediate,
   };
 
-  // For admin user (Read-only mode): do not commit answers, do not save scores, do not modify database
   if (username.trim().toLowerCase() === 'admin') {
     return {
       progress: prog,
@@ -342,10 +317,8 @@ export function submitLevelChallenge(
     };
   }
 
-  // Record this level permanently
   prog.completedLevels[levelNumber] = levelResult;
 
-  // For G1 (تنافسي فوري): automatically approve activity immediately without admin review
   if (groupMeta?.code === 'G1' && prog.studentActivities) {
     [`${levelNumber}_1`, `${levelNumber}_2`, levelNumber].forEach((key) => {
       if (prog.studentActivities[key]) {
@@ -361,19 +334,16 @@ export function submitLevelChallenge(
   prog.totalScore = calculateStudentTotalScore(prog);
   prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
-  // Advance level if passed (1 up to 9)
-  const passThreshold = Math.floor(totalLevelMax * 0.5); // 50% pass rate
+  const passThreshold = Math.floor(totalLevelMax * 0.5);
   if (scoreGained >= passThreshold) {
     if (levelNumber === prog.currentLevel && levelNumber < 9) {
       prog.currentLevel = levelNumber + 1;
     }
-    // Award badge
     if (!prog.badges.includes(levelDef.badgeName)) {
       prog.badges.push(levelDef.badgeName);
     }
   }
 
-  // Collaborative immediate group sync: if user belongs to sub-group A, B, C, D, or E in G3 collaborative immediate
   const collabGroup = getCollaborativeGroupByUsername(username);
   const isCollabImmediate = groupMeta?.learningMode === 'تعاوني' && groupMeta?.feedbackMode === 'فورية';
 
@@ -442,7 +412,6 @@ export function saveStudentLevelActivity(
 ): StudentGameProgress {
   const prog = getStudentProgress(username);
 
-  // Admin user: read-only, do not persist activity submissions
   if (username.trim().toLowerCase() === 'admin') {
     return prog;
   }
@@ -460,7 +429,6 @@ export function saveStudentLevelActivity(
     prog.studentActivities[levelNumber] = submission;
   }
 
-  // Sync into completedLevels if level already finished
   if (prog.completedLevels && prog.completedLevels[levelNumber] && (submission.status === 'graded' || typeof submission.grade === 'number')) {
     const qScores = prog.completedLevels[levelNumber].questionScores || {};
     const act1Grade = prog.studentActivities[`${levelNumber}_1`]?.grade ?? 50;
@@ -471,7 +439,6 @@ export function saveStudentLevelActivity(
     prog.completedLevels[levelNumber].score = (typeof act1Grade === 'number' ? act1Grade : 50) + (typeof act2Grade === 'number' ? act2Grade : 50);
   }
 
-  // Recalculate totalScore: cleanly includes grades if admin has graded it or if auto-graded
   prog.totalScore = calculateStudentTotalScore(prog);
   prog.lastActive = new Date().toISOString().replace('T', ' ').substring(0, 19);
   all[username] = prog;
@@ -488,9 +455,7 @@ export function saveStudentLevelActivity(
         detail: { username, levelNumber, submission },
       })
     );
-  } catch {
-    // Ignore
-  }
+  } catch {}
   return prog;
 }
 
@@ -519,7 +484,6 @@ export function resetStudentProgress(username: string): StudentGameProgress {
   all[cleanUsername] = resetProg;
   saveAllStudentsProgress(all);
 
-  // Clear all in-progress test answer storage and cached views for this student
   try {
     localStorage.removeItem(`cp_pre_index_${cleanUsername}`);
     localStorage.removeItem(`cp_pre_answers_${cleanUsername}`);
@@ -533,7 +497,6 @@ export function resetStudentProgress(username: string): StudentGameProgress {
       localStorage.removeItem(`cp_level_${lvl}_time_${cleanUsername}`);
     }
 
-    // Clear student activity submissions for this student
     const rawSubs = localStorage.getItem('cp_student_activities_submissions_v2');
     if (rawSubs) {
       const parsedSubs = JSON.parse(rawSubs);
@@ -545,7 +508,6 @@ export function resetStudentProgress(username: string): StudentGameProgress {
       }
     }
 
-    // Clear collaborative team answers if any
     const rawTeam = localStorage.getItem('cp_collab_team_answers_v1');
     if (rawTeam) {
       const parsedTeam = JSON.parse(rawTeam);
@@ -558,20 +520,14 @@ export function resetStudentProgress(username: string): StudentGameProgress {
         localStorage.setItem('cp_collab_team_answers_v1', JSON.stringify(parsedTeam));
       }
     }
-  } catch {
-    // Ignore
-  }
+  } catch {}
 
-  // Sync to Firebase RTDB
   syncStudentProgressToFirestore(resetProg).catch(() => {});
 
-  // Dispatch global window events so all active components re-render immediately
   try {
     window.dispatchEvent(new CustomEvent('cp_student_profile_updated', { detail: { username: cleanUsername } }));
     window.dispatchEvent(new CustomEvent('cp_student_progress_reset', { detail: { username: cleanUsername } }));
-  } catch {
-    // Ignore
-  }
+  } catch {}
 
   addActivityLog(
     `تهيئة درجات الطالب: تم إعادة درجات وتقدم الطالب ${cleanUsername} إلى الصفر كأنه لم يجب على أي شيء`,
@@ -590,14 +546,12 @@ export function resetAllStudentsToRealCleanState(): Record<string, StudentGamePr
     console.warn("Failed to reset game storage in localStorage:", e);
   }
 
-  // Clear global collaborative team answers & student activity submissions & test access audits
   try {
     localStorage.removeItem('cp_collab_team_answers_v1');
     localStorage.removeItem('cp_student_activities_submissions_v2');
     localStorage.removeItem('cp_students_test_access_audit_v2');
   } catch {}
 
-  // Remove all test timer, question answer, started, and index keys from localStorage
   try {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -615,7 +569,6 @@ export function resetAllStudentsToRealCleanState(): Record<string, StudentGamePr
     keysToRemove.forEach((k) => localStorage.removeItem(k));
   } catch {}
 
-  // Sync each student clean initial state (0 score, 0 answers, 0 results) to Firebase RTDB
   Object.values(clean).forEach((prog) => {
     syncStudentProgressToFirestore(prog).catch(() => {});
   });
@@ -623,9 +576,7 @@ export function resetAllStudentsToRealCleanState(): Record<string, StudentGamePr
   try {
     window.dispatchEvent(new CustomEvent('cp_student_profile_updated', { detail: { all: true } }));
     window.dispatchEvent(new CustomEvent('cp_student_progress_reset', { detail: { all: true } }));
-  } catch {
-    // Ignore
-  }
+  } catch {}
 
   addActivityLog('تمت إعادة ضبط وتصفير جميع درجات وإجابات واختبارات الطلاب بالكامل للبدء من الصفر', 'admin', 'warning');
   return clean;
@@ -638,7 +589,6 @@ export function resetAllLevelsProgressKeepingPreTest(): Record<string, StudentGa
     const prog = all[username];
     const preTestResult = prog.preTestResult;
     
-    // Reset to initial state
     all[username] = {
       username: prog.username,
       avatarId: prog.avatarId,
@@ -649,13 +599,12 @@ export function resetAllLevelsProgressKeepingPreTest(): Record<string, StudentGa
       hearts: 3,
       badges: [],
       lastActive: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      preTestResult: preTestResult, // Keep preTestResult
+      preTestResult: preTestResult,
     };
   });
   
   saveAllStudentsProgress(all);
   
-  // Wipe all cloud levels data & RTDB rooms asynchronously
   wipeAllCloudLevelsDataAndResetProgress().catch((err) => {
     console.warn('wipeAllCloudLevelsDataAndResetProgress error:', err);
   });
@@ -668,7 +617,6 @@ export function resetAllLevelsProgressKeepingPreTest(): Record<string, StudentGa
   return all;
 }
 
-// Generates clean real initial state for all 60 students (0 answered questions, 0 scores)
 function generateCleanRealStudents(): Record<string, StudentGameProgress> {
   const clean: Record<string, StudentGameProgress> = {};
   const groups = ['G1', 'G2', 'G3', 'G4'] as const;
