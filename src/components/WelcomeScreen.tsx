@@ -161,7 +161,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 {getLevelName(progress.currentLevel)}
               </div>
               <div className="text-xs text-purple-300/80 mt-1 font-mono">
-                المرحلة: L{progress.currentLevel} من 10
+                المرحلة: L{progress.currentLevel} من 9
               </div>
             </div>
           </div>
@@ -194,7 +194,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 {completionPercentage}%
               </div>
               <div className="text-xs text-emerald-200/80 mt-1">
-                {completedCount} من 10 مراحل مكتملة
+                {completedCount} من 9 مراحل مكتملة
               </div>
             </div>
           </div>
