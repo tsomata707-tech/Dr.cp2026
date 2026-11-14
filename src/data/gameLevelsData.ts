@@ -1,7 +1,7 @@
 import { CartoonAvatar, LevelQuestion, LevelMediaItem } from '../types';
 import { syncGlobalQuestionsAndLevels } from '../utils/realtimeService';
 import { ref, set } from 'firebase/database';
-import { db } from '../firebase'; // تأكد من مسار ملف firebase الخاص بك
+import { rtdb } from '../firebase'; // تم التعديل هنا لاستخدام rtdb بدلاً من db
 
 export const CARTOON_AVATARS: CartoonAvatar[] = [
   {
@@ -84,7 +84,7 @@ export const GAME_LEVELS_DATA: GameLevelDef[] = [
   { levelNumber: 9, moduleId: 'mod-3', title: 'المستوى 9: تصدير المشروع ونشره كصفحة ويب', shortTitle: 'تصدير المشروع', storyMission: 'المهمة الأخيرة: استخرج مشروعك النهائي كـ HTML5 وشاركه مع العالم!', totalMaxScore: 100, section1Score: 50, section2Score: 50, badgeName: 'وسام المبدع النهائي', badgeEmoji: '🚀', videos: [], images: [], questions: [] },
 ];
 
-// دالة الحفظ في السحابة (Firebase)
+// تم إصلاح الدالة للحفظ في rtdb ومنع حلقة المزامنة اللانهائية
 export function saveCustomGameLevels(levels: GameLevelDef[], _isManualUpdate: boolean = false) {
   if (!Array.isArray(levels)) return;
   
@@ -92,12 +92,14 @@ export function saveCustomGameLevels(levels: GameLevelDef[], _isManualUpdate: bo
     localStorage.setItem('cp_game_levels_custom_v3', JSON.stringify(levels));
   }
   
-  // حفظ في Firebase
-  try {
-    const levelsRef = ref(db, 'global_settings/game_levels');
-    set(levelsRef, levels);
-  } catch (err) {
-    console.error("Firebase Save Error:", err);
+  // حفظ في Firebase RTDB
+  if (_isManualUpdate) {
+    try {
+      const levelsRef = ref(rtdb, 'global_settings/game_levels');
+      set(levelsRef, levels);
+    } catch (err) {
+      console.error("Firebase RTDB Save Error:", err);
+    }
   }
 
   syncGlobalQuestionsAndLevels('levels', levels);
@@ -145,7 +147,7 @@ export function addMediaToLevel(levelNum: number, item: LevelMediaItem) {
       levels[idx].images = levels[idx].images || [];
       levels[idx].images.push(item);
     }
-    saveCustomGameLevels(levels);
+    saveCustomGameLevels(levels, true); // أضفنا true للحفظ في السحابة
   }
   return levels;
 }
@@ -162,7 +164,7 @@ export function replaceMediaInLevel(levelNum: number, itemId: string, newItem: L
       const iIdx = (levels[idx].images || []).findIndex(m => m.id === itemId);
       if (iIdx !== -1) levels[idx].images![iIdx] = newItem;
     }
-    saveCustomGameLevels(levels);
+    saveCustomGameLevels(levels, true); // أضفنا true للحفظ في السحابة
   }
   return levels;
 }
@@ -173,7 +175,7 @@ export function removeMediaFromLevel(levelNum: number, itemId: string) {
   if (idx !== -1) {
     levels[idx].videos = (levels[idx].videos || []).filter((m) => m.id !== itemId);
     levels[idx].images = (levels[idx].images || []).filter((m) => m.id !== itemId);
-    saveCustomGameLevels(levels);
+    saveCustomGameLevels(levels, true); // أضفنا true للحفظ في السحابة
   }
   return levels;
 }
@@ -187,7 +189,7 @@ export function updateMediaItemInLevel(levelNum: number, itemId: string, updates
     if (vIdx !== -1) { levels[idx].videos![vIdx] = { ...levels[idx].videos![vIdx], ...updates }; found = true; }
     const iIdx = (levels[idx].images || []).findIndex(m => m.id === itemId);
     if (iIdx !== -1 && !found) { levels[idx].images![iIdx] = { ...levels[idx].images![iIdx], ...updates }; found = true; }
-    if (found) saveCustomGameLevels(levels);
+    if (found) saveCustomGameLevels(levels, true); // أضفنا true للحفظ في السحابة
   }
   return levels;
 }
