@@ -28,7 +28,7 @@ import {
 } from '../data/gameLevelsData';
 import { LevelMediaItem, LevelQuestion } from '../types';
 import { normalizeVideoUrl } from '../utils/videoStorage';
-import { storeVideoBlob, getVideoBlobUrl } from '../utils/indexedDbVideo';
+import { upload } from '@vercel/blob/client';
 import { formatRealFileSize } from '../utils/mediaSafety';
 import { InlineBoxVideoPlayer } from './InlineBoxVideoPlayer';
 
