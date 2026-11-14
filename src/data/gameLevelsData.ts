@@ -1,5 +1,7 @@
 import { CartoonAvatar, LevelQuestion, LevelMediaItem } from '../types';
 import { syncGlobalQuestionsAndLevels } from '../utils/realtimeService';
+import { ref, set } from 'firebase/database';
+import { db } from '../firebase'; // تأكد من مسار ملف firebase الخاص بك
 
 export const CARTOON_AVATARS: CartoonAvatar[] = [
   {
@@ -58,9 +60,9 @@ export interface GameLevelDef {
   instructions?: string;
   objectives?: string;
   activityPrompt?: string;
-  totalMaxScore?: number; // Total max score for level (default 100)
-  section1Score?: number; // Section 1 points (default 100)
-  section2Score?: number; // Section 2 points (default 0)
+  totalMaxScore?: number;
+  section1Score?: number;
+  section2Score?: number;
   imagesSectionTitle?: string;
   imagesSectionDesc?: string;
   badgeName: string;
@@ -71,153 +73,34 @@ export interface GameLevelDef {
 }
 
 export const GAME_LEVELS_DATA: GameLevelDef[] = [
-  {
-    levelNumber: 1,
-    moduleId: 'mod-1',
-    title: 'المستوى 1: أساسيات الوسائط وتثبيت Adobe Captivate 2019',
-    shortTitle: 'تثبيت البرنامج',
-    storyMission: 'مهمتك الأولى يا بطل: تهيئة بيئة العمل الرقمية، التحقق من معمارية 64-Bit، وتشغيل معالج التثبيت القياسي للبرنامج بنجاح.',
-    totalMaxScore: 100,
-    section1Score: 50,
-    section2Score: 50,
-    badgeName: 'وسام البداية الرقمية',
-    badgeEmoji: '🛡️',
-    videos: [],
-    images: [],
-    questions: [],
-  },
-  {
-    levelNumber: 2,
-    moduleId: 'mod-1',
-    title: 'المستوى 2: واجهة البرنامج وإدارة الشرائط الزمنية',
-    shortTitle: 'واجهة البرنامج',
-    storyMission: 'استكشف لوحة التحكم الرئيسية والـ Timeline لإدارة ظهور العناصر بدقة احترافية.',
-    totalMaxScore: 100,
-    section1Score: 50,
-    section2Score: 50,
-    badgeName: 'وسام مهندس الواجهة',
-    badgeEmoji: '⚙️',
-    videos: [],
-    images: [],
-    questions: [],
-  },
-  {
-    levelNumber: 3,
-    moduleId: 'mod-1',
-    title: 'المستوى 3: إدراج وتنسيق الوسائط المتعددة',
-    shortTitle: 'إدراج الوسائط',
-    storyMission: 'المهمة: دمج الصور والأصوات والفيديو داخل مشروعك التعليمي لجعله أكثر حيوية.',
-    totalMaxScore: 100,
-    section1Score: 50,
-    section2Score: 50,
-    badgeName: 'وسام مدمج الوسائط',
-    badgeEmoji: '🎨',
-    videos: [],
-    images: [],
-    questions: [],
-  },
-  {
-    levelNumber: 4,
-    moduleId: 'mod-2',
-    title: 'المستوى 4: التفاعل والبرمجة البسيطة للأزرار',
-    shortTitle: 'التفاعل الأساسي',
-    storyMission: 'حول المحتوى الثابت إلى تفاعلي عبر برمجة الأزرار ونقاط النقر (Click Boxes).',
-    totalMaxScore: 100,
-    section1Score: 50,
-    section2Score: 50,
-    badgeName: 'وسام المبرمج الصغير',
-    badgeEmoji: '🖱️',
-    videos: [],
-    images: [],
-    questions: [],
-  },
-  {
-    levelNumber: 5,
-    moduleId: 'mod-2',
-    title: 'المستوى 5: بناء الشرائح المتجاوبة (Fluid Boxes)',
-    shortTitle: 'التصميم المتجاوب',
-    storyMission: 'صمم مشروعك ليعمل على كافة الشاشات (موبايل، تابلت، كمبيوتر) باستخدام Fluid Boxes.',
-    totalMaxScore: 100,
-    section1Score: 50,
-    section2Score: 50,
-    badgeName: 'وسام خبير التجاوب',
-    badgeEmoji: '📱',
-    videos: [],
-    images: [],
-    questions: [],
-  },
-  {
-    levelNumber: 6,
-    moduleId: 'mod-2',
-    title: 'المستوى 6: مسارات التعلم والمشاهد التفاعلية',
-    shortTitle: 'مسارات التعلم',
-    storyMission: 'ابنِ مسارات تعليمية ذكية تعتمد على اختيارات المتعلم داخل اللعبة.',
-    totalMaxScore: 100,
-    section1Score: 50,
-    section2Score: 50,
-    badgeName: 'وسام مخطط المسارات',
-    badgeEmoji: '🛤️',
-    videos: [],
-    images: [],
-    questions: [],
-  },
-  {
-    levelNumber: 7,
-    moduleId: 'mod-3',
-    title: 'المستوى 7: بنوك الأسئلة والاختبارات التفاعلية',
-    shortTitle: 'بناء الاختبارات',
-    storyMission: 'أنشئ اختبارات تقويمية قوية لقياس مهارات زملائك في اللعبة.',
-    totalMaxScore: 100,
-    section1Score: 50,
-    section2Score: 50,
-    badgeName: 'وسام سيد الاختبارات',
-    badgeEmoji: '📝',
-    videos: [],
-    images: [],
-    questions: [],
-  },
-  {
-    levelNumber: 8,
-    moduleId: 'mod-3',
-    title: 'المستوى 8: المتغيرات والإجراءات المتقدمة (Advanced Actions)',
-    shortTitle: 'الإجراءات المتقدمة',
-    storyMission: 'استخدم المتغيرات والشروط البرمجية (Variables) لعمل تفاعلات ذكية معقدة.',
-    totalMaxScore: 100,
-    section1Score: 50,
-    section2Score: 50,
-    badgeName: 'وسام خبير المتغيرات',
-    badgeEmoji: '💎',
-    videos: [],
-    images: [],
-    questions: [],
-  },
-  {
-    levelNumber: 9,
-    moduleId: 'mod-3',
-    title: 'المستوى 9: تصدير المشروع ونشره كصفحة ويب',
-    shortTitle: 'تصدير المشروع',
-    storyMission: 'المهمة الأخيرة: استخرج مشروعك النهائي كـ HTML5 وشاركه مع العالم!',
-    totalMaxScore: 100,
-    section1Score: 50,
-    section2Score: 50,
-    badgeName: 'وسام المبدع النهائي',
-    badgeEmoji: '🚀',
-    videos: [],
-    images: [],
-    questions: [],
-  },
+  { levelNumber: 1, moduleId: 'mod-1', title: 'المستوى 1: أساسيات الوسائط وتثبيت Adobe Captivate 2019', shortTitle: 'تثبيت البرنامج', storyMission: 'مهمتك الأولى يا بطل: تهيئة بيئة العمل الرقمية، التحقق من معمارية 64-Bit، وتشغيل معالج التثبيت القياسي للبرنامج بنجاح.', totalMaxScore: 100, section1Score: 50, section2Score: 50, badgeName: 'وسام البداية الرقمية', badgeEmoji: '🛡️', videos: [], images: [], questions: [] },
+  { levelNumber: 2, moduleId: 'mod-1', title: 'المستوى 2: واجهة البرنامج وإدارة الشرائط الزمنية', shortTitle: 'واجهة البرنامج', storyMission: 'استكشف لوحة التحكم الرئيسية والـ Timeline لإدارة ظهور العناصر بدقة احترافية.', totalMaxScore: 100, section1Score: 50, section2Score: 50, badgeName: 'وسام مهندس الواجهة', badgeEmoji: '⚙️', videos: [], images: [], questions: [] },
+  { levelNumber: 3, moduleId: 'mod-1', title: 'المستوى 3: إدراج وتنسيق الوسائط المتعددة', shortTitle: 'إدراج الوسائط', storyMission: 'المهمة: دمج الصور والأصوات والفيديو داخل مشروعك التعليمي لجعله أكثر حيوية.', totalMaxScore: 100, section1Score: 50, section2Score: 50, badgeName: 'وسام مدمج الوسائط', badgeEmoji: '🎨', videos: [], images: [], questions: [] },
+  { levelNumber: 4, moduleId: 'mod-2', title: 'المستوى 4: التفاعل والبرمجة البسيطة للأزرار', shortTitle: 'التفاعل الأساسي', storyMission: 'حول المحتوى الثابت إلى تفاعلي عبر برمجة الأزرار ونقاط النقر (Click Boxes).', totalMaxScore: 100, section1Score: 50, section2Score: 50, badgeName: 'وسام المبرمج الصغير', badgeEmoji: '🖱️', videos: [], images: [], questions: [] },
+  { levelNumber: 5, moduleId: 'mod-2', title: 'المستوى 5: بناء الشرائح المتجاوبة (Fluid Boxes)', shortTitle: 'التصميم المتجاوب', storyMission: 'صمم مشروعك ليعمل على كافة الشاشات (موبايل، تابلت، كمبيوتر) باستخدام Fluid Boxes.', totalMaxScore: 100, section1Score: 50, section2Score: 50, badgeName: 'وسام خبير التجاوب', badgeEmoji: '📱', videos: [], images: [], questions: [] },
+  { levelNumber: 6, moduleId: 'mod-2', title: 'المستوى 6: مسارات التعلم والمشاهد التفاعلية', shortTitle: 'مسارات التعلم', storyMission: 'ابنِ مسارات تعليمية ذكية تعتمد على اختيارات المتعلم داخل اللعبة.', totalMaxScore: 100, section1Score: 50, section2Score: 50, badgeName: 'وسام مخطط المسارات', badgeEmoji: '🛤️', videos: [], images: [], questions: [] },
+  { levelNumber: 7, moduleId: 'mod-3', title: 'المستوى 7: بنوك الأسئلة والاختبارات التفاعلية', shortTitle: 'بناء الاختبارات', storyMission: 'أنشئ اختبارات تقويمية قوية لقياس مهارات زملائك في اللعبة.', totalMaxScore: 100, section1Score: 50, section2Score: 50, badgeName: 'وسام سيد الاختبارات', badgeEmoji: '📝', videos: [], images: [], questions: [] },
+  { levelNumber: 8, moduleId: 'mod-3', title: 'المستوى 8: المتغيرات والإجراءات المتقدمة (Advanced Actions)', shortTitle: 'الإجراءات المتقدمة', storyMission: 'استخدم المتغيرات والشروط البرمجية (Variables) لعمل تفاعلات ذكية معقدة.', totalMaxScore: 100, section1Score: 50, section2Score: 50, badgeName: 'وسام خبير المتغيرات', badgeEmoji: '💎', videos: [], images: [], questions: [] },
+  { levelNumber: 9, moduleId: 'mod-3', title: 'المستوى 9: تصدير المشروع ونشره كصفحة ويب', shortTitle: 'تصدير المشروع', storyMission: 'المهمة الأخيرة: استخرج مشروعك النهائي كـ HTML5 وشاركه مع العالم!', totalMaxScore: 100, section1Score: 50, section2Score: 50, badgeName: 'وسام المبدع النهائي', badgeEmoji: '🚀', videos: [], images: [], questions: [] },
 ];
 
+// دالة الحفظ في السحابة (Firebase)
 export function saveCustomGameLevels(levels: GameLevelDef[], _isManualUpdate: boolean = false) {
-  if (!Array.isArray(levels)) {
-    console.error('saveCustomGameLevels: levels is not an array', levels);
-    return;
-  }
+  if (!Array.isArray(levels)) return;
+  
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem('cp_game_levels_custom_v3', JSON.stringify(levels));
   }
+  
+  // حفظ في Firebase
+  try {
+    const levelsRef = ref(db, 'global_settings/game_levels');
+    set(levelsRef, levels);
+  } catch (err) {
+    console.error("Firebase Save Error:", err);
+  }
+
   syncGlobalQuestionsAndLevels('levels', levels);
-  // Dispatch event for UI update
   window.dispatchEvent(new CustomEvent('game-levels-updated', { detail: levels }));
 }
 
@@ -240,14 +123,6 @@ export function getCustomGameLevels(): GameLevelDef[] {
             if (def) levels.push(def);
           }
         }
-        levels.forEach((l) => {
-          if (l && l.levelNumber >= 1 && l.levelNumber <= 9) {
-            l.questions = []; // Force empty questions array for levels 1-9
-            l.totalMaxScore = 100;
-            l.section1Score = 50;
-            l.section2Score = 50;
-          }
-        });
         levels.sort((a, b) => (a?.levelNumber || 0) - (b?.levelNumber || 0));
         return levels;
       }
@@ -282,14 +157,10 @@ export function replaceMediaInLevel(levelNum: number, itemId: string, newItem: L
     const type = newItem.type === 'video' ? 'video' : 'image';
     if (type === 'video') {
       const vIdx = (levels[idx].videos || []).findIndex(m => m.id === itemId);
-      if (vIdx !== -1) {
-        levels[idx].videos![vIdx] = newItem;
-      }
+      if (vIdx !== -1) levels[idx].videos![vIdx] = newItem;
     } else {
       const iIdx = (levels[idx].images || []).findIndex(m => m.id === itemId);
-      if (iIdx !== -1) {
-        levels[idx].images![iIdx] = newItem;
-      }
+      if (iIdx !== -1) levels[idx].images![iIdx] = newItem;
     }
     saveCustomGameLevels(levels);
   }
@@ -311,21 +182,12 @@ export function updateMediaItemInLevel(levelNum: number, itemId: string, updates
   const levels = getCustomGameLevels();
   const idx = levels.findIndex((l) => l.levelNumber === levelNum);
   if (idx !== -1) {
-    // Try both lists
     let found = false;
     const vIdx = (levels[idx].videos || []).findIndex(m => m.id === itemId);
-    if (vIdx !== -1) {
-      levels[idx].videos![vIdx] = { ...levels[idx].videos![vIdx], ...updates };
-      found = true;
-    }
+    if (vIdx !== -1) { levels[idx].videos![vIdx] = { ...levels[idx].videos![vIdx], ...updates }; found = true; }
     const iIdx = (levels[idx].images || []).findIndex(m => m.id === itemId);
-    if (iIdx !== -1 && !found) {
-      levels[idx].images![iIdx] = { ...levels[idx].images![iIdx], ...updates };
-      found = true;
-    }
-    if (found) {
-      saveCustomGameLevels(levels);
-    }
+    if (iIdx !== -1 && !found) { levels[idx].images![iIdx] = { ...levels[idx].images![iIdx], ...updates }; found = true; }
+    if (found) saveCustomGameLevels(levels);
   }
   return levels;
 }
