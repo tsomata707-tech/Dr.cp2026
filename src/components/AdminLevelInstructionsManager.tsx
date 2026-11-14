@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Layers,
   Edit3,
@@ -13,7 +13,6 @@ import {
   X,
   Sparkles,
   Link2,
-  Plus,
   Eye,
   Upload,
 } from 'lucide-react';
@@ -80,27 +79,6 @@ export const AdminLevelInstructionsManager: React.FC = () => {
   const [deviceImageLevelSelect, setDeviceImageLevelSelect] = useState<number>(1);
   const [isUploadingDeviceImage, setIsUploadingDeviceImage] = useState<boolean>(false);
 
-  const [rehydratedBlobUrls, setRehydratedBlobUrls] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    let isMounted = true;
-    const rehydrate = async () => {
-      const vids = currentLevel?.videos || [];
-      for (const v of vids) {
-        if (v.blobId) {
-          const freshUrl = await getVideoBlobUrl(v.blobId);
-          if (freshUrl && isMounted) {
-            setRehydratedBlobUrls((prev) => ({ ...prev, [v.id]: freshUrl }));
-          }
-        }
-      }
-    };
-    rehydrate();
-    return () => {
-      isMounted = false;
-    };
-  }, [currentLevel]);
-
   const openDeviceVideoModal = () => {
     setDeviceVideoFile(null);
     setDeviceVideoTitle('');
@@ -135,8 +113,13 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     setIsUploadingDeviceVideo(true);
     try {
       const mediaId = `vid-device-${Date.now()}`;
-      // Store in IndexedDB for reliable video storage without localStorage quota crashes
-      const objectUrl = await storeVideoBlob(mediaId, deviceVideoFile, deviceVideoFile.name);
+      
+      // رفع الفيديو إلى Vercel Blob السحابي
+      const newBlob = await upload(deviceVideoFile.name, deviceVideoFile, {
+        access: 'public',
+        handleUploadUrl: '/api/upload',
+      });
+
       const cleanFileName = deviceVideoFile.name.replace(/\.[^/.]+$/, '').trim();
       const partNum = currentVids.length + 1;
       const finalTitle = deviceVideoTitle.trim() || cleanFileName || `فيديو المستوى ${deviceVideoLevelSelect} (الجزء ${partNum})`;
@@ -147,10 +130,10 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         blobId: mediaId,
         title: finalTitle,
         partCustomTitle: finalPartTitle,
-        url: objectUrl,
+        url: newBlob.url,
         type: 'video',
         format: deviceVideoFile.type || 'video/mp4',
-        size: deviceVideoFile.size, // Real file size in bytes
+        size: deviceVideoFile.size,
         addedAt: new Date().toISOString(),
       };
 
@@ -187,7 +170,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     e.target.value = '';
   };
 
-  const handleConfirmDeviceImage = (e: React.FormEvent) => {
+  const handleConfirmDeviceImage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!deviceImageFile) {
       showError('يرجى اختيار ملف الصورة أو المستند من جهازك أولاً.');
@@ -201,10 +184,14 @@ export const AdminLevelInstructionsManager: React.FC = () => {
     }
 
     setIsUploadingDeviceImage(true);
-    const isPdf = deviceImageFile.type === 'application/pdf' || deviceImageFile.name.toLowerCase().endsWith('.pdf');
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
+    try {
+      // رفع الصورة إلى Vercel Blob السحابي
+      const newBlob = await upload(deviceImageFile.name, deviceImageFile, {
+        access: 'public',
+        handleUploadUrl: '/api/upload',
+      });
+
+      const isPdf = deviceImageFile.type === 'application/pdf' || deviceImageFile.name.toLowerCase().endsWith('.pdf');
       const mediaId = `img-device-${Date.now()}`;
       const cleanFileName = deviceImageFile.name.replace(/\.[^/.]+$/, '').trim();
       const finalTitle = deviceImageTitle.trim() || cleanFileName || 'ملف مرفق';
@@ -212,7 +199,7 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       const newMedia: LevelMediaItem = {
         id: mediaId,
         title: finalTitle,
-        url: dataUrl,
+        url: newBlob.url,
         type: isPdf ? 'pdf' : 'image',
         format: isPdf ? 'application/pdf' : 'image/jpeg',
         size: deviceImageFile.size,
@@ -226,13 +213,11 @@ export const AdminLevelInstructionsManager: React.FC = () => {
       setShowDeviceImageModal(false);
       setDeviceImageFile(null);
       setDeviceImageTitle('');
+    } catch (err: any) {
+      showError(err?.message || 'حدث خطأ أثناء رفع الملف.');
+    } finally {
       setIsUploadingDeviceImage(false);
-    };
-    reader.onerror = () => {
-      showError('حدث خطأ أثناء قراءة الملف.');
-      setIsUploadingDeviceImage(false);
-    };
-    reader.readAsDataURL(deviceImageFile);
+    }
   };
 
   const showToast = (msg: string) => {
@@ -696,10 +681,8 @@ export const AdminLevelInstructionsManager: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {currentVideos.map((vid, idx) => {
-              const activeUrl = (vid.blobId && rehydratedBlobUrls[vid.id]) ? rehydratedBlobUrls[vid.id] : vid.url;
+              const activeUrl = vid.url;
               const cleanActiveUrl = activeUrl?.trim() || '';
-              const isLocal = cleanActiveUrl.startsWith('data:') || cleanActiveUrl.startsWith('blob:') || cleanActiveUrl.endsWith('.mp4') || cleanActiveUrl.endsWith('.webm');
-              const normalizedEmbed = cleanActiveUrl ? normalizeVideoUrl(cleanActiveUrl) : '';
               const sizeText = formatRealFileSize(vid.size);
 
               return (
@@ -786,8 +769,6 @@ export const AdminLevelInstructionsManager: React.FC = () => {
           </div>
         )}
       </div>
-
-
 
       {/* 1. Modal: External Image/PDF URL */}
       {showImageUrlModal && (
