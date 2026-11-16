@@ -225,9 +225,9 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
     // 5. Subscribe to real-time progress from Firebase RTDB for cross-device sync
     const unsubProgress = subscribeToStudentProgress(username, (cloudProg) => {
       if (cloudProg) {
-        // Update local state and localStorage if cloud has data
-        setStudentGame(cloudProg);
+        // Save and re-read sanitized progress so minimum level (4) is enforced
         saveSingleStudentProgress(username, cloudProg);
+        setStudentGame(getStudentProgress(username));
       }
     });
 
@@ -401,7 +401,7 @@ export const PortalHome: React.FC<PortalHomeProps> = ({ username, onLogout }) =>
             <div className="px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-[#080d1e] border border-purple-500/30 text-center sm:text-right">
               <span className="text-[10px] text-slate-400 block font-['Cairo']">المرحلة الحالية</span>
               <span className="text-base sm:text-lg font-black text-purple-300 font-['Outfit']">
-                L{studentGame?.currentLevel ?? 1} / 9
+                L{Math.max(4, studentGame?.currentLevel ?? 4)} / 9
               </span>
             </div>
 

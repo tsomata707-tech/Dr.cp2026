@@ -528,7 +528,7 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
                 لا يمكن فتح المرحلة <strong className="text-white">({lockedStageAlert.levelNumber}: {lockedStageAlert.shortTitle})</strong> إلا بعد الانتهاء من حل واعتماد إجابات المرحلة <strong className="text-amber-300">({lockedStageAlert.levelNumber - 1})</strong> السابقة بنجاح.
               </p>
               <p className="text-emerald-300 font-bold">
-                🎯 المرحلة النشطة المتاحة لك الآن هي: المرحلة {progress.currentLevel} ({currentLevelDef.shortTitle}).
+                🎯 المرحلة النشطة المتاحة لك الآن هي: المرحلة {effectiveCurrentLevel} ({currentLevelDef.shortTitle}).
               </p>
             </div>
 
@@ -549,7 +549,7 @@ export const LearningMapScreen: React.FC<LearningMapScreenProps> = ({
                 }}
                 className="w-1/2 py-2.5 rounded-xl bg-gradient-to-r from-[#ffd700] to-[#d4af37] text-slate-950 font-black text-xs shadow-md cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <span>الانتقال للمرحلة {progress.currentLevel}</span>
+                <span>الانتقال للمرحلة {effectiveCurrentLevel}</span>
                 <ArrowLeft className="w-3.5 h-3.5" />
               </button>
             </div>

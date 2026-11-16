@@ -770,7 +770,14 @@ export const subscribeToStudentProgress = (
       studentRef,
       (snapshot) => {
         if (snapshot.exists()) {
-          onUpdate(snapshot.val() as StudentGameProgress);
+          const raw = snapshot.val() as StudentGameProgress;
+          const minLvl = username.trim().toLowerCase() === 'admin'
+            ? 1
+            : getStartingLevelForGroup(getGroupByUsername(username)?.code);
+          onUpdate({
+            ...raw,
+            currentLevel: Math.max(minLvl, typeof raw.currentLevel === 'number' ? raw.currentLevel : minLvl),
+          });
         } else {
           onUpdate(null);
         }
@@ -835,7 +842,14 @@ export const fetchStudentProgressFromCloud = async (username: string): Promise<S
     const studentRef = ref(rtdb, `studentsProgress/${username}`);
     const snapshot = await rtdbGet(studentRef);
     if (snapshot.exists()) {
-      return snapshot.val() as StudentGameProgress;
+      const raw = snapshot.val() as StudentGameProgress;
+      const minLvl = username.trim().toLowerCase() === 'admin'
+        ? 1
+        : getStartingLevelForGroup(getGroupByUsername(username)?.code);
+      return {
+        ...raw,
+        currentLevel: Math.max(minLvl, typeof raw.currentLevel === 'number' ? raw.currentLevel : minLvl),
+      };
     }
     return null;
   } catch (err) {
